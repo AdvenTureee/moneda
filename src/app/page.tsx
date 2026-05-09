@@ -1,65 +1,167 @@
-import Image from "next/image";
+import Link from 'next/link';
+import AppShell from '@/components/AppShell';
+import DashboardMetric from '@/components/DashboardMetric';
+import AIInsightBanner from '@/components/AIInsightBanner';
+import ExpenseCard from '@/components/ExpenseCard';
+import DonutChart from '@/components/DonutChart';
+import { getDashboardMetrics } from '@/lib/expenses';
+import { formatCurrency, getCurrentPeriod } from '@/lib/utils';
+import { MOCK_USER } from '@/data/mock';
 
-export default function Home() {
+export const dynamic = 'force-dynamic';
+
+export default async function DashboardPage() {
+  const period = getCurrentPeriod();
+  const metrics = await getDashboardMetrics(MOCK_USER.id, period);
+
+  const [year, month] = period.split('-').map(Number);
+  const monthName = new Date(year, month - 1).toLocaleString('pt-BR', {
+    month: 'long',
+    year: 'numeric',
+  });
+
+  const donutSegments = metrics.topCategories.map((cat) => ({
+    category: cat.categoryName,
+    amount: cat.amount,
+    color: cat.categoryColor,
+    icon: cat.categoryIcon,
+  }));
+
+  const BUDGET_CENTS = 350000; // R$ 3.500
+  const remaining = BUDGET_CENTS - metrics.totalSpent;
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <AppShell>
+      <div className="max-w-lg mx-auto px-4">
+        {/* Header */}
+        <header className="flex items-center justify-between py-5">
+          <div>
+            <p className="text-xs text-[#9CA3AF] font-medium uppercase tracking-wide">
+              Grana
+            </p>
+            <h1 className="capitalize text-sm font-semibold text-[#6B7280]">
+              {monthName}
+            </h1>
+          </div>
+          <div
+            className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-white"
+            style={{ background: '#A8C5E0' }}
+            aria-label="Gabriel Mauro"
+          >
+            G
+          </div>
+        </header>
+
+        {/* Hero total */}
+        <section className="mb-5" aria-label="Total gasto no mês">
+          <p className="text-xs text-[#6B7280] font-medium mb-1">
+            Gasto total este mês
           </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+          <p
+            className="text-[40px] font-extrabold text-[#1A1D23] tabular-nums leading-none"
+            aria-label={`Total gasto: ${formatCurrency(metrics.totalSpent)}`}
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            {formatCurrency(metrics.totalSpent)}
+          </p>
+        </section>
+
+        {/* Metric cards */}
+        <section className="flex gap-3 mb-6" aria-label="Métricas do mês">
+          <DashboardMetric
+            label="Orçamento"
+            value={formatCurrency(BUDGET_CENTS)}
+          />
+          <DashboardMetric
+            label="Restante"
+            value={remaining > 0 ? formatCurrency(remaining) : 'Estourou!'}
+            subtextColor={remaining > 0 ? '#5BBF8E' : '#E07070'}
+            subtext={remaining > 0 ? 'disponível' : `−${formatCurrency(Math.abs(remaining))}`}
+          />
+        </section>
+
+        {/* Donut chart */}
+        {metrics.topCategories.length > 0 && (
+          <section
+            className="mb-6 bg-white rounded-[16px] p-5"
+            style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
+            aria-label="Gastos por categoria"
           >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-base font-semibold text-[#1A1D23]">Por categoria</h2>
+              <Link href="/feed" className="text-xs font-medium text-[#A8C5E0]">
+                Ver tudo
+              </Link>
+            </div>
+
+            <div className="flex items-center gap-5">
+              <DonutChart
+                segments={donutSegments}
+                size="md"
+                centerLabel="Total"
+                centerValue={formatCurrency(metrics.totalSpent)}
+              />
+
+              <div className="flex-1 space-y-2 overflow-hidden">
+                {metrics.topCategories.slice(0, 4).map((cat) => (
+                  <div key={cat.categoryId} className="flex items-center gap-2">
+                    <span
+                      className="w-2.5 h-2.5 rounded-full shrink-0"
+                      style={{ background: cat.categoryColor }}
+                      aria-hidden
+                    />
+                    <span className="flex-1 text-xs text-[#1A1D23] truncate">
+                      {cat.categoryIcon} {cat.categoryName}
+                    </span>
+                    <span className="text-xs font-semibold text-[#1A1D23] tabular-nums shrink-0">
+                      {formatCurrency(cat.amount)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* AI Insight banner */}
+        <section className="mb-6" aria-label="Insights">
+          <AIInsightBanner
+            message="Você gastou 23% mais em Alimentação este mês do que no mês passado. Que tal definir um limite para delivery?"
+            cta={{ label: 'Ver detalhes', href: '/feed' }}
+          />
+        </section>
+
+        {/* Recent expenses */}
+        <section aria-label="Últimos gastos">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-base font-semibold text-[#1A1D23]">Últimos gastos</h2>
+            <Link href="/feed" className="text-xs font-medium text-[#A8C5E0]">
+              Ver feed
+            </Link>
+          </div>
+
+          {metrics.recentExpenses.length === 0 ? (
+            <div className="flex flex-col items-center py-12 text-center">
+              <span className="text-5xl mb-4 opacity-30" aria-hidden>🧾</span>
+              <p className="text-base font-semibold text-[#1A1D23]">Nenhum gasto ainda</p>
+              <p className="text-sm text-[#6B7280] mt-1 max-w-[260px]">
+                Lance sua primeira despesa e comece a entender pra onde vai o seu dinheiro.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {metrics.recentExpenses.map((expense) => (
+                <ExpenseCard
+                  key={expense.id}
+                  expense={expense}
+                  variant="compact"
+                />
+              ))}
+            </div>
+          )}
+        </section>
+
+        <div className="h-6" />
+      </div>
+    </AppShell>
   );
 }

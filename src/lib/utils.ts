@@ -1,0 +1,81 @@
+export function formatCurrency(centavos: number): string {
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  }).format(centavos / 100);
+}
+
+export function parseCurrencyInput(text: string): number {
+  const clean = text.replace(/[R$\s.]/g, '').replace(',', '.');
+  return Math.round(parseFloat(clean) * 100);
+}
+
+export function formatDate(date: Date): string {
+  const now = new Date();
+  const d = new Date(date);
+
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterdayStart = new Date(todayStart);
+  yesterdayStart.setDate(yesterdayStart.getDate() - 1);
+  const dStart = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+
+  if (dStart.getTime() === todayStart.getTime()) return 'Hoje';
+  if (dStart.getTime() === yesterdayStart.getTime()) return 'Ontem';
+
+  return d.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' });
+}
+
+export function formatDateFull(date: Date): string {
+  const d = new Date(date);
+  return d.toLocaleDateString('pt-BR', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+}
+
+export function formatTime(date: Date): string {
+  const d = new Date(date);
+  return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+}
+
+export function formatDateSection(date: Date): string {
+  const label = formatDate(date);
+  if (label === 'Hoje' || label === 'Ontem') {
+    const d = new Date(date);
+    const dayStr = d.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' });
+    return `${label} · ${dayStr}`;
+  }
+  const d = new Date(date);
+  const weekday = d.toLocaleDateString('pt-BR', { weekday: 'long' });
+  return `${label} — ${weekday}`;
+}
+
+export function groupExpensesByDate<T extends { createdAt: Date }>(
+  expenses: T[]
+): Array<{ dateKey: string; label: string; items: T[] }> {
+  const map = new Map<string, { label: string; items: T[] }>();
+
+  for (const expense of expenses) {
+    const d = new Date(expense.createdAt);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    if (!map.has(key)) {
+      map.set(key, { label: formatDateSection(d), items: [] });
+    }
+    map.get(key)!.items.push(expense);
+  }
+
+  return Array.from(map.entries())
+    .sort(([a], [b]) => b.localeCompare(a))
+    .map(([dateKey, value]) => ({ dateKey, ...value }));
+}
+
+export function getCurrentPeriod(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+}
+
+export function generateId(): string {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
