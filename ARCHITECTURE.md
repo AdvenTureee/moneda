@@ -639,6 +639,8 @@ export function getExpensesByPeriod(userId: string, period: string): Expense[] {
 ### 8.1 Persistência — Migração para Supabase
 
 > **Decisão confirmada (2026-05-09):** Supabase como banco de dados a partir do V1 (substitui a opção anterior de Neon).
+>
+> **Fonte canônica do schema:** [`DATABASE.md`](./DATABASE.md) (criado em GAB-17). Esta seção descreve o **caminho de migração**; o desenho completo de tabelas, índices, RLS e plano de evolução V1→V3 está no `DATABASE.md` para não duplicar conteúdo aqui.
 
 O MVP 0 usa `data/mock.ts`. A camada de acesso a dados em `lib/expenses.ts` abstrai a fonte, permitindo trocar o mock por Supabase sem alterar as API routes.
 
@@ -657,12 +659,15 @@ export async function getExpenses(filters: ExpenseFilters): Promise<Expense[]> {
 ```
 
 **Plano de migração (V1):**
-1. `npm install @supabase/supabase-js`
-2. Criar projeto no Supabase e definir schema com as entidades acima
-3. Adicionar `SUPABASE_URL` e `SUPABASE_ANON_KEY` no Vercel
-4. Substituir imports de `data/mock.ts` pelo cliente Supabase em `lib/expenses.ts`
-5. Adicionar índices: `(user_id, created_at)` em `expenses`, `(phone)` em `whatsapp_messages`
-6. Habilitar Row Level Security (RLS) para isolar dados por usuário
+1. `@supabase/supabase-js`, `@supabase/ssr` já instalados (GAB-16).
+2. Schema desenhado e versionado em [`DATABASE.md`](./DATABASE.md) + `supabase/migrations/00000000000001…05_*.sql` (GAB-17). **Aguardando aprovação do CEO antes de aplicar.**
+3. Após aprovação: aplicar migrations no Supabase (`supabase db push` ou via dashboard).
+4. Adicionar `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` no Vercel (já vinculados no projeto local via integração GitHub).
+5. Gerar tipos: `supabase gen types typescript > src/types/supabase.ts`.
+6. Criar `src/lib/supabase.ts` (clients server-only e browser) e reescrever `src/lib/expenses.ts` para usar Supabase atrás da mesma interface — API routes não mudam.
+7. Smoke test golden path: signup → onboard (phone) → criar expense → ver no feed.
+
+Índices, RLS e plano de evolução V1→V3 estão detalhados em [`DATABASE.md`](./DATABASE.md). Esta seção não duplica essa informação intencionalmente.
 
 ### 8.2 Autenticação — NextAuth ou Clerk
 
