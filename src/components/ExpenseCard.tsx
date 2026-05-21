@@ -1,3 +1,4 @@
+import Icon from '@/components/Icon';
 import { formatCurrency, formatDate, formatTime } from '@/lib/utils';
 import { getCategoryById } from '@/data/mock';
 import type { Expense } from '@/types';
@@ -35,7 +36,7 @@ export default function ExpenseCard({
         }}
         aria-hidden
       >
-        {category?.icon ?? '📦'}
+        <Icon name={category?.icon ?? 'Package'} size={20} />
       </div>
 
       {/* Description & category */}

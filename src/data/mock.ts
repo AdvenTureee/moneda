@@ -12,7 +12,7 @@ export const CATEGORIES: Category[] = [
   {
     id: 'alimentacao',
     name: 'Alimentação',
-    icon: '🍔',
+    icon: 'Hamburger',
     color: '#F59E0B',
     keywords: [
       'almoço', 'almoco', 'jantar', 'lanche', 'café', 'cafe', 'ifood', 'rappi',
@@ -23,7 +23,7 @@ export const CATEGORIES: Category[] = [
   {
     id: 'transporte',
     name: 'Transporte',
-    icon: '🚗',
+    icon: 'Car',
     color: '#3B82F6',
     keywords: [
       'uber', '99', 'taxi', 'táxi', 'gasolina', 'combustivel', 'metro', 'metrô',
@@ -33,7 +33,7 @@ export const CATEGORIES: Category[] = [
   {
     id: 'lazer',
     name: 'Lazer',
-    icon: '🎮',
+    icon: 'GameController',
     color: '#8B5CF6',
     keywords: [
       'cinema', 'netflix', 'spotify', 'steam', 'jogo', 'show', 'teatro', 'bar',
@@ -43,7 +43,7 @@ export const CATEGORIES: Category[] = [
   {
     id: 'saude',
     name: 'Saúde',
-    icon: '💊',
+    icon: 'Pill',
     color: '#EF4444',
     keywords: [
       'farmácia', 'farmacia', 'médico', 'medico', 'dentista', 'exame',
@@ -53,7 +53,7 @@ export const CATEGORIES: Category[] = [
   {
     id: 'casa',
     name: 'Casa',
-    icon: '🏠',
+    icon: 'House',
     color: '#10B981',
     keywords: [
       'aluguel', 'condomínio', 'condominio', 'luz', 'água', 'agua', 'internet',
@@ -63,7 +63,7 @@ export const CATEGORIES: Category[] = [
   {
     id: 'educacao',
     name: 'Educação',
-    icon: '📚',
+    icon: 'Books',
     color: '#06B6D4',
     keywords: [
       'curso', 'faculdade', 'escola', 'livro', 'udemy', 'alura', 'mensalidade',
@@ -73,7 +73,7 @@ export const CATEGORIES: Category[] = [
   {
     id: 'outros',
     name: 'Outros',
-    icon: '📦',
+    icon: 'Package',
     color: '#6B7280',
     keywords: [],
   },

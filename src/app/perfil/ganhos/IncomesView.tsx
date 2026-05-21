@@ -3,6 +3,7 @@
 import { useState, useTransition, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Trash2, Check, AlertCircle, Calendar, Plus, RefreshCw } from 'lucide-react';
+import Icon from '@/components/Icon';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { saveIncomeAction, deleteIncomeAction } from '../actions-finance';
 import type { Income, IncomeSource } from '@/types';
@@ -14,12 +15,12 @@ interface IncomesViewProps {
 type Feedback = { kind: 'success' | 'error'; text: string } | null;
 
 const INCOME_SOURCES = [
-  { id: 'salary' as IncomeSource, name: 'Salário', icon: '💼', color: '#10B981' },
-  { id: 'freelance' as IncomeSource, name: 'Freelance', icon: '🚀', color: '#8B5CF6' },
-  { id: 'investment' as IncomeSource, name: 'Investimento', icon: '📈', color: '#3B82F6' },
-  { id: 'rent' as IncomeSource, name: 'Aluguel', icon: '🏠', color: '#EC4899' },
-  { id: 'gift' as IncomeSource, name: 'Presente', icon: '🎁', color: '#F59E0B' },
-  { id: 'other' as IncomeSource, name: 'Outro', icon: '📦', color: '#6B7280' },
+  { id: 'salary' as IncomeSource, name: 'Salário', icon: 'Briefcase', color: '#10B981' },
+  { id: 'freelance' as IncomeSource, name: 'Freelance', icon: 'Rocket', color: '#8B5CF6' },
+  { id: 'investment' as IncomeSource, name: 'Investimento', icon: 'TrendUp', color: '#3B82F6' },
+  { id: 'rent' as IncomeSource, name: 'Aluguel', icon: 'House', color: '#EC4899' },
+  { id: 'gift' as IncomeSource, name: 'Presente', icon: 'Gift', color: '#F59E0B' },
+  { id: 'other' as IncomeSource, name: 'Outro', icon: 'Package', color: '#6B7280' },
 ];
 
 export default function IncomesView({ initialIncomes }: IncomesViewProps) {
@@ -245,7 +246,7 @@ export default function IncomesView({ initialIncomes }: IncomesViewProps) {
                         : 'border-[#E5E7EB] bg-white hover:border-[#A8C5E0]'
                     }`}
                   >
-                    <span className="text-lg">{src.icon}</span>
+                    <Icon name={src.icon} size={18} />
                     <span
                       className={`text-[10px] font-bold ${
                         isSelected ? 'text-[#047857]' : 'text-[#6B7280]'
@@ -311,13 +312,13 @@ export default function IncomesView({ initialIncomes }: IncomesViewProps) {
                 >
                   <div className="flex items-center gap-3 min-w-0 flex-1">
                     <div
-                      className="w-10 h-10 rounded-full flex items-center justify-center text-lg shrink-0"
+                      className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
                       style={{
                         backgroundColor: `${srcMeta.color}15`,
                         color: srcMeta.color,
                       }}
                     >
-                      {srcMeta.icon}
+                      <Icon name={srcMeta.icon} size={20} />
                     </div>
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5">

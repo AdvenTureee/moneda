@@ -133,7 +133,7 @@ async function getDashboardMetricsFromDB(
       return {
         categoryId: catId,
         categoryName: cat?.name ?? catId,
-        categoryIcon: cat?.icon ?? '📦',
+        categoryIcon: cat?.icon ?? 'Package',
         categoryColor: cat?.color ?? '#6B7280',
         amount,
         percentage: totalSpent > 0 ? Math.round((amount / totalSpent) * 100) : 0,

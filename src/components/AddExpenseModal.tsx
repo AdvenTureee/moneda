@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
+import Icon from '@/components/Icon';
 import { CATEGORIES } from '@/data/mock';
 import { formatCurrency } from '@/lib/utils';
 import type { ExpenseInput } from '@/types';
@@ -151,7 +152,7 @@ export default function AddExpenseModal({
                       : 'border-[#E5E7EB] bg-white hover:border-[#A8C5E0]'
                   }`}
                 >
-                  <span className="text-xl" aria-hidden>{cat.icon}</span>
+                  <Icon name={cat.icon} size={20} aria-hidden />
                   <span
                     className={`text-[10px] font-medium leading-tight text-center ${
                       isSelected ? 'text-[#3FA876]' : 'text-[#6B7280]'

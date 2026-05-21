@@ -5,6 +5,7 @@ import DashboardMetric from '@/components/DashboardMetric';
 import AIInsightBanner from '@/components/AIInsightBanner';
 import ExpenseCard from '@/components/ExpenseCard';
 import DonutChart from '@/components/DonutChart';
+import Icon from '@/components/Icon';
 import { getDashboardMetrics } from '@/lib/expenses';
 import { getBudgets } from '@/lib/budgets';
 import { getLatestInsight } from '@/lib/insights';
@@ -134,7 +135,7 @@ export default async function DashboardPage() {
                       aria-hidden
                     />
                     <span className="flex-1 text-xs text-[#1A1D23] truncate">
-                      {cat.categoryIcon} {cat.categoryName}
+                      <Icon name={cat.categoryIcon} size={14} className="inline" /> {cat.categoryName}
                     </span>
                     <span className="text-xs font-semibold text-[#1A1D23] tabular-nums shrink-0">
                       {formatCurrency(cat.amount)}
@@ -165,7 +166,7 @@ export default async function DashboardPage() {
 
           {metrics.recentExpenses.length === 0 ? (
             <div className="flex flex-col items-center py-12 text-center">
-              <span className="text-5xl mb-4 opacity-30" aria-hidden>🧾</span>
+              <Icon name="Receipt" size={48} className="mb-4 opacity-30" />
               <p className="text-base font-semibold text-[#1A1D23]">Nenhum gasto ainda</p>
               <p className="text-sm text-[#6B7280] mt-1 max-w-[260px]">
                 Lance sua primeira despesa e comece a entender pra onde vai o seu dinheiro.

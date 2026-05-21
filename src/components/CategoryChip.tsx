@@ -1,3 +1,5 @@
+import Icon from '@/components/Icon';
+
 interface CategoryChipProps {
   icon: string;
   label: string;
@@ -29,7 +31,7 @@ export default function CategoryChip({
       }`}
       aria-pressed={selected}
     >
-      <span aria-hidden>{icon}</span>
+      <Icon name={icon} size={isSmall ? 12 : 14} aria-hidden />
       <span>{label}</span>
     </button>
   );

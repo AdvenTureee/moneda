@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { X, ArrowRight } from 'lucide-react';
+import Icon from '@/components/Icon';
 
 interface AIInsightBannerProps {
   message: string;
@@ -29,7 +30,7 @@ export default function AIInsightBanner({
       }}
     >
       <div className="flex items-start gap-2 pr-6">
-        <span className="text-lg shrink-0 mt-0.5" aria-hidden>💡</span>
+        <Icon name="Lightbulb" size={20} className="shrink-0 mt-0.5" aria-hidden />
         <p className="text-sm text-[#1A1D23] leading-relaxed line-clamp-3">
           {message}
         </p>

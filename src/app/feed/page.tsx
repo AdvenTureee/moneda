@@ -5,6 +5,7 @@ import { Search } from 'lucide-react';
 import AppShell from '@/components/AppShell';
 import ExpenseCard from '@/components/ExpenseCard';
 import CategoryChip from '@/components/CategoryChip';
+import Icon from '@/components/Icon';
 import { CATEGORIES } from '@/data/mock';
 import { groupExpensesByDate, formatCurrency } from '@/lib/utils';
 import type { Expense } from '@/types';
@@ -100,7 +101,7 @@ export default function FeedPage() {
             aria-label="Filtrar por categoria"
           >
             <CategoryChip
-              icon="✨"
+              icon="Sparkle"
               label="Todos"
               selected={activeCategory === null}
               onClick={() => setActiveCategory(null)}
@@ -125,12 +126,12 @@ export default function FeedPage() {
         <div className="px-4">
           {loading ? (
             <div className="flex flex-col items-center py-16 text-center">
-              <span className="text-5xl mb-4 opacity-30" aria-hidden>⏳</span>
+              <Icon name="Hourglass" size={48} className="mb-4 opacity-30" />
               <p className="text-base font-semibold text-[#1A1D23]">Carregando...</p>
             </div>
           ) : error ? (
             <div className="flex flex-col items-center py-16 text-center">
-              <span className="text-5xl mb-4 opacity-30" aria-hidden>⚠️</span>
+              <Icon name="Warning" size={48} className="mb-4 opacity-30" />
               <p className="text-base font-semibold text-[#B14C4C]">{error}</p>
               <button
                 onClick={fetchExpenses}
@@ -141,7 +142,7 @@ export default function FeedPage() {
             </div>
           ) : groups.length === 0 ? (
             <div className="flex flex-col items-center py-16 text-center">
-              <span className="text-5xl mb-4 opacity-30" aria-hidden>🔍</span>
+              <Icon name="MagnifyingGlass" size={48} className="mb-4 opacity-30" />
               <p className="text-base font-semibold text-[#1A1D23]">
                 Nenhum gasto encontrado
               </p>

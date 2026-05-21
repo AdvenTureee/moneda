@@ -3,6 +3,7 @@
 import { useState, useTransition, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Check, AlertCircle } from 'lucide-react';
+import Icon from '@/components/Icon';
 import { CATEGORIES } from '@/data/mock';
 import { formatCurrency } from '@/lib/utils';
 import { saveCategoryBudgetAction } from '../actions-finance';
@@ -137,13 +138,13 @@ export default function BudgetForm({ initialBudgets, period }: BudgetFormProps) 
             >
               <div className="flex items-center gap-3 min-w-0 flex-1">
                 <div
-                  className="w-10 h-10 rounded-full flex items-center justify-center text-lg shrink-0"
+                  className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
                   style={{
                     backgroundColor: `${cat.color}18`,
                     color: cat.color,
                   }}
                 >
-                  {cat.icon}
+                  <Icon name={cat.icon} size={20} />
                 </div>
                 <div className="min-w-0">
                   <p className="text-sm font-bold text-[#1A1D23] truncate">{cat.name}</p>

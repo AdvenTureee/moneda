@@ -14,8 +14,13 @@ export async function createSessionClient() {
       cookies: {
         getAll() { return cookieStore.getAll(); },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            cookieStore.set(name, value, options));
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options));
+          } catch {
+            // Server Component — cookies são read-only.
+            // O middleware cuida de refrescar a sessão.
+          }
         },
       },
     }

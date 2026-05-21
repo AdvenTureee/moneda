@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useRef } from 'react';
 import {
   LogOut,
   Mail,
@@ -15,6 +15,7 @@ import {
   Bell,
   Download,
   DollarSign,
+  Camera,
 } from 'lucide-react';
 import {
   updateDisplayName,
@@ -48,6 +49,9 @@ export default function ProfileView({
   const [sendingReset, startSendReset] = useTransition();
   const [signingOut, startSignOut] = useTransition();
   const [deleting, startDelete] = useTransition();
+  const [uploading, setUploading] = useState(false);
+  const [currentAvatarUrl, setCurrentAvatarUrl] = useState<string | null>(avatarUrl);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const initial = (name?.[0] ?? email?.[0] ?? '?').toUpperCase();
 
@@ -85,6 +89,30 @@ export default function ProfileView({
     });
   }
 
+  async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    setFeedback(null);
+    try {
+      const formData = new FormData();
+      formData.set('file', file);
+      const res = await fetch('/api/upload-avatar', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (!res.ok) {
+        setFeedback({ kind: 'error', text: data.error ?? 'Erro ao fazer upload.' });
+        return;
+      }
+      setCurrentAvatarUrl(data.url);
+      setFeedback({ kind: 'success', text: 'Foto atualizada.' });
+    } catch {
+      setFeedback({ kind: 'error', text: 'Erro ao conectar com o servidor.' });
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  }
+
   function handleSignOut() {
     setFeedback(null);
     startSignOut(() => {
@@ -104,7 +132,7 @@ export default function ProfileView({
     });
   }
 
-  const anyBusy = savingName || sendingReset || signingOut || deleting;
+  const anyBusy = savingName || sendingReset || signingOut || deleting || uploading;
 
   return (
     <div className="max-w-lg mx-auto px-4 pb-24">
@@ -119,22 +147,44 @@ export default function ProfileView({
         style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
       >
         <div className="flex items-center gap-4">
-          {avatarUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={avatarUrl}
-              alt=""
-              className="w-16 h-16 rounded-full object-cover"
-              referrerPolicy="no-referrer"
-            />
-          ) : (
-            <div
-              className="w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold text-white"
-              style={{ background: '#A8C5E0' }}
+          <div className="relative shrink-0">
+            {currentAvatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={currentAvatarUrl}
+                alt=""
+                className="w-16 h-16 rounded-full object-cover"
+                referrerPolicy="no-referrer"
+              />
+            ) : (
+              <div
+                className="w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold text-white"
+                style={{ background: '#A8C5E0' }}
+              >
+                {initial}
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              className="absolute -bottom-0.5 -right-0.5 w-6 h-6 rounded-full bg-white border border-[#E5E7EB] flex items-center justify-center shadow-sm hover:bg-[#F8F9FB] transition-colors disabled:opacity-60"
+              aria-label="Alterar foto"
             >
-              {initial}
-            </div>
-          )}
+              {uploading ? (
+                <span className="w-3 h-3 border-2 border-[#9CA3AF] border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <Camera size={12} className="text-[#6B7280]" />
+              )}
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml,image/heic,image/heif"
+              className="hidden"
+              onChange={handleFileSelect}
+            />
+          </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-center justify-between gap-2">
               <p className="text-lg font-bold text-[#1A1D23] truncate">
