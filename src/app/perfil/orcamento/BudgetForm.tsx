@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useEffect } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Check, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Check, WarningCircle } from '@phosphor-icons/react';
 import Icon from '@/components/Icon';
 import { CATEGORIES } from '@/data/mock';
 import { formatCurrency } from '@/lib/utils';
@@ -209,7 +209,7 @@ export default function BudgetForm({ initialBudgets, period }: BudgetFormProps) 
             {feedback.kind === 'success' ? (
               <Check size={18} className="shrink-0" />
             ) : (
-              <AlertCircle size={18} className="shrink-0" />
+              <WarningCircle size={18} className="shrink-0" />
             )}
             <p className="font-semibold text-sm">{feedback.text}</p>
           </div>

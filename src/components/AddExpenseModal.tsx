@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { X } from 'lucide-react';
+import { X } from '@phosphor-icons/react';
 import Icon from '@/components/Icon';
 import { CATEGORIES } from '@/data/mock';
 import { formatCurrency } from '@/lib/utils';

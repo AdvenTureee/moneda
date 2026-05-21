@@ -11,6 +11,8 @@ function rowToAIInsight(row: AIInsightRow): AIInsight {
     type: row.type as import('@/types').AIInsightType,
     message: row.message,
     period: row.period,
+    metadata: (row.metadata ?? {}) as Record<string, unknown>,
+    generatedAt: new Date(row.generated_at),
     createdAt: new Date(row.created_at),
   };
 }
@@ -32,4 +34,27 @@ export async function getLatestInsight(userId: string, period: string): Promise<
   }
 
   return null;
+}
+
+export async function getUserInsights(
+  userId: string,
+  options?: { type?: AIInsight['type']; period?: string }
+): Promise<AIInsight[]> {
+  if (isSupabaseEnabled()) {
+    const db = createServiceClient();
+    let query = db
+      .from('ai_insights')
+      .select('*')
+      .eq('user_id', userId)
+      .order('generated_at', { ascending: false });
+
+    if (options?.type) query = query.eq('type', options.type);
+    if (options?.period) query = query.eq('period', options.period);
+
+    const { data, error } = await query;
+    if (error) throw new Error(`getUserInsights: ${error.message}`);
+    return (data as AIInsightRow[]).map(rowToAIInsight);
+  }
+
+  return [];
 }

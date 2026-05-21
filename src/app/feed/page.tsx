@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
-import { Search } from 'lucide-react';
+import { MagnifyingGlass } from '@phosphor-icons/react';
 import AppShell from '@/components/AppShell';
 import ExpenseCard from '@/components/ExpenseCard';
 import CategoryChip from '@/components/CategoryChip';
@@ -78,7 +78,7 @@ export default function FeedPage() {
 
           {/* Search bar */}
           <div className="relative mb-3">
-            <Search
+            <MagnifyingGlass
               size={16}
               className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9CA3AF]"
               aria-hidden

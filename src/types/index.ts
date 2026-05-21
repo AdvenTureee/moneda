@@ -46,6 +46,8 @@ export interface AIInsight {
   type: AIInsightType;
   message: string;
   period: string;
+  metadata: Record<string, unknown>;
+  generatedAt: Date;
   createdAt: Date;
 }
 

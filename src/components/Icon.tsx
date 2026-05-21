@@ -18,6 +18,7 @@ import {
   Warning,
   MagnifyingGlass,
   Lightbulb,
+  ChartPieSlice,
   type IconProps,
 } from '@phosphor-icons/react';
 
@@ -39,6 +40,7 @@ const iconMap: Record<string, React.ComponentType<IconProps>> = {
   Warning,
   MagnifyingGlass,
   Lightbulb,
+  ChartPieSlice,
 };
 
 interface IconRendererProps {

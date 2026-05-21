@@ -3,20 +3,20 @@
 import Link from 'next/link';
 import { useState, useTransition, useRef } from 'react';
 import {
-  LogOut,
-  Mail,
-  Pencil,
-  Trash2,
+  SignOut,
+  Envelope,
+  PencilSimple,
+  Trash,
   Check,
   X,
-  ChevronRight,
+  CaretRight,
   Wallet,
-  Tags,
+  Tag,
   Bell,
-  Download,
-  DollarSign,
+  DownloadSimple,
+  CurrencyDollar,
   Camera,
-} from 'lucide-react';
+} from '@phosphor-icons/react';
 import {
   updateDisplayName,
   sendPasswordReset,
@@ -201,7 +201,7 @@ export default function ProfileView({
                   className="p-2 -mr-2 text-[#A8C5E0] hover:bg-[#F8F9FB] rounded-full transition-colors"
                   aria-label="Editar nome"
                 >
-                  <Pencil size={18} />
+                  <PencilSimple size={18} />
                 </button>
               )}
             </div>
@@ -260,17 +260,17 @@ export default function ProfileView({
             <p className="text-sm font-semibold text-[#1A1D23]">Configurar orçamento</p>
             <p className="text-xs text-[#6B7280]">Defina quanto pretende gastar no mês</p>
           </div>
-          <ChevronRight size={18} className="text-[#E5E7EB] group-hover:text-[#9CA3AF] transition-colors" />
+            <CaretRight size={18} className="text-[#E5E7EB] group-hover:text-[#9CA3AF] transition-colors" />
         </Link>
         <Link href="/perfil/ganhos" className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-[#F8F9FB] transition-colors group">
           <div className="w-9 h-9 rounded-full bg-[#EBF3FE] text-[#3B82F6] flex items-center justify-center">
-            <DollarSign size={18} />
+            <CurrencyDollar size={18} />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-[#1A1D23]">Ganhos e receitas</p>
             <p className="text-xs text-[#6B7280]">Registre e gerencie suas fontes de renda</p>
           </div>
-          <ChevronRight size={18} className="text-[#E5E7EB] group-hover:text-[#9CA3AF] transition-colors" />
+          <CaretRight size={18} className="text-[#E5E7EB] group-hover:text-[#9CA3AF] transition-colors" />
         </Link>
       </div>
 
@@ -284,13 +284,13 @@ export default function ProfileView({
       >
         <button className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-[#F8F9FB] transition-colors group">
           <div className="w-9 h-9 rounded-full bg-[#F4F6F8] text-[#5B7FA8] flex items-center justify-center">
-            <Tags size={18} />
+            <Tag size={18} />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-[#1A1D23]">Gerenciar categorias</p>
             <p className="text-xs text-[#6B7280]">Crie ou edite categorias de gastos</p>
           </div>
-          <ChevronRight size={18} className="text-[#E5E7EB] group-hover:text-[#9CA3AF] transition-colors" />
+          <CaretRight size={18} className="text-[#E5E7EB] group-hover:text-[#9CA3AF] transition-colors" />
         </button>
       </div>
 
@@ -310,17 +310,17 @@ export default function ProfileView({
             <p className="text-sm font-semibold text-[#1A1D23]">Notificações</p>
             <p className="text-xs text-[#6B7280]">Alertas de orçamento e lembretes</p>
           </div>
-          <ChevronRight size={18} className="text-[#E5E7EB] group-hover:text-[#9CA3AF] transition-colors" />
+          <CaretRight size={18} className="text-[#E5E7EB] group-hover:text-[#9CA3AF] transition-colors" />
         </button>
         <button className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-[#F8F9FB] transition-colors group">
           <div className="w-9 h-9 rounded-full bg-[#F1F3F7] text-[#6B7280] flex items-center justify-center">
-            <DollarSign size={18} />
+            <CurrencyDollar size={18} />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-[#1A1D23]">Moeda</p>
             <p className="text-xs text-[#6B7280]">Real Brasileiro (BRL)</p>
           </div>
-          <ChevronRight size={18} className="text-[#E5E7EB] group-hover:text-[#9CA3AF] transition-colors" />
+          <CaretRight size={18} className="text-[#E5E7EB] group-hover:text-[#9CA3AF] transition-colors" />
         </button>
       </div>
 
@@ -334,13 +334,13 @@ export default function ProfileView({
       >
         <button className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-[#F8F9FB] transition-colors group">
           <div className="w-9 h-9 rounded-full bg-[#F3E8FF] text-[#9333EA] flex items-center justify-center">
-            <Download size={18} />
+            <DownloadSimple size={18} />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-[#1A1D23]">Exportar dados</p>
             <p className="text-xs text-[#6B7280]">Baixar todos os seus gastos em CSV</p>
           </div>
-          <ChevronRight size={18} className="text-[#E5E7EB] group-hover:text-[#9CA3AF] transition-colors" />
+          <CaretRight size={18} className="text-[#E5E7EB] group-hover:text-[#9CA3AF] transition-colors" />
         </button>
       </div>
 
@@ -359,7 +359,7 @@ export default function ProfileView({
           className="w-full flex items-center gap-3 px-5 py-4 text-left disabled:opacity-60 hover:bg-[#F8F9FB] transition-colors"
         >
           <div className="w-9 h-9 rounded-full bg-[#EEF3F8] text-[#5B7FA8] flex items-center justify-center">
-            <Mail size={16} />
+            <Envelope size={16} />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-[#1A1D23]">
@@ -376,7 +376,7 @@ export default function ProfileView({
           className="w-full flex items-center gap-3 px-5 py-4 text-left disabled:opacity-60 hover:bg-[#F8F9FB] transition-colors"
         >
           <div className="w-9 h-9 rounded-full bg-[#F4EEF8] text-[#8B6BB0] flex items-center justify-center">
-            <LogOut size={16} />
+            <SignOut size={16} />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-[#1A1D23]">
@@ -428,7 +428,7 @@ export default function ProfileView({
                 disabled={anyBusy}
                 className="w-full flex items-center justify-center gap-2 py-3 rounded-[12px] text-sm font-bold text-[#E07070] border border-[#F4D7D7] hover:bg-[#FDF0F0] transition-colors disabled:opacity-60"
               >
-                <Trash2 size={16} />
+                <Trash size={16} />
                 Excluir conta
               </button>
             )}

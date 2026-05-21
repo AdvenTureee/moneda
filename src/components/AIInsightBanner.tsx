@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { X, ArrowRight } from 'lucide-react';
+import { X, ArrowRight } from '@phosphor-icons/react';
 import Icon from '@/components/Icon';
 
 interface AIInsightBannerProps {

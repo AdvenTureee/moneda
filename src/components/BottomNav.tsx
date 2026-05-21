@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, List, PlusCircle, PieChart, User } from 'lucide-react';
+import { House, List, PlusCircle, ChartPieSlice, User } from '@phosphor-icons/react';
 
 interface NavItem {
   label: string;
@@ -12,10 +12,10 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { label: 'Dashboard', icon: Home, href: '/' },
+  { label: 'Dashboard', icon: House, href: '/' },
   { label: 'Feed', icon: List, href: '/feed' },
   { label: 'Adicionar', icon: PlusCircle, href: '#add', isAction: true },
-  { label: 'Insights', icon: PieChart, href: '/insights' },
+  { label: 'Insights', icon: ChartPieSlice, href: '/insights' },
   { label: 'Perfil', icon: User, href: '/perfil' },
 ];
 

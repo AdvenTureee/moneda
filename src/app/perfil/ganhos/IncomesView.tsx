@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Trash2, Check, AlertCircle, Calendar, Plus, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Trash, Check, WarningCircle, CalendarBlank, Plus, ArrowsClockwise } from '@phosphor-icons/react';
 import Icon from '@/components/Icon';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { saveIncomeAction, deleteIncomeAction } from '../actions-finance';
@@ -202,7 +202,7 @@ export default function IncomesView({ initialIncomes }: IncomesViewProps) {
             <div>
               <label className="block text-xs font-bold text-[#6B7280] uppercase mb-1.5">Recebido em</label>
               <div className="relative flex items-center">
-                <Calendar size={16} className="absolute left-3 text-[#9CA3AF] pointer-events-none" />
+                <CalendarBlank size={16} className="absolute left-3 text-[#9CA3AF] pointer-events-none" />
                 <input
                   type="date"
                   value={receivedAtDate}
@@ -223,7 +223,7 @@ export default function IncomesView({ initialIncomes }: IncomesViewProps) {
                     : 'border-[#E5E7EB] bg-[#F8F9FB] text-[#6B7280] hover:border-[#A8C5E0]'
                 }`}
               >
-                <RefreshCw size={16} className={isRecurring ? 'animate-spin-slow' : ''} />
+                <ArrowsClockwise size={16} className={isRecurring ? 'animate-spin-slow' : ''} />
                 <span>Entrada Recorrente</span>
               </button>
             </div>
@@ -350,7 +350,7 @@ export default function IncomesView({ initialIncomes }: IncomesViewProps) {
                       className="p-2 text-[#9CA3AF] hover:text-[#EF4444] hover:bg-[#FDF0F0] rounded-full transition-all shrink-0 active:scale-95 disabled:opacity-40"
                       aria-label="Excluir ganho"
                     >
-                      <Trash2 size={16} />
+                      <Trash size={16} />
                     </button>
                   </div>
                 </div>
@@ -374,7 +374,7 @@ export default function IncomesView({ initialIncomes }: IncomesViewProps) {
             {feedback.kind === 'success' ? (
               <Check size={18} className="shrink-0" />
             ) : (
-              <AlertCircle size={18} className="shrink-0" />
+              <WarningCircle size={18} className="shrink-0" />
             )}
             <p className="font-semibold text-sm">{feedback.text}</p>
           </div>
