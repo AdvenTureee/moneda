@@ -170,7 +170,7 @@ export default function FeedPage() {
         <div className="px-4">
           {loading ? (
             <div className="flex flex-col items-center py-16 text-center">
-              <GranaMascot variant="thinking" size={80} className="mb-4 animate-bounce-in" />
+              <GranaMascot variant="thinking" size={128} className="mb-4 animate-bounce-in" />
               <p className="text-base font-semibold text-[#1A1D23]">Carregando...</p>
             </div>
           ) : error ? (
@@ -188,7 +188,7 @@ export default function FeedPage() {
             <div className="flex flex-col items-center py-16 text-center">
               {search || activeCategory ? (
                 <>
-                  <GranaMascot variant="thinking" size={80} className="mb-4 animate-bounce-in" />
+                  <GranaMascot variant="thinking" size={128} className="mb-4 animate-bounce-in" />
                   <p className="text-base font-semibold text-[#1A1D23]">
                     Nenhum gasto encontrado
                   </p>
@@ -198,7 +198,7 @@ export default function FeedPage() {
                 </>
               ) : (
                 <>
-                  <GranaMascot variant="idle" size={80} className="mb-4 animate-bounce-in" />
+                  <GranaMascot variant="idle" size={128} className="mb-4 animate-bounce-in" />
                   <p className="text-base font-semibold text-[#1A1D23]">
                     Nada por aqui ainda
                   </p>

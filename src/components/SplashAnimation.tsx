@@ -24,7 +24,7 @@ export default function SplashAnimation({
       </div>
       <div className="mt-5 animate-fade-up" style={{ animationDelay: '0.6s' }}>
         <p className="text-[28px] font-extrabold text-[#1A1D23] text-center font-heading">
-          grana
+          Grana
         </p>
         <p className="text-sm text-[#6B7280] mt-1 text-center">
           Seu dinheiro, finalmente claro.

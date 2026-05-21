@@ -67,7 +67,7 @@ export default async function DashboardPage() {
         {/* Header */}
         <header className="flex items-center justify-between py-5 animate-fade-up delay-0">
           <div className="flex items-center gap-3">
-            <TrackedMascot variant="idle" size={36} />
+            <TrackedMascot variant="idle" size={88} />
             <h1 className="capitalize text-sm font-semibold text-[#6B7280]">
               {monthName}
             </h1>
@@ -181,7 +181,7 @@ export default async function DashboardPage() {
 
           {metrics.recentExpenses.length === 0 ? (
             <div className="flex flex-col items-center py-12 text-center">
-              <GranaMascot variant="sad" size={80} className="mb-4 animate-bounce-in" />
+              <GranaMascot variant="sad" size={128} className="mb-4 animate-bounce-in" />
               <p className="text-base font-heading text-[#1A1D23]">Nenhum gasto ainda</p>
               <p className="text-sm text-[#6B7280] mt-1 max-w-[260px]">
                 E aí, cadê os gastos? 🕵️ Comece adicionando sua primeira despesa.

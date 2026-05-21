@@ -256,7 +256,7 @@ export default function InsightsView({
           className="bg-white rounded-[16px] p-8 mb-6 text-center"
           style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
         >
-          <GranaMascot variant="sad" size={80} className="mx-auto mb-3 animate-bounce-in" />
+          <GranaMascot variant="sad" size={128} className="mx-auto mb-3 animate-bounce-in" />
           <p className="text-base font-semibold text-[#1A1D23]">Nenhum gasto no período</p>
           <p className="text-sm text-[#6B7280] mt-1 max-w-[260px] mx-auto">
             Cadastre seus gastos que eu analiso tudo pra você! 🪙
@@ -329,7 +329,7 @@ export default function InsightsView({
             className="bg-white rounded-[16px] p-6 text-center"
             style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
           >
-            <GranaMascot variant="thinking" size={72} className="mx-auto mb-2" />
+            <GranaMascot variant="thinking" size={112} className="mx-auto mb-2" />
             <p className="text-sm text-[#6B7280]">
               Nenhuma análise gerada ainda.
             </p>
@@ -350,7 +350,7 @@ export default function InsightsView({
             className="bg-white rounded-[16px] p-6 text-center"
             style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
           >
-            <GranaMascot variant="thinking" size={64} className="mx-auto mb-2" />
+            <GranaMascot variant="thinking" size={104} className="mx-auto mb-2" />
             <p className="text-sm text-[#6B7280]">
               Nenhum resultado para {search ? `"${search.trim()}"` : 'este filtro'}.
             </p>
