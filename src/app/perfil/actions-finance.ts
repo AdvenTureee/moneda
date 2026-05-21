@@ -1,0 +1,110 @@
+'use server';
+
+import { revalidatePath } from 'next/cache';
+import { createSessionClient, isSupabaseEnabled } from '@/lib/supabase/server';
+import { upsertBudget } from '@/lib/budgets';
+import { createIncome, deleteIncome } from '@/lib/incomes';
+import { MOCK_USER } from '@/data/mock';
+import type { IncomeSource } from '@/types';
+
+export type ActionResult = { ok: true; message?: string } | { ok: false; error: string };
+
+/**
+ * Salva ou atualiza o orçamento de uma determinada categoria para um período.
+ */
+export async function saveCategoryBudgetAction(
+  categoryId: string,
+  amountCents: number,
+  period: string
+): Promise<ActionResult> {
+  try {
+    let userId = MOCK_USER.id;
+    if (isSupabaseEnabled()) {
+      const supabase = await createSessionClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return { ok: false, error: 'Sessão expirada. Entre novamente.' };
+      userId = user.id;
+    }
+
+    await upsertBudget({
+      userId,
+      categoryId,
+      period,
+      amountCents,
+    });
+
+    revalidatePath('/');
+    revalidatePath('/perfil/orcamento');
+    return { ok: true, message: 'Orçamento atualizado com sucesso!' };
+  } catch (err: any) {
+    return { ok: false, error: err.message || 'Falha ao salvar orçamento.' };
+  }
+}
+
+/**
+ * Cadastra um novo ganho para o usuário logado.
+ */
+export async function saveIncomeAction(
+  description: string,
+  amountCents: number,
+  source: IncomeSource,
+  isRecurring: boolean,
+  receivedAtString?: string
+): Promise<ActionResult> {
+  try {
+    if (!description.trim()) {
+      return { ok: false, error: 'A descrição é obrigatória.' };
+    }
+    if (amountCents <= 0) {
+      return { ok: false, error: 'O valor deve ser maior que zero.' };
+    }
+
+    let userId = MOCK_USER.id;
+    if (isSupabaseEnabled()) {
+      const supabase = await createSessionClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return { ok: false, error: 'Sessão expirada. Entre novamente.' };
+      userId = user.id;
+    }
+
+    const receivedAt = receivedAtString ? new Date(receivedAtString) : new Date();
+
+    await createIncome({
+      userId,
+      amount: amountCents,
+      description: description.trim(),
+      source,
+      isRecurring,
+      receivedAt,
+    });
+
+    revalidatePath('/');
+    revalidatePath('/perfil/ganhos');
+    return { ok: true, message: 'Ganho lançado com sucesso!' };
+  } catch (err: any) {
+    return { ok: false, error: err.message || 'Falha ao salvar ganho.' };
+  }
+}
+
+/**
+ * Remove (soft delete) um ganho do usuário.
+ */
+export async function deleteIncomeAction(id: string): Promise<ActionResult> {
+  try {
+    let userId = MOCK_USER.id;
+    if (isSupabaseEnabled()) {
+      const supabase = await createSessionClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return { ok: false, error: 'Sessão expirada. Entre novamente.' };
+      userId = user.id;
+    }
+
+    await deleteIncome(id, userId);
+
+    revalidatePath('/');
+    revalidatePath('/perfil/ganhos');
+    return { ok: true, message: 'Ganho removido com sucesso!' };
+  } catch (err: any) {
+    return { ok: false, error: err.message || 'Falha ao deletar ganho.' };
+  }
+}

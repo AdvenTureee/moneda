@@ -6,6 +6,8 @@ import AIInsightBanner from '@/components/AIInsightBanner';
 import ExpenseCard from '@/components/ExpenseCard';
 import DonutChart from '@/components/DonutChart';
 import { getDashboardMetrics } from '@/lib/expenses';
+import { getBudgets } from '@/lib/budgets';
+import { getLatestInsight } from '@/lib/insights';
 import { formatCurrency, getCurrentPeriod } from '@/lib/utils';
 import { createSessionClient } from '@/lib/supabase/server';
 
@@ -17,7 +19,13 @@ export default async function DashboardPage() {
   if (!user) redirect('/login');
 
   const period = getCurrentPeriod();
-  const metrics = await getDashboardMetrics(user.id, period);
+  
+  // Parallel DB queries
+  const [metrics, budgets, latestInsight] = await Promise.all([
+    getDashboardMetrics(user.id, period),
+    getBudgets(user.id, period),
+    getLatestInsight(user.id, period),
+  ]);
 
   const [year, month] = period.split('-').map(Number);
   const monthName = new Date(year, month - 1).toLocaleString('pt-BR', {
@@ -32,8 +40,19 @@ export default async function DashboardPage() {
     icon: cat.categoryIcon,
   }));
 
-  const BUDGET_CENTS = 350000; // R$ 3.500
+  // Calculate sum of category budgets, fallback to R$ 3.500 if zero
+  const totalBudgetCents = budgets.reduce((sum, b) => sum + b.amountCents, 0);
+  const BUDGET_CENTS = totalBudgetCents > 0 ? totalBudgetCents : 350000;
   const remaining = BUDGET_CENTS - metrics.totalSpent;
+
+  // Custom personalized AI Welcome message if no insight exists yet
+  const fullName = (user.user_metadata?.name as string | undefined) ?? 
+                   (user.user_metadata?.full_name as string | undefined) ?? 
+                   '';
+  const firstName = fullName ? fullName.split(' ')[0] : 'Gabriel';
+  const welcomeMessage = `Olá, ${firstName}! Bem-vindo(a) ao Grana. Conforme você cadastrar seus gastos ou nos enviar pelo WhatsApp, nossa Inteligência Artificial analisará seus hábitos de consumo para gerar insights financeiros personalizados aqui!`;
+  
+  const insightMessage = latestInsight ? latestInsight.message : welcomeMessage;
 
   return (
     <AppShell>
@@ -130,7 +149,7 @@ export default async function DashboardPage() {
         {/* AI Insight banner */}
         <section className="mb-6" aria-label="Insights">
           <AIInsightBanner
-            message="Você gastou 23% mais em Alimentação este mês do que no mês passado. Que tal definir um limite para delivery?"
+            message={insightMessage}
             cta={{ label: 'Ver detalhes', href: '/feed' }}
           />
         </section>

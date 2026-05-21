@@ -31,13 +31,14 @@ export interface Expense {
 }
 
 export interface ExpenseInput {
-  userId: string;
+  userId?: string;
   amount: number;
   category: string;
   description: string;
   source: ExpenseSource;
   tags: string[];
 }
+
 
 export interface AIInsight {
   id: string;
@@ -103,3 +104,29 @@ export interface ExpenseFilters {
   limit?: number;
   search?: string;
 }
+
+export type IncomeSource = 'salary' | 'freelance' | 'investment' | 'rent' | 'gift' | 'other';
+
+export interface Income {
+  id: string;
+  userId: string;
+  amount: number; // in cents
+  description: string;
+  source: IncomeSource;
+  isRecurring: boolean;
+  recurringRule: any | null;
+  receivedAt: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface IncomeInput {
+  userId?: string;
+  amount: number; // in cents
+  description: string;
+  source: IncomeSource;
+  isRecurring: boolean;
+  recurringRule?: any | null;
+  receivedAt?: Date;
+}
+

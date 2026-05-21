@@ -54,7 +54,6 @@ export default function AddExpenseModal({
   const handleSave = useCallback(() => {
     if (amountCents <= 0 || !selectedCategory) return;
     onSave({
-      userId: 'user-001',
       amount: amountCents,
       category: selectedCategory,
       description: description.trim() || (CATEGORIES.find((c) => c.id === selectedCategory)?.name ?? 'Gasto'),

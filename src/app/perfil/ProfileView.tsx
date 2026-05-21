@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState, useTransition } from 'react';
 import {
   LogOut,
@@ -193,15 +194,15 @@ export default function ProfileView({
         )}
       </section>
 
-      {/* Orçamento section */}
+      {/* Finanças section */}
       <h2 className="text-xs font-semibold uppercase tracking-wider text-[#9CA3AF] mb-2 px-1">
-        Orçamento Mensal
+        Finanças
       </h2>
       <div
-        className="bg-white rounded-[16px] overflow-hidden mb-6"
+        className="bg-white rounded-[16px] overflow-hidden mb-6 divide-y divide-[#F1F2F4]"
         style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
       >
-        <button className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-[#F8F9FB] transition-colors group">
+        <Link href="/perfil/orcamento" className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-[#F8F9FB] transition-colors group">
           <div className="w-9 h-9 rounded-full bg-[#EEF9F4] text-[#5BBF8E] flex items-center justify-center">
             <Wallet size={18} />
           </div>
@@ -210,7 +211,17 @@ export default function ProfileView({
             <p className="text-xs text-[#6B7280]">Defina quanto pretende gastar no mês</p>
           </div>
           <ChevronRight size={18} className="text-[#E5E7EB] group-hover:text-[#9CA3AF] transition-colors" />
-        </button>
+        </Link>
+        <Link href="/perfil/ganhos" className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-[#F8F9FB] transition-colors group">
+          <div className="w-9 h-9 rounded-full bg-[#EBF3FE] text-[#3B82F6] flex items-center justify-center">
+            <DollarSign size={18} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-[#1A1D23]">Ganhos e receitas</p>
+            <p className="text-xs text-[#6B7280]">Registre e gerencie suas fontes de renda</p>
+          </div>
+          <ChevronRight size={18} className="text-[#E5E7EB] group-hover:text-[#9CA3AF] transition-colors" />
+        </Link>
       </div>
 
       {/* Categorias section */}

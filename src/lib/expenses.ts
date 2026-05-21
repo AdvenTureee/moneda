@@ -62,6 +62,9 @@ async function getExpensesFromDB(filters: ExpenseFilters): Promise<Expense[]> {
 
 async function createExpenseInDB(input: ExpenseInput): Promise<Expense> {
   const db = createServiceClient();
+  if (!input.userId) {
+    throw new Error('userId é obrigatório para cadastrar despesa');
+  }
 
   const insert: ExpensesInsert = {
     user_id: input.userId,
@@ -240,7 +243,16 @@ export async function getExpenses(filters: ExpenseFilters): Promise<Expense[]> {
 
 export async function createExpense(input: ExpenseInput): Promise<Expense> {
   if (isSupabaseEnabled()) return createExpenseInDB(input);
-  const expense: Expense = { id: generateId(), ...input, createdAt: new Date() };
+  const expense: Expense = {
+    id: generateId(),
+    userId: input.userId ?? MOCK_USER.id,
+    amount: input.amount,
+    category: input.category,
+    description: input.description,
+    source: input.source,
+    tags: input.tags,
+    createdAt: new Date(),
+  };
   addSessionExpense(expense);
   return expense;
 }
