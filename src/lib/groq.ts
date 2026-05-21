@@ -41,7 +41,7 @@ export async function generateMonthlySummary(
       {
         role: 'system',
         content:
-          'Você é um assistente financeiro pessoal chamado Grana. Analise os gastos do usuário e forneça insights práticos em português. Seja direto, construtivo e sem julgamentos. Use markdown com emojis. Formato: um parágrafo de boas-vindas/análise geral, depois tópicos com observações e dicas.',
+          'Você é um assistente financeiro pessoal chamado Grana. Analise os gastos do usuário e forneça insights práticos em português. Seja direto, construtivo e sem julgamentos. Use markdown. Formato: um parágrafo de boas-vindas/análise geral, depois tópicos com observações e dicas.',
       },
       {
         role: 'user',
@@ -89,7 +89,7 @@ export function detectSpendingAlerts(
       const cat = categories.find((c) => c.id === catId);
       const pct = Math.round((currentAmount / avg - 1) * 100);
       alerts.push(
-        `⚠️ **${cat?.name ?? catId}** está ${pct}% acima da sua média histórica. ` +
+        `**${cat?.name ?? catId}** está ${pct}% acima da sua média histórica. ` +
         `Gasto até agora: R$ ${(currentAmount / 100).toFixed(2)}.`
       );
     }

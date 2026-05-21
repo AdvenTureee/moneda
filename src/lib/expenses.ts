@@ -220,7 +220,7 @@ function getDashboardMetricsFromMock(userId: string, period: string): DashboardM
     .sort(([, a], [, b]) => b - a)
     .map(([catId, amount]) => {
       const cat = getCategoryById(catId);
-      return { categoryId: catId, categoryName: cat?.name ?? catId, categoryIcon: cat?.icon ?? '📦', categoryColor: cat?.color ?? '#6B7280', amount, percentage: totalSpent > 0 ? Math.round((amount / totalSpent) * 100) : 0 };
+      return { categoryId: catId, categoryName: cat?.name ?? catId, categoryIcon: cat?.icon ?? 'Package', categoryColor: cat?.color ?? '#6B7280', amount, percentage: totalSpent > 0 ? Math.round((amount / totalSpent) * 100) : 0 };
     });
   const byDay: Record<string, number> = {};
   for (const e of allPeriod) {

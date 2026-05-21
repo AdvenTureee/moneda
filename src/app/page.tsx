@@ -7,6 +7,7 @@ import ExpenseCard from '@/components/ExpenseCard';
 import DonutChart from '@/components/DonutChart';
 import DailyHistogram from '@/components/DailyHistogram';
 import Icon from '@/components/Icon';
+import GranaLogo from '@/components/GranaLogo';
 import { getDashboardMetrics } from '@/lib/expenses';
 import { getBudgets } from '@/lib/budgets';
 import { getLatestInsight } from '@/lib/insights';
@@ -63,10 +64,8 @@ export default async function DashboardPage() {
       <div className="max-w-lg mx-auto px-4">
         {/* Header */}
         <header className="flex items-center justify-between py-5 animate-fade-up delay-0">
-          <div>
-            <p className="text-xs text-[#9CA3AF] font-medium uppercase tracking-wide">
-              Grana
-            </p>
+          <div className="flex items-center gap-3">
+            <GranaLogo size="sm" />
             <h1 className="capitalize text-sm font-semibold text-[#6B7280]">
               {monthName}
             </h1>
@@ -156,7 +155,9 @@ export default async function DashboardPage() {
 
         {/* Daily histogram */}
         {metrics.dailySpending.length > 0 && (
-          <DailyHistogram data={metrics.dailySpending} period={period} />
+          <section className="mb-6">
+            <DailyHistogram data={metrics.dailySpending} period={period} />
+          </section>
         )}
 
         {/* AI Insight banner */}
