@@ -187,9 +187,10 @@ export default function InsightsView({
               type="button"
               onClick={handleGenerate}
               disabled={generating}
-              className="text-xs font-semibold text-[#A8C5E0] hover:text-[#7AAECF] transition-colors disabled:opacity-40"
+              className="px-4 py-1.5 text-xs font-bold rounded-full bg-[#5BBF8E] text-white active:scale-95 transition-all duration-75 disabled:opacity-40 shadow-sm hover:brightness-105"
+              style={{ boxShadow: '0 4px 14px rgba(91, 191, 142, 0.3)' }}
             >
-              {generating ? 'Gerando…' : insights.length > 0 ? 'Regenerar' : 'Gerar análise'}
+              {generating ? 'Gerando…' : insights.length > 0 ? 'Regenerar' : 'Gerar'}
             </button>
           )}
         </div>
