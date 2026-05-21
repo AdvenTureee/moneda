@@ -45,6 +45,7 @@ export default function SignupPage() {
     });
 
     if (authError) {
+      console.error('[signup]', authError);
       setError(authError.message);
       setLoading(false);
       return;
@@ -69,6 +70,7 @@ export default function SignupPage() {
       options: { redirectTo: `${window.location.origin}/auth/callback` },
     });
     if (authError) {
+      console.error('[signup:google]', authError);
       setError('Erro ao entrar com Google. Tente novamente.');
       setGoogleLoading(false);
     }

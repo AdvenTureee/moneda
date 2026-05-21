@@ -23,6 +23,9 @@ export async function GET(request: NextRequest) {
     if (!error) {
       return NextResponse.redirect(`${origin}${next}`);
     }
+    console.error('[auth/callback] exchangeCodeForSession failed', error);
+  } else {
+    console.error('[auth/callback] missing code param', { url: request.url });
   }
 
   return NextResponse.redirect(`${origin}/login?error=auth_callback_failed`);

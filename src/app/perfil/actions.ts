@@ -42,7 +42,10 @@ export async function sendPasswordReset(): Promise<ActionResult> {
   const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
     redirectTo: origin ? `${origin}/auth/callback?next=/perfil` : undefined,
   });
-  if (error) return { ok: false, error: 'Não foi possível enviar o email. Tente novamente.' };
+  if (error) {
+    console.error('[resetPassword]', error);
+    return { ok: false, error: 'Não foi possível enviar o email. Tente novamente.' };
+  }
 
   return { ok: true, message: `Enviamos um link de redefinição para ${user.email}.` };
 }
