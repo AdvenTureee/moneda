@@ -1,5 +1,26 @@
 import { createClient } from '@supabase/supabase-js';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 import type { Database } from '@/types/supabase';
+
+// Session-aware client — reads auth cookies to identify the current user.
+// Use in Server Components, Route Handlers, and Server Actions to get the user.
+export async function createSessionClient() {
+  const cookieStore = await cookies();
+  return createServerClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+    {
+      cookies: {
+        getAll() { return cookieStore.getAll(); },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) =>
+            cookieStore.set(name, value, options));
+        },
+      },
+    }
+  );
+}
 
 // Service role client for server-side API routes.
 // Bypasses RLS — never expose to the browser.

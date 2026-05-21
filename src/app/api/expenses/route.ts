@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getExpenses, createExpense } from '@/lib/expenses';
 import type { ExpenseFilters, ExpenseInput } from '@/types';
+import { createSessionClient } from '@/lib/supabase/server';
 
 export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
+  const supabase = await createSessionClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+  const { searchParams } = new URL(req.url);
   const filters: ExpenseFilters = {
-    userId: searchParams.get('userId') ?? 'user-001',
+    userId: user.id,
     category: searchParams.get('category') ?? undefined,
     startDate: searchParams.get('startDate') ?? undefined,
     endDate: searchParams.get('endDate') ?? undefined,
@@ -19,6 +23,10 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const supabase = await createSessionClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   let body: Partial<ExpenseInput>;
   try {
     body = await req.json();
@@ -34,7 +42,7 @@ export async function POST(req: NextRequest) {
   }
 
   const input: ExpenseInput = {
-    userId: body.userId ?? 'user-001',
+    userId: user.id,
     amount: body.amount,
     category: body.category,
     description: body.description ?? 'Gasto',

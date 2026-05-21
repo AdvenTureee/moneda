@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import AppShell from '@/components/AppShell';
 import DashboardMetric from '@/components/DashboardMetric';
@@ -6,13 +7,17 @@ import ExpenseCard from '@/components/ExpenseCard';
 import DonutChart from '@/components/DonutChart';
 import { getDashboardMetrics } from '@/lib/expenses';
 import { formatCurrency, getCurrentPeriod } from '@/lib/utils';
-import { MOCK_USER } from '@/data/mock';
+import { createSessionClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 
 export default async function DashboardPage() {
+  const supabase = await createSessionClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect('/login');
+
   const period = getCurrentPeriod();
-  const metrics = await getDashboardMetrics(MOCK_USER.id, period);
+  const metrics = await getDashboardMetrics(user.id, period);
 
   const [year, month] = period.split('-').map(Number);
   const monthName = new Date(year, month - 1).toLocaleString('pt-BR', {
@@ -46,9 +51,9 @@ export default async function DashboardPage() {
           <div
             className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-white"
             style={{ background: '#A8C5E0' }}
-            aria-label="Gabriel Mauro"
+            aria-label={user.email ?? 'Usuário'}
           >
-            G
+            {(user.user_metadata?.name as string | undefined)?.[0]?.toUpperCase() ?? user.email?.[0]?.toUpperCase() ?? '?'}
           </div>
         </header>
 
