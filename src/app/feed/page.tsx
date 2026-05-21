@@ -6,14 +6,14 @@ import AppShell from '@/components/AppShell';
 import ExpenseCard from '@/components/ExpenseCard';
 import CategoryChip from '@/components/CategoryChip';
 import Icon from '@/components/Icon';
-import { CATEGORIES } from '@/data/mock';
 import { groupExpensesByDate, formatCurrency } from '@/lib/utils';
-import type { Expense } from '@/types';
+import type { Expense, Category } from '@/types';
 
 export default function FeedPage() {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [allExpenses, setAllExpenses] = useState<Expense[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -46,6 +46,15 @@ export default function FeedPage() {
     fetchExpenses();
   }, [fetchExpenses]);
 
+  useEffect(() => {
+    fetch('/api/categories')
+      .then((res) => res.ok ? res.json() : null)
+      .then((json) => {
+        if (json?.data) setCategories(json.data);
+      })
+      .catch(() => {});
+  }, []);
+
   const filtered = useMemo(() => {
     let result = allExpenses;
 
@@ -58,7 +67,7 @@ export default function FeedPage() {
       result = result.filter(
         (e) =>
           e.description.toLowerCase().includes(q) ||
-          (CATEGORIES.find((c) => c.id === e.category)?.name.toLowerCase().includes(q) ?? false)
+          (categories.find((c) => c.id === e.category)?.name.toLowerCase().includes(q) ?? false)
       );
     }
 
@@ -107,7 +116,7 @@ export default function FeedPage() {
               onClick={() => setActiveCategory(null)}
               size="sm"
             />
-            {CATEGORIES.filter((c) => c.id !== 'outros').map((cat) => (
+            {categories.filter((c) => c.id !== 'outros').map((cat) => (
               <CategoryChip
                 key={cat.id}
                 icon={cat.icon}

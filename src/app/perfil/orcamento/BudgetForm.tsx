@@ -4,10 +4,9 @@ import { useState, useTransition, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Check, WarningCircle } from '@phosphor-icons/react';
 import Icon from '@/components/Icon';
-import { CATEGORIES } from '@/data/mock';
 import { formatCurrency } from '@/lib/utils';
 import { saveCategoryBudgetAction } from '../actions-finance';
-import type { Budget } from '@/types';
+import type { Budget, Category } from '@/types';
 
 interface BudgetFormProps {
   initialBudgets: Budget[];
@@ -17,15 +16,28 @@ interface BudgetFormProps {
 type Feedback = { kind: 'success' | 'error'; text: string } | null;
 
 export default function BudgetForm({ initialBudgets, period }: BudgetFormProps) {
+  const [categories, setCategories] = useState<Category[]>([]);
+
   // Map categoryId to cents
-  const [budgetsMap, setBudgetsMap] = useState<Record<string, number>>(() => {
-    const initial: Record<string, number> = {};
-    CATEGORIES.forEach((cat) => {
-      const b = initialBudgets.find((x) => x.categoryId === cat.id);
-      initial[cat.id] = b ? b.amountCents : 0;
-    });
-    return initial;
-  });
+  const [budgetsMap, setBudgetsMap] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    fetch('/api/categories')
+      .then((res) => res.ok ? res.json() : null)
+      .then((json) => {
+        const cats: Category[] = json?.data ?? [];
+        setCategories(cats);
+        setBudgetsMap(() => {
+          const initial: Record<string, number> = {};
+          cats.forEach((cat) => {
+            const b = initialBudgets.find((x) => x.categoryId === cat.id);
+            initial[cat.id] = b ? b.amountCents : 0;
+          });
+          return initial;
+        });
+      })
+      .catch(() => {});
+  }, [initialBudgets]);
 
   const [hasChanges, setHasChanges] = useState(false);
   const [feedback, setFeedback] = useState<Feedback>(null);
@@ -66,7 +78,7 @@ export default function BudgetForm({ initialBudgets, period }: BudgetFormProps) 
     setFeedback(null);
     startSaving(async () => {
       try {
-        const promises = CATEGORIES.map((cat) => {
+        const promises = categories.map((cat) => {
           const cents = budgetsMap[cat.id] ?? 0;
           return saveCategoryBudgetAction(cat.id, cents, period);
         });
@@ -121,7 +133,7 @@ export default function BudgetForm({ initialBudgets, period }: BudgetFormProps) 
 
       {/* Category List */}
       <div className="space-y-3 mb-8">
-        {CATEGORIES.map((cat) => {
+        {categories.map((cat) => {
           const valueCents = budgetsMap[cat.id] ?? 0;
           const displayValue = valueCents > 0
             ? new Intl.NumberFormat('pt-BR', {

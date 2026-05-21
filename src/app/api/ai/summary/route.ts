@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createSessionClient, createServiceClient, isSupabaseEnabled } from '@/lib/supabase/server';
 import { generateMonthlySummary, detectSpendingAlerts } from '@/lib/groq';
 import { getExpenses } from '@/lib/expenses';
-import { CATEGORIES } from '@/data/mock';
+import { getCategories } from '@/lib/categories';
 import { getCurrentPeriod } from '@/lib/utils';
 
 export async function POST(req: NextRequest) {
@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
       if (prev.length > 0) previousMonths.push(prev);
     }
 
-    const categories = CATEGORIES;
+    const categories = await getCategories(user.id);
 
     // Generate summary via Groq
     const { markdown, promptTokens, completionTokens } = await generateMonthlySummary(

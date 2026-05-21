@@ -3,9 +3,8 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { X } from '@phosphor-icons/react';
 import Icon from '@/components/Icon';
-import { CATEGORIES } from '@/data/mock';
 import { formatCurrency } from '@/lib/utils';
-import type { ExpenseInput } from '@/types';
+import type { ExpenseInput, Category } from '@/types';
 
 interface AddExpenseModalProps {
   isOpen: boolean;
@@ -22,6 +21,8 @@ export default function AddExpenseModal({
   const [amountDisplay, setAmountDisplay] = useState('');
   const [description, setDescription] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [categoriesLoaded, setCategoriesLoaded] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -33,6 +34,16 @@ export default function AddExpenseModal({
       setTimeout(() => inputRef.current?.focus(), 100);
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    fetch('/api/categories')
+      .then((res) => res.ok ? res.json() : null)
+      .then((json) => {
+        if (json?.data) setCategories(json.data);
+      })
+      .catch(() => {})
+      .finally(() => setCategoriesLoaded(true));
+  }, []);
 
   const handleAmountChange = useCallback((raw: string) => {
     // Accept only digits
@@ -57,7 +68,7 @@ export default function AddExpenseModal({
     onSave({
       amount: amountCents,
       category: selectedCategory,
-      description: description.trim() || (CATEGORIES.find((c) => c.id === selectedCategory)?.name ?? 'Gasto'),
+      description: description.trim() || (categories.find((c) => c.id === selectedCategory)?.name ?? 'Gasto'),
       source: 'manual',
       tags: [],
     });
@@ -139,7 +150,7 @@ export default function AddExpenseModal({
         <div className="px-5 mb-5">
           <p className="text-sm font-semibold text-[#6B7280] mb-3">Categoria</p>
           <div className="grid grid-cols-4 gap-2">
-            {CATEGORIES.map((cat) => {
+            {categories.map((cat) => {
               const isSelected = selectedCategory === cat.id;
               return (
                 <button

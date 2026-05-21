@@ -228,7 +228,11 @@ export function getExpensesByPeriod(userId: string, period: string): Expense[] {
 }
 
 export function getCategoryById(id: string): Category | undefined {
-  return CATEGORIES.find((c) => c.id === id);
+  return CATEGORIES.find((c) => c.id === id) ?? getUserCategories().find((c) => c.id === id);
+}
+
+export function getCombinedCategories(): Category[] {
+  return [...CATEGORIES, ...getUserCategories()];
 }
 
 /** In-memory store for expenses added during the session */
@@ -244,4 +248,25 @@ export function addSessionExpense(expense: Expense): void {
 
 export function getAllExpenses(userId: string): Expense[] {
   return [...sessionExpenses, ...MOCK_EXPENSES].filter((e) => e.userId === userId);
+}
+
+// ---------------------------------------------------------------------------
+// Session-level user categories (for mock mode)
+// ---------------------------------------------------------------------------
+let userCategories: Category[] = [];
+
+export function addUserCategory(cat: Category): void {
+  userCategories = [...userCategories, cat];
+}
+
+export function updateUserCategory(cat: Category): void {
+  userCategories = userCategories.map((c) => (c.id === cat.id ? { ...c, ...cat } : c));
+}
+
+export function deleteUserCategory(id: string): void {
+  userCategories = userCategories.filter((c) => c.id !== id);
+}
+
+export function getUserCategories(): Category[] {
+  return userCategories;
 }

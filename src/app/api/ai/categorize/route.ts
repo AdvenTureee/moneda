@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSessionClient } from '@/lib/supabase/server';
 import { categorizeWithAI } from '@/lib/groq';
-import { CATEGORIES } from '@/data/mock';
+import { getCategories } from '@/lib/categories';
 
 export async function POST(req: NextRequest) {
   try {
@@ -20,9 +20,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Texto inválido.' }, { status: 400 });
     }
 
-    const categoryId = await categorizeWithAI(text.trim(), CATEGORIES);
+    const categories = await getCategories(user.id);
+    const categoryId = await categorizeWithAI(text.trim(), categories);
 
-    const category = CATEGORIES.find((c) => c.id === categoryId);
+    const category = categories.find((c) => c.id === categoryId);
     return NextResponse.json({
       categoryId,
       categoryName: category?.name ?? 'Outros',

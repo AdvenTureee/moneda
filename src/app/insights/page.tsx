@@ -3,9 +3,9 @@ import AppShell from '@/components/AppShell';
 import InsightsView from './InsightsView';
 import { getDashboardMetrics } from '@/lib/expenses';
 import { getUserInsights } from '@/lib/insights';
+import { getCategories } from '@/lib/categories';
 import { getCurrentPeriod, getPreviousPeriod } from '@/lib/utils';
 import { createSessionClient } from '@/lib/supabase/server';
-import { CATEGORIES } from '@/data/mock';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,10 +17,11 @@ export default async function InsightsPage() {
   const period = getCurrentPeriod();
   const prevPeriod = getPreviousPeriod(period);
 
-  const [metrics, prevMetrics, insights] = await Promise.all([
+  const [metrics, prevMetrics, insights, categories] = await Promise.all([
     getDashboardMetrics(user.id, period),
     getDashboardMetrics(user.id, prevPeriod),
     getUserInsights(user.id),
+    getCategories(user.id),
   ]);
 
   const [year, month] = period.split('-').map(Number);
@@ -44,7 +45,7 @@ export default async function InsightsPage() {
         changePct={changePct}
         topCategories={metrics.topCategories}
         insights={insights}
-        categories={CATEGORIES}
+        categories={categories}
       />
     </AppShell>
   );

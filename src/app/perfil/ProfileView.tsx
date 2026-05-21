@@ -282,7 +282,10 @@ export default function ProfileView({
         className="bg-white rounded-[16px] overflow-hidden mb-6"
         style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
       >
-        <button className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-[#F8F9FB] transition-colors group">
+        <Link
+          href="/perfil/categorias"
+          className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-[#F8F9FB] transition-colors group"
+        >
           <div className="w-9 h-9 rounded-full bg-[#F4F6F8] text-[#5B7FA8] flex items-center justify-center">
             <Tag size={18} />
           </div>
@@ -291,7 +294,7 @@ export default function ProfileView({
             <p className="text-xs text-[#6B7280]">Crie ou edite categorias de gastos</p>
           </div>
           <CaretRight size={18} className="text-[#E5E7EB] group-hover:text-[#9CA3AF] transition-colors" />
-        </button>
+        </Link>
       </div>
 
       {/* Preferências section */}
