@@ -246,6 +246,16 @@ export function addSessionExpense(expense: Expense): void {
   sessionExpenses = [expense, ...sessionExpenses];
 }
 
+export function removeSessionExpense(id: string): void {
+  sessionExpenses = sessionExpenses.filter((e) => e.id !== id);
+}
+
+export function updateSessionExpense(id: string, updates: Partial<Expense>): void {
+  sessionExpenses = sessionExpenses.map((e) =>
+    e.id === id ? { ...e, ...updates } : e
+  );
+}
+
 export function getAllExpenses(userId: string): Expense[] {
   return [...sessionExpenses, ...MOCK_EXPENSES].filter((e) => e.userId === userId);
 }

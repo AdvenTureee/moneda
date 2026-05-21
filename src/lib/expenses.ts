@@ -7,6 +7,8 @@ type ExpensesInsert = Database['public']['Tables']['expenses']['Insert'];
 import {
   getAllExpenses as mockGetAll,
   addSessionExpense,
+  removeSessionExpense,
+  updateSessionExpense,
   CATEGORIES,
   getCategoryById,
   getExpensesByPeriod,
@@ -234,7 +236,69 @@ function getDashboardMetricsFromMock(userId: string, period: string): DashboardM
 }
 
 // ---------------------------------------------------------------------------
-// Public API — same signatures as before
+// Update & Delete
+// ---------------------------------------------------------------------------
+async function updateExpenseInDB(id: string, input: Partial<ExpenseInput>): Promise<Expense> {
+  const db = createServiceClient();
+  const updates: Partial<ExpensesRow> = {};
+  if (input.amount !== undefined) updates.amount_cents = input.amount;
+  if (input.category !== undefined) updates.category_id = input.category;
+  if (input.description !== undefined) updates.description = input.description;
+
+  const { data, error } = await db
+    .from('expenses')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) throw new Error(`updateExpense: ${error.message}`);
+  return rowToExpense(data as ExpensesRow);
+}
+
+async function deleteExpenseFromDB(id: string): Promise<void> {
+  const db = createServiceClient();
+  const { error } = await db
+    .from('expenses')
+    .update({ deleted_at: new Date().toISOString() })
+    .eq('id', id);
+
+  if (error) throw new Error(`deleteExpense: ${error.message}`);
+}
+
+function updateExpenseFromMock(id: string, input: Partial<ExpenseInput>): Expense | null {
+  const all = mockGetAll(MOCK_USER.id);
+  const existing = all.find((e) => e.id === id);
+  if (!existing) return null;
+
+  const updated: Expense = {
+    ...existing,
+    ...(input.amount !== undefined && { amount: input.amount }),
+    ...(input.category !== undefined && { category: input.category }),
+    ...(input.description !== undefined && { description: input.description }),
+  };
+  updateSessionExpense(id, updated);
+  return updated;
+}
+
+function deleteExpenseFromMock(id: string): void {
+  removeSessionExpense(id);
+}
+
+export async function updateExpense(id: string, input: Partial<ExpenseInput>): Promise<Expense> {
+  if (isSupabaseEnabled()) return updateExpenseInDB(id, input);
+  const result = updateExpenseFromMock(id, input);
+  if (!result) throw new Error('Despesa não encontrada');
+  return result;
+}
+
+export async function deleteExpense(id: string): Promise<void> {
+  if (isSupabaseEnabled()) return deleteExpenseFromDB(id);
+  deleteExpenseFromMock(id);
+}
+
+// ---------------------------------------------------------------------------
+// Public API
 // ---------------------------------------------------------------------------
 export async function getExpenses(filters: ExpenseFilters): Promise<Expense[]> {
   if (isSupabaseEnabled()) return getExpensesFromDB(filters);

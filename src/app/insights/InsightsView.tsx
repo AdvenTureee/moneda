@@ -5,6 +5,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import type { Components } from 'react-markdown';
 import Icon from '@/components/Icon';
+import GranaMascot from '@/components/GranaMascot';
 import DonutChart from '@/components/DonutChart';
 import CategoryChip from '@/components/CategoryChip';
 import { formatCurrency } from '@/lib/utils';
@@ -255,17 +256,20 @@ export default function InsightsView({
           className="bg-white rounded-[16px] p-8 mb-6 text-center"
           style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
         >
-          <Icon name="ChartPieSlice" size={48} className="mx-auto mb-3 opacity-30" />
+          <GranaMascot variant="sad" size={80} className="mx-auto mb-3 animate-bounce-in" />
           <p className="text-base font-semibold text-[#1A1D23]">Nenhum gasto no período</p>
           <p className="text-sm text-[#6B7280] mt-1 max-w-[260px] mx-auto">
-            Cadastre seus gastos para ver a análise detalhada aqui.
+            Cadastre seus gastos que eu analiso tudo pra você! 🪙
           </p>
         </section>
       )}
 
       {/* AI Insights Section */}
       <section className="mb-6">
-        <h2 className="text-sm font-heading text-[#1A1D23] mb-3">Análise do Grana</h2>
+        <h2 className="text-sm font-heading text-[#1A1D23] mb-3 flex items-center gap-2">
+          <GranaMascot variant="thinking" size={24} />
+          Análise do Grana
+        </h2>
 
         {/* Search + Type filter */}
         {insights.length > 0 && (
@@ -325,7 +329,7 @@ export default function InsightsView({
             className="bg-white rounded-[16px] p-6 text-center"
             style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
           >
-            <Icon name="Sparkle" size={32} className="mx-auto mb-2 opacity-30" />
+            <GranaMascot variant="thinking" size={72} className="mx-auto mb-2" />
             <p className="text-sm text-[#6B7280]">
               Nenhuma análise gerada ainda.
             </p>
@@ -346,7 +350,7 @@ export default function InsightsView({
             className="bg-white rounded-[16px] p-6 text-center"
             style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
           >
-            <Icon name="MagnifyingGlass" size={32} className="mx-auto mb-2 opacity-30" />
+            <GranaMascot variant="thinking" size={64} className="mx-auto mb-2" />
             <p className="text-sm text-[#6B7280]">
               Nenhum resultado para {search ? `"${search.trim()}"` : 'este filtro'}.
             </p>

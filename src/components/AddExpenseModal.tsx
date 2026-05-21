@@ -1,39 +1,59 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from '@phosphor-icons/react';
 import Icon from '@/components/Icon';
+import ConfirmDialog from '@/components/ConfirmDialog';
 import { formatCurrency } from '@/lib/utils';
-import type { ExpenseInput, Category } from '@/types';
+import type { Expense, ExpenseInput, Category } from '@/types';
 
 interface AddExpenseModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (input: ExpenseInput) => void;
+  editExpense?: Expense;
 }
 
 export default function AddExpenseModal({
   isOpen,
   onClose,
   onSave,
+  editExpense,
 }: AddExpenseModalProps) {
+  const [mounted, setMounted] = useState(false);
   const [amountCents, setAmountCents] = useState(0);
   const [amountDisplay, setAmountDisplay] = useState('');
   const [description, setDescription] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoriesLoaded, setCategoriesLoaded] = useState(false);
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const isEditing = !!editExpense;
+
+  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !editExpense) {
       setAmountCents(0);
       setAmountDisplay('');
       setDescription('');
       setSelectedCategory('');
       setTimeout(() => inputRef.current?.focus(), 100);
+    } else if (isOpen && editExpense) {
+      setAmountCents(editExpense.amount);
+      setAmountDisplay(
+        new Intl.NumberFormat('pt-BR', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        }).format(editExpense.amount / 100)
+      );
+      setDescription(editExpense.description);
+      setSelectedCategory(editExpense.category);
+      setTimeout(() => inputRef.current?.focus(), 100);
     }
-  }, [isOpen]);
+  }, [isOpen, editExpense]);
 
   useEffect(() => {
     fetch('/api/categories')
@@ -78,19 +98,19 @@ export default function AddExpenseModal({
   const handleBackdropClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
       if (e.target === e.currentTarget) {
-        if (amountCents > 0) {
-          if (window.confirm('Descartar gasto não salvo?')) onClose();
+        if (amountCents > 0 || !!editExpense) {
+          setConfirmDiscard(true);
         } else {
           onClose();
         }
       }
     },
-    [amountCents, onClose]
+    [amountCents, onClose, editExpense]
   );
 
-  if (!isOpen) return null;
+  if (!isOpen || !mounted) return null;
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-end justify-center"
       style={{ background: 'rgba(0,0,0,0.32)' }}
@@ -104,7 +124,7 @@ export default function AddExpenseModal({
         }}
         role="dialog"
         aria-modal
-        aria-label="Adicionar gasto"
+        aria-label={isEditing ? 'Editar gasto' : 'Adicionar gasto'}
       >
         {/* Drag handle */}
         <div className="flex justify-center pt-3 pb-1">
@@ -113,7 +133,7 @@ export default function AddExpenseModal({
 
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3">
-          <h2 className="text-lg font-semibold text-[#1A1D23]">Adicionar Gasto</h2>
+          <h2 className="text-lg font-semibold text-[#1A1D23]">{isEditing ? 'Editar Gasto' : 'Adicionar Gasto'}</h2>
           <button
             onClick={onClose}
             aria-label="Fechar"
@@ -204,9 +224,11 @@ export default function AddExpenseModal({
                 amountCents > 0 && selectedCategory ? '#5BBF8E' : '#9CA3AF',
             }}
           >
-            {amountCents > 0
-              ? `Salvar — ${formatCurrency(amountCents)}`
-              : 'Salvar Gasto'}
+            {isEditing
+              ? 'Atualizar'
+              : amountCents > 0
+                ? `Salvar — ${formatCurrency(amountCents)}`
+                : 'Salvar Gasto'}
           </button>
         </div>
       </div>
@@ -217,6 +239,17 @@ export default function AddExpenseModal({
           to { transform: translateY(0); }
         }
       `}</style>
-    </div>
+      <ConfirmDialog
+        isOpen={confirmDiscard}
+        title={isEditing ? 'Descartar alterações?' : 'Descartar gasto?'}
+        message="As informações preenchidas serão perdidas."
+        confirmLabel="Descartar"
+        cancelLabel="Continuar editando"
+        variant="danger"
+        onConfirm={() => { setConfirmDiscard(false); onClose(); }}
+        onCancel={() => setConfirmDiscard(false)}
+      />
+    </div>,
+    document.body
   );
 }

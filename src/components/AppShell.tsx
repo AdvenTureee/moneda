@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import BottomNav from '@/components/BottomNav';
 import AddExpenseModal from '@/components/AddExpenseModal';
+import CoinDropAnimation from '@/components/CoinDropAnimation';
 import type { ExpenseInput } from '@/types';
 
 interface AppShellProps {
@@ -12,7 +13,9 @@ interface AppShellProps {
 
 export default function AppShell({ children }: AppShellProps) {
   const [modalOpen, setModalOpen] = useState(false);
+  const [showCoinDrop, setShowCoinDrop] = useState(false);
   const router = useRouter();
+  const pathname = usePathname();
 
   const handleSave = useCallback(
     async (input: ExpenseInput) => {
@@ -21,16 +24,22 @@ export default function AppShell({ children }: AppShellProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(input),
       }).catch(() => {});
-      // Refresh server components so new expense appears
-      router.refresh();
+      setShowCoinDrop(true);
     },
-    [router]
+    []
   );
+
+  const handleCoinDropComplete = useCallback(() => {
+    setShowCoinDrop(false);
+    router.refresh();
+  }, [router]);
 
   return (
     <>
       <main className="pb-16 min-h-screen">
-        {children}
+        <div key={pathname} className="animate-fade-in-fast">
+          {children}
+        </div>
       </main>
       <BottomNav onAddExpense={() => setModalOpen(true)} />
       <AddExpenseModal
@@ -38,6 +47,7 @@ export default function AppShell({ children }: AppShellProps) {
         onClose={() => setModalOpen(false)}
         onSave={handleSave}
       />
+      {showCoinDrop && <CoinDropAnimation onComplete={handleCoinDropComplete} />}
     </>
   );
 }

@@ -4,10 +4,13 @@ import { useState, useMemo, useEffect, useCallback } from 'react';
 import { MagnifyingGlass } from '@phosphor-icons/react';
 import AppShell from '@/components/AppShell';
 import ExpenseCard from '@/components/ExpenseCard';
+import AddExpenseModal from '@/components/AddExpenseModal';
+import ConfirmDialog from '@/components/ConfirmDialog';
 import CategoryChip from '@/components/CategoryChip';
 import Icon from '@/components/Icon';
+import GranaMascot from '@/components/GranaMascot';
 import { groupExpensesByDate, formatCurrency } from '@/lib/utils';
-import type { Expense, Category } from '@/types';
+import type { Expense, Category, ExpenseInput } from '@/types';
 
 export default function FeedPage() {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
@@ -16,6 +19,8 @@ export default function FeedPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
+  const [deletingExpense, setDeletingExpense] = useState<Expense | null>(null);
 
   const fetchExpenses = useCallback(async () => {
     setLoading(true);
@@ -78,6 +83,36 @@ export default function FeedPage() {
 
   const groups = groupExpensesByDate(filtered);
 
+  const handleDelete = useCallback(async (expense: Expense) => {
+    setDeletingExpense(expense);
+  }, []);
+
+  const confirmDelete = useCallback(async () => {
+    if (!deletingExpense) return;
+    try {
+      await fetch(`/api/expenses?id=${deletingExpense.id}`, { method: 'DELETE' });
+      setDeletingExpense(null);
+      fetchExpenses();
+    } catch {
+      setDeletingExpense(null);
+    }
+  }, [deletingExpense, fetchExpenses]);
+
+  const handleEditSave = useCallback(async (input: ExpenseInput) => {
+    if (!editingExpense) return;
+    try {
+      await fetch('/api/expenses', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: editingExpense.id, ...input }),
+      });
+      setEditingExpense(null);
+      fetchExpenses();
+    } catch {
+      // ignore
+    }
+  }, [editingExpense, fetchExpenses]);
+
   return (
     <AppShell>
       <div className="max-w-lg mx-auto">
@@ -135,7 +170,7 @@ export default function FeedPage() {
         <div className="px-4">
           {loading ? (
             <div className="flex flex-col items-center py-16 text-center">
-              <Icon name="Hourglass" size={48} className="mb-4 opacity-30" />
+              <GranaMascot variant="thinking" size={80} className="mb-4 animate-bounce-in" />
               <p className="text-base font-semibold text-[#1A1D23]">Carregando...</p>
             </div>
           ) : error ? (
@@ -151,15 +186,27 @@ export default function FeedPage() {
             </div>
           ) : groups.length === 0 ? (
             <div className="flex flex-col items-center py-16 text-center">
-              <Icon name="MagnifyingGlass" size={48} className="mb-4 opacity-30" />
-              <p className="text-base font-semibold text-[#1A1D23]">
-                Nenhum gasto encontrado
-              </p>
-              <p className="text-sm text-[#6B7280] mt-1">
-                {search || activeCategory
-                  ? 'Tente ajustar os filtros.'
-                  : 'Lance sua primeira despesa tocando em +.'}
-              </p>
+              {search || activeCategory ? (
+                <>
+                  <GranaMascot variant="thinking" size={80} className="mb-4 animate-bounce-in" />
+                  <p className="text-base font-semibold text-[#1A1D23]">
+                    Nenhum gasto encontrado
+                  </p>
+                  <p className="text-sm text-[#6B7280] mt-1">
+                    Tente ajustar os filtros.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <GranaMascot variant="idle" size={80} className="mb-4 animate-bounce-in" />
+                  <p className="text-base font-semibold text-[#1A1D23]">
+                    Nada por aqui ainda
+                  </p>
+                  <p className="text-sm text-[#6B7280] mt-1">
+                    Comece adicionando sua primeira despesa tocando em <strong>+</strong>.
+                  </p>
+                </>
+              )}
             </div>
           ) : (
             groups.map((group, gi) => {
@@ -186,6 +233,8 @@ export default function FeedPage() {
                         <ExpenseCard
                           expense={expense}
                           variant="full"
+                          onEdit={() => setEditingExpense(expense)}
+                          onDelete={() => handleDelete(expense)}
                         />
                       </div>
                     ))}
@@ -198,6 +247,22 @@ export default function FeedPage() {
           <div className="h-6" />
         </div>
       </div>
+      <AddExpenseModal
+        isOpen={!!editingExpense}
+        onClose={() => setEditingExpense(null)}
+        onSave={handleEditSave}
+        editExpense={editingExpense ?? undefined}
+      />
+      <ConfirmDialog
+        isOpen={!!deletingExpense}
+        title="Excluir gasto"
+        message={`Tem certeza que deseja excluir "${deletingExpense?.description}"?`}
+        confirmLabel="Excluir"
+        cancelLabel="Cancelar"
+        variant="danger"
+        onConfirm={confirmDelete}
+        onCancel={() => setDeletingExpense(null)}
+      />
     </AppShell>
   );
 }

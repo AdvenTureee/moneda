@@ -7,7 +7,9 @@ import ExpenseCard from '@/components/ExpenseCard';
 import DonutChart from '@/components/DonutChart';
 import DailyHistogram from '@/components/DailyHistogram';
 import Icon from '@/components/Icon';
-import GranaLogo from '@/components/GranaLogo';
+import TrackedMascot from '@/components/TrackedMascot';
+import GranaMascot from '@/components/GranaMascot';
+import Confetti from '@/components/Confetti';
 import { getDashboardMetrics } from '@/lib/expenses';
 import { getBudgets } from '@/lib/budgets';
 import { getLatestInsight } from '@/lib/insights';
@@ -65,7 +67,7 @@ export default async function DashboardPage() {
         {/* Header */}
         <header className="flex items-center justify-between py-5 animate-fade-up delay-0">
           <div className="flex items-center gap-3">
-            <GranaLogo size="sm" />
+            <TrackedMascot variant="idle" size={36} />
             <h1 className="capitalize text-sm font-semibold text-[#6B7280]">
               {monthName}
             </h1>
@@ -179,10 +181,10 @@ export default async function DashboardPage() {
 
           {metrics.recentExpenses.length === 0 ? (
             <div className="flex flex-col items-center py-12 text-center">
-              <Icon name="Receipt" size={48} className="mb-4 opacity-30" />
+              <GranaMascot variant="sad" size={80} className="mb-4 animate-bounce-in" />
               <p className="text-base font-heading text-[#1A1D23]">Nenhum gasto ainda</p>
               <p className="text-sm text-[#6B7280] mt-1 max-w-[260px]">
-                Lance sua primeira despesa e comece a entender pra onde vai o seu dinheiro.
+                E aí, cadê os gastos? 🕵️ Comece adicionando sua primeira despesa.
               </p>
             </div>
           ) : (
@@ -201,6 +203,7 @@ export default async function DashboardPage() {
 
         <div className="h-6" />
       </div>
+      {remaining > 0 && <Confetti trigger />}
     </AppShell>
   );
 }

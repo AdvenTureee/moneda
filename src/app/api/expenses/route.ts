@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getExpenses, createExpense } from '@/lib/expenses';
+import { getExpenses, createExpense, updateExpense, deleteExpense } from '@/lib/expenses';
 import type { ExpenseFilters, ExpenseInput } from '@/types';
 import { createSessionClient } from '@/lib/supabase/server';
 
@@ -52,4 +52,43 @@ export async function POST(req: NextRequest) {
 
   const expense = await createExpense(input);
   return NextResponse.json({ data: expense }, { status: 201 });
+}
+
+export async function PATCH(req: NextRequest) {
+  const supabase = await createSessionClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  let body: { id: string } & Partial<ExpenseInput>;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
+  }
+
+  if (!body.id) {
+    return NextResponse.json({ error: 'id is required' }, { status: 422 });
+  }
+
+  const expense = await updateExpense(body.id, {
+    amount: body.amount,
+    category: body.category,
+    description: body.description,
+  });
+  return NextResponse.json({ data: expense });
+}
+
+export async function DELETE(req: NextRequest) {
+  const supabase = await createSessionClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const { searchParams } = new URL(req.url);
+  const id = searchParams.get('id');
+  if (!id) {
+    return NextResponse.json({ error: 'id query param is required' }, { status: 422 });
+  }
+
+  await deleteExpense(id);
+  return NextResponse.json({ ok: true });
 }

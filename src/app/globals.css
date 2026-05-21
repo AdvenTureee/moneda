@@ -166,6 +166,78 @@ body, .font-body {
 .delay-7 { animation-delay: 560ms; }
 .delay-8 { animation-delay: 640ms; }
 
+/* ─── FAB pulse ─── */
+
+@keyframes fab-pulse {
+  0%, 100% { box-shadow: 0 4px 20px rgba(91, 191, 142, 0.35); }
+  50% { box-shadow: 0 4px 28px rgba(91, 191, 142, 0.55), 0 0 40px rgba(91, 191, 142, 0.15); }
+}
+
+.animate-fab-pulse {
+  animation: fab-pulse 2.5s ease-in-out infinite;
+}
+
+/* ─── Coin drop ─── */
+
+@keyframes coin-drop {
+  0% { transform: translateY(-100px) scale(0.5) rotate(-15deg); opacity: 0; }
+  50% { transform: translateY(10px) scale(1.1) rotate(5deg); opacity: 1; }
+  70% { transform: translateY(-5px) scale(0.95) rotate(-2deg); }
+  85% { transform: translateY(2px) scale(1.02); }
+  100% { transform: translateY(0) scale(1) rotate(0deg); opacity: 1; }
+}
+
+.animate-coin-drop {
+  animation: coin-drop 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* ─── Confetti ─── */
+
+@keyframes confetti-fall {
+  0% { transform: translateY(-20px) rotate(0deg) scale(1); opacity: 1; }
+  100% { transform: translateY(calc(100vh + 20px)) rotate(720deg) scale(0.5); opacity: 0; }
+}
+
+/* ─── Mascot bounce in ─── */
+
+@keyframes bounce-in {
+  0% { transform: scale(0); opacity: 0; }
+  50% { transform: scale(1.15); }
+  70% { transform: scale(0.95); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.animate-bounce-in {
+  animation: bounce-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* ─── Glow for happy mascot ─── */
+
+@keyframes glow-pulse {
+  0%, 100% { filter: drop-shadow(0 0 6px rgba(91, 191, 142, 0.4)); }
+  50% { filter: drop-shadow(0 0 14px rgba(91, 191, 142, 0.7)); }
+}
+
+.animate-glow-pulse {
+  animation: glow-pulse 2s ease-in-out infinite;
+}
+
+/* ─── Page transitions ─── */
+
+@keyframes fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes fade-in-fast {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-fade-in-fast {
+  animation: fade-in-fast 0.2s ease-out both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
