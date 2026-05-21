@@ -57,7 +57,7 @@ export default function FeedPage() {
       .then((json) => {
         if (json?.data) setCategories(json.data);
       })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   const filtered = useMemo(() => {

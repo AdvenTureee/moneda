@@ -413,9 +413,8 @@ export default function InsightsView({
 
                           {/* Card body (expandable) */}
                           <div
-                            className={`transition-all duration-200 ease-in-out overflow-hidden ${
-                              expanded ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'
-                            }`}
+                            className={`transition-all duration-200 ease-in-out overflow-hidden ${expanded ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'
+                              }`}
                           >
                             <div className="px-4 pb-4 pt-1 border-t border-[#F1F3F7]">
                               <div className="flex items-start gap-2">

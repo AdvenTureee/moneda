@@ -24,7 +24,7 @@ export default async function DashboardPage() {
   if (!user) redirect('/login');
 
   const period = getCurrentPeriod();
-  
+
   // Parallel DB queries
   const [metrics, budgets, latestInsight] = await Promise.all([
     getDashboardMetrics(user.id, period),
@@ -52,13 +52,13 @@ export default async function DashboardPage() {
 
   // Custom personalized AI Welcome message if no insight exists yet
   const metadata = user.user_metadata ?? {};
-  const fullName = (metadata.name as string | undefined) ?? 
-                   (metadata.full_name as string | undefined) ?? 
-                   '';
+  const fullName = (metadata.name as string | undefined) ??
+    (metadata.full_name as string | undefined) ??
+    '';
   const firstName = fullName ? fullName.split(' ')[0] : 'Gabriel';
   const avatarUrl = (metadata.avatar_url as string | undefined) ?? null;
   const welcomeMessage = `Olá, ${firstName}! Bem-vindo(a) ao Grana. Conforme você cadastrar seus gastos ou nos enviar pelo WhatsApp, nossa Inteligência Artificial analisará seus hábitos de consumo para gerar insights financeiros personalizados aqui!`;
-  
+
   const insightMessage = latestInsight ? latestInsight.message : welcomeMessage;
 
   return (
