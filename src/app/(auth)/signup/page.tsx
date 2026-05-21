@@ -86,7 +86,7 @@ export default function SignupPage() {
               <polyline points="20 6 9 17 4 12" />
             </svg>
           </div>
-          <h1 className="text-xl font-bold text-[#1A1D23] mb-2">Verifique seu email</h1>
+          <h1 className="text-xl font-heading text-[#1A1D23] mb-2">Verifique seu email</h1>
           <p className="text-sm text-[#6B7280] leading-relaxed">
             Enviamos um link de confirmação para{' '}
             <span className="font-semibold text-[#1A1D23]">{email}</span>.
@@ -105,7 +105,7 @@ export default function SignupPage() {
         </div>
       ) : (
         <>
-          <h1 className="text-xl font-bold text-[#1A1D23] mb-1">Criar conta</h1>
+          <h1 className="text-xl font-heading text-[#1A1D23] mb-1">Criar conta</h1>
           <p className="text-sm text-[#6B7280] mb-6">Comece a controlar seu dinheiro hoje.</p>
 
           <button

@@ -5,6 +5,7 @@ import DashboardMetric from '@/components/DashboardMetric';
 import AIInsightBanner from '@/components/AIInsightBanner';
 import ExpenseCard from '@/components/ExpenseCard';
 import DonutChart from '@/components/DonutChart';
+import DailyHistogram from '@/components/DailyHistogram';
 import Icon from '@/components/Icon';
 import { getDashboardMetrics } from '@/lib/expenses';
 import { getBudgets } from '@/lib/budgets';
@@ -47,10 +48,12 @@ export default async function DashboardPage() {
   const remaining = BUDGET_CENTS - metrics.totalSpent;
 
   // Custom personalized AI Welcome message if no insight exists yet
-  const fullName = (user.user_metadata?.name as string | undefined) ?? 
-                   (user.user_metadata?.full_name as string | undefined) ?? 
+  const metadata = user.user_metadata ?? {};
+  const fullName = (metadata.name as string | undefined) ?? 
+                   (metadata.full_name as string | undefined) ?? 
                    '';
   const firstName = fullName ? fullName.split(' ')[0] : 'Gabriel';
+  const avatarUrl = (metadata.avatar_url as string | undefined) ?? null;
   const welcomeMessage = `Olá, ${firstName}! Bem-vindo(a) ao Grana. Conforme você cadastrar seus gastos ou nos enviar pelo WhatsApp, nossa Inteligência Artificial analisará seus hábitos de consumo para gerar insights financeiros personalizados aqui!`;
   
   const insightMessage = latestInsight ? latestInsight.message : welcomeMessage;
@@ -59,7 +62,7 @@ export default async function DashboardPage() {
     <AppShell>
       <div className="max-w-lg mx-auto px-4">
         {/* Header */}
-        <header className="flex items-center justify-between py-5">
+        <header className="flex items-center justify-between py-5 animate-fade-up delay-0">
           <div>
             <p className="text-xs text-[#9CA3AF] font-medium uppercase tracking-wide">
               Grana
@@ -69,16 +72,20 @@ export default async function DashboardPage() {
             </h1>
           </div>
           <div
-            className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-white"
+            className="w-12 h-12 rounded-full flex items-center justify-center text-base font-bold text-white shrink-0 overflow-hidden"
             style={{ background: '#A8C5E0' }}
             aria-label={user.email ?? 'Usuário'}
           >
-            {(user.user_metadata?.name as string | undefined)?.[0]?.toUpperCase() ?? user.email?.[0]?.toUpperCase() ?? '?'}
+            {avatarUrl ? (
+              <img src={avatarUrl} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+            ) : (
+              fullName?.[0]?.toUpperCase() ?? user.email?.[0]?.toUpperCase() ?? '?'
+            )}
           </div>
         </header>
 
         {/* Hero total */}
-        <section className="mb-5" aria-label="Total gasto no mês">
+        <section className="mb-5 animate-fade-up delay-1" aria-label="Total gasto no mês">
           <p className="text-xs text-[#6B7280] font-medium mb-1">
             Gasto total este mês
           </p>
@@ -91,7 +98,7 @@ export default async function DashboardPage() {
         </section>
 
         {/* Metric cards */}
-        <section className="flex gap-3 mb-6" aria-label="Métricas do mês">
+        <section className="flex gap-3 mb-6 animate-fade-up delay-2" aria-label="Métricas do mês">
           <DashboardMetric
             label="Orçamento"
             value={formatCurrency(BUDGET_CENTS)}
@@ -107,12 +114,12 @@ export default async function DashboardPage() {
         {/* Donut chart */}
         {metrics.topCategories.length > 0 && (
           <section
-            className="mb-6 bg-white rounded-[16px] p-5"
+            className="mb-6 bg-white rounded-[16px] p-5 animate-fade-up delay-3"
             style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
             aria-label="Gastos por categoria"
           >
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-base font-semibold text-[#1A1D23]">Por categoria</h2>
+              <h2 className="text-base font-heading text-[#1A1D23]">Por categoria</h2>
               <Link href="/feed" className="text-xs font-medium text-[#A8C5E0]">
                 Ver tudo
               </Link>
@@ -127,8 +134,8 @@ export default async function DashboardPage() {
               />
 
               <div className="flex-1 space-y-2 overflow-hidden">
-                {metrics.topCategories.slice(0, 4).map((cat) => (
-                  <div key={cat.categoryId} className="flex items-center gap-2">
+                {metrics.topCategories.slice(0, 4).map((cat, i) => (
+                  <div key={cat.categoryId} className={`flex items-center gap-2 animate-fade-up delay-${i + 3}`}>
                     <span
                       className="w-2.5 h-2.5 rounded-full shrink-0"
                       style={{ background: cat.categoryColor }}
@@ -147,8 +154,13 @@ export default async function DashboardPage() {
           </section>
         )}
 
+        {/* Daily histogram */}
+        {metrics.dailySpending.length > 0 && (
+          <DailyHistogram data={metrics.dailySpending} period={period} />
+        )}
+
         {/* AI Insight banner */}
-        <section className="mb-6" aria-label="Insights">
+        <section className="mb-6 animate-fade-up delay-4" aria-label="Insights">
           <AIInsightBanner
             message={insightMessage}
             cta={{ label: 'Ver detalhes', href: '/feed' }}
@@ -156,9 +168,9 @@ export default async function DashboardPage() {
         </section>
 
         {/* Recent expenses */}
-        <section aria-label="Últimos gastos">
+        <section aria-label="Últimos gastos" className="animate-fade-up delay-5">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-base font-semibold text-[#1A1D23]">Últimos gastos</h2>
+            <h2 className="text-base font-heading text-[#1A1D23]">Últimos gastos</h2>
             <Link href="/feed" className="text-xs font-medium text-[#A8C5E0]">
               Ver feed
             </Link>
@@ -167,19 +179,20 @@ export default async function DashboardPage() {
           {metrics.recentExpenses.length === 0 ? (
             <div className="flex flex-col items-center py-12 text-center">
               <Icon name="Receipt" size={48} className="mb-4 opacity-30" />
-              <p className="text-base font-semibold text-[#1A1D23]">Nenhum gasto ainda</p>
+              <p className="text-base font-heading text-[#1A1D23]">Nenhum gasto ainda</p>
               <p className="text-sm text-[#6B7280] mt-1 max-w-[260px]">
                 Lance sua primeira despesa e comece a entender pra onde vai o seu dinheiro.
               </p>
             </div>
           ) : (
             <div className="space-y-2">
-              {metrics.recentExpenses.map((expense) => (
-                <ExpenseCard
-                  key={expense.id}
-                  expense={expense}
-                  variant="compact"
-                />
+              {metrics.recentExpenses.map((expense, i) => (
+                <div key={expense.id} className={`animate-fade-up delay-${Math.min(i + 6, 8)}`}>
+                  <ExpenseCard
+                    expense={expense}
+                    variant="compact"
+                  />
+                </div>
               ))}
             </div>
           )}

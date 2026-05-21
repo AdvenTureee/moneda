@@ -166,9 +166,9 @@ export default function InsightsView({
     ul: ({ children }) => <ul className="space-y-1 mb-3 last:mb-0">{children}</ul>,
     ol: ({ children }) => <ol className="space-y-1 mb-3 last:mb-0 list-decimal ml-4">{children}</ol>,
     li: ({ children }) => <li className="text-sm text-[#1A1D23] ml-4 list-disc">{children}</li>,
-    h1: ({ children }) => <h1 className="text-base font-bold text-[#1A1D23] mb-3">{children}</h1>,
-    h2: ({ children }) => <h2 className="text-base font-bold text-[#1A1D23] mb-3">{children}</h2>,
-    h3: ({ children }) => <h3 className="text-sm font-bold text-[#1A1D23] mb-2">{children}</h3>,
+    h1: ({ children }) => <h1 className="text-base font-heading text-[#1A1D23] mb-3">{children}</h1>,
+    h2: ({ children }) => <h2 className="text-base font-heading text-[#1A1D23] mb-3">{children}</h2>,
+    h3: ({ children }) => <h3 className="text-sm font-heading text-[#1A1D23] mb-2">{children}</h3>,
   };
 
   const hasFilter = activeType !== null || search.trim().length > 0;
@@ -179,7 +179,7 @@ export default function InsightsView({
       <header className="py-5">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-[#1A1D23]">Insights</h1>
+            <h1 className="text-xl font-heading text-[#1A1D23]">Insights</h1>
             <p className="text-xs text-[#6B7280] mt-1 capitalize">{monthName}</p>
           </div>
           {topCategories.length > 0 && (
@@ -221,7 +221,7 @@ export default function InsightsView({
           className="bg-white rounded-[16px] p-5 mb-6"
           style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
         >
-          <h2 className="text-sm font-bold text-[#1A1D23] mb-4">Gastos por categoria</h2>
+          <h2 className="text-sm font-heading text-[#1A1D23] mb-4">Gastos por categoria</h2>
 
           <div className="flex items-center gap-5">
             <DonutChart
@@ -265,7 +265,7 @@ export default function InsightsView({
 
       {/* AI Insights Section */}
       <section className="mb-6">
-        <h2 className="text-sm font-bold text-[#1A1D23] mb-3">Análise do Grana</h2>
+        <h2 className="text-sm font-heading text-[#1A1D23] mb-3">Análise do Grana</h2>
 
         {/* Search + Type filter */}
         {insights.length > 0 && (

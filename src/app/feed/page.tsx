@@ -73,8 +73,8 @@ export default function FeedPage() {
     <AppShell>
       <div className="max-w-lg mx-auto">
         {/* Header */}
-        <header className="px-4 pt-5 pb-3 bg-[#F8F9FB] sticky top-0 z-30">
-          <h1 className="text-xl font-bold text-[#1A1D23] mb-3">Feed de Gastos</h1>
+        <header className="px-4 pt-5 pb-3 bg-[#F8F9FB] sticky top-0 z-30 animate-fade-up delay-0">
+          <h1 className="text-xl font-heading text-[#1A1D23] mb-3">Feed de Gastos</h1>
 
           {/* Search bar */}
           <div className="relative mb-3">
@@ -153,10 +153,10 @@ export default function FeedPage() {
               </p>
             </div>
           ) : (
-            groups.map((group) => {
+            groups.map((group, gi) => {
               const dayTotal = group.items.reduce((sum, e) => sum + e.amount, 0);
               return (
-                <div key={group.dateKey} className="mb-4">
+                <div key={group.dateKey} className={`mb-4 animate-fade-up delay-${Math.min(gi, 6)}`}>
                   {/* Date section header */}
                   <div
                     className="flex items-center justify-between py-2 mb-2 sticky border-b border-[#E5E7EB]"
@@ -172,12 +172,13 @@ export default function FeedPage() {
 
                   {/* Expense cards */}
                   <div className="space-y-2">
-                    {group.items.map((expense) => (
-                      <ExpenseCard
-                        key={expense.id}
-                        expense={expense}
-                        variant="full"
-                      />
+                    {group.items.map((expense, ei) => (
+                      <div key={expense.id} className={`animate-fade-up delay-${Math.min(gi * 2 + ei + 1, 8)}`}>
+                        <ExpenseCard
+                          expense={expense}
+                          variant="full"
+                        />
+                      </div>
                     ))}
                   </div>
                 </div>

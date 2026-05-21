@@ -137,7 +137,7 @@ export default function ProfileView({
   return (
     <div className="max-w-lg mx-auto px-4 pb-24">
       <header className="py-6">
-        <h1 className="text-2xl font-bold text-[#1A1D23]">Perfil</h1>
+        <h1 className="text-2xl font-heading text-[#1A1D23]">Perfil</h1>
         <p className="text-sm text-[#6B7280] mt-1">Gerencie sua conta e preferências.</p>
       </header>
 
@@ -245,7 +245,7 @@ export default function ProfileView({
       </section>
 
       {/* Finanças section */}
-      <h2 className="text-xs font-semibold uppercase tracking-wider text-[#9CA3AF] mb-2 px-1">
+      <h2 className="text-xs font-heading uppercase tracking-wider text-[#9CA3AF] mb-2 px-1">
         Finanças
       </h2>
       <div
@@ -275,7 +275,7 @@ export default function ProfileView({
       </div>
 
       {/* Categorias section */}
-      <h2 className="text-xs font-semibold uppercase tracking-wider text-[#9CA3AF] mb-2 px-1">
+      <h2 className="text-xs font-heading uppercase tracking-wider text-[#9CA3AF] mb-2 px-1">
         Categorias
       </h2>
       <div
@@ -295,7 +295,7 @@ export default function ProfileView({
       </div>
 
       {/* Preferências section */}
-      <h2 className="text-xs font-semibold uppercase tracking-wider text-[#9CA3AF] mb-2 px-1">
+      <h2 className="text-xs font-heading uppercase tracking-wider text-[#9CA3AF] mb-2 px-1">
         Preferências
       </h2>
       <div
@@ -325,7 +325,7 @@ export default function ProfileView({
       </div>
 
       {/* Dados section */}
-      <h2 className="text-xs font-semibold uppercase tracking-wider text-[#9CA3AF] mb-2 px-1">
+      <h2 className="text-xs font-heading uppercase tracking-wider text-[#9CA3AF] mb-2 px-1">
         Dados
       </h2>
       <div
@@ -345,7 +345,7 @@ export default function ProfileView({
       </div>
 
       {/* Account actions */}
-      <h2 className="text-xs font-semibold uppercase tracking-wider text-[#9CA3AF] mb-2 px-1">
+      <h2 className="text-xs font-heading uppercase tracking-wider text-[#9CA3AF] mb-2 px-1">
         Conta
       </h2>
       <div

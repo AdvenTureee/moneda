@@ -56,7 +56,7 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
             <Link
               key={item.label}
               href={item.href}
-              className={`flex flex-col items-center justify-center gap-0.5 min-w-[44px] min-h-[44px] rounded-lg transition-colors duration-150 ${
+              className={`relative flex flex-col items-center justify-center gap-0.5 min-w-[44px] min-h-[44px] rounded-lg transition-colors duration-150 ${
                 isActive
                   ? 'text-[#A8C5E0]'
                   : 'text-[#9CA3AF] hover:text-[#6B7280]'
@@ -65,6 +65,9 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
             >
               <item.icon size={20} />
               <span className="text-[10px] font-medium leading-none">{item.label}</span>
+              {isActive && (
+                <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-5 h-0.5 rounded-full bg-[#A8C5E0] animate-scale-in" />
+              )}
             </Link>
           );
         })}

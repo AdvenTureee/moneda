@@ -68,7 +68,7 @@ export default function LoginPage() {
       className="bg-white rounded-[20px] p-6"
       style={{ boxShadow: '0 2px 16px rgba(0,0,0,0.07)' }}
     >
-      <h1 className="text-xl font-bold text-[#1A1D23] mb-1">Entrar</h1>
+      <h1 className="text-xl font-heading text-[#1A1D23] mb-1">Entrar</h1>
       <p className="text-sm text-[#6B7280] mb-6">Acesse sua conta para continuar.</p>
 
       <button
