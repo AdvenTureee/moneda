@@ -65,6 +65,7 @@ erDiagram
     text name
     text phone "E.164, nullable até onboarding"
     citext email
+    text avatar_url "URL Supabase Storage, nullable"
     text timezone "default America/Sao_Paulo"
     text currency "ISO 4217, default BRL"
     timestamptz onboarded_at "NULL = onboarding incompleto"
@@ -146,6 +147,7 @@ erDiagram
               │      profiles           │
               │ id (uuid) PK + FK→users │
               │ name, phone, email      │
+              │ avatar_url (nullable)   │
               │ timezone, currency      │
               │ onboarded_at            │
               └─────────────────────────┘
@@ -349,12 +351,16 @@ CREATE TABLE budgets (
 
 **`couples` / `shared_accounts`** — "Modo Casal" (V2 product feature):
 ```sql
--- esboço
+-- esboço, NÃO criar agora
 CREATE TABLE couples (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  primary_user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  secondary_user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  created_at timestamptz NOT NULL DEFAULT now(),
+  id                 uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  primary_user_id    uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  secondary_user_id  uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  -- Foto do casal: URL no Supabase Storage (bucket: couple-photos).
+  -- Cada usuário mantém sua própria avatar_url em profiles;
+  -- couple_photo_url é a foto compartilhada do casal (opcional).
+  couple_photo_url   text,
+  created_at         timestamptz NOT NULL DEFAULT now(),
   UNIQUE (primary_user_id, secondary_user_id)
 );
 -- expenses.shared_with_couple_id uuid REFERENCES couples(id)
@@ -410,6 +416,7 @@ A coluna `snake_case` do SQL é convertida para `camelCase` no app via:
 | `User.name` | `profiles.name` | |
 | `User.email` | `profiles.email` | espelhado de `auth.users.email` |
 | `User.phone` | `profiles.phone` | E.164, nullable até onboarding |
+| `User.avatarUrl` | `profiles.avatar_url` | URL Supabase Storage, nullable |
 | `User.createdAt` | `profiles.created_at` | |
 | `Category.id` | `categories.id` | text slug |
 | `Category.name` | `categories.name` | |
@@ -505,4 +512,4 @@ Esta issue ([GAB-17](/GAB/issues/GAB-17)) termina aqui — apenas design + migra
 
 ---
 
-*Documento mantido pelo CTO. Última atualização: 2026-05-20.*
+*Documento mantido pelo CTO. Última atualização: 2026-05-21.*

@@ -33,6 +33,7 @@ CREATE TABLE public.profiles (
   name         text NOT NULL,
   phone        text,
   email        citext NOT NULL,
+  avatar_url   text,
   timezone     text NOT NULL DEFAULT 'America/Sao_Paulo',
   currency     text NOT NULL DEFAULT 'BRL' CHECK (currency ~ '^[A-Z]{3}$'),
   onboarded_at timestamptz,
@@ -194,6 +195,7 @@ CREATE UNIQUE INDEX whatsapp_messages_provider_msg_unique_idx
 -- ---------------------------------------------------------------------------
 COMMENT ON TABLE  public.profiles            IS 'Dados app-específicos do usuário; 1:1 com auth.users.';
 COMMENT ON COLUMN public.profiles.phone      IS 'Número WhatsApp em formato E.164. Preenchido no onboarding.';
+COMMENT ON COLUMN public.profiles.avatar_url IS 'URL pública da foto de perfil no Supabase Storage (bucket: avatars). NULL até o usuário fazer upload.';
 COMMENT ON TABLE  public.categories          IS 'Categorias de despesa. user_id NULL = global default; user_id NOT NULL = custom do usuário (V2+).';
 COMMENT ON TABLE  public.expenses            IS 'Lançamentos de gasto. Soft-delete via deleted_at.';
 COMMENT ON COLUMN public.expenses.amount_cents IS 'Valor em centavos da moeda do usuário. Sempre > 0.';
