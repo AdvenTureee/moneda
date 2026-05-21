@@ -5,8 +5,7 @@ import { Search } from 'lucide-react';
 import AppShell from '@/components/AppShell';
 import ExpenseCard from '@/components/ExpenseCard';
 import CategoryChip from '@/components/CategoryChip';
-import { getAllExpenses } from '@/data/mock';
-import { CATEGORIES } from '@/lib/expenses';
+import { getAllExpenses, CATEGORIES } from '@/data/mock';
 import { groupExpensesByDate, formatCurrency } from '@/lib/utils';
 import { MOCK_USER } from '@/data/mock';
 

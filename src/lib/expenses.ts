@@ -255,4 +255,4 @@ export async function getDashboardMetrics(
   return getDashboardMetricsFromMock(userId, period);
 }
 
-export { CATEGORIES, getCategoryById };
+

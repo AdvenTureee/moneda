@@ -1,5 +1,5 @@
 import { formatCurrency, formatDate, formatTime } from '@/lib/utils';
-import { getCategoryById } from '@/lib/expenses';
+import { getCategoryById } from '@/data/mock';
 import type { Expense } from '@/types';
 
 interface ExpenseCardProps {
