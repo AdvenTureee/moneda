@@ -22,6 +22,7 @@ export default function SignupPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
 
@@ -37,7 +38,7 @@ export default function SignupPage() {
     setLoading(true);
     const supabase = createClient();
 
-    const { error: authError } = await supabase.auth.signUp({
+    const { data, error: authError } = await supabase.auth.signUp({
       email,
       password,
       options: { data: { name } },
@@ -45,6 +46,12 @@ export default function SignupPage() {
 
     if (authError) {
       setError(authError.message);
+      setLoading(false);
+      return;
+    }
+
+    if (!data.session) {
+      setSuccess(true);
       setLoading(false);
       return;
     }
@@ -72,96 +79,124 @@ export default function SignupPage() {
       className="bg-white rounded-[20px] p-6"
       style={{ boxShadow: '0 2px 16px rgba(0,0,0,0.07)' }}
     >
-      <h1 className="text-xl font-bold text-[#1A1D23] mb-1">Criar conta</h1>
-      <p className="text-sm text-[#6B7280] mb-6">Comece a controlar seu dinheiro hoje.</p>
-
-      <button
-        type="button"
-        onClick={handleGoogleSignup}
-        disabled={googleLoading || loading}
-        className="w-full flex items-center justify-center gap-2.5 py-2.5 rounded-[12px] border border-[#E5E7EB] bg-white text-sm font-medium text-[#1A1D23] hover:bg-[#F8F9FB] transition-colors disabled:opacity-60 mb-5"
-      >
-        <GoogleIcon />
-        {googleLoading ? 'Redirecionando…' : 'Continuar com Google'}
-      </button>
-
-      <div className="flex items-center gap-3 mb-5">
-        <div className="flex-1 h-px bg-[#E5E7EB]" />
-        <span className="text-xs text-[#9CA3AF]">ou</span>
-        <div className="flex-1 h-px bg-[#E5E7EB]" />
-      </div>
-
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label htmlFor="name" className="block text-xs font-medium text-[#6B7280] mb-1.5">
-            Nome
-          </label>
-          <input
-            id="name"
-            type="text"
-            autoComplete="name"
-            required
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Seu nome"
-            className="w-full px-3.5 py-2.5 rounded-[10px] bg-[#F8F9FB] border border-[#E5E7EB] text-sm text-[#1A1D23] placeholder:text-[#9CA3AF] outline-none focus:border-[#A8C5E0] transition-colors"
-          />
-        </div>
-
-        <div>
-          <label htmlFor="email" className="block text-xs font-medium text-[#6B7280] mb-1.5">
-            Email
-          </label>
-          <input
-            id="email"
-            type="email"
-            autoComplete="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="seu@email.com"
-            className="w-full px-3.5 py-2.5 rounded-[10px] bg-[#F8F9FB] border border-[#E5E7EB] text-sm text-[#1A1D23] placeholder:text-[#9CA3AF] outline-none focus:border-[#A8C5E0] transition-colors"
-          />
-        </div>
-
-        <div>
-          <label htmlFor="password" className="block text-xs font-medium text-[#6B7280] mb-1.5">
-            Senha
-          </label>
-          <input
-            id="password"
-            type="password"
-            autoComplete="new-password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Mínimo 8 caracteres"
-            className="w-full px-3.5 py-2.5 rounded-[10px] bg-[#F8F9FB] border border-[#E5E7EB] text-sm text-[#1A1D23] placeholder:text-[#9CA3AF] outline-none focus:border-[#A8C5E0] transition-colors"
-          />
-        </div>
-
-        {error && (
-          <p className="text-xs font-medium text-[#E07070]" role="alert">
-            {error}
+      {success ? (
+        <div className="text-center py-4">
+          <div className="w-14 h-14 rounded-full bg-[#EEF9F4] text-[#5BBF8E] flex items-center justify-center mx-auto mb-4">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          </div>
+          <h1 className="text-xl font-bold text-[#1A1D23] mb-2">Verifique seu email</h1>
+          <p className="text-sm text-[#6B7280] leading-relaxed">
+            Enviamos um link de confirmação para{' '}
+            <span className="font-semibold text-[#1A1D23]">{email}</span>.
+            Clique no link para ativar sua conta.
           </p>
-        )}
+          <p className="text-sm text-[#9CA3AF] mt-3">
+            Não recebeu? Verifique a pasta de spam.
+          </p>
+          <Link
+            href="/login"
+            className="mt-6 inline-block w-full py-3 rounded-[12px] text-sm font-semibold text-white text-center transition-opacity"
+            style={{ background: '#A8C5E0' }}
+          >
+            Ir para o login
+          </Link>
+        </div>
+      ) : (
+        <>
+          <h1 className="text-xl font-bold text-[#1A1D23] mb-1">Criar conta</h1>
+          <p className="text-sm text-[#6B7280] mb-6">Comece a controlar seu dinheiro hoje.</p>
 
-        <button
-          type="submit"
-          disabled={loading || googleLoading}
-          className="w-full py-3 rounded-[12px] text-sm font-semibold text-white transition-opacity disabled:opacity-60"
-          style={{ background: '#A8C5E0' }}
-        >
-          {loading ? 'Criando conta…' : 'Criar conta com email'}
-        </button>
-      </form>
+          <button
+            type="button"
+            onClick={handleGoogleSignup}
+            disabled={googleLoading || loading}
+            className="w-full flex items-center justify-center gap-2.5 py-2.5 rounded-[12px] border border-[#E5E7EB] bg-white text-sm font-medium text-[#1A1D23] hover:bg-[#F8F9FB] transition-colors disabled:opacity-60 mb-5"
+          >
+            <GoogleIcon />
+            {googleLoading ? 'Redirecionando…' : 'Continuar com Google'}
+          </button>
 
-      <p className="mt-5 text-center text-xs text-[#6B7280]">
-        Já tem conta?{' '}
-        <Link href="/login" className="font-semibold text-[#A8C5E0]">
-          Entrar
-        </Link>
-      </p>
+          <div className="flex items-center gap-3 mb-5">
+            <div className="flex-1 h-px bg-[#E5E7EB]" />
+            <span className="text-xs text-[#9CA3AF]">ou</span>
+            <div className="flex-1 h-px bg-[#E5E7EB]" />
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label htmlFor="name" className="block text-xs font-medium text-[#6B7280] mb-1.5">
+                Nome
+              </label>
+              <input
+                id="name"
+                type="text"
+                autoComplete="name"
+                required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Seu nome"
+                className="w-full px-3.5 py-2.5 rounded-[10px] bg-[#F8F9FB] border border-[#E5E7EB] text-sm text-[#1A1D23] placeholder:text-[#9CA3AF] outline-none focus:border-[#A8C5E0] transition-colors"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="email" className="block text-xs font-medium text-[#6B7280] mb-1.5">
+                Email
+              </label>
+              <input
+                id="email"
+                type="email"
+                autoComplete="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="seu@email.com"
+                className="w-full px-3.5 py-2.5 rounded-[10px] bg-[#F8F9FB] border border-[#E5E7EB] text-sm text-[#1A1D23] placeholder:text-[#9CA3AF] outline-none focus:border-[#A8C5E0] transition-colors"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="password" className="block text-xs font-medium text-[#6B7280] mb-1.5">
+                Senha
+              </label>
+              <input
+                id="password"
+                type="password"
+                autoComplete="new-password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Mínimo 8 caracteres"
+                className="w-full px-3.5 py-2.5 rounded-[10px] bg-[#F8F9FB] border border-[#E5E7EB] text-sm text-[#1A1D23] placeholder:text-[#9CA3AF] outline-none focus:border-[#A8C5E0] transition-colors"
+              />
+            </div>
+
+            {error && (
+              <p className="text-xs font-medium text-[#E07070]" role="alert">
+                {error}
+              </p>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading || googleLoading}
+              className="w-full py-3 rounded-[12px] text-sm font-semibold text-white transition-opacity disabled:opacity-60"
+              style={{ background: '#A8C5E0' }}
+            >
+              {loading ? 'Criando conta…' : 'Criar conta com email'}
+            </button>
+          </form>
+
+          <p className="mt-5 text-center text-xs text-[#6B7280]">
+            Já tem conta?{' '}
+            <Link href="/login" className="font-semibold text-[#A8C5E0]">
+              Entrar
+            </Link>
+          </p>
+        </>
+      )}
     </div>
   );
 }
