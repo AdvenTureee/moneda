@@ -47,11 +47,14 @@
 erDiagram
   AUTH_USERS ||--|| PROFILES : "1:1 (id)"
   AUTH_USERS ||--o{ EXPENSES : "user_id"
+  AUTH_USERS ||--o{ INCOMES : "user_id"
+  AUTH_USERS ||--o{ BUDGETS : "user_id"
   AUTH_USERS ||--o{ AI_INSIGHTS : "user_id"
   AUTH_USERS ||--o{ WHATSAPP_MESSAGES : "user_id"
   AUTH_USERS ||--o{ CATEGORIES : "user_id (custom only, NULL = global)"
 
   CATEGORIES ||--o{ EXPENSES : "category_id"
+  CATEGORIES ||--o{ BUDGETS : "category_id"
   WHATSAPP_MESSAGES }o--o| EXPENSES : "parsed_expense_id"
 
   AUTH_USERS {
@@ -63,12 +66,13 @@ erDiagram
   PROFILES {
     uuid id PK_FK
     text name
-    text phone "E.164, nullable até onboarding"
+    text phone "E.164, nullable"
     citext email
     text avatar_url "URL Supabase Storage, nullable"
     text timezone "default America/Sao_Paulo"
     text currency "ISO 4217, default BRL"
-    timestamptz onboarded_at "NULL = onboarding incompleto"
+    int salary_day "1-31, nullable"
+    int billing_closing_day "1-28, nullable"
     timestamptz created_at
     timestamptz updated_at
   }
@@ -89,15 +93,40 @@ erDiagram
   EXPENSES {
     uuid id PK
     uuid user_id FK
-    bigint amount_cents "> 0"
+    bigint amount_cents "saída, > 0, em centavos"
     text category_id FK
     text description
+    text payment_method "pix|debit|credit|cash|transfer|other"
     text source "whatsapp|manual|import"
     text_array tags "GIN-indexed"
     timestamptz occurred_at "quando o gasto aconteceu"
-    jsonb recurring_rule "V2 — null até lá"
+    jsonb recurring_rule "null no V1"
     jsonb metadata
     timestamptz deleted_at "soft delete"
+    timestamptz created_at
+    timestamptz updated_at
+  }
+
+  INCOMES {
+    uuid id PK
+    uuid user_id FK
+    bigint amount_cents "entrada, > 0, em centavos"
+    text description
+    text source "salary|freelance|investment|rent|gift|other"
+    bool is_recurring
+    jsonb recurring_rule "null se is_recurring=false"
+    timestamptz received_at "quando o ganho foi recebido"
+    timestamptz deleted_at "soft delete"
+    timestamptz created_at
+    timestamptz updated_at
+  }
+
+  BUDGETS {
+    uuid id PK
+    uuid user_id FK
+    text category_id FK
+    text period "YYYY-MM ou default"
+    bigint amount_cents "> 0, em centavos"
     timestamptz created_at
     timestamptz updated_at
   }
@@ -144,43 +173,51 @@ erDiagram
                   └────────┬─────────┘
                            │ 1:1
               ┌────────────▼────────────┐
-              │      profiles           │
-              │ id (uuid) PK + FK→users │
-              │ name, phone, email      │
-              │ avatar_url (nullable)   │
-              │ timezone, currency      │
-              │ onboarded_at            │
-              └─────────────────────────┘
+              │      profiles                │
+              │ id (uuid) PK + FK→users      │
+              │ name, phone, email           │
+              │ avatar_url (nullable)        │
+              │ salary_day (nullable)        │
+              │ billing_closing_day (null.)  │
+              │ timezone, currency           │
+              └──────────────────────────────┘
                            │
-        ┌──────────────────┼─────────────────────────┐
-        │ 1:N              │ 1:N                     │ 1:N
-        ▼                  ▼                         ▼
-┌──────────────┐  ┌──────────────────┐    ┌──────────────────────┐
-│  expenses    │  │   ai_insights    │    │  whatsapp_messages   │
-│ id PK        │  │ id PK            │    │ id PK                │
-│ user_id FK   │  │ user_id FK       │    │ user_id FK (nullable)│
-│ category_id  │──┐ type, period     │    │ phone (E.164)        │
-│ amount_cents │  │ message (md)     │    │ raw_text             │
-│ description  │  │ model_used       │    │ parsed_expense_id ───┘──► expenses.id
-│ tags[]       │  │ cost_micro_usd   │    │ status, provider     │
-│ occurred_at  │  │ generated_at     │    │ received_at          │
-│ deleted_at   │  └──────────────────┘    └──────────────────────┘
-└──────┬───────┘
+        ┌──────────────────┼──────────────────────────────────────┐
+        │ 1:N              │ 1:N              │ 1:N               │ 1:N
+        ▼                  ▼                  ▼                   ▼
+┌──────────────┐  ┌──────────────┐  ┌──────────────────┐  ┌──────────────────────┐
+│  expenses    │  │   incomes    │  │   ai_insights    │  │  whatsapp_messages   │
+│ amount_cents │  │ amount_cents │  │ id PK            │  │ id PK                │
+│ payment_meth │  │ source       │  │ user_id FK       │  │ user_id FK (nullable)│
+│ source       │  │ is_recurring │  │ type, period     │  │ phone (E.164)        │
+│ tags[]       │  │ received_at  │  │ message (md)     │  │ raw_text             │
+│ occurred_at  │  │ deleted_at   │  │ cost_micro_usd   │  │ parsed_expense_id ──►│expenses
+│ deleted_at   │  └──────────────┘  └──────────────────┘  │ received_at          │
+└──────┬───────┘                                           └──────────────────────┘
        │ N:1
        ▼
-┌────────────────────────┐
-│      categories        │
-│ id (text/slug) PK      │
-│ user_id FK (nullable)  │  ← NULL = categoria global (default)
-│ name, icon, color      │
-│ keywords text[]        │
-│ sort_order, is_default │
-└────────────────────────┘
+┌────────────────────────┐     ┌──────────────────────┐
+│      categories        │◄────│       budgets        │
+│ id (text/slug) PK      │     │ id PK                │
+│ user_id FK (nullable)  │     │ user_id FK           │
+│ name, icon, color      │     │ category_id FK       │
+│ keywords text[]        │     │ period (YYYY-MM|def) │
+│ sort_order, is_default │     │ amount_cents         │
+└────────────────────────┘     └──────────────────────┘
 ```
 
 ---
 
-## 4. Identidade: `auth.users` + `profiles`
+## 4. Tabela: `profiles`
+
+### Decisões
+
+- **`onboarded_at` removido** — o campo foi simplificado: `created_at` já registra quando o perfil foi criado (= quando o usuário fez signup). Não há necessidade de um segundo timestamp para "conclusão do onboarding" no V1; se necessário no futuro, adiciona-se como coluna nullable em migration incremental.
+- **`salary_day integer` (1–31, nullable)** — dia do mês em que o usuário recebe salário. Usado para definir o "período financeiro" do dashboard (ex: usuário que recebe dia 5 tem seu mês financeiro de 5/mai a 4/jun). NULL = usuário ainda não informou.
+- **`billing_closing_day integer` (1–28, nullable)** — dia de fechamento da fatura do cartão de crédito principal. Limita a 28 para evitar ambiguidade em fevereiro. Usado para agrupar gastos no crédito no período correto. NULL = usuário não tem ou não informou cartão.
+- **Por que não uma tabela `credit_cards`?** Em V1, modelamos apenas um cartão principal. Múltiplos cartões com datas diferentes é um caso de V2+ — nessa migration bastam dois inteiros em `profiles`.
+
+### Identidade: `auth.users` + `profiles`
 
 **Decisão:** Usar `auth.users` (Supabase Auth) como source-of-truth da identidade, com `public.profiles` 1:1 referenciando.
 
@@ -202,8 +239,9 @@ A entidade central. Cada linha = um gasto.
 
 ### Decisões
 
-- **`amount_cents bigint NOT NULL CHECK (amount_cents > 0)`** — centavos da moeda do usuário. `bigint` por overflow (§2). `CHECK > 0` porque "gasto zero" não faz sentido; reembolsos viriam em uma tabela `refunds` (V3+).
-- **`category_id text NOT NULL REFERENCES categories(id) ON DELETE RESTRICT`** — `RESTRICT` impede deletar categoria que tem despesas atreladas. `categories.id` é `text` (slug) — ver §6.
+- **`amount_cents bigint NOT NULL CHECK (amount_cents > 0)`** — valor da **saída** em centavos. `bigint` por overflow (§2). Representa quanto foi gasto; sempre positivo. **Ganhos (entradas) ficam em `public.incomes`** — as duas tabelas somadas dão o fluxo de caixa completo do usuário.
+- **`payment_method text NOT NULL DEFAULT 'other'`** — forma de pagamento usada: `pix`, `debit`, `credit`, `cash`, `transfer`, `other`. Valor `'other'` é o default para gastos importados via WhatsApp onde a forma não foi mencionada. Armazenado como `text + CHECK` (extensível sem lock).
+- **`category_id text NOT NULL REFERENCES categories(id) ON DELETE RESTRICT`** — `RESTRICT` impede deletar categoria que tem despesas atreladas. `categories.id` é `text` (slug) — ver §7.
 - **`source text NOT NULL CHECK (source IN ('whatsapp','manual','import')) DEFAULT 'manual'`** — origem do gasto. Extensível para `'open_banking'`, `'photo'` em V3.
 - **`tags text[] NOT NULL DEFAULT '{}'`** — array Postgres. **Justificativa:** tags são metadados leves, baixa cardinalidade por linha (raramente >3 tags), e não precisam ser entidade própria. Normalizar com `expense_tags` (M:N) custaria 2 joins por query do feed; com array + GIN index, filtros como `tags && ARRAY['delivery']` são rápidos. Brief recomendava `text[]` — confirmamos.
 - **`occurred_at timestamptz NOT NULL DEFAULT now()`** — quando o gasto aconteceu (editável pelo usuário). `created_at` (imutável) registra quando a linha foi inserida.
@@ -240,7 +278,52 @@ Não indexamos `(user_id, deleted_at)` porque o filtro `WHERE deleted_at IS NULL
 
 ---
 
-## 6. Tabela: `categories`
+## 6. Tabela: `incomes`
+
+Ganhos do usuário — salário, freelas, investimentos, rendas variáveis. Complementa `expenses`: juntos formam o fluxo de caixa.
+
+### Decisões
+
+- **`amount_cents bigint NOT NULL CHECK (amount_cents > 0)`** — valor da **entrada** em centavos. Mesmo padrão de `expenses.amount_cents`, mas representa recebimento, não gasto.
+- **`source text CHECK (...)`** — origem: `salary` (emprego fixo), `freelance` (trabalho avulso), `investment` (rendimentos), `rent` (aluguel recebido), `gift` (presente/bonificação), `other`.
+- **`is_recurring boolean NOT NULL DEFAULT false`** — `true` = ganho que se repete mensalmente (ex: salário). `false` = ganho único (ex: freela pontual). Esta flag permite que a UI distingua renda fixa de renda variável no dashboard.
+- **`recurring_rule jsonb NULL`** — detalhes da recorrência quando `is_recurring = true`. Formato: `{ "frequency": "monthly", "day_of_month": 5 }`. `NULL` obrigatório quando `is_recurring = false` (CHECK constraint).
+- **`received_at timestamptz`** — quando o ganho foi recebido (editável, como `occurred_at` em expenses). `created_at` é o timestamp de insert.
+- **Soft delete** — mesma política de `expenses`: `deleted_at timestamptz NULL`. Analytics podem ler tudo; app filtra `WHERE deleted_at IS NULL`.
+- **Por que não colocar ganhos em `expenses` com `amount_cents` negativo?** Misturar entradas e saídas na mesma tabela cria problemas de semântica (CHECK `> 0` não funciona), complica índices e torna queries de dashboard ambíguas. Tabelas separadas, join explícito quando necessário — mais limpo.
+
+### Índices
+
+```sql
+CREATE INDEX incomes_user_received_idx ON incomes (user_id, received_at DESC) WHERE deleted_at IS NULL;
+CREATE INDEX incomes_user_source_received_idx ON incomes (user_id, source, received_at DESC) WHERE deleted_at IS NULL;
+CREATE INDEX incomes_user_recurring_idx ON incomes (user_id, is_recurring) WHERE deleted_at IS NULL AND is_recurring = true;
+```
+
+---
+
+## 7. Tabela: `budgets`
+
+Orçamentos mensais por categoria — quanto o usuário planeja gastar em cada categoria.
+
+### Decisões
+
+- **`period text NOT NULL CHECK (period ~ '^([0-9]{4}-[0-9]{2}|default)$')`** — `'2026-05'` para orçamento de maio/2026; `'default'` para o padrão recorrente mensal (aplicado quando não há entrada específica para o mês). Isso evita ter que criar 12 linhas iguais ao configurar — o app consulta: "tem entry para esse mês? Usa. Senão, usa 'default'."
+- **`UNIQUE (user_id, category_id, period)`** — um orçamento por usuário/categoria/período. Re-configuração faz `ON CONFLICT DO UPDATE SET amount_cents = EXCLUDED.amount_cents`.
+- **`amount_cents bigint NOT NULL CHECK (amount_cents > 0)`** — quanto o usuário quer gastar no máximo. Comparado com `SUM(expenses.amount_cents)` do mesmo período para calcular % do orçamento usado.
+- **Tabela movida de V2 para V1** — decisão do board. A feature de orçamento é central para o produto mesmo no MVP; o schema é simples o suficiente para não adicionar complexidade desnecessária.
+- **Sem `updated_at` trigger?** Tem sim — trigger `budgets_set_updated_at` criado igual aos outros.
+
+### Índices
+
+```sql
+CREATE INDEX budgets_user_period_idx ON budgets (user_id, period);
+CREATE INDEX budgets_user_category_period_idx ON budgets (user_id, category_id, period);
+```
+
+---
+
+## 8. Tabela: `categories`
 
 ### Decisões
 
@@ -261,7 +344,7 @@ CREATE INDEX categories_keywords_gin_idx ON categories USING GIN (keywords);
 
 ---
 
-## 7. Tabela: `ai_insights`
+## 9. Tabela: `ai_insights`
 
 Insights gerados pela IA (Groq) e persistidos para evitar re-geração e tracking de custo.
 
@@ -289,7 +372,7 @@ A constraint `UNIQUE(user_id, type, period)` já cria índice próprio; o índic
 
 ---
 
-## 8. Tabela: `whatsapp_messages`
+## 10. Tabela: `whatsapp_messages`
 
 Log de mensagens recebidas, mesmo as que falharam parsing. **Auditoria + debugging + base para "CFO conversacional" do V1.**
 
@@ -321,28 +404,15 @@ CREATE INDEX whatsapp_messages_user_received_idx
 
 ---
 
-## 9. Plano de evolução (V1 → V3+)
+## 11. Plano de evolução (V2 → V3+)
 
 Tabelas/colunas previstas mas **não criadas ainda**. Esta seção é o backlog do schema — cada item vira uma migration própria quando a feature for priorizada.
 
-### V2 — Engajamento, metas e recorrências
+> **Nota:** `budgets` e `incomes` foram promovidos de V2 para **V1** por decisão do board.
 
-**`budgets`** — orçamento mensal por categoria.
-```sql
--- esboço, NÃO criar agora
-CREATE TABLE budgets (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  category_id text NOT NULL REFERENCES categories(id) ON DELETE CASCADE,
-  period text NOT NULL,            -- '2026-05' ou 'recurring' (padrão mensal)
-  amount_cents bigint NOT NULL CHECK (amount_cents > 0),
-  created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now(),
-  UNIQUE (user_id, category_id, period)
-);
-```
+### V2 — Engajamento, metas, recorrências e modo casal
 
-**`recurring_expenses`** ou ativar `expenses.recurring_rule jsonb` — duas escolhas:
+**`recurring_expenses`** — despesas recorrentes (duas opções para V2):
 - **Opção A (preferida):** tabela `recurring_expenses` (template) + cron que materializa `expenses` reais quando a data chega. Histórico fica natural em `expenses`; o template é editável sem mexer no passado.
 - **Opção B:** apenas usar `expenses.recurring_rule jsonb` no template e as instâncias materializadas como expenses normais com referência ao template. Mais simples mas obriga `recurring_template_id` em expenses.
 - **Decisão antecipada para V2:** Opção A, tabela separada. `expenses.recurring_rule` no V1 fica reservada mas sem uso — pode ser removida em uma migration de cleanup se Opção A vencer. (Reservar agora evita ALTER TABLE depois.)
@@ -415,8 +485,10 @@ A coluna `snake_case` do SQL é convertida para `camelCase` no app via:
 | `User.id` | `profiles.id` (= `auth.users.id`) | UUID |
 | `User.name` | `profiles.name` | |
 | `User.email` | `profiles.email` | espelhado de `auth.users.email` |
-| `User.phone` | `profiles.phone` | E.164, nullable até onboarding |
+| `User.phone` | `profiles.phone` | E.164, nullable |
 | `User.avatarUrl` | `profiles.avatar_url` | URL Supabase Storage, nullable |
+| `User.salaryDay` | `profiles.salary_day` | 1-31, nullable |
+| `User.billingClosingDay` | `profiles.billing_closing_day` | 1-28, nullable |
 | `User.createdAt` | `profiles.created_at` | |
 | `Category.id` | `categories.id` | text slug |
 | `Category.name` | `categories.name` | |
@@ -428,9 +500,23 @@ A coluna `snake_case` do SQL é convertida para `camelCase` no app via:
 | `Expense.amount` | `expenses.amount_cents` | rename intencional: explicita a unidade |
 | `Expense.category` | `expenses.category_id` | rename para deixar claro que é FK |
 | `Expense.description` | `expenses.description` | |
+| `Expense.paymentMethod` | `expenses.payment_method` | pix\|debit\|credit\|cash\|transfer\|other |
 | `Expense.source` | `expenses.source` | |
 | `Expense.tags` | `expenses.tags` | `text[]` |
 | `Expense.createdAt` | `expenses.occurred_at` | **mapeamento crítico:** o `createdAt` do TS hoje é "quando o gasto aconteceu"; no SQL isso é `occurred_at`. `expenses.created_at` é audit-only. |
+| `Income.id` | `incomes.id` | uuid |
+| `Income.userId` | `incomes.user_id` | |
+| `Income.amount` | `incomes.amount_cents` | entrada, centavos |
+| `Income.description` | `incomes.description` | |
+| `Income.source` | `incomes.source` | salary\|freelance\|investment\|rent\|gift\|other |
+| `Income.isRecurring` | `incomes.is_recurring` | boolean |
+| `Income.recurringRule` | `incomes.recurring_rule` | jsonb, null se não recorrente |
+| `Income.receivedAt` | `incomes.received_at` | quando o ganho foi recebido |
+| `Budget.id` | `budgets.id` | uuid |
+| `Budget.userId` | `budgets.user_id` | |
+| `Budget.categoryId` | `budgets.category_id` | text slug |
+| `Budget.period` | `budgets.period` | YYYY-MM ou 'default' |
+| `Budget.amount` | `budgets.amount_cents` | valor do orçamento, centavos |
 | `AIInsight.id` | `ai_insights.id` | |
 | `AIInsight.userId` | `ai_insights.user_id` | |
 | `AIInsight.type` | `ai_insights.type` | |
@@ -490,9 +576,9 @@ Os arquivos abaixo estão em `supabase/migrations/` e seguem o naming do Supabas
 | Arquivo | Conteúdo |
 |---|---|
 | `00000000000001_init_extensions.sql` | `pgcrypto` (gen_random_uuid), `pg_trgm` (search), `citext` (emails) |
-| `00000000000002_init_core_tables.sql` | profiles, categories, expenses, ai_insights, whatsapp_messages, trigger updated_at, trigger handle_new_user |
+| `00000000000002_init_core_tables.sql` | profiles, categories, expenses, incomes, budgets, ai_insights, whatsapp_messages, trigger updated_at, trigger handle_new_user |
 | `00000000000003_init_indexes.sql` | todos os índices descritos nesta doc |
-| `00000000000004_init_rls.sql` | enable RLS + policies de §10 |
+| `00000000000004_init_rls.sql` | enable RLS + policies de §12 (todas as 7 tabelas) |
 | `00000000000005_init_seed_categories.sql` | seed das 7 categorias default (`ON CONFLICT DO NOTHING`) |
 
 Cada arquivo abre com um comentário SQL explicando objetivo e dependências.
@@ -512,4 +598,4 @@ Esta issue ([GAB-17](/GAB/issues/GAB-17)) termina aqui — apenas design + migra
 
 ---
 
-*Documento mantido pelo CTO. Última atualização: 2026-05-21.*
+*Documento mantido pelo CTO + CEO. Última atualização: 2026-05-21 (revisão board: +incomes, +budgets V1, +payment_method, +salary_day, +billing_closing_day, -onboarded_at).*

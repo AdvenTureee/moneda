@@ -1,13 +1,13 @@
 -- 00000000000002_init_core_tables.sql
--- Cria as 5 tabelas do schema V1: profiles, categories, expenses,
--- ai_insights, whatsapp_messages. Também cria os triggers de
--- updated_at e o handle_new_user que sincroniza auth.users → profiles.
+-- Cria as 7 tabelas do schema V1: profiles, categories, expenses,
+-- incomes, budgets, ai_insights, whatsapp_messages.
+-- Também cria os triggers de updated_at e handle_new_user (auth.users → profiles).
 --
 -- Convenções (ver DATABASE.md §2):
 -- - snake_case em colunas; uuid PK com gen_random_uuid; bigint para
 --   valores monetários (em centavos); timestamptz com DEFAULT now().
 -- - Enums via CHECK em coluna text (evita lock pesado para evoluir).
--- - Soft delete em expenses (deleted_at).
+-- - Soft delete em expenses e incomes (deleted_at).
 --
 -- Dependências: 00000000000001_init_extensions (pgcrypto, citext).
 -- Próxima: 00000000000003_init_indexes.
@@ -29,16 +29,19 @@ $$;
 -- profiles: 1:1 com auth.users, dados específicos do app.
 -- ---------------------------------------------------------------------------
 CREATE TABLE public.profiles (
-  id           uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-  name         text NOT NULL,
-  phone        text,
-  email        citext NOT NULL,
-  avatar_url   text,
-  timezone     text NOT NULL DEFAULT 'America/Sao_Paulo',
-  currency     text NOT NULL DEFAULT 'BRL' CHECK (currency ~ '^[A-Z]{3}$'),
-  onboarded_at timestamptz,
-  created_at   timestamptz NOT NULL DEFAULT now(),
-  updated_at   timestamptz NOT NULL DEFAULT now(),
+  id                   uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  name                 text NOT NULL,
+  phone                text,
+  email                citext NOT NULL,
+  avatar_url           text,
+  timezone             text NOT NULL DEFAULT 'America/Sao_Paulo',
+  currency             text NOT NULL DEFAULT 'BRL' CHECK (currency ~ '^[A-Z]{3}$'),
+  -- Dia do mês em que o usuário recebe salário (1-31). NULL = não informado.
+  salary_day           integer CHECK (salary_day IS NULL OR salary_day BETWEEN 1 AND 31),
+  -- Dia de fechamento da fatura do cartão de crédito principal (1-28). NULL = não informado.
+  billing_closing_day  integer CHECK (billing_closing_day IS NULL OR billing_closing_day BETWEEN 1 AND 28),
+  created_at           timestamptz NOT NULL DEFAULT now(),
+  updated_at           timestamptz NOT NULL DEFAULT now(),
 
   -- E.164: '+' seguido de 7 a 15 dígitos, primeiro dígito 1-9.
   CONSTRAINT profiles_phone_e164_chk
@@ -122,9 +125,14 @@ CREATE TRIGGER categories_set_updated_at
 CREATE TABLE public.expenses (
   id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id         uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  -- Valor do gasto em centavos (ex: R$ 32,50 = 3250). Sempre positivo e > 0.
+  -- Representa saída de dinheiro; entradas ficam em public.incomes.
   amount_cents    bigint NOT NULL CHECK (amount_cents > 0),
   category_id     text NOT NULL REFERENCES public.categories(id) ON DELETE RESTRICT,
   description     text NOT NULL CHECK (length(description) > 0 AND length(description) <= 500),
+  -- Como o gasto foi pago.
+  payment_method  text NOT NULL DEFAULT 'other'
+                  CHECK (payment_method IN ('pix', 'debit', 'credit', 'cash', 'transfer', 'other')),
   source          text NOT NULL DEFAULT 'manual'
                   CHECK (source IN ('whatsapp', 'manual', 'import')),
   tags            text[] NOT NULL DEFAULT ARRAY[]::text[],
@@ -138,6 +146,63 @@ CREATE TABLE public.expenses (
 
 CREATE TRIGGER expenses_set_updated_at
   BEFORE UPDATE ON public.expenses
+  FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+-- ---------------------------------------------------------------------------
+-- incomes: ganhos do usuário — recorrentes (salário) ou únicos (freelance, etc.).
+-- Soft delete via deleted_at (mesma política de expenses).
+-- ---------------------------------------------------------------------------
+CREATE TABLE public.incomes (
+  id             uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id        uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  -- Valor recebido em centavos (ex: R$ 5.000,00 = 500000). Sempre positivo.
+  amount_cents   bigint NOT NULL CHECK (amount_cents > 0),
+  description    text NOT NULL CHECK (length(description) > 0 AND length(description) <= 500),
+  -- Origem do ganho.
+  source         text NOT NULL DEFAULT 'other'
+                 CHECK (source IN ('salary', 'freelance', 'investment', 'rent', 'gift', 'other')),
+  -- true = ganho que se repete (ex: salário mensal); false = ganho único (ex: freela pontual).
+  is_recurring   boolean NOT NULL DEFAULT false,
+  -- Regra de recorrência quando is_recurring = true.
+  -- Formato previsto: { "frequency": "monthly", "day_of_month": 5 }
+  -- NULL quando is_recurring = false.
+  recurring_rule jsonb,
+  -- Quando o ganho foi recebido (editável pelo usuário, como occurred_at em expenses).
+  received_at    timestamptz NOT NULL DEFAULT now(),
+  deleted_at     timestamptz,
+  created_at     timestamptz NOT NULL DEFAULT now(),
+  updated_at     timestamptz NOT NULL DEFAULT now(),
+
+  CONSTRAINT incomes_recurring_rule_chk CHECK (
+    (is_recurring = false AND recurring_rule IS NULL) OR
+    (is_recurring = true)
+  )
+);
+
+CREATE TRIGGER incomes_set_updated_at
+  BEFORE UPDATE ON public.incomes
+  FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+-- ---------------------------------------------------------------------------
+-- budgets: orçamentos mensais por categoria.
+-- period = '2026-05' para orçamento pontual, 'default' para padrão recorrente.
+-- UNIQUE(user_id, category_id, period) garante um orçamento por mês/categoria.
+-- ---------------------------------------------------------------------------
+CREATE TABLE public.budgets (
+  id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id      uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  category_id  text NOT NULL REFERENCES public.categories(id) ON DELETE CASCADE,
+  -- '2026-05' = orçamento para maio/2026; 'default' = padrão mensal recorrente.
+  period       text NOT NULL CHECK (period ~ '^([0-9]{4}-[0-9]{2}|default)$'),
+  amount_cents bigint NOT NULL CHECK (amount_cents > 0),
+  created_at   timestamptz NOT NULL DEFAULT now(),
+  updated_at   timestamptz NOT NULL DEFAULT now(),
+
+  UNIQUE (user_id, category_id, period)
+);
+
+CREATE TRIGGER budgets_set_updated_at
+  BEFORE UPDATE ON public.budgets
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 -- ---------------------------------------------------------------------------
@@ -193,13 +258,20 @@ CREATE UNIQUE INDEX whatsapp_messages_provider_msg_unique_idx
 -- ---------------------------------------------------------------------------
 -- Comentários inline (acessíveis via \d+ no psql e via Supabase dashboard).
 -- ---------------------------------------------------------------------------
-COMMENT ON TABLE  public.profiles            IS 'Dados app-específicos do usuário; 1:1 com auth.users.';
-COMMENT ON COLUMN public.profiles.phone      IS 'Número WhatsApp em formato E.164. Preenchido no onboarding.';
-COMMENT ON COLUMN public.profiles.avatar_url IS 'URL pública da foto de perfil no Supabase Storage (bucket: avatars). NULL até o usuário fazer upload.';
-COMMENT ON TABLE  public.categories          IS 'Categorias de despesa. user_id NULL = global default; user_id NOT NULL = custom do usuário (V2+).';
-COMMENT ON TABLE  public.expenses            IS 'Lançamentos de gasto. Soft-delete via deleted_at.';
-COMMENT ON COLUMN public.expenses.amount_cents IS 'Valor em centavos da moeda do usuário. Sempre > 0.';
-COMMENT ON COLUMN public.expenses.occurred_at  IS 'Quando o gasto aconteceu (visível ao usuário, editável). Diferente de created_at.';
-COMMENT ON TABLE  public.ai_insights         IS 'Saídas da IA persistidas com telemetria de tokens e custo.';
-COMMENT ON COLUMN public.ai_insights.cost_micro_usd IS 'Custo da inferência em micro-USD (1 USD = 1.000.000).';
-COMMENT ON TABLE  public.whatsapp_messages   IS 'Log de mensagens WhatsApp recebidas pelo webhook.';
+COMMENT ON TABLE  public.profiles                     IS 'Dados app-específicos do usuário; 1:1 com auth.users.';
+COMMENT ON COLUMN public.profiles.phone               IS 'Número WhatsApp em formato E.164. Preenchido no onboarding.';
+COMMENT ON COLUMN public.profiles.avatar_url          IS 'URL pública da foto de perfil no Supabase Storage (bucket: avatars). NULL até o usuário fazer upload.';
+COMMENT ON COLUMN public.profiles.salary_day          IS 'Dia do mês em que o usuário recebe salário (1-31). Usado para calcular o período do orçamento.';
+COMMENT ON COLUMN public.profiles.billing_closing_day IS 'Dia de fechamento da fatura do cartão de crédito principal (1-28). Usado para agrupar gastos no crédito.';
+COMMENT ON TABLE  public.categories                   IS 'Categorias de despesa. user_id NULL = global default; user_id NOT NULL = custom do usuário (V2+).';
+COMMENT ON TABLE  public.expenses                     IS 'Lançamentos de gasto (saídas). Soft-delete via deleted_at. Entradas ficam em public.incomes.';
+COMMENT ON COLUMN public.expenses.amount_cents        IS 'Valor do gasto em centavos da moeda do usuário. Sempre > 0. Ex: R$ 32,50 = 3250.';
+COMMENT ON COLUMN public.expenses.payment_method      IS 'Forma de pagamento usada: pix, debit, credit, cash, transfer, other.';
+COMMENT ON COLUMN public.expenses.occurred_at         IS 'Quando o gasto aconteceu (visível ao usuário, editável). Diferente de created_at.';
+COMMENT ON TABLE  public.incomes                      IS 'Lançamentos de ganho (entradas). Soft-delete via deleted_at. Gastos ficam em public.expenses.';
+COMMENT ON COLUMN public.incomes.amount_cents         IS 'Valor recebido em centavos. Sempre > 0. Ex: R$ 5.000,00 = 500000.';
+COMMENT ON COLUMN public.incomes.is_recurring         IS 'true = ganho recorrente (ex: salário); false = ganho único (ex: freela pontual).';
+COMMENT ON TABLE  public.budgets                      IS 'Orçamentos mensais por categoria. period = YYYY-MM ou default (recorrente).';
+COMMENT ON TABLE  public.ai_insights                  IS 'Saídas da IA persistidas com telemetria de tokens e custo.';
+COMMENT ON COLUMN public.ai_insights.cost_micro_usd   IS 'Custo da inferência em micro-USD (1 USD = 1.000.000).';
+COMMENT ON TABLE  public.whatsapp_messages            IS 'Log de mensagens WhatsApp recebidas pelo webhook.';

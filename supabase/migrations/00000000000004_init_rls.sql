@@ -8,6 +8,7 @@
 -- - categories tem SELECT especial (NULL = global, visível para todos os autenticados).
 -- - whatsapp_messages: writes apenas via service_role (webhook server-side).
 -- - service_role bypassa RLS por padrão; não precisamos de policies pra ele.
+-- - incomes e budgets: mesmo padrão de expenses (auth.uid() = user_id).
 --
 -- Dependências: 00000000000002_init_core_tables.
 -- Próxima: 00000000000005_init_seed_categories.
@@ -88,6 +89,50 @@ CREATE POLICY expenses_update_own ON public.expenses
 CREATE POLICY expenses_delete_own ON public.expenses
   FOR DELETE
   TO authenticated
+  USING (auth.uid() = user_id);
+
+-- ---------------------------------------------------------------------------
+-- incomes
+-- ---------------------------------------------------------------------------
+ALTER TABLE public.incomes ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY incomes_select_own ON public.incomes
+  FOR SELECT TO authenticated
+  USING (auth.uid() = user_id);
+
+CREATE POLICY incomes_insert_own ON public.incomes
+  FOR INSERT TO authenticated
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY incomes_update_own ON public.incomes
+  FOR UPDATE TO authenticated
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY incomes_delete_own ON public.incomes
+  FOR DELETE TO authenticated
+  USING (auth.uid() = user_id);
+
+-- ---------------------------------------------------------------------------
+-- budgets
+-- ---------------------------------------------------------------------------
+ALTER TABLE public.budgets ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY budgets_select_own ON public.budgets
+  FOR SELECT TO authenticated
+  USING (auth.uid() = user_id);
+
+CREATE POLICY budgets_insert_own ON public.budgets
+  FOR INSERT TO authenticated
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY budgets_update_own ON public.budgets
+  FOR UPDATE TO authenticated
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY budgets_delete_own ON public.budgets
+  FOR DELETE TO authenticated
   USING (auth.uid() = user_id);
 
 -- ---------------------------------------------------------------------------

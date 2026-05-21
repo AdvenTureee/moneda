@@ -1,8 +1,8 @@
 -- 00000000000003_init_indexes.sql
--- Índices baseados nos query patterns conhecidos (ver DATABASE.md §§5-8).
+-- Índices baseados nos query patterns conhecidos (ver DATABASE.md §§5-9).
 --
 -- Estratégia geral:
--- - Índices parciais com WHERE deleted_at IS NULL para expenses (todas
+-- - Índices parciais com WHERE deleted_at IS NULL para expenses/incomes (todas
 --   as queries do app filtram soft-delete; índice menor = mais rápido).
 -- - GIN em colunas array (tags, keywords) para buscas com && / @>.
 -- - GIN com gin_trgm_ops em description para busca fuzzy do CFO.
@@ -47,6 +47,38 @@ CREATE INDEX categories_user_sort_idx
 --  o conjunto cresce — GIN deixa o cost estável.)
 CREATE INDEX categories_keywords_gin_idx
   ON public.categories USING GIN (keywords);
+
+-- ---------------------------------------------------------------------------
+-- incomes
+-- ---------------------------------------------------------------------------
+
+-- Feed/dashboard de ganhos: lista por usuário, mais recentes primeiro.
+CREATE INDEX incomes_user_received_idx
+  ON public.incomes (user_id, received_at DESC)
+  WHERE deleted_at IS NULL;
+
+-- Filtro por tipo de fonte (ex: "todos os salários").
+CREATE INDEX incomes_user_source_received_idx
+  ON public.incomes (user_id, source, received_at DESC)
+  WHERE deleted_at IS NULL;
+
+-- Filtro de ganhos recorrentes (para UI de recorrências).
+CREATE INDEX incomes_user_recurring_idx
+  ON public.incomes (user_id, is_recurring)
+  WHERE deleted_at IS NULL AND is_recurring = true;
+
+-- ---------------------------------------------------------------------------
+-- budgets
+-- ---------------------------------------------------------------------------
+
+-- Lookup principal: orçamentos do usuário para um período.
+-- Também serve para "orçamento default" (period = 'default').
+CREATE INDEX budgets_user_period_idx
+  ON public.budgets (user_id, period);
+
+-- Lookup de orçamento de uma categoria específica (para comparativo vs. gasto real).
+CREATE INDEX budgets_user_category_period_idx
+  ON public.budgets (user_id, category_id, period);
 
 -- ---------------------------------------------------------------------------
 -- ai_insights
