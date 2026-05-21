@@ -35,7 +35,10 @@ function rowToExpense(row: ExpensesRow): Expense {
 // ---------------------------------------------------------------------------
 async function getExpensesFromDB(filters: ExpenseFilters): Promise<Expense[]> {
   const db = createServiceClient();
-  const userId = filters.userId ?? MOCK_USER.id;
+  if (!filters.userId) {
+    throw new Error('userId é obrigatório para buscar despesas do banco');
+  }
+  const userId = filters.userId;
 
   let query = db
     .from('expenses')

@@ -76,6 +76,25 @@ export interface DashboardMetrics {
   recentExpenses: Expense[];
 }
 
+export interface Budget {
+  id: string;
+  userId: string;
+  categoryId: string;
+  /** '2026-05' = orçamento para maio/2026; 'default' = padrão mensal recorrente. */
+  period: string;
+  /** Amount in centavos (e.g. 50000 = R$ 500,00) */
+  amountCents: number;
+  createdAt: Date;
+  updated_at: Date;
+}
+
+export interface BudgetInput {
+  userId: string;
+  categoryId: string;
+  period: string;
+  amountCents: number;
+}
+
 export interface ExpenseFilters {
   userId?: string;
   category?: string;

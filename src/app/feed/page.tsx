@@ -1,19 +1,49 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Search } from 'lucide-react';
 import AppShell from '@/components/AppShell';
 import ExpenseCard from '@/components/ExpenseCard';
 import CategoryChip from '@/components/CategoryChip';
-import { getAllExpenses, CATEGORIES } from '@/data/mock';
+import { CATEGORIES } from '@/data/mock';
 import { groupExpensesByDate, formatCurrency } from '@/lib/utils';
-import { MOCK_USER } from '@/data/mock';
+import type { Expense } from '@/types';
 
 export default function FeedPage() {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const [allExpenses, setAllExpenses] = useState<Expense[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const allExpenses = getAllExpenses(MOCK_USER.id);
+  const fetchExpenses = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const params = new URLSearchParams();
+      if (activeCategory) params.set('category', activeCategory);
+      if (search.trim()) params.set('search', search.trim());
+      const url = `/api/expenses${params.size ? '?' + params.toString() : ''}`;
+      const res = await fetch(url);
+      if (!res.ok) {
+        if (res.status === 401) {
+          window.location.href = '/login';
+          return;
+        }
+        throw new Error('Erro ao buscar despesas');
+      }
+      const json = await res.json();
+      setAllExpenses(json.data ?? []);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Erro desconhecido');
+    } finally {
+      setLoading(false);
+    }
+  }, [activeCategory, search]);
+
+  useEffect(() => {
+    fetchExpenses();
+  }, [fetchExpenses]);
 
   const filtered = useMemo(() => {
     let result = allExpenses;
@@ -93,7 +123,23 @@ export default function FeedPage() {
 
         {/* Expense list grouped by date */}
         <div className="px-4">
-          {groups.length === 0 ? (
+          {loading ? (
+            <div className="flex flex-col items-center py-16 text-center">
+              <span className="text-5xl mb-4 opacity-30" aria-hidden>⏳</span>
+              <p className="text-base font-semibold text-[#1A1D23]">Carregando...</p>
+            </div>
+          ) : error ? (
+            <div className="flex flex-col items-center py-16 text-center">
+              <span className="text-5xl mb-4 opacity-30" aria-hidden>⚠️</span>
+              <p className="text-base font-semibold text-[#B14C4C]">{error}</p>
+              <button
+                onClick={fetchExpenses}
+                className="mt-2 px-4 py-2 bg-[#A8C5E0] text-white rounded-[10px] text-sm font-semibold"
+              >
+                Tentar novamente
+              </button>
+            </div>
+          ) : groups.length === 0 ? (
             <div className="flex flex-col items-center py-16 text-center">
               <span className="text-5xl mb-4 opacity-30" aria-hidden>🔍</span>
               <p className="text-base font-semibold text-[#1A1D23]">
