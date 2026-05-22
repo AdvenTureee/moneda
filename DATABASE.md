@@ -1,6 +1,6 @@
-# Grana — Schema do Banco de Dados (Supabase / Postgres)
+# Moneda — Schema do Banco de Dados (Supabase / Postgres)
 
-> Design canônico do schema Postgres do Grana a partir do V1. Esta é a fonte da verdade para a camada de dados — `ARCHITECTURE.md` referencia este documento.
+> Design canônico do schema Postgres do Moneda a partir do V1. Esta é a fonte da verdade para a camada de dados — `ARCHITECTURE.md` referencia este documento.
 
 > **Status:** desenho aprovado pelo CTO, aguardando review do CEO. Nada foi executado no Supabase ainda. Os arquivos em `supabase/migrations/` são prontos para `supabase db push` após aprovação.
 

@@ -63,7 +63,7 @@ export default function AIInsightBanner({
   return (
     <div
       role="complementary"
-      aria-label="Insight do Grana"
+      aria-label="Insight da Mo"
       className="relative bg-white rounded-[16px] overflow-hidden"
       style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
     >

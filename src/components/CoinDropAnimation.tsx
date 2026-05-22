@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import GranaMascot from './GranaMascot';
+import Mo from './Mo';
 
 interface CoinDropAnimationProps {
   onComplete?: () => void;
@@ -25,7 +25,7 @@ export default function CoinDropAnimation({
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center pointer-events-none">
       <div className="animate-coin-drop">
-        <GranaMascot variant="happy" size={80} />
+        <Mo variant="happy" size={80} />
       </div>
     </div>
   );

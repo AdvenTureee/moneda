@@ -1,9 +1,9 @@
 'use client';
 
-export type GranaMascotVariant = 'idle' | 'happy' | 'sad' | 'thinking';
+export type MoVariant = 'idle' | 'happy' | 'sad' | 'thinking';
 
-export interface GranaMascotProps {
-  variant?: GranaMascotVariant;
+export interface MoProps {
+  variant?: MoVariant;
   size?: number;
   className?: string;
   pupilX?: number;
@@ -18,13 +18,13 @@ const PALETTE = {
   esclera: '#FAFAF9',
 };
 
-export default function GranaMascot({
+export default function Mo({
   variant = 'idle',
   size = 80,
   className = '',
   pupilX = 0,
   pupilY = 0,
-}: GranaMascotProps) {
+}: MoProps) {
   // Pupil tracking — clamp into [-1, 1] then translate within the eye.
   const px = Math.max(-1, Math.min(1, pupilX)) * 2.2;
   const py = Math.max(-1, Math.min(1, pupilY)) * 3.2;

@@ -1,10 +1,10 @@
 'use client';
 
 import { useRef, useEffect, useState } from 'react';
-import GranaMascot from './GranaMascot';
-import type { GranaMascotProps } from './GranaMascot';
+import Mo from './Mo';
+import type { MoProps } from './Mo';
 
-export default function TrackedMascot(props: GranaMascotProps) {
+export default function TrackedMascot(props: MoProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [pupilX, setPupilX] = useState(0);
   const [pupilY, setPupilY] = useState(0);
@@ -62,7 +62,7 @@ export default function TrackedMascot(props: GranaMascotProps) {
 
   return (
     <div ref={ref} className="inline-block">
-      <GranaMascot {...props} pupilX={pupilX} pupilY={pupilY} />
+      <Mo {...props} pupilX={pupilX} pupilY={pupilY} />
     </div>
   );
 }

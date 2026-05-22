@@ -56,7 +56,7 @@ export async function GET() {
     status: 200,
     headers: {
       'Content-Type': 'text/csv; charset=utf-8',
-      'Content-Disposition': `attachment; filename="grana-export-${today}.csv"`,
+      'Content-Disposition': `attachment; filename="moneda-export-${today}.csv"`,
       'Cache-Control': 'no-store',
     },
   });

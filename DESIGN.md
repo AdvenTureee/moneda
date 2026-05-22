@@ -1,4 +1,4 @@
-# DESIGN.md — Grana
+# DESIGN.md — Moneda
 
 > Sistema de design, estrutura de navegação e especificação de telas.
 > Este documento é a fonte de verdade para engenheiros implementando o MVP.
@@ -247,7 +247,7 @@ Regra: máximo 2 níveis de push navigation + modais. Nunca empilhar modais sobr
 │  ● Outros         R$ 997   35%      │
 │                                     │
 ├─────────────────────────────────────┤
-│  💡 Insight do Grana                 │  ← Banner de IA
+│  💡 Insight da Mo                    │  ← Banner de IA
 │  "Você gasta 40% a mais em lazer   │
 │   nas sextas. Quer criar uma meta?" │
 │                              [→]    │
@@ -618,7 +618,7 @@ Visual:
   - Texto: text-sm, color-text-primary, max 2 linhas (depois trunca com "...")
   - CTA [→]: text-sm, color-brand-blue, bold, tap area 44×44px mínimo
 
-Acessibilidade: `role="complementary"`, `aria-label="Insight do Grana"`.
+Acessibilidade: `role="complementary"`, `aria-label="Insight da Mo"`.
 Dismiss: ícone × no canto superior direito, tap area 44×44px, `aria-label="Fechar insight"`.
 ```
 
@@ -779,4 +779,4 @@ Cada tela deve ser considerada concluída quando:
 
 ---
 
-*Documento criado por UXDesigner — GAB-14 · Grana MVP · Maio 2026*
+*Documento criado por UXDesigner — GAB-14 · Moneda MVP · Maio 2026*

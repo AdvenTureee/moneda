@@ -5,7 +5,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import type { Components } from 'react-markdown';
 import Icon from '@/components/Icon';
-import GranaMascot from '@/components/GranaMascot';
+import Mo from '@/components/Mo';
 import DonutChart from '@/components/DonutChart';
 import CategoryChip from '@/components/CategoryChip';
 import { formatCurrency } from '@/lib/utils';
@@ -256,7 +256,7 @@ export default function InsightsView({
           className="bg-white rounded-[16px] p-8 mb-6 text-center"
           style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
         >
-          <GranaMascot variant="sad" size={128} className="mx-auto mb-3 animate-bounce-in" />
+          <Mo variant="sad" size={128} className="mx-auto mb-3 animate-bounce-in" />
           <p className="text-base font-semibold text-[#1A1D23]">Nenhum gasto no período</p>
           <p className="text-sm text-[#6B7280] mt-1 max-w-[260px] mx-auto">
             Cadastre seus gastos que eu analiso tudo pra você! 🪙
@@ -267,7 +267,7 @@ export default function InsightsView({
       {/* AI Insights Section */}
       <section className="mb-6">
         <h2 className="text-sm font-heading text-[#1A1D23] mb-3">
-          Análise do Grana
+          Análise da Mo
         </h2>
 
         {/* Search + Type filter */}
@@ -328,7 +328,7 @@ export default function InsightsView({
             className="bg-white rounded-[16px] p-6 text-center"
             style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
           >
-            <GranaMascot variant="thinking" size={112} className="mx-auto mb-2" />
+            <Mo variant="thinking" size={112} className="mx-auto mb-2" />
             <p className="text-sm text-[#6B7280]">
               Nenhuma análise gerada ainda.
             </p>
@@ -349,7 +349,7 @@ export default function InsightsView({
             className="bg-white rounded-[16px] p-6 text-center"
             style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
           >
-            <GranaMascot variant="thinking" size={104} className="mx-auto mb-2" />
+            <Mo variant="thinking" size={104} className="mx-auto mb-2" />
             <p className="text-sm text-[#6B7280]">
               Nenhum resultado para {search ? `"${search.trim()}"` : 'este filtro'}.
             </p>

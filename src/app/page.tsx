@@ -8,7 +8,8 @@ import DonutChart from '@/components/DonutChart';
 import DailyHistogram from '@/components/DailyHistogram';
 import Icon from '@/components/Icon';
 import TrackedMascot from '@/components/TrackedMascot';
-import GranaMascot from '@/components/GranaMascot';
+import MoTipBubble from '@/components/MoTipBubble';
+import Mo from '@/components/Mo';
 import Confetti from '@/components/Confetti';
 import MonthPicker from '@/components/MonthPicker';
 import RegenerateInsightButton from '@/components/RegenerateInsightButton';
@@ -63,7 +64,7 @@ export default async function DashboardPage({
     '';
   const firstName = fullName ? fullName.split(' ')[0] : 'Gabriel';
   const avatarUrl = (metadata.avatar_url as string | undefined) ?? null;
-  const welcomeMessage = `Olá, ${firstName}! Bem-vindo(a) ao Grana. Conforme você cadastrar seus gastos ou nos enviar pelo WhatsApp, nossa Inteligência Artificial analisará seus hábitos de consumo para gerar insights financeiros personalizados aqui!`;
+  const welcomeMessage = `Olá, ${firstName}! Bem-vindo(a) ao Moneda. Conforme você cadastrar seus gastos ou nos enviar pelo WhatsApp, nossa Inteligência Artificial analisará seus hábitos de consumo para gerar insights financeiros personalizados aqui!`;
 
   const insightMessage = latestInsight ? latestInsight.message : welcomeMessage;
 
@@ -88,6 +89,8 @@ export default async function DashboardPage({
             )}
           </div>
         </header>
+
+        <MoTipBubble />
 
         {/* Hero: restante do mês (principal) */}
         <section className="mb-5 animate-fade-up delay-1" aria-label="Restante do mês">
@@ -195,7 +198,7 @@ export default async function DashboardPage({
 
           {metrics.recentExpenses.length === 0 ? (
             <div className="flex flex-col items-center py-12 text-center">
-              <GranaMascot variant="sad" size={128} className="mb-4 animate-bounce-in" />
+              <Mo variant="sad" size={128} className="mb-4 animate-bounce-in" />
               <p className="text-base font-heading text-[#1A1D23]">Nenhum gasto ainda</p>
               <p className="text-sm text-[#6B7280] mt-1 max-w-[260px]">
                 E aí, cadê os gastos? 🕵️ Comece adicionando sua primeira despesa.

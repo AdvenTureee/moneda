@@ -1,4 +1,4 @@
-# Grana — Documentação de Produto
+# Moneda — Documentação de Produto
 
 > **"Seu dinheiro, finalmente claro."**
 
@@ -8,7 +8,7 @@
 
 | Campo     | Valor                               |
 |-----------|-------------------------------------|
-| Nome      | **Grana**                           |
+| Nome      | **Moneda**                           |
 | Tagline   | *"Seu dinheiro, finalmente claro."* |
 | Domínio   | App de controle de gastos pessoais  |
 | Mercado   | Brasil                              |
@@ -44,11 +44,11 @@ Categorias chamadas "Gastos supérfluos" e notificações do tipo "Você gastou 
 ## 4. Proposta de Valor e Diferenciação
 
 ### Proposta Central
-Grana é o único app de controle de gastos que funciona *de onde você já está* — o WhatsApp — e usa IA para te explicar seu dinheiro sem julgamentos.
+Moneda é o único app de controle de gastos que funciona *de onde você já está* — o WhatsApp — e usa IA para te explicar seu dinheiro sem julgamentos.
 
 ### Pilares de Diferenciação
 
-| Diferencial             | Grana                                     | GuiaBolso / Mobills          | Planilha Excel              |
+| Diferencial             | Moneda                                     | GuiaBolso / Mobills          | Planilha Excel              |
 |-------------------------|-------------------------------------------|------------------------------|-----------------------------|
 | Canal de entrada        | WhatsApp (zero fricção)                   | App próprio                  | Desktop / mobile            |
 | Lançamento              | Mensagem de texto natural                 | Formulário por categoria     | Digitação manual            |
@@ -64,7 +64,7 @@ O MVP é validação de hipótese, não produto completo. Foco em: usuário cons
 
 ### Núcleo obrigatório
 
-- [ ] **Lançamento via WhatsApp** — usuário envia mensagem como "gastei 35 no ifood" e o Grana interpreta
+- [ ] **Lançamento via WhatsApp** — usuário envia mensagem como "gastei 35 no ifood" e o Moneda interpreta
 - [ ] **Parsing de linguagem natural via Claude API** — extrai valor, categoria inferida e data
 - [ ] **Feed de gastos** — lista cronológica dos lançamentos com valor, categoria e data
 - [ ] **Resumo mensal** — total gasto no mês, divisão por categoria (top 3)
@@ -128,7 +128,7 @@ Ordenadas por impacto estimado no engajamento e retenção:
 ---
 
 ### V1 — Produto Básico Funcional + Diferenciais de Canal
-**Objetivo:** Usuário tem conta, dados persistidos e vê o Grana como o app mais conveniente que já usou — porque funciona 100% no WhatsApp.
+**Objetivo:** Usuário tem conta, dados persistidos e vê o Moneda como o app mais conveniente que já usou — porque funciona 100% no WhatsApp.
 
 - Autenticação (Magic Link ou Google OAuth)
 - Banco de dados real (**Supabase** — Postgres gerenciado)
@@ -144,7 +144,7 @@ Ordenadas por impacto estimado no engajamento e retenção:
 ---
 
 ### V2 — Engajamento, Inteligência e Vida Social do Dinheiro
-**Objetivo:** Grana começa a surpreender o usuário com insights que ele não pediu, e vira ferramenta de casal.
+**Objetivo:** Moneda começa a surpreender o usuário com insights que ele não pediu, e vira ferramenta de casal.
 
 - Insights proativos semanais via WhatsApp
 - Metas mensais por categoria com acompanhamento em tempo real
@@ -159,7 +159,7 @@ Ordenadas por impacto estimado no engajamento e retenção:
 ---
 
 ### V3 — Conexão Bancária, Automação e Zero Fricção Total
-**Objetivo:** Zero esforço de lançamento — o Grana importa, lê fotos e responde qualquer pergunta.
+**Objetivo:** Zero esforço de lançamento — o Moneda importa, lê fotos e responde qualquer pergunta.
 
 - Open Banking (leitura de extratos bancários)
 - Lançamento automático de transações bancárias
@@ -173,7 +173,7 @@ Ordenadas por impacto estimado no engajamento e retenção:
 ---
 
 ### V4 — Plataforma Financeira Pessoal + Profissional
-**Objetivo:** Grana vira a referência financeira do usuário — não apenas controle, mas orientação — e expande para autônomos e MEIs.
+**Objetivo:** Moneda vira a referência financeira do usuário — não apenas controle, mas orientação — e expande para autônomos e MEIs.
 
 - Simulações ("Se eu cortar delivery, quanto poupo em 6 meses?")
 - Integração com investimentos (visão de patrimônio)
@@ -230,7 +230,7 @@ Ordenadas por impacto estimado no engajamento e retenção:
 - Se sente bem quando tem clareza sobre seus gastos
 - Usa WhatsApp mais de 3h por dia
 
-**Como usa o Grana:**
+**Como usa o Moneda:**
 Manda mensagem no WhatsApp enquanto ainda está no iFood: "gastei 42 no almoço". Abre o app uma vez por semana pra ver o resumo. Adora quando a IA diz "você gastou menos que na semana passada".
 
 **Jobs to Be Done:** *"Quando peço delivery, quero registrar sem abrir outro app para que não perca o controle do mês sem perceber."*
@@ -251,8 +251,8 @@ Manda mensagem no WhatsApp enquanto ainda está no iFood: "gastei 42 no almoço"
 - Precisa de clareza, não de mais dados
 - Prefere uma explicação simples a um relatório complexo
 
-**Como usa o Grana:**
-Usa o WhatsApp para lançar compras no supermercado e despesas da escola. Consulta o resumo semanal que o Grana manda. Valoriza quando a IA diz "vocês estão dentro do esperado para o mês" — ou o alerta antes de extrapolar.
+**Como usa o Moneda:**
+Usa o WhatsApp para lançar compras no supermercado e despesas da escola. Consulta o resumo semanal que o Moneda manda. Valoriza quando a IA diz "vocês estão dentro do esperado para o mês" — ou o alerta antes de extrapolar.
 
 **Jobs to Be Done:** *"Quando pago uma conta, quero saber se ainda estou dentro do orçamento para que minha família não seja pega de surpresa no fim do mês."*
 

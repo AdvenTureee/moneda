@@ -1,6 +1,6 @@
-# 🪙 Manual de Identidade Visual: Mascote "Grana" (Estilo Anos 1920/1930)
+# 🪙 Manual de Identidade Visual: Mascote "Mo" (Estilo Anos 1920/1930)
 
-Este documento detalha as regras de design, proporções, paleta de cores e acabamento necessários para reproduzir ou criar novas variações do mascote "Grana" mantendo a estética fiel ao estilo *Rubber Hose* (Era de Ouro da Animação Americana), com aparência **fofa, compacta e acolhedora**.
+Este documento detalha as regras de design, proporções, paleta de cores e acabamento necessários para reproduzir ou criar novas variações da mascote "Mo" (do app Moneda) mantendo a estética fiel ao estilo *Rubber Hose* (Era de Ouro da Animação Americana), com aparência **fofa, compacta e acolhedora**.
 
 ---
 
@@ -34,7 +34,7 @@ A cor da moeda deve ser um **amarelo sólido**, sem degradês modernos, com apar
 
 ## 🎭 3. Expressão e Micro-detalhes
 
-O conceito central do personagem é a **preocupação/melancolia** ("Grana Curta"), mas com uma aparência **fofa, vulnerável e acolhedora**.
+O conceito central do personagem é a **preocupação/melancolia** (inspirado na expressão histórica "Grana Curta", que originou o nome anterior do produto), mas com uma aparência **fofa, vulnerável e acolhedora**.
 
 A expressividade é alcançada através dos seguintes detalhes:
 
@@ -80,7 +80,7 @@ Todas as poses devem respeitar:
 
 ### 🟢 Estado de Sucesso / Confirmação de Pagamento
 
-- **Ação:** "Grana sob controle".
+- **Ação:** "Dinheiro sob controle".
 - **Pose:** O personagem permanece de frente ou levemente em 3/4, com os **braços curtos** próximos ao corpo em postura contida, mas com uma leve abertura que sugere alívio. As extremidades arredondadas das mãos podem apontar discretamente para cima, em um gesto sutil de “ok”.
 - **Expressão:** O personagem abre um sorriso tímido de canto de boca (mantendo a melancolia transformada em alívio). As pupilas em formato de “fatia de torta” se transformam temporariamente no símbolo de cifrão (`$`), reforçando o sucesso financeiro. Olhos continuam grandes e fofos, sem parecer gananciosos ou caricatos demais.
 - **Consistência visual:** Mesmo em sucesso, **membros seguem curtos, sem luvas, sem tênis e sem dedos separados**, preservando a identidade visual em todas as telas.

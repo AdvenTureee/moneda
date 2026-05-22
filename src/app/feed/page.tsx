@@ -9,7 +9,7 @@ import ConfirmDialog from '@/components/ConfirmDialog';
 import CategoryChip from '@/components/CategoryChip';
 import DateRangePicker, { buildPreset, type DateRange } from '@/components/DateRangePicker';
 import Icon from '@/components/Icon';
-import GranaMascot from '@/components/GranaMascot';
+import Mo from '@/components/Mo';
 import { groupExpensesByDate, formatCurrency } from '@/lib/utils';
 import type { Expense, Category, ExpenseInput } from '@/types';
 
@@ -159,70 +159,74 @@ export default function FeedPage() {
 
   return (
     <AppShell>
-      <div className="max-w-lg mx-auto">
+      <div className="max-w-lg mx-auto px-4 pb-24">
         {/* Header */}
-        <header className="px-4 pt-5 pb-3 bg-[#F8F9FB] sticky top-0 z-30 animate-fade-up delay-0">
-          <h1 className="text-xl font-heading text-[#1A1D23] mb-3">Feed de Gastos</h1>
-
-          {/* Search bar */}
-          <div className="flex items-center gap-2 mb-3">
-            <div className="relative flex-1">
-              <MagnifyingGlass
-                size={16}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9CA3AF]"
-                aria-hidden
-              />
-              <input
-                type="search"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Buscar gasto..."
-                className="w-full pl-9 pr-4 py-2.5 rounded-[10px] bg-white border border-[#E5E7EB] text-sm text-[#1A1D23] placeholder:text-[#9CA3AF] outline-none focus:border-[#A8C5E0] transition-colors"
-                aria-label="Buscar gastos"
-              />
-            </div>
-            <DateRangePicker value={dateRange} onChange={setDateRange} />
-          </div>
-
-          {/* Category filter chips */}
-          <div
-            ref={chipsRef}
-            className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4"
-            style={{
-              scrollbarWidth: 'none',
-              maskImage: chipsMask,
-              WebkitMaskImage: chipsMask,
-            }}
-            role="group"
-            aria-label="Filtrar por categoria"
-          >
-            <CategoryChip
-              icon="Sparkle"
-              label="Todos"
-              selected={activeCategory === null}
-              onClick={() => setActiveCategory(null)}
-              size="sm"
-            />
-            {categories.filter((c) => c.id !== 'outros').map((cat) => (
-              <CategoryChip
-                key={cat.id}
-                icon={cat.icon}
-                label={cat.name}
-                selected={activeCategory === cat.id}
-                onClick={() =>
-                  setActiveCategory((prev) => (prev === cat.id ? null : cat.id))
-                }
-                size="sm"
-              />
-            ))}
-          </div>
+        <header className="py-6 animate-fade-up delay-0">
+          <h1 className="text-2xl font-heading text-[#1A1D23]">Feed de Gastos</h1>
         </header>
 
+        <div
+          className="bg-white rounded-[14px] p-3 space-y-3 mb-4 animate-fade-up delay-1"
+          style={{ boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}
+        >
+            {/* Search bar */}
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1">
+                <MagnifyingGlass
+                  size={16}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9CA3AF]"
+                  aria-hidden
+                />
+                <input
+                  type="search"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Buscar gasto..."
+                  className="w-full pl-9 pr-4 py-2.5 rounded-[10px] bg-[#F4F6FA] border border-transparent text-sm text-[#1A1D23] placeholder:text-[#9CA3AF] outline-none focus:border-[#A8C5E0] transition-colors"
+                  aria-label="Buscar gastos"
+                />
+              </div>
+              <DateRangePicker value={dateRange} onChange={setDateRange} />
+            </div>
+
+            {/* Category filter chips */}
+            <div
+              ref={chipsRef}
+              className="flex gap-2 overflow-x-auto pb-1 -mx-3 px-3"
+              style={{
+                scrollbarWidth: 'none',
+                maskImage: chipsMask,
+                WebkitMaskImage: chipsMask,
+              }}
+              role="group"
+              aria-label="Filtrar por categoria"
+            >
+              <CategoryChip
+                icon="Sparkle"
+                label="Todos"
+                selected={activeCategory === null}
+                onClick={() => setActiveCategory(null)}
+                size="sm"
+              />
+              {categories.filter((c) => c.id !== 'outros').map((cat) => (
+                <CategoryChip
+                  key={cat.id}
+                  icon={cat.icon}
+                  label={cat.name}
+                  selected={activeCategory === cat.id}
+                  onClick={() =>
+                    setActiveCategory((prev) => (prev === cat.id ? null : cat.id))
+                  }
+                  size="sm"
+                />
+              ))}
+          </div>
+        </div>
+
         {/* Expense list grouped by date */}
-        <div className="px-4">
-          {loading ? (
+        {loading ? (
             <div className="flex flex-col items-center py-16 text-center">
-              <GranaMascot variant="thinking" size={128} className="mb-4 animate-bounce-in" />
+              <Mo variant="thinking" size={128} className="mb-4 animate-bounce-in" />
               <p className="text-base font-semibold text-[#1A1D23]">Carregando...</p>
             </div>
           ) : error ? (
@@ -240,7 +244,7 @@ export default function FeedPage() {
             <div className="flex flex-col items-center py-16 text-center">
               {search || activeCategory || dateRange.presetId !== 'all' ? (
                 <>
-                  <GranaMascot variant="thinking" size={128} className="mb-4 animate-bounce-in" />
+                  <Mo variant="thinking" size={128} className="mb-4 animate-bounce-in" />
                   <p className="text-base font-semibold text-[#1A1D23]">
                     Nenhum gasto encontrado
                   </p>
@@ -250,7 +254,7 @@ export default function FeedPage() {
                 </>
               ) : (
                 <>
-                  <GranaMascot variant="idle" size={128} className="mb-4 animate-bounce-in" />
+                  <Mo variant="idle" size={128} className="mb-4 animate-bounce-in" />
                   <p className="text-base font-semibold text-[#1A1D23]">
                     Nada por aqui ainda
                   </p>
@@ -267,8 +271,8 @@ export default function FeedPage() {
                 <div key={group.dateKey} className={`mb-4 animate-fade-up delay-${Math.min(gi, 6)}`}>
                   {/* Date section header */}
                   <div
-                    className="flex items-center justify-between py-2 mb-2 sticky border-b border-[#E5E7EB]"
-                    style={{ top: '160px', background: '#F8F9FB', zIndex: 20 }}
+                    className="flex items-center justify-between px-4 py-2.5 mb-2 bg-white rounded-[10px]"
+                    style={{ boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}
                   >
                     <span className="text-xs font-semibold text-[#6B7280]">
                       {group.label}
@@ -294,10 +298,7 @@ export default function FeedPage() {
                 </div>
               );
             })
-          )}
-
-          <div className="h-6" />
-        </div>
+        )}
       </div>
       <AddExpenseModal
         isOpen={!!editingExpense}

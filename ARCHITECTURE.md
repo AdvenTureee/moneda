@@ -1,6 +1,6 @@
-# Grana — Arquitetura Técnica
+# Moneda — Arquitetura Técnica
 
-> Guia de referência para implementação do MVP 0 do Grana: assistente financeiro pessoal via WhatsApp com IA.
+> Guia de referência para implementação do MVP 0 do Moneda: assistente financeiro pessoal via WhatsApp com IA.
 
 > **Decisões confirmadas (2026-05-09):**
 > - **Banco de dados:** Supabase (Postgres gerenciado) — a partir do V1
@@ -59,7 +59,7 @@
 ## 2. Estrutura de Pastas do Projeto
 
 ```
-grana/
+moneda/
 ├── app/                          # Next.js App Router
 │   ├── layout.tsx                # Root layout (fonte, metadata, providers)
 │   ├── page.tsx                  # Redirect para dashboard
@@ -723,7 +723,7 @@ GROQ_API_KEY=gsk_...
 # Evolution API (self-hosted, open-source)
 EVOLUTION_API_URL=http://localhost:8080
 EVOLUTION_API_KEY=...
-EVOLUTION_INSTANCE_NAME=grana
+EVOLUTION_INSTANCE_NAME=moneda  # exemplo; nome real da instância é decisão de infra
 
 # WAHA (alternativa gerenciada — preencher quando decidido)
 # WAHA_URL=...
@@ -739,7 +739,7 @@ CLERK_SECRET_KEY=sk_...
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_...
 
 # App
-NEXT_PUBLIC_APP_URL=https://grana.vercel.app
+NEXT_PUBLIC_APP_URL=https://moneda.vercel.app  # exemplo; domínio real é decisão de infra separada
 ```
 
 ---
