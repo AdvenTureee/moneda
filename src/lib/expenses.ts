@@ -379,4 +379,80 @@ export async function getDashboardMetrics(
   return getDashboardMetricsFromMock(userId, period);
 }
 
+// ---------------------------------------------------------------------------
+// Monthly totals — last N months ending at `endPeriod` (inclusive).
+// Returns oldest first. Used by the Insights monthly trend chart.
+// ---------------------------------------------------------------------------
+export interface MonthlyTotal {
+  period: string; // 'YYYY-MM'
+  total: number;  // centavos
+}
+
+function shiftPeriod(period: string, monthsBack: number): string {
+  const [year, month] = period.split('-').map(Number);
+  const d = new Date(year, month - 1 - monthsBack, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
+async function getMonthlyTotalsFromDB(
+  userId: string,
+  endPeriod: string,
+  months: number,
+): Promise<MonthlyTotal[]> {
+  const db = createServiceClient();
+  const startPeriod = shiftPeriod(endPeriod, months - 1);
+  const [startY, startM] = startPeriod.split('-').map(Number);
+  const [endY, endM] = endPeriod.split('-').map(Number);
+  const startIso = new Date(startY, startM - 1, 1).toISOString();
+  const endIso = new Date(endY, endM, 0, 23, 59, 59).toISOString();
+
+  const { data, error } = await db
+    .from('expenses')
+    .select('amount_cents, occurred_at')
+    .eq('user_id', userId)
+    .is('deleted_at', null)
+    .gte('occurred_at', startIso)
+    .lte('occurred_at', endIso);
+
+  if (error) throw new Error(`getMonthlyTotals: ${error.message}`);
+
+  const totalsByPeriod = new Map<string, number>();
+  for (let i = 0; i < months; i++) {
+    totalsByPeriod.set(shiftPeriod(endPeriod, months - 1 - i), 0);
+  }
+
+  for (const row of data ?? []) {
+    const d = new Date(row.occurred_at as string);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    if (totalsByPeriod.has(key)) {
+      totalsByPeriod.set(key, (totalsByPeriod.get(key) ?? 0) + (row.amount_cents as number));
+    }
+  }
+
+  return Array.from(totalsByPeriod.entries()).map(([period, total]) => ({ period, total }));
+}
+
+function getMonthlyTotalsFromMock(
+  userId: string,
+  endPeriod: string,
+  months: number,
+): MonthlyTotal[] {
+  const result: MonthlyTotal[] = [];
+  for (let i = months - 1; i >= 0; i--) {
+    const period = shiftPeriod(endPeriod, i);
+    const metrics = getDashboardMetricsFromMock(userId, period);
+    result.push({ period, total: metrics.totalSpent });
+  }
+  return result;
+}
+
+export async function getMonthlyTotals(
+  userId: string,
+  endPeriod: string,
+  months: number = 6,
+): Promise<MonthlyTotal[]> {
+  if (isSupabaseEnabled()) return getMonthlyTotalsFromDB(userId, endPeriod, months);
+  return getMonthlyTotalsFromMock(userId, endPeriod, months);
+}
+
 

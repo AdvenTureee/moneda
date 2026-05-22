@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { MagnifyingGlass } from '@phosphor-icons/react';
 import AppShell from '@/components/AppShell';
 import ExpenseCard from '@/components/ExpenseCard';
@@ -13,10 +14,38 @@ import Mo from '@/components/Mo';
 import { groupExpensesByDate, formatCurrency } from '@/lib/utils';
 import type { Expense, Category, ExpenseInput } from '@/types';
 
+function parseDateInputToIso(input: string, end: boolean): string | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(input)) return null;
+  const [y, m, d] = input.split('-').map(Number);
+  const date = new Date(y, m - 1, d);
+  if (end) date.setHours(23, 59, 59, 999);
+  else date.setHours(0, 0, 0, 0);
+  return date.toISOString();
+}
+
+function rangeFromSearchParams(params: URLSearchParams): DateRange | null {
+  const fromRaw = params.get('from');
+  const toRaw = params.get('to');
+  if (!fromRaw && !toRaw) return null;
+  const from = fromRaw ? parseDateInputToIso(fromRaw, false) : null;
+  const to = toRaw ? parseDateInputToIso(toRaw, true) : from;
+  if (!from && !to) return null;
+  return { from, to, presetId: 'custom' };
+}
+
 export default function FeedPage() {
+  const searchParams = useSearchParams();
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [dateRange, setDateRange] = useState<DateRange>(() => buildPreset('all'));
+
+  // Read date range from URL after mount to avoid SSR/CSR hydration mismatch.
+  useEffect(() => {
+    const range = rangeFromSearchParams(new URLSearchParams(searchParams.toString()));
+    if (range) setDateRange(range);
+    // Run only on initial mount; further filter changes come from the picker.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [allExpenses, setAllExpenses] = useState<Expense[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);

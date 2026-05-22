@@ -6,7 +6,10 @@ import remarkGfm from 'remark-gfm';
 import type { Components } from 'react-markdown';
 import Icon from '@/components/Icon';
 import Mo from '@/components/Mo';
-import DonutChart from '@/components/DonutChart';
+import DonutChart from '@/components/charts/DonutChart';
+import MonthlyTrendChart, { type MonthlyTrendPoint } from '@/components/charts/MonthlyTrendChart';
+import BudgetProgressList, { type BudgetProgressItem } from '@/components/charts/BudgetProgressList';
+import ChartCard from '@/components/charts/ChartCard';
 import CategoryChip from '@/components/CategoryChip';
 import { formatCurrency } from '@/lib/utils';
 import type { Category, AIInsight } from '@/types';
@@ -29,6 +32,8 @@ interface InsightsViewProps {
   topCategories: TopCategory[];
   insights: AIInsight[];
   categories: Category[];
+  monthlyTotals: MonthlyTrendPoint[];
+  budgetProgress: BudgetProgressItem[];
 }
 
 const TYPE_FILTERS = [
@@ -60,6 +65,8 @@ export default function InsightsView({
   topCategories,
   insights: initialInsights,
   categories,
+  monthlyTotals,
+  budgetProgress,
 }: InsightsViewProps) {
   const [generating, setGenerating] = useState(false);
   const [insights, setInsights] = useState<AIInsight[]>(initialInsights);
@@ -218,36 +225,50 @@ export default function InsightsView({
 
       {/* Category breakdown */}
       {topCategories.length > 0 && (
-        <section
-          className="bg-white rounded-[16px] p-5 mb-6"
-          style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
-        >
-          <h2 className="text-sm font-heading text-[#1A1D23] mb-4">Gastos por categoria</h2>
+        <div className="mb-6 animate-fade-up delay-2">
+          <ChartCard
+            title="Gastos por categoria"
+            ariaLabel="Gastos por categoria"
+          >
+            <div className="flex items-center gap-5">
+              <DonutChart
+                segments={donutSegments}
+                size="md"
+                centerLabel="Total"
+                centerValue={formatCurrency(totalSpent)}
+              />
 
-          <div className="flex items-center gap-5">
-            <DonutChart
-              segments={donutSegments}
-              size="md"
-              centerLabel="Total"
-              centerValue={formatCurrency(totalSpent)}
-            />
-
-            <div className="flex-1 space-y-2 overflow-hidden">
-              {topCategories.map((cat) => (
-                <div key={cat.categoryId} className="flex items-center gap-2">
-                  <span
-                    className="w-2.5 h-2.5 rounded-full shrink-0"
-                    style={{ background: cat.categoryColor }}
-                    aria-hidden
-                  />
-                  <Icon name={cat.categoryIcon} size={14} className="shrink-0" />
-                  <span className="flex-1 text-xs text-[#1A1D23] truncate">{cat.categoryName}</span>
-                  <span className="text-xs font-semibold text-[#1A1D23] tabular-nums shrink-0">{formatCurrency(cat.amount)}</span>
-                </div>
-              ))}
+              <div className="flex-1 space-y-2 overflow-hidden">
+                {topCategories.map((cat) => (
+                  <div key={cat.categoryId} className="flex items-center gap-2">
+                    <span
+                      className="w-2.5 h-2.5 rounded-full shrink-0"
+                      style={{ background: cat.categoryColor }}
+                      aria-hidden
+                    />
+                    <Icon name={cat.categoryIcon} size={14} className="shrink-0" />
+                    <span className="flex-1 text-xs text-[#1A1D23] truncate">{cat.categoryName}</span>
+                    <span className="text-xs font-semibold text-[#1A1D23] tabular-nums shrink-0">{formatCurrency(cat.amount)}</span>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
-        </section>
+          </ChartCard>
+        </div>
+      )}
+
+      {/* Monthly trend */}
+      {monthlyTotals.some((m) => m.total > 0) && (
+        <div className="mb-6">
+          <MonthlyTrendChart data={monthlyTotals} currentPeriod={period} />
+        </div>
+      )}
+
+      {/* Budget progress */}
+      {budgetProgress.length > 0 && (
+        <div className="mb-6">
+          <BudgetProgressList items={budgetProgress} />
+        </div>
       )}
 
       {/* Empty state — no expenses */}
