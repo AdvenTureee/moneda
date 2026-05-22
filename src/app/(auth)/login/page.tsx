@@ -21,8 +21,10 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [info, setInfo] = useState('');
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [forgotLoading, setForgotLoading] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -47,6 +49,28 @@ export default function LoginPage() {
 
     router.push('/');
     router.refresh();
+  }
+
+  async function handleForgotPassword() {
+    setError('');
+    setInfo('');
+    const target = email.trim();
+    if (!target) {
+      setError('Informe seu email acima para receber o link de redefinição.');
+      return;
+    }
+    setForgotLoading(true);
+    const supabase = createClient();
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(target, {
+      redirectTo: `${window.location.origin}/auth/callback?next=/perfil`,
+    });
+    setForgotLoading(false);
+    if (resetError) {
+      console.error('[forgotPassword]', resetError);
+      setError('Não foi possível enviar o email. Tente novamente.');
+      return;
+    }
+    setInfo(`Enviamos um link de redefinição para ${target}. Verifique sua caixa de entrada.`);
   }
 
   async function handleGoogleLogin() {
@@ -105,9 +129,19 @@ export default function LoginPage() {
         </div>
 
         <div>
-          <label htmlFor="password" className="block text-xs font-medium text-[#6B7280] mb-1.5">
-            Senha
-          </label>
+          <div className="flex items-center justify-between mb-1.5">
+            <label htmlFor="password" className="block text-xs font-medium text-[#6B7280]">
+              Senha
+            </label>
+            <button
+              type="button"
+              onClick={handleForgotPassword}
+              disabled={forgotLoading || loading || googleLoading}
+              className="text-xs font-semibold text-[#A8C5E0] hover:text-[#7AAECF] transition-colors disabled:opacity-60"
+            >
+              {forgotLoading ? 'Enviando…' : 'Esqueci a senha'}
+            </button>
+          </div>
           <input
             id="password"
             type="password"
@@ -123,6 +157,12 @@ export default function LoginPage() {
         {error && (
           <p className="text-xs font-medium text-[#E07070]" role="alert">
             {error}
+          </p>
+        )}
+
+        {info && (
+          <p className="text-xs font-medium text-[#2E7D5B]" role="status">
+            {info}
           </p>
         )}
 
