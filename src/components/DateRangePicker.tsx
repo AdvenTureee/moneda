@@ -4,7 +4,9 @@ import { useState } from 'react';
 import { CalendarBlank, CaretDown } from '@phosphor-icons/react';
 
 export interface DateRange {
+  /** ISO timestamp at the start of the local day, e.g. "2026-05-01T03:00:00.000Z" in GMT-3. */
   from: string | null;
+  /** ISO timestamp at the end of the local day, inclusive. */
   to: string | null;
   presetId: string;
 }
@@ -14,20 +16,27 @@ interface DateRangePickerProps {
   onChange: (range: DateRange) => void;
 }
 
-function toISODate(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
-
-function startOfDay(d: Date): Date {
+function startOfDay(d: Date): string {
   const c = new Date(d);
   c.setHours(0, 0, 0, 0);
-  return c;
+  return c.toISOString();
 }
 
-function endOfDay(d: Date): Date {
+function endOfDay(d: Date): string {
   const c = new Date(d);
   c.setHours(23, 59, 59, 999);
-  return c;
+  return c.toISOString();
+}
+
+function parseLocalDateInput(value: string): Date {
+  const [y, m, d] = value.split('-').map(Number);
+  return new Date(y, (m ?? 1) - 1, d ?? 1);
+}
+
+function isoToDateInput(iso: string | null): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
 export function buildPreset(id: string): DateRange {
@@ -36,17 +45,17 @@ export function buildPreset(id: string): DateRange {
     case 'this-month': {
       const from = new Date(now.getFullYear(), now.getMonth(), 1);
       const to = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-      return { from: toISODate(startOfDay(from)), to: toISODate(endOfDay(to)), presetId: id };
+      return { from: startOfDay(from), to: endOfDay(to), presetId: id };
     }
     case 'last-month': {
       const from = new Date(now.getFullYear(), now.getMonth() - 1, 1);
       const to = new Date(now.getFullYear(), now.getMonth(), 0);
-      return { from: toISODate(startOfDay(from)), to: toISODate(endOfDay(to)), presetId: id };
+      return { from: startOfDay(from), to: endOfDay(to), presetId: id };
     }
     case 'last-30': {
       const from = new Date(now);
       from.setDate(from.getDate() - 30);
-      return { from: toISODate(startOfDay(from)), to: toISODate(endOfDay(now)), presetId: id };
+      return { from: startOfDay(from), to: endOfDay(now), presetId: id };
     }
     case 'all':
     default:
@@ -65,8 +74,8 @@ function labelFor(range: DateRange): string {
   const preset = PRESETS.find((p) => p.id === range.presetId);
   if (preset) return preset.label;
   if (range.from && range.to) {
-    const fmt = (s: string) =>
-      new Date(s + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+    const fmt = (iso: string) =>
+      new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
     return `${fmt(range.from)} – ${fmt(range.to)}`;
   }
   return 'Período';
@@ -74,8 +83,8 @@ function labelFor(range: DateRange): string {
 
 export default function DateRangePicker({ value, onChange }: DateRangePickerProps) {
   const [open, setOpen] = useState(false);
-  const [customFrom, setCustomFrom] = useState(value.from ?? '');
-  const [customTo, setCustomTo] = useState(value.to ?? '');
+  const [customFrom, setCustomFrom] = useState(isoToDateInput(value.from));
+  const [customTo, setCustomTo] = useState(isoToDateInput(value.to));
 
   function pickPreset(id: string) {
     onChange(buildPreset(id));
@@ -85,8 +94,8 @@ export default function DateRangePicker({ value, onChange }: DateRangePickerProp
   function applyCustom() {
     if (!customFrom || !customTo) return;
     onChange({
-      from: toISODate(startOfDay(new Date(customFrom + 'T00:00:00'))),
-      to: toISODate(endOfDay(new Date(customTo + 'T00:00:00'))),
+      from: startOfDay(parseLocalDateInput(customFrom)),
+      to: endOfDay(parseLocalDateInput(customTo)),
       presetId: 'custom',
     });
     setOpen(false);

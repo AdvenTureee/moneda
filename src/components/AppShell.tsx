@@ -37,7 +37,10 @@ export default function AppShell({ children }: AppShellProps) {
 
   return (
     <>
-      <main className="pb-16 min-h-screen">
+      <main
+        className="min-h-screen"
+        style={{ paddingBottom: 'calc(56px + env(safe-area-inset-bottom, 0px))' }}
+      >
         <div key={pathname} className="animate-fade-in-fast">
           {children}
         </div>
