@@ -10,6 +10,8 @@ import Icon from '@/components/Icon';
 import TrackedMascot from '@/components/TrackedMascot';
 import GranaMascot from '@/components/GranaMascot';
 import Confetti from '@/components/Confetti';
+import MonthPicker from '@/components/MonthPicker';
+import RegenerateInsightButton from '@/components/RegenerateInsightButton';
 import { getDashboardMetrics } from '@/lib/expenses';
 import { getBudgets } from '@/lib/budgets';
 import { getLatestInsight } from '@/lib/insights';
@@ -18,12 +20,22 @@ import { createSessionClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 
-export default async function DashboardPage() {
+function isValidPeriod(s: unknown): s is string {
+  return typeof s === 'string' && /^\d{4}-(0[1-9]|1[0-2])$/.test(s);
+}
+
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ period?: string | string[] }>;
+}) {
   const supabase = await createSessionClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  const period = getCurrentPeriod();
+  const sp = await searchParams;
+  const rawPeriod = Array.isArray(sp.period) ? sp.period[0] : sp.period;
+  const period = isValidPeriod(rawPeriod) ? rawPeriod : getCurrentPeriod();
 
   // Parallel DB queries
   const [metrics, budgets, latestInsight] = await Promise.all([
@@ -31,12 +43,6 @@ export default async function DashboardPage() {
     getBudgets(user.id, period),
     getLatestInsight(user.id, period),
   ]);
-
-  const [year, month] = period.split('-').map(Number);
-  const monthName = new Date(year, month - 1).toLocaleString('pt-BR', {
-    month: 'long',
-    year: 'numeric',
-  });
 
   const donutSegments = metrics.topCategories.map((cat) => ({
     category: cat.categoryName,
@@ -65,15 +71,13 @@ export default async function DashboardPage() {
     <AppShell>
       <div className="max-w-lg mx-auto px-4">
         {/* Header */}
-        <header className="flex items-center justify-between py-5 animate-fade-up delay-0">
+        <header className="relative z-40 flex items-center justify-between py-5 animate-fade-up delay-0">
           <div className="flex items-center gap-3">
             <TrackedMascot variant="idle" size={88} />
-            <h1 className="capitalize text-sm font-semibold text-[#6B7280]">
-              {monthName}
-            </h1>
+            <MonthPicker value={period} />
           </div>
           <div
-            className="w-12 h-12 rounded-full flex items-center justify-center text-base font-bold text-white shrink-0 overflow-hidden"
+            className="w-14 h-14 rounded-full flex items-center justify-center text-lg font-bold text-white shrink-0 overflow-hidden"
             style={{ background: '#A8C5E0' }}
             aria-label={user.email ?? 'Usuário'}
           >
@@ -85,17 +89,27 @@ export default async function DashboardPage() {
           </div>
         </header>
 
-        {/* Hero total */}
-        <section className="mb-5 animate-fade-up delay-1" aria-label="Total gasto no mês">
+        {/* Hero: restante do mês (principal) */}
+        <section className="mb-5 animate-fade-up delay-1" aria-label="Restante do mês">
           <p className="text-xs text-[#6B7280] font-medium mb-1">
-            Gasto total este mês
+            Restante este mês
           </p>
           <p
-            className="text-[40px] font-extrabold text-[#1A1D23] tabular-nums leading-none"
-            aria-label={`Total gasto: ${formatCurrency(metrics.totalSpent)}`}
+            className="text-[40px] font-extrabold tabular-nums leading-none"
+            style={{ color: remaining >= 0 ? '#1A1D23' : '#E07070' }}
+            aria-label={
+              remaining >= 0
+                ? `Restante: ${formatCurrency(remaining)}`
+                : `Estourou em ${formatCurrency(Math.abs(remaining))}`
+            }
           >
-            {formatCurrency(metrics.totalSpent)}
+            {remaining >= 0 ? formatCurrency(remaining) : 'Estourou!'}
           </p>
+          {remaining < 0 && (
+            <p className="text-xs mt-1 font-medium text-[#E07070]">
+              −{formatCurrency(Math.abs(remaining))}
+            </p>
+          )}
         </section>
 
         {/* Metric cards */}
@@ -105,10 +119,8 @@ export default async function DashboardPage() {
             value={formatCurrency(BUDGET_CENTS)}
           />
           <DashboardMetric
-            label="Restante"
-            value={remaining > 0 ? formatCurrency(remaining) : 'Estourou!'}
-            subtextColor={remaining > 0 ? '#5BBF8E' : '#E07070'}
-            subtext={remaining > 0 ? 'disponível' : `−${formatCurrency(Math.abs(remaining))}`}
+            label="Gasto total"
+            value={formatCurrency(metrics.totalSpent)}
           />
         </section>
 
@@ -163,7 +175,8 @@ export default async function DashboardPage() {
         )}
 
         {/* AI Insight banner */}
-        <section className="mb-6 animate-fade-up delay-4" aria-label="Insights">
+        <section className="mb-6 animate-fade-up delay-4" aria-label="Resumo do mês">
+          <RegenerateInsightButton period={period} hasInsight={Boolean(latestInsight)} />
           <AIInsightBanner
             message={insightMessage}
             cta={{ label: 'Ver detalhes', href: '/feed' }}

@@ -24,6 +24,8 @@ export interface Expense {
   /** Amount in centavos (e.g. 3500 = R$ 35,00) */
   amount: number;
   category: string;
+  /** Resolved from the categories table at the API boundary — preferred source for UI. */
+  categoryData?: { id: string; name: string; icon: string; color: string };
   description: string;
   source: ExpenseSource;
   tags: string[];

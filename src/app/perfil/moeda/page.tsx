@@ -1,23 +1,16 @@
 import { redirect } from 'next/navigation';
 import AppShell from '@/components/AppShell';
 import { createSessionClient, createServiceClient, isSupabaseEnabled } from '@/lib/supabase/server';
-import ProfileView from './ProfileView';
+import CurrencyForm from './CurrencyForm';
 
 export const dynamic = 'force-dynamic';
 
-export default async function PerfilPage() {
+export default async function MoedaPage() {
   const supabase = await createSessionClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  const metadata = user.user_metadata ?? {};
-  const initialName =
-    (metadata.name as string | undefined) ??
-    (metadata.full_name as string | undefined) ??
-    '';
-  const avatarUrl = (metadata.avatar_url as string | undefined) ?? null;
-
-  let currency = 'BRL';
+  let current = 'BRL';
   if (isSupabaseEnabled()) {
     const admin = createServiceClient();
     const { data } = await admin
@@ -25,18 +18,12 @@ export default async function PerfilPage() {
       .select('currency')
       .eq('id', user.id)
       .single();
-    if (data?.currency) currency = data.currency;
+    if (data?.currency) current = data.currency;
   }
 
   return (
     <AppShell>
-      <ProfileView
-        email={user.email ?? ''}
-        initialName={initialName}
-        avatarUrl={avatarUrl}
-        currency={currency}
-        allowDelete={isSupabaseEnabled()}
-      />
+      <CurrencyForm initialCurrency={current} />
     </AppShell>
   );
 }

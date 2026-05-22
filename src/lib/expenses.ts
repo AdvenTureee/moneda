@@ -1,6 +1,7 @@
-import type { Expense, ExpenseFilters, ExpenseInput, DashboardMetrics } from '@/types';
+import type { Category, Expense, ExpenseFilters, ExpenseInput, DashboardMetrics } from '@/types';
 import type { Database } from '@/types/supabase';
 import { createServiceClient, isSupabaseEnabled } from '@/lib/supabase/server';
+import { getCategoriesByIds } from '@/lib/categories';
 
 type ExpensesRow = Database['public']['Tables']['expenses']['Row'];
 type ExpensesInsert = Database['public']['Tables']['expenses']['Insert'];
@@ -9,12 +10,52 @@ import {
   addSessionExpense,
   removeSessionExpense,
   updateSessionExpense,
-  CATEGORIES,
   getCategoryById,
   getExpensesByPeriod,
   MOCK_USER,
 } from '@/data/mock';
-import { generateId, getCurrentPeriod } from '@/lib/utils';
+import { generateId } from '@/lib/utils';
+
+const FALLBACK_CATEGORY: Pick<Category, 'name' | 'icon' | 'color'> = {
+  name: 'Outros',
+  icon: 'Package',
+  color: '#6B7280',
+};
+
+function attachCategoryData(expense: Expense, categories: Map<string, Category>): Expense {
+  const cat = categories.get(expense.category);
+  return {
+    ...expense,
+    categoryData: {
+      id: expense.category,
+      name: cat?.name ?? FALLBACK_CATEGORY.name,
+      icon: cat?.icon ?? FALLBACK_CATEGORY.icon,
+      color: cat?.color ?? FALLBACK_CATEGORY.color,
+    },
+  };
+}
+
+async function enrichWithCategoriesFromDB(
+  userId: string,
+  expenses: Expense[],
+): Promise<{ expenses: Expense[]; categories: Map<string, Category> }> {
+  const ids = expenses.map((e) => e.category);
+  const categories = await getCategoriesByIds(userId, ids);
+  return { expenses: expenses.map((e) => attachCategoryData(e, categories)), categories };
+}
+
+function enrichWithCategoriesFromMock(expenses: Expense[]): {
+  expenses: Expense[];
+  categories: Map<string, Category>;
+} {
+  const categories = new Map<string, Category>();
+  for (const e of expenses) {
+    if (categories.has(e.category)) continue;
+    const cat = getCategoryById(e.category);
+    if (cat) categories.set(e.category, cat);
+  }
+  return { expenses: expenses.map((e) => attachCategoryData(e, categories)), categories };
+}
 
 // ---------------------------------------------------------------------------
 // Row → App type mapping
@@ -59,7 +100,9 @@ async function getExpensesFromDB(filters: ExpenseFilters): Promise<Expense[]> {
 
   const { data, error } = await query;
   if (error) throw new Error(`getExpenses: ${error.message}`);
-  return (data as ExpensesRow[]).map(rowToExpense);
+  const expenses = (data as ExpensesRow[]).map(rowToExpense);
+  const enriched = await enrichWithCategoriesFromDB(userId, expenses);
+  return enriched.expenses;
 }
 
 async function createExpenseInDB(input: ExpenseInput): Promise<Expense> {
@@ -121,29 +164,30 @@ async function getDashboardMetricsFromDB(
   if (error) throw new Error(`getDashboardMetrics: ${error.message}`);
 
   const rows = (data as ExpensesRow[]).map(rowToExpense);
-  const totalSpent = rows.reduce((sum, e) => sum + e.amount, 0);
+  const { expenses: enriched, categories } = await enrichWithCategoriesFromDB(userId, rows);
+  const totalSpent = enriched.reduce((sum, e) => sum + e.amount, 0);
 
   const byCat: Record<string, number> = {};
-  for (const e of rows) {
+  for (const e of enriched) {
     byCat[e.category] = (byCat[e.category] ?? 0) + e.amount;
   }
 
   const topCategories = Object.entries(byCat)
     .sort(([, a], [, b]) => b - a)
     .map(([catId, amount]) => {
-      const cat = getCategoryById(catId);
+      const cat = categories.get(catId);
       return {
         categoryId: catId,
-        categoryName: cat?.name ?? catId,
-        categoryIcon: cat?.icon ?? 'Package',
-        categoryColor: cat?.color ?? '#6B7280',
+        categoryName: cat?.name ?? FALLBACK_CATEGORY.name,
+        categoryIcon: cat?.icon ?? FALLBACK_CATEGORY.icon,
+        categoryColor: cat?.color ?? FALLBACK_CATEGORY.color,
         amount,
         percentage: totalSpent > 0 ? Math.round((amount / totalSpent) * 100) : 0,
       };
     });
 
   const byDay: Record<string, number> = {};
-  for (const e of rows) {
+  for (const e of enriched) {
     const d = new Date(e.createdAt);
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     byDay[key] = (byDay[key] ?? 0) + e.amount;
@@ -153,14 +197,14 @@ async function getDashboardMetricsFromDB(
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([date, amount]) => ({ date, amount }));
 
-  const recentExpenses = [...rows]
+  const recentExpenses = [...enriched]
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     .slice(0, 5);
 
   return {
     period,
     totalSpent,
-    expenseCount: rows.length,
+    expenseCount: enriched.length,
     topCategories,
     dailySpending,
     recentExpenses,
@@ -194,7 +238,7 @@ function getExpensesFromMock(filters: ExpenseFilters): Expense[] {
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
   if (filters.limit) expenses = expenses.slice(0, filters.limit);
-  return expenses;
+  return enrichWithCategoriesFromMock(expenses).expenses;
 }
 
 function getDashboardMetricsFromMock(userId: string, period: string): DashboardMetrics {
@@ -215,24 +259,25 @@ function getDashboardMetricsFromMock(userId: string, period: string): DashboardM
   for (const e of expenses) {
     if (!seen.has(e.id)) { seen.add(e.id); allPeriod.push(e); }
   }
-  const totalSpent = allPeriod.reduce((sum, e) => sum + e.amount, 0);
+  const { expenses: enriched, categories } = enrichWithCategoriesFromMock(allPeriod);
+  const totalSpent = enriched.reduce((sum, e) => sum + e.amount, 0);
   const byCat: Record<string, number> = {};
-  for (const e of allPeriod) byCat[e.category] = (byCat[e.category] ?? 0) + e.amount;
+  for (const e of enriched) byCat[e.category] = (byCat[e.category] ?? 0) + e.amount;
   const topCategories = Object.entries(byCat)
     .sort(([, a], [, b]) => b - a)
     .map(([catId, amount]) => {
-      const cat = getCategoryById(catId);
-      return { categoryId: catId, categoryName: cat?.name ?? catId, categoryIcon: cat?.icon ?? 'Package', categoryColor: cat?.color ?? '#6B7280', amount, percentage: totalSpent > 0 ? Math.round((amount / totalSpent) * 100) : 0 };
+      const cat = categories.get(catId);
+      return { categoryId: catId, categoryName: cat?.name ?? FALLBACK_CATEGORY.name, categoryIcon: cat?.icon ?? FALLBACK_CATEGORY.icon, categoryColor: cat?.color ?? FALLBACK_CATEGORY.color, amount, percentage: totalSpent > 0 ? Math.round((amount / totalSpent) * 100) : 0 };
     });
   const byDay: Record<string, number> = {};
-  for (const e of allPeriod) {
+  for (const e of enriched) {
     const d = new Date(e.createdAt);
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     byDay[key] = (byDay[key] ?? 0) + e.amount;
   }
   const dailySpending = Object.entries(byDay).sort(([a], [b]) => a.localeCompare(b)).map(([date, amount]) => ({ date, amount }));
-  const recentExpenses = allPeriod.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 5);
-  return { period, totalSpent, expenseCount: allPeriod.length, topCategories, dailySpending, recentExpenses };
+  const recentExpenses = enriched.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 5);
+  return { period, totalSpent, expenseCount: enriched.length, topCategories, dailySpending, recentExpenses };
 }
 
 // ---------------------------------------------------------------------------

@@ -19,6 +19,7 @@ import {
 } from '@phosphor-icons/react';
 import {
   updateDisplayName,
+  updateEmail,
   sendPasswordReset,
   signOut,
   deleteAccount,
@@ -29,8 +30,16 @@ interface ProfileViewProps {
   email: string;
   initialName: string;
   avatarUrl: string | null;
+  currency: string;
   allowDelete: boolean;
 }
+
+const CURRENCY_LABELS: Record<string, string> = {
+  BRL: 'Real Brasileiro (BRL)',
+  USD: 'Dólar Americano (USD)',
+  EUR: 'Euro (EUR)',
+  GBP: 'Libra Esterlina (GBP)',
+};
 
 type Feedback = { kind: 'success' | 'error'; text: string } | null;
 
@@ -38,14 +47,18 @@ export default function ProfileView({
   email,
   initialName,
   avatarUrl,
+  currency,
   allowDelete,
 }: ProfileViewProps) {
   const [name, setName] = useState(initialName);
   const [draftName, setDraftName] = useState(initialName);
   const [editing, setEditing] = useState(false);
+  const [editingEmail, setEditingEmail] = useState(false);
+  const [draftEmail, setDraftEmail] = useState(email);
   const [feedback, setFeedback] = useState<Feedback>(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [savingName, startSaveName] = useTransition();
+  const [savingEmail, startSaveEmail] = useTransition();
   const [sendingReset, startSendReset] = useTransition();
   const [signingOut, startSignOut] = useTransition();
   const [deleting, startDelete] = useTransition();
@@ -77,6 +90,23 @@ export default function ProfileView({
       if (result.ok) {
         setName(trimmed);
         setEditing(false);
+      }
+    });
+  }
+
+  function handleSaveEmail() {
+    const trimmed = draftEmail.trim().toLowerCase();
+    if (trimmed === email.toLowerCase()) {
+      setEditingEmail(false);
+      return;
+    }
+    const fd = new FormData();
+    fd.set('email', trimmed);
+    startSaveEmail(async () => {
+      const result = await updateEmail(fd);
+      applyResult(result);
+      if (result.ok) {
+        setEditingEmail(false);
       }
     });
   }
@@ -132,7 +162,7 @@ export default function ProfileView({
     });
   }
 
-  const anyBusy = savingName || sendingReset || signingOut || deleting || uploading;
+  const anyBusy = savingName || savingEmail || sendingReset || signingOut || deleting || uploading;
 
   return (
     <div className="max-w-lg mx-auto px-4 pb-24">
@@ -205,9 +235,61 @@ export default function ProfileView({
                 </button>
               )}
             </div>
-            <p className="text-sm text-[#6B7280] truncate">{email}</p>
+            <div className="flex items-center justify-between gap-2 mt-0.5">
+              <p className="text-sm text-[#6B7280] truncate">{email}</p>
+              {!editingEmail && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDraftEmail(email);
+                    setFeedback(null);
+                    setEditingEmail(true);
+                  }}
+                  className="p-1.5 text-[#A8C5E0] hover:bg-[#F8F9FB] rounded-full transition-colors shrink-0"
+                  aria-label="Alterar email"
+                >
+                  <PencilSimple size={14} />
+                </button>
+              )}
+            </div>
           </div>
         </div>
+
+        {editingEmail && (
+          <div className="mt-4 flex items-center gap-2">
+            <input
+              type="email"
+              value={draftEmail}
+              onChange={(e) => setDraftEmail(e.target.value)}
+              autoComplete="email"
+              autoFocus
+              disabled={savingEmail}
+              className="flex-1 px-3 py-2 rounded-[10px] bg-[#F8F9FB] border border-[#E5E7EB] text-sm text-[#1A1D23] outline-none focus:border-[#A8C5E0] transition-colors"
+              placeholder="novo@email.com"
+            />
+            <button
+              type="button"
+              onClick={handleSaveEmail}
+              disabled={savingEmail}
+              className="w-10 h-10 rounded-[10px] flex items-center justify-center text-white disabled:opacity-60 bg-[#5BBF8E]"
+              aria-label="Confirmar troca de email"
+            >
+              <Check size={18} />
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setEditingEmail(false);
+                setDraftEmail(email);
+              }}
+              disabled={savingEmail}
+              className="w-10 h-10 rounded-[10px] flex items-center justify-center text-[#6B7280] border border-[#E5E7EB] disabled:opacity-60"
+              aria-label="Cancelar"
+            >
+              <X size={18} />
+            </button>
+          </div>
+        )}
 
         {editing && (
           <div className="mt-4 flex items-center gap-2">
@@ -305,7 +387,7 @@ export default function ProfileView({
         className="bg-white rounded-[16px] overflow-hidden divide-y divide-[#F1F2F4] mb-6"
         style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
       >
-        <button className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-[#F8F9FB] transition-colors group">
+        <Link href="/perfil/notificacoes" className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-[#F8F9FB] transition-colors group">
           <div className="w-9 h-9 rounded-full bg-[#FEF6EB] text-[#F0A855] flex items-center justify-center">
             <Bell size={18} />
           </div>
@@ -314,17 +396,17 @@ export default function ProfileView({
             <p className="text-xs text-[#6B7280]">Alertas de orçamento e lembretes</p>
           </div>
           <CaretRight size={18} className="text-[#E5E7EB] group-hover:text-[#9CA3AF] transition-colors" />
-        </button>
-        <button className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-[#F8F9FB] transition-colors group">
+        </Link>
+        <Link href="/perfil/moeda" className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-[#F8F9FB] transition-colors group">
           <div className="w-9 h-9 rounded-full bg-[#F1F3F7] text-[#6B7280] flex items-center justify-center">
             <CurrencyDollar size={18} />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-[#1A1D23]">Moeda</p>
-            <p className="text-xs text-[#6B7280]">Real Brasileiro (BRL)</p>
+            <p className="text-xs text-[#6B7280]">{CURRENCY_LABELS[currency] ?? currency}</p>
           </div>
           <CaretRight size={18} className="text-[#E5E7EB] group-hover:text-[#9CA3AF] transition-colors" />
-        </button>
+        </Link>
       </div>
 
       {/* Dados section */}
@@ -335,7 +417,11 @@ export default function ProfileView({
         className="bg-white rounded-[16px] overflow-hidden mb-6"
         style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
       >
-        <button className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-[#F8F9FB] transition-colors group">
+        <a
+          href="/api/export"
+          download
+          className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-[#F8F9FB] transition-colors group"
+        >
           <div className="w-9 h-9 rounded-full bg-[#F3E8FF] text-[#9333EA] flex items-center justify-center">
             <DownloadSimple size={18} />
           </div>
@@ -344,7 +430,7 @@ export default function ProfileView({
             <p className="text-xs text-[#6B7280]">Baixar todos os seus gastos em CSV</p>
           </div>
           <CaretRight size={18} className="text-[#E5E7EB] group-hover:text-[#9CA3AF] transition-colors" />
-        </button>
+        </a>
       </div>
 
       {/* Account actions */}

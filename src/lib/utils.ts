@@ -1,7 +1,15 @@
-export function formatCurrency(centavos: number): string {
-  return new Intl.NumberFormat('pt-BR', {
+const CURRENCY_LOCALE: Record<string, string> = {
+  BRL: 'pt-BR',
+  USD: 'en-US',
+  EUR: 'de-DE',
+  GBP: 'en-GB',
+};
+
+export function formatCurrency(centavos: number, currency: string = 'BRL'): string {
+  const locale = CURRENCY_LOCALE[currency] ?? 'pt-BR';
+  return new Intl.NumberFormat(locale, {
     style: 'currency',
-    currency: 'BRL',
+    currency,
   }).format(centavos / 100);
 }
 

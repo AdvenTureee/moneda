@@ -3,7 +3,6 @@
 import { PencilSimple, Trash } from '@phosphor-icons/react';
 import Icon from '@/components/Icon';
 import { formatCurrency, formatDate, formatTime } from '@/lib/utils';
-import { getCategoryById } from '@/data/mock';
 import type { Expense } from '@/types';
 
 interface ExpenseCardProps {
@@ -21,7 +20,7 @@ export default function ExpenseCard({
   onEdit,
   onDelete,
 }: ExpenseCardProps) {
-  const category = getCategoryById(expense.category);
+  const category = expense.categoryData;
   const isCompact = variant === 'compact';
 
   return (

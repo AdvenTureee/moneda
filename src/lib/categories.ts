@@ -121,6 +121,31 @@ export async function deleteCategory(userId: string, id: string): Promise<void> 
   deleteUserCategory(id);
 }
 
+export async function getCategoriesByIds(
+  userId: string,
+  ids: string[],
+): Promise<Map<string, Category>> {
+  const map = new Map<string, Category>();
+  if (ids.length === 0) return map;
+  const unique = Array.from(new Set(ids));
+
+  if (isSupabaseEnabled()) {
+    const db = createServiceClient();
+    const { data, error } = await db
+      .from('categories')
+      .select('*')
+      .or(`user_id.eq.${userId},user_id.is.null`)
+      .in('id', unique);
+    if (error) throw new Error(`getCategoriesByIds: ${error.message}`);
+    for (const row of data as CategoryRow[]) map.set(row.id, rowToCategory(row));
+    return map;
+  }
+
+  for (const c of CATEGORIES) if (unique.includes(c.id)) map.set(c.id, c);
+  for (const c of getUserCategories()) if (unique.includes(c.id)) map.set(c.id, c);
+  return map;
+}
+
 export async function getCategoryExpenseCount(userId: string, categoryId: string): Promise<number> {
   if (isSupabaseEnabled()) {
     const db = createServiceClient();

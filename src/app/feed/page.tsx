@@ -7,6 +7,7 @@ import ExpenseCard from '@/components/ExpenseCard';
 import AddExpenseModal from '@/components/AddExpenseModal';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import CategoryChip from '@/components/CategoryChip';
+import DateRangePicker, { buildPreset, type DateRange } from '@/components/DateRangePicker';
 import Icon from '@/components/Icon';
 import GranaMascot from '@/components/GranaMascot';
 import { groupExpensesByDate, formatCurrency } from '@/lib/utils';
@@ -15,6 +16,7 @@ import type { Expense, Category, ExpenseInput } from '@/types';
 export default function FeedPage() {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const [dateRange, setDateRange] = useState<DateRange>(() => buildPreset('all'));
   const [allExpenses, setAllExpenses] = useState<Expense[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -29,6 +31,8 @@ export default function FeedPage() {
       const params = new URLSearchParams();
       if (activeCategory) params.set('category', activeCategory);
       if (search.trim()) params.set('search', search.trim());
+      if (dateRange.from) params.set('startDate', dateRange.from);
+      if (dateRange.to) params.set('endDate', dateRange.to);
       const url = `/api/expenses${params.size ? '?' + params.toString() : ''}`;
       const res = await fetch(url);
       if (!res.ok) {
@@ -45,7 +49,7 @@ export default function FeedPage() {
     } finally {
       setLoading(false);
     }
-  }, [activeCategory, search]);
+  }, [activeCategory, search, dateRange]);
 
   useEffect(() => {
     fetchExpenses();
@@ -121,20 +125,23 @@ export default function FeedPage() {
           <h1 className="text-xl font-heading text-[#1A1D23] mb-3">Feed de Gastos</h1>
 
           {/* Search bar */}
-          <div className="relative mb-3">
-            <MagnifyingGlass
-              size={16}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9CA3AF]"
-              aria-hidden
-            />
-            <input
-              type="search"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar gasto..."
-              className="w-full pl-9 pr-4 py-2.5 rounded-[10px] bg-white border border-[#E5E7EB] text-sm text-[#1A1D23] placeholder:text-[#9CA3AF] outline-none focus:border-[#A8C5E0] transition-colors"
-              aria-label="Buscar gastos"
-            />
+          <div className="flex items-center gap-2 mb-3">
+            <div className="relative flex-1">
+              <MagnifyingGlass
+                size={16}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9CA3AF]"
+                aria-hidden
+              />
+              <input
+                type="search"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Buscar gasto..."
+                className="w-full pl-9 pr-4 py-2.5 rounded-[10px] bg-white border border-[#E5E7EB] text-sm text-[#1A1D23] placeholder:text-[#9CA3AF] outline-none focus:border-[#A8C5E0] transition-colors"
+                aria-label="Buscar gastos"
+              />
+            </div>
+            <DateRangePicker value={dateRange} onChange={setDateRange} />
           </div>
 
           {/* Category filter chips */}
@@ -186,7 +193,7 @@ export default function FeedPage() {
             </div>
           ) : groups.length === 0 ? (
             <div className="flex flex-col items-center py-16 text-center">
-              {search || activeCategory ? (
+              {search || activeCategory || dateRange.presetId !== 'all' ? (
                 <>
                   <GranaMascot variant="thinking" size={128} className="mb-4 animate-bounce-in" />
                   <p className="text-base font-semibold text-[#1A1D23]">
