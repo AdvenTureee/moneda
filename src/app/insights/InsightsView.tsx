@@ -266,8 +266,7 @@ export default function InsightsView({
 
       {/* AI Insights Section */}
       <section className="mb-6">
-        <h2 className="text-sm font-heading text-[#1A1D23] mb-3 flex items-center gap-2">
-          <GranaMascot variant="thinking" size={24} />
+        <h2 className="text-sm font-heading text-[#1A1D23] mb-3">
           Análise do Grana
         </h2>
 
