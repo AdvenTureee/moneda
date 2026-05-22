@@ -40,10 +40,10 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
                 key={item.label}
                 onClick={onAddExpense}
                 aria-label="Adicionar gasto"
-                className="flex flex-col items-center justify-center w-12 h-12 rounded-full bg-[#5BBF8E] text-white -mt-3 active:scale-90 transition-transform duration-75 animate-fab-pulse"
-                style={{ boxShadow: '0 4px 20px rgba(91, 191, 142, 0.35)' }}
+                className="flex flex-col items-center justify-center w-16 h-16 rounded-full bg-[#5BBF8E] text-white -mt-6 active:scale-90 transition-transform duration-75"
+                style={{ boxShadow: '0 2px 8px rgba(0, 0, 0, 0.12)' }}
               >
-                <item.icon size={22} />
+                <item.icon size={30} />
               </button>
             );
           }
