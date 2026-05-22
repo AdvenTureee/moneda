@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { CalendarBlank, CaretDown } from '@phosphor-icons/react';
 
 export interface DateRange {
@@ -83,8 +84,33 @@ function labelFor(range: DateRange): string {
 
 export default function DateRangePicker({ value, onChange }: DateRangePickerProps) {
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [position, setPosition] = useState<{ top: number; right: number } | null>(null);
   const [customFrom, setCustomFrom] = useState(isoToDateInput(value.from));
   const [customTo, setCustomTo] = useState(isoToDateInput(value.to));
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
+
+  useEffect(() => setMounted(true), []);
+
+  useLayoutEffect(() => {
+    if (!open) return;
+    const update = () => {
+      const btn = buttonRef.current;
+      if (!btn) return;
+      const rect = btn.getBoundingClientRect();
+      setPosition({
+        top: rect.bottom + 4,
+        right: Math.max(8, window.innerWidth - rect.right),
+      });
+    };
+    update();
+    window.addEventListener('resize', update);
+    window.addEventListener('scroll', update, true);
+    return () => {
+      window.removeEventListener('resize', update);
+      window.removeEventListener('scroll', update, true);
+    };
+  }, [open]);
 
   function pickPreset(id: string) {
     onChange(buildPreset(id));
@@ -102,8 +128,9 @@ export default function DateRangePicker({ value, onChange }: DateRangePickerProp
   }
 
   return (
-    <div className="relative">
+    <>
       <button
+        ref={buttonRef}
         type="button"
         onClick={() => setOpen((o) => !o)}
         className="inline-flex items-center gap-2 px-3 py-2 rounded-[10px] bg-white border border-[#E5E7EB] text-xs font-medium text-[#1A1D23] hover:bg-[#F8F9FB] transition-colors"
@@ -119,16 +146,20 @@ export default function DateRangePicker({ value, onChange }: DateRangePickerProp
         />
       </button>
 
-      {open && (
+      {mounted && open && position && createPortal(
         <>
           <div
-            className="fixed inset-0 z-40"
+            className="fixed inset-0 z-[100]"
             onClick={() => setOpen(false)}
             aria-hidden
           />
           <div
-            className="absolute right-0 top-full mt-1 z-50 w-64 bg-white rounded-[10px] py-2"
-            style={{ boxShadow: '0 4px 16px rgba(0,0,0,0.12)' }}
+            className="fixed z-[101] w-64 bg-white rounded-[10px] py-2"
+            style={{
+              top: position.top,
+              right: position.right,
+              boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
+            }}
             role="dialog"
             aria-label="Filtro de data"
           >
@@ -183,8 +214,9 @@ export default function DateRangePicker({ value, onChange }: DateRangePickerProp
               </div>
             </div>
           </div>
-        </>
+        </>,
+        document.body,
       )}
-    </div>
+    </>
   );
 }

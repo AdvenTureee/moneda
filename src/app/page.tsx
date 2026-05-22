@@ -34,6 +34,11 @@ export default async function DashboardPage({
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
+  // First-login → send to onboarding to define an initial budget.
+  if (user.user_metadata?.onboarded !== true) {
+    redirect('/onboarding');
+  }
+
   const sp = await searchParams;
   const rawPeriod = Array.isArray(sp.period) ? sp.period[0] : sp.period;
   const period = isValidPeriod(rawPeriod) ? rawPeriod : getCurrentPeriod();

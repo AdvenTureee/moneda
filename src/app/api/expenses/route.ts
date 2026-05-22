@@ -48,6 +48,7 @@ export async function POST(req: NextRequest) {
     description: body.description ?? 'Gasto',
     source: body.source ?? 'manual',
     tags: body.tags ?? [],
+    occurredAt: body.occurredAt,
   };
 
   const expense = await createExpense(input);
@@ -74,6 +75,7 @@ export async function PATCH(req: NextRequest) {
     amount: body.amount,
     category: body.category,
     description: body.description,
+    occurredAt: body.occurredAt,
   });
   return NextResponse.json({ data: expense });
 }

@@ -39,6 +39,8 @@ export interface ExpenseInput {
   description: string;
   source: ExpenseSource;
   tags: string[];
+  /** ISO timestamp for when the expense happened. Defaults to now on create. */
+  occurredAt?: string;
 }
 
 

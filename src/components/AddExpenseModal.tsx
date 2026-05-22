@@ -15,6 +15,22 @@ interface AddExpenseModalProps {
   editExpense?: Expense;
 }
 
+function toLocalDateInput(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+function todayLocalDate(): string {
+  return toLocalDateInput(new Date());
+}
+
+function localDateToIso(value: string, reference?: Date): string {
+  // Preserve the time-of-day from `reference` (e.g. original occurred_at) when editing.
+  const [y, m, d] = value.split('-').map(Number);
+  const ref = reference ?? new Date();
+  const out = new Date(y, (m ?? 1) - 1, d ?? 1, ref.getHours(), ref.getMinutes(), ref.getSeconds());
+  return out.toISOString();
+}
+
 export default function AddExpenseModal({
   isOpen,
   onClose,
@@ -26,6 +42,7 @@ export default function AddExpenseModal({
   const [amountDisplay, setAmountDisplay] = useState('');
   const [description, setDescription] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
+  const [occurredAtInput, setOccurredAtInput] = useState(todayLocalDate());
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoriesLoaded, setCategoriesLoaded] = useState(false);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
@@ -40,6 +57,7 @@ export default function AddExpenseModal({
       setAmountDisplay('');
       setDescription('');
       setSelectedCategory('');
+      setOccurredAtInput(todayLocalDate());
       setTimeout(() => inputRef.current?.focus(), 100);
     } else if (isOpen && editExpense) {
       setAmountCents(editExpense.amount);
@@ -51,6 +69,7 @@ export default function AddExpenseModal({
       );
       setDescription(editExpense.description);
       setSelectedCategory(editExpense.category);
+      setOccurredAtInput(toLocalDateInput(new Date(editExpense.createdAt)));
       setTimeout(() => inputRef.current?.focus(), 100);
     }
   }, [isOpen, editExpense]);
@@ -85,15 +104,17 @@ export default function AddExpenseModal({
 
   const handleSave = useCallback(() => {
     if (amountCents <= 0 || !selectedCategory) return;
+    const referenceDate = editExpense ? new Date(editExpense.createdAt) : new Date();
     onSave({
       amount: amountCents,
       category: selectedCategory,
       description: description.trim() || (categories.find((c) => c.id === selectedCategory)?.name ?? 'Gasto'),
       source: 'manual',
       tags: [],
+      occurredAt: localDateToIso(occurredAtInput, referenceDate),
     });
     onClose();
-  }, [amountCents, description, selectedCategory, onSave, onClose]);
+  }, [amountCents, description, selectedCategory, occurredAtInput, editExpense, categories, onSave, onClose]);
 
   const handleBackdropClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
@@ -198,7 +219,7 @@ export default function AddExpenseModal({
         </div>
 
         {/* Description */}
-        <div className="px-5 mb-6">
+        <div className="px-5 mb-4">
           <p className="text-sm font-semibold text-[#6B7280] mb-2">
             Descrição{' '}
             <span className="font-normal text-[#9CA3AF]">(opcional)</span>
@@ -210,6 +231,19 @@ export default function AddExpenseModal({
             placeholder="Ex: iFood, Posto Shell..."
             className="w-full border border-[#E5E7EB] rounded-[10px] px-4 py-3 text-[15px] text-[#1A1D23] outline-none placeholder:text-[#9CA3AF] focus:border-[#A8C5E0] transition-colors"
             maxLength={120}
+          />
+        </div>
+
+        {/* Date */}
+        <div className="px-5 mb-6">
+          <p className="text-sm font-semibold text-[#6B7280] mb-2">Data do gasto</p>
+          <input
+            type="date"
+            value={occurredAtInput}
+            onChange={(e) => setOccurredAtInput(e.target.value)}
+            max={todayLocalDate()}
+            className="w-full border border-[#E5E7EB] rounded-[10px] px-4 py-3 text-[15px] text-[#1A1D23] outline-none focus:border-[#A8C5E0] transition-colors tabular-nums"
+            aria-label="Data do gasto"
           />
         </div>
 

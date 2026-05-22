@@ -118,7 +118,7 @@ async function createExpenseInDB(input: ExpenseInput): Promise<Expense> {
     description: input.description,
     source: input.source,
     tags: input.tags,
-    occurred_at: new Date().toISOString(),
+    occurred_at: input.occurredAt ?? new Date().toISOString(),
   };
 
   const { data, error } = await db
@@ -289,6 +289,7 @@ async function updateExpenseInDB(id: string, input: Partial<ExpenseInput>): Prom
   if (input.amount !== undefined) updates.amount_cents = input.amount;
   if (input.category !== undefined) updates.category_id = input.category;
   if (input.description !== undefined) updates.description = input.description;
+  if (input.occurredAt !== undefined) updates.occurred_at = input.occurredAt;
 
   const { data, error } = await db
     .from('expenses')
@@ -321,6 +322,7 @@ function updateExpenseFromMock(id: string, input: Partial<ExpenseInput>): Expens
     ...(input.amount !== undefined && { amount: input.amount }),
     ...(input.category !== undefined && { category: input.category }),
     ...(input.description !== undefined && { description: input.description }),
+    ...(input.occurredAt !== undefined && { createdAt: new Date(input.occurredAt) }),
   };
   updateSessionExpense(id, updated);
   return updated;
@@ -360,7 +362,7 @@ export async function createExpense(input: ExpenseInput): Promise<Expense> {
     description: input.description,
     source: input.source,
     tags: input.tags,
-    createdAt: new Date(),
+    createdAt: input.occurredAt ? new Date(input.occurredAt) : new Date(),
   };
   addSessionExpense(expense);
   return expense;
