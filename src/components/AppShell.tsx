@@ -5,6 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import BottomNav from '@/components/BottomNav';
 import AddExpenseModal from '@/components/AddExpenseModal';
 import CoinDropAnimation from '@/components/CoinDropAnimation';
+import ScrollFadeIndicator from '@/components/ScrollFadeIndicator';
 import type { ExpenseInput } from '@/types';
 
 interface AppShellProps {
@@ -41,6 +42,7 @@ export default function AppShell({ children }: AppShellProps) {
           {children}
         </div>
       </main>
+      <ScrollFadeIndicator />
       <BottomNav onAddExpense={() => setModalOpen(true)} />
       <AddExpenseModal
         isOpen={modalOpen}

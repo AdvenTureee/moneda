@@ -99,7 +99,7 @@ export default function BudgetForm({ initialBudgets, period }: BudgetFormProps) 
   };
 
   return (
-    <div className="max-w-lg mx-auto px-4 pb-28">
+    <div className="max-w-lg mx-auto px-4 pb-8">
       {/* Header */}
       <div className="flex items-center gap-3 py-5 mb-2">
         <Link
@@ -184,27 +184,25 @@ export default function BudgetForm({ initialBudgets, period }: BudgetFormProps) 
         })}
       </div>
 
-      {/* Sticky Bottom Actions Container */}
-      <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-white via-white to-transparent pt-6 pb-8 px-4 z-40">
-        <div className="max-w-lg mx-auto">
-          <button
-            onClick={handleSaveAll}
-            disabled={saving || !hasChanges}
-            className="w-full bg-[#1A1D23] hover:bg-[#2A2E37] text-white font-bold py-4 rounded-full transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
-            style={{
-              boxShadow: '0 6px 20px rgba(26, 29, 35, 0.15)',
-            }}
-          >
-            {saving ? (
-              <span className="flex items-center gap-2">
-                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                Salvando...
-              </span>
-            ) : (
-              'Salvar Orçamentos'
-            )}
-          </button>
-        </div>
+      {/* Bottom Actions */}
+      <div className="mt-6">
+        <button
+          onClick={handleSaveAll}
+          disabled={saving || !hasChanges}
+          className="w-full bg-[#1A1D23] hover:bg-[#2A2E37] text-white font-bold py-4 rounded-full transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
+          style={{
+            boxShadow: '0 6px 20px rgba(26, 29, 35, 0.15)',
+          }}
+        >
+          {saving ? (
+            <span className="flex items-center gap-2">
+              <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              Salvando...
+            </span>
+          ) : (
+            'Salvar Orçamentos'
+          )}
+        </button>
       </div>
 
       {/* Feedback Toast */}

@@ -9,12 +9,22 @@ import { createSessionClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 
-export default async function InsightsPage() {
+function isValidPeriod(s: unknown): s is string {
+  return typeof s === 'string' && /^\d{4}-(0[1-9]|1[0-2])$/.test(s);
+}
+
+export default async function InsightsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ period?: string | string[] }>;
+}) {
   const supabase = await createSessionClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  const period = getCurrentPeriod();
+  const sp = await searchParams;
+  const rawPeriod = Array.isArray(sp.period) ? sp.period[0] : sp.period;
+  const period = isValidPeriod(rawPeriod) ? rawPeriod : getCurrentPeriod();
   const prevPeriod = getPreviousPeriod(period);
 
   const [metrics, prevMetrics, insights, categories] = await Promise.all([

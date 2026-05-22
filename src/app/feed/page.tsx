@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { MagnifyingGlass } from '@phosphor-icons/react';
 import AppShell from '@/components/AppShell';
 import ExpenseCard from '@/components/ExpenseCard';
@@ -23,6 +23,46 @@ export default function FeedPage() {
   const [error, setError] = useState<string | null>(null);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [deletingExpense, setDeletingExpense] = useState<Expense | null>(null);
+
+  const chipsRef = useRef<HTMLDivElement | null>(null);
+  const [chipsScroll, setChipsScroll] = useState<{ atStart: boolean; atEnd: boolean }>({
+    atStart: true,
+    atEnd: true,
+  });
+
+  const updateChipsScroll = useCallback(() => {
+    const el = chipsRef.current;
+    if (!el) return;
+    const atStart = el.scrollLeft <= 1;
+    const atEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 1;
+    setChipsScroll((prev) =>
+      prev.atStart === atStart && prev.atEnd === atEnd ? prev : { atStart, atEnd },
+    );
+  }, []);
+
+  useEffect(() => {
+    updateChipsScroll();
+    const el = chipsRef.current;
+    if (!el) return;
+    el.addEventListener('scroll', updateChipsScroll, { passive: true });
+    window.addEventListener('resize', updateChipsScroll);
+    return () => {
+      el.removeEventListener('scroll', updateChipsScroll);
+      window.removeEventListener('resize', updateChipsScroll);
+    };
+  }, [updateChipsScroll, categories.length]);
+
+  const chipsMask = useMemo(() => {
+    const { atStart, atEnd } = chipsScroll;
+    if (atStart && atEnd) return undefined;
+    if (atStart) {
+      return 'linear-gradient(to right, black 0, black calc(100% - 40px), transparent 100%)';
+    }
+    if (atEnd) {
+      return 'linear-gradient(to right, transparent 0, black 40px, black 100%)';
+    }
+    return 'linear-gradient(to right, transparent 0, black 40px, black calc(100% - 40px), transparent 100%)';
+  }, [chipsScroll]);
 
   const fetchExpenses = useCallback(async () => {
     setLoading(true);
@@ -146,8 +186,13 @@ export default function FeedPage() {
 
           {/* Category filter chips */}
           <div
+            ref={chipsRef}
             className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4"
-            style={{ scrollbarWidth: 'none' }}
+            style={{
+              scrollbarWidth: 'none',
+              maskImage: chipsMask,
+              WebkitMaskImage: chipsMask,
+            }}
             role="group"
             aria-label="Filtrar por categoria"
           >

@@ -70,6 +70,15 @@ body::before {
   background-size: 128px 128px;
 }
 
+/* Mobile / touch devices render feTurbulence at higher pixel density,
+   making the grain look heavier than on desktop. Calibrate down. */
+@media (max-width: 768px), (pointer: coarse) {
+  body::before {
+    opacity: 0.16;
+    background-size: 192px 192px;
+  }
+}
+
 h1, h2, h3, h4, h5, h6,
 .font-heading {
   font-family: var(--font-heading), sans-serif;

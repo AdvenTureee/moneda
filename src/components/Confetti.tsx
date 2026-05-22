@@ -17,18 +17,24 @@ interface Particle {
 
 interface ConfettiProps {
   trigger?: boolean;
+  /** When set, the confetti only fires once per browser tab (sessionStorage gate). */
+  sessionKey?: string;
 }
 
-export default function Confetti({ trigger }: ConfettiProps) {
+export default function Confetti({ trigger, sessionKey }: ConfettiProps) {
   const [show, setShow] = useState(false);
 
   useEffect(() => {
-    if (trigger) {
-      setShow(true);
-      const timer = setTimeout(() => setShow(false), 3000);
-      return () => clearTimeout(timer);
+    if (!trigger) return;
+    if (sessionKey) {
+      if (typeof window === 'undefined') return;
+      if (window.sessionStorage.getItem(sessionKey)) return;
+      window.sessionStorage.setItem(sessionKey, '1');
     }
-  }, [trigger]);
+    setShow(true);
+    const timer = setTimeout(() => setShow(false), 3000);
+    return () => clearTimeout(timer);
+  }, [trigger, sessionKey]);
 
   const particles = useMemo<Particle[]>(() => {
     if (!show) return [];

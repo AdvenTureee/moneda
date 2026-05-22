@@ -179,7 +179,8 @@ export default async function DashboardPage({
           <RegenerateInsightButton period={period} hasInsight={Boolean(latestInsight)} />
           <AIInsightBanner
             message={insightMessage}
-            cta={{ label: 'Ver detalhes', href: '/feed' }}
+            preview
+            cta={{ label: 'Ver mais', href: `/insights?period=${period}` }}
           />
         </section>
 
@@ -216,7 +217,7 @@ export default async function DashboardPage({
 
         <div className="h-6" />
       </div>
-      {remaining > 0 && <Confetti trigger />}
+      {remaining > 0 && <Confetti trigger sessionKey="dashboard-confetti" />}
     </AppShell>
   );
 }

@@ -6,6 +6,7 @@ import {
   SignOut,
   Envelope,
   PencilSimple,
+  At,
   Trash,
   Check,
   X,
@@ -228,10 +229,10 @@ export default function ProfileView({
                     setFeedback(null);
                     setEditing(true);
                   }}
-                  className="p-2 -mr-2 text-[#A8C5E0] hover:bg-[#F8F9FB] rounded-full transition-colors"
+                  className="w-8 h-8 -mr-1 flex items-center justify-center text-[#A8C5E0] hover:bg-[#F8F9FB] rounded-full transition-colors shrink-0"
                   aria-label="Editar nome"
                 >
-                  <PencilSimple size={18} />
+                  <PencilSimple size={16} />
                 </button>
               )}
             </div>
@@ -245,10 +246,10 @@ export default function ProfileView({
                     setFeedback(null);
                     setEditingEmail(true);
                   }}
-                  className="p-1.5 text-[#A8C5E0] hover:bg-[#F8F9FB] rounded-full transition-colors shrink-0"
+                  className="w-8 h-8 -mr-1 flex items-center justify-center text-[#A8C5E0] hover:bg-[#F8F9FB] rounded-full transition-colors shrink-0"
                   aria-label="Alterar email"
                 >
-                  <PencilSimple size={14} />
+                  <At size={16} weight="bold" />
                 </button>
               )}
             </div>
