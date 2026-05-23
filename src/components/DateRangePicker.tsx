@@ -210,7 +210,7 @@ export default function DateRangePicker({ value, onChange }: DateRangePickerProp
                   type="button"
                   onClick={applyCustom}
                   disabled={!customFrom || !customTo}
-                  className="w-full mt-1 px-3 py-1.5 rounded-[8px] bg-[#A8C5E0] text-white text-xs font-semibold disabled:opacity-50 hover:bg-[#7AAECF] transition-colors"
+                  className="w-full mt-1 px-3 py-1.5 rounded-[8px] bg-[#5BBF8E] hover:bg-[#4AA77C] active:bg-[#3FA876] text-white text-xs font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-150"
                 >
                   Aplicar
                 </button>

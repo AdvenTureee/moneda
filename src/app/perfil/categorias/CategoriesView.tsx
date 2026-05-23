@@ -453,7 +453,7 @@ export default function CategoriesView() {
               type="button"
               onClick={addKeyword}
               disabled={!keywordInput.trim()}
-              className="px-3 py-2 rounded-[10px] text-xs font-semibold text-white bg-[#A8C5E0] disabled:opacity-40"
+              className="px-3 py-2 rounded-[10px] text-xs font-semibold text-white bg-[#5BBF8E] hover:bg-[#4AA77C] active:bg-[#3FA876] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Adicionar
             </button>

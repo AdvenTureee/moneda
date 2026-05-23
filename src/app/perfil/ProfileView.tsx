@@ -22,6 +22,7 @@ import {
   updateDisplayName,
   updateEmail,
   sendPasswordReset,
+  setInitialPassword,
   signOut,
   deleteAccount,
   type ActionResult,
@@ -80,10 +81,14 @@ export default function ProfileView({
   const [uploading, setUploading] = useState(false);
   const [linkingGoogle, setLinkingGoogle] = useState(false);
   const [currentAvatarUrl, setCurrentAvatarUrl] = useState<string | null>(avatarUrl);
+  const [showSetPassword, setShowSetPassword] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [savingPassword, startSavePassword] = useTransition();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const initial = (name?.[0] ?? email?.[0] ?? '?').toUpperCase();
   const isGoogleLinked = linkedProviders.includes('google');
+  const hasEmailIdentity = linkedProviders.includes('email');
 
   async function handleLinkGoogle() {
     setFeedback(null);
@@ -149,6 +154,20 @@ export default function ProfileView({
     startSendReset(async () => {
       const result = await sendPasswordReset();
       applyResult(result);
+    });
+  }
+
+  function handleSetPassword() {
+    setFeedback(null);
+    const fd = new FormData();
+    fd.set('password', newPassword);
+    startSavePassword(async () => {
+      const result = await setInitialPassword(fd);
+      applyResult(result);
+      if (result.ok) {
+        setNewPassword('');
+        setShowSetPassword(false);
+      }
     });
   }
 
@@ -474,22 +493,87 @@ export default function ProfileView({
         className="bg-white rounded-[16px] overflow-hidden divide-y divide-[#F1F2F4] mb-8"
         style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
       >
-        <button
-          type="button"
-          onClick={handleSendReset}
-          disabled={anyBusy}
-          className="w-full flex items-center gap-3 px-5 py-4 text-left disabled:opacity-60 hover:bg-[#F8F9FB] transition-colors"
-        >
-          <div className="w-9 h-9 rounded-full bg-[#EEF3F8] text-[#5B7FA8] flex items-center justify-center">
-            <Envelope size={16} />
+        {hasEmailIdentity ? (
+          <button
+            type="button"
+            onClick={handleSendReset}
+            disabled={anyBusy}
+            className="w-full flex items-center gap-3 px-5 py-4 text-left disabled:opacity-60 hover:bg-[#F8F9FB] transition-colors"
+          >
+            <div className="w-9 h-9 rounded-full bg-[#EEF3F8] text-[#5B7FA8] flex items-center justify-center">
+              <Envelope size={16} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-[#1A1D23]">
+                {sendingReset ? 'Enviando…' : 'Redefinir senha'}
+              </p>
+              <p className="text-xs text-[#6B7280]">Enviar link de reset para seu email</p>
+            </div>
+          </button>
+        ) : (
+          <div>
+            <button
+              type="button"
+              onClick={() => {
+                setShowSetPassword((s) => !s);
+                setFeedback(null);
+              }}
+              disabled={anyBusy}
+              className="w-full flex items-center gap-3 px-5 py-4 text-left disabled:opacity-60 hover:bg-[#F8F9FB] transition-colors"
+              aria-expanded={showSetPassword}
+            >
+              <div className="w-9 h-9 rounded-full bg-[#EEF3F8] text-[#5B7FA8] flex items-center justify-center">
+                <Envelope size={16} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-[#1A1D23]">Definir senha</p>
+                <p className="text-xs text-[#6B7280]">
+                  Crie uma senha para poder entrar também via email.
+                </p>
+              </div>
+              <CaretRight
+                size={14}
+                className={`text-[#9CA3AF] transition-transform ${showSetPassword ? 'rotate-90' : ''}`}
+              />
+            </button>
+            {showSetPassword && (
+              <div className="px-5 pb-4 pt-1 space-y-2 bg-[#F8F9FB]">
+                <label className="block text-xs font-medium text-[#6B7280] mb-1">
+                  Nova senha (mín. 8 caracteres)
+                </label>
+                <input
+                  type="password"
+                  autoComplete="new-password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full px-3.5 py-2.5 rounded-[10px] bg-white border border-[#E5E7EB] text-sm text-[#1A1D23] placeholder:text-[#9CA3AF] outline-none focus:border-[#A8C5E0] transition-colors"
+                />
+                <div className="flex gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowSetPassword(false);
+                      setNewPassword('');
+                    }}
+                    disabled={savingPassword}
+                    className="flex-1 py-2.5 rounded-[10px] text-xs font-semibold text-[#6B7280] hover:bg-[#F1F3F7] transition-colors disabled:opacity-60"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSetPassword}
+                    disabled={savingPassword || newPassword.length < 8}
+                    className="flex-1 py-2.5 rounded-[10px] text-xs font-semibold text-white bg-[#5BBF8E] hover:bg-[#4AA77C] disabled:opacity-40 transition-colors"
+                  >
+                    {savingPassword ? 'Salvando…' : 'Salvar senha'}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-[#1A1D23]">
-              {sendingReset ? 'Enviando…' : 'Redefinir senha'}
-            </p>
-            <p className="text-xs text-[#6B7280]">Enviar link de reset para seu email</p>
-          </div>
-        </button>
+        )}
 
         <button
           type="button"

@@ -130,6 +130,31 @@ export async function updateNotificationPrefs(formData: FormData): Promise<Actio
   return { ok: true, message: 'Preferências atualizadas.' };
 }
 
+/**
+ * Define uma senha para um usuário Google-only (que ainda não tem identidade
+ * email/senha). Como já está autenticado, vai direto via updateUser — sem
+ * round-trip de email. Pode também ser usado para alterar a senha existente.
+ */
+export async function setInitialPassword(formData: FormData): Promise<ActionResult> {
+  const password = String(formData.get('password') ?? '');
+  if (password.length < 8) {
+    return { ok: false, error: 'A senha precisa ter pelo menos 8 caracteres.' };
+  }
+
+  const supabase = await createSessionClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: 'Sessão expirada. Entre novamente.' };
+
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) {
+    console.error('[setInitialPassword]', error);
+    return { ok: false, error: 'Não foi possível definir a senha. Tente novamente.' };
+  }
+
+  revalidatePath('/perfil');
+  return { ok: true, message: 'Senha definida. Agora você pode entrar com email também.' };
+}
+
 export async function sendPasswordReset(): Promise<ActionResult> {
   const supabase = await createSessionClient();
   const { data: { user } } = await supabase.auth.getUser();

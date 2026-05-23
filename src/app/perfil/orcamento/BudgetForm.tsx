@@ -189,9 +189,9 @@ export default function BudgetForm({ initialBudgets, period }: BudgetFormProps) 
         <button
           onClick={handleSaveAll}
           disabled={saving || !hasChanges}
-          className="w-full bg-[#1A1D23] hover:bg-[#2A2E37] text-white font-bold py-4 rounded-full transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
+          className="w-full bg-[#5BBF8E] hover:bg-[#4AA77C] active:bg-[#3FA876] text-white font-bold py-4 rounded-full transition-colors duration-150 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           style={{
-            boxShadow: '0 6px 20px rgba(26, 29, 35, 0.15)',
+            boxShadow: '0 6px 20px rgba(91, 191, 142, 0.35)',
           }}
         >
           {saving ? (

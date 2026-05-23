@@ -357,7 +357,8 @@ export default function InsightsView({
               type="button"
               onClick={handleGenerate}
               disabled={generating}
-              className="mt-3 px-5 py-2.5 text-sm font-semibold text-white bg-[#A8C5E0] hover:bg-[#7AAECF] rounded-[10px] transition-colors"
+              className="mt-3 px-5 py-2.5 text-sm font-semibold text-white bg-[#5BBF8E] hover:bg-[#4AA77C] active:bg-[#3FA876] rounded-[10px] transition-colors duration-150 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ boxShadow: '0 4px 14px rgba(91, 191, 142, 0.3)' }}
             >
               Gerar primeira análise
             </button>

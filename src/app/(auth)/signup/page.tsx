@@ -99,8 +99,8 @@ export default function SignupPage() {
           </p>
           <Link
             href="/login"
-            className="mt-6 inline-block w-full py-3 rounded-[12px] text-sm font-semibold text-white text-center transition-opacity"
-            style={{ background: '#A8C5E0' }}
+            className="mt-6 inline-block w-full py-3 rounded-[12px] text-sm font-semibold text-white text-center bg-[#5BBF8E] hover:bg-[#4AA77C] active:bg-[#3FA876] transition-colors duration-150"
+            style={{ boxShadow: '0 4px 14px rgba(91, 191, 142, 0.3)' }}
           >
             Ir para o login
           </Link>
@@ -184,8 +184,8 @@ export default function SignupPage() {
             <button
               type="submit"
               disabled={loading || googleLoading}
-              className="w-full py-3 rounded-[12px] text-sm font-semibold text-white transition-opacity disabled:opacity-60"
-              style={{ background: '#A8C5E0' }}
+              className="w-full py-3 rounded-[12px] text-sm font-semibold text-white bg-[#5BBF8E] hover:bg-[#4AA77C] active:bg-[#3FA876] transition-colors duration-150 active:scale-[0.99] disabled:opacity-60 disabled:cursor-not-allowed"
+              style={{ boxShadow: '0 4px 14px rgba(91, 191, 142, 0.3)' }}
             >
               {loading ? 'Criando conta…' : 'Criar conta com email'}
             </button>

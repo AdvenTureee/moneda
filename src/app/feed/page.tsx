@@ -264,7 +264,7 @@ export default function FeedPage() {
               <p className="text-base font-semibold text-[#B14C4C]">{error}</p>
               <button
                 onClick={fetchExpenses}
-                className="mt-2 px-4 py-2 bg-[#A8C5E0] text-white rounded-[10px] text-sm font-semibold"
+                className="mt-2 px-4 py-2 bg-[#5BBF8E] hover:bg-[#4AA77C] active:bg-[#3FA876] text-white rounded-[10px] text-sm font-semibold transition-colors duration-150 active:scale-[0.98]"
               >
                 Tentar novamente
               </button>

@@ -177,8 +177,8 @@ export default function LoginPage() {
         <button
           type="submit"
           disabled={loading || googleLoading}
-          className="w-full py-3 rounded-[12px] text-sm font-semibold text-white transition-opacity disabled:opacity-60"
-          style={{ background: '#A8C5E0' }}
+          className="w-full py-3 rounded-[12px] text-sm font-semibold text-white bg-[#5BBF8E] hover:bg-[#4AA77C] active:bg-[#3FA876] transition-colors duration-150 active:scale-[0.99] disabled:opacity-60 disabled:cursor-not-allowed"
+          style={{ boxShadow: '0 4px 14px rgba(91, 191, 142, 0.3)' }}
         >
           {loading ? 'Entrando…' : 'Entrar com email'}
         </button>

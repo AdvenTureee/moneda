@@ -263,7 +263,8 @@ export default function IncomesView({ initialIncomes }: IncomesViewProps) {
           <button
             type="submit"
             disabled={isAdding || amountCents <= 0 || !description.trim()}
-            className="w-full bg-[#1A1D23] hover:bg-[#2A2E37] text-white font-bold py-4 rounded-full transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-md"
+            className="w-full bg-[#5BBF8E] hover:bg-[#4AA77C] active:bg-[#3FA876] text-white font-bold py-4 rounded-full transition-colors duration-150 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            style={{ boxShadow: '0 6px 20px rgba(91, 191, 142, 0.35)' }}
           >
             {isAdding ? (
               <span className="flex items-center gap-2">
