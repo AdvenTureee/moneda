@@ -214,11 +214,13 @@ export default function IncomesView({ initialIncomes }: IncomesViewProps) {
               <button
                 type="button"
                 onClick={() => setIsRecurring(!isRecurring)}
-                className={`flex items-center gap-2.5 justify-center border-2 rounded-[12px] py-3.5 text-sm font-semibold transition-all active:scale-[0.98] ${
+                aria-pressed={isRecurring}
+                className={`flex items-center gap-2.5 justify-center border-2 rounded-[12px] py-3.5 text-sm font-semibold select-none touch-manipulation transition-colors duration-75 active:scale-95 ${
                   isRecurring
                     ? 'border-[#3B82F6] bg-[#EBF3FE] text-[#2563EB]'
                     : 'border-[#E5E7EB] bg-[#F8F9FB] text-[#6B7280] hover:border-[#A8C5E0]'
                 }`}
+                style={{ WebkitTapHighlightColor: 'transparent' }}
               >
                 <ArrowsClockwise size={16} className={isRecurring ? 'animate-spin-slow' : ''} />
                 <span>Entrada Recorrente</span>

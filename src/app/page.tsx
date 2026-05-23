@@ -16,6 +16,7 @@ import RegenerateInsightButton from '@/components/RegenerateInsightButton';
 import { getDashboardMetrics } from '@/lib/expenses';
 import { getBudgets } from '@/lib/budgets';
 import { getLatestInsight } from '@/lib/insights';
+import { getMonthlyBudgetCents } from '@/lib/monthlyBudget';
 import { formatCurrency, getCurrentPeriod } from '@/lib/utils';
 import { createSessionClient } from '@/lib/supabase/server';
 
@@ -44,10 +45,11 @@ export default async function DashboardPage({
   const period = isValidPeriod(rawPeriod) ? rawPeriod : getCurrentPeriod();
 
   // Parallel DB queries
-  const [metrics, budgets, latestInsight] = await Promise.all([
+  const [metrics, budgets, latestInsight, monthlyBudgetCents] = await Promise.all([
     getDashboardMetrics(user.id, period),
     getBudgets(user.id, period),
     getLatestInsight(user.id, period),
+    getMonthlyBudgetCents(user.id, period),
   ]);
 
   const donutSegments = metrics.topCategories.map((cat) => ({
@@ -57,9 +59,11 @@ export default async function DashboardPage({
     icon: cat.categoryIcon,
   }));
 
-  // Calculate sum of category budgets, fallback to R$ 3.500 if zero
+  // Orçamento mensal = renda base (profiles.monthly_income_cents) + incomes
+  // válidos no período. Se nada disso existir, cai nos budgets por categoria
+  // como último recurso para usuários antigos.
   const totalBudgetCents = budgets.reduce((sum, b) => sum + b.amountCents, 0);
-  const BUDGET_CENTS = totalBudgetCents > 0 ? totalBudgetCents : 350000;
+  const BUDGET_CENTS = monthlyBudgetCents > 0 ? monthlyBudgetCents : totalBudgetCents;
   const remaining = BUDGET_CENTS - metrics.totalSpent;
 
   // Custom personalized AI Welcome message if no insight exists yet
