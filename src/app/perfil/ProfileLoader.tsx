@@ -25,6 +25,12 @@ export default async function ProfileLoader() {
     if (data?.currency) currency = data.currency;
   }
 
+  // Identidades já vinculadas (ex: ['email', 'google']). Usado para mostrar
+  // o estado correto do botão "Vincular Google" em ProfileView.
+  const linkedProviders = (user.identities ?? [])
+    .map((i) => i.provider)
+    .filter((p): p is string => typeof p === 'string');
+
   return (
     <ProfileView
       email={user.email ?? ''}
@@ -32,6 +38,7 @@ export default async function ProfileLoader() {
       avatarUrl={avatarUrl}
       currency={currency}
       allowDelete={isSupabaseEnabled()}
+      linkedProviders={linkedProviders}
     />
   );
 }
