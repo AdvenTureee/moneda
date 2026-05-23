@@ -201,6 +201,14 @@ async function getDashboardMetricsFromDB(
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     .slice(0, 5);
 
+  const expensesByCategory: Record<string, Expense[]> = {};
+  for (const e of enriched) {
+    (expensesByCategory[e.category] ??= []).push(e);
+  }
+  for (const list of Object.values(expensesByCategory)) {
+    list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
   return {
     period,
     totalSpent,
@@ -208,6 +216,7 @@ async function getDashboardMetricsFromDB(
     topCategories,
     dailySpending,
     recentExpenses,
+    expensesByCategory,
   };
 }
 
@@ -277,7 +286,12 @@ function getDashboardMetricsFromMock(userId: string, period: string): DashboardM
   }
   const dailySpending = Object.entries(byDay).sort(([a], [b]) => a.localeCompare(b)).map(([date, amount]) => ({ date, amount }));
   const recentExpenses = enriched.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 5);
-  return { period, totalSpent, expenseCount: enriched.length, topCategories, dailySpending, recentExpenses };
+  const expensesByCategory: Record<string, Expense[]> = {};
+  for (const e of enriched) (expensesByCategory[e.category] ??= []).push(e);
+  for (const list of Object.values(expensesByCategory)) {
+    list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+  return { period, totalSpent, expenseCount: enriched.length, topCategories, dailySpending, recentExpenses, expensesByCategory };
 }
 
 // ---------------------------------------------------------------------------

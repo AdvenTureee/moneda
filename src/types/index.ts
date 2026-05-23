@@ -81,6 +81,8 @@ export interface DashboardMetrics {
     amount: number;
   }>;
   recentExpenses: Expense[];
+  /** Despesas do período agrupadas por categoryId — alimenta o modal de detalhe sem nova query. */
+  expensesByCategory: Record<string, Expense[]>;
 }
 
 export interface Budget {

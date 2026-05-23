@@ -178,6 +178,8 @@ export default function CategoriesView() {
     }
   }
 
+  const editingCat = editingId ? categories.find((c) => c.id === editingId) : null;
+  const readOnly = editingCat?.is_default === true;
   const isFormValid = formData.name.trim().length > 0;
 
   return (
@@ -369,8 +371,23 @@ export default function CategoriesView() {
   );
 
   function renderForm() {
+    const inputBase =
+      'w-full px-3 py-2.5 rounded-[10px] border border-[#E5E7EB] text-sm text-[#1A1D23] placeholder:text-[#9CA3AF] outline-none transition-colors';
+    const inputEnabled = 'bg-[#F8F9FB] focus:border-[#A8C5E0]';
+    const inputDisabled = 'bg-[#F1F3F7] cursor-not-allowed';
+
     return (
       <div className="space-y-4">
+        {/* Read-only banner for default categories */}
+        {readOnly && (
+          <div className="rounded-[10px] bg-[#F1F3F7] border border-[#E5E7EB] px-3 py-2.5">
+            <p className="text-xs text-[#6B7280]">
+              <span className="font-semibold text-[#1A1D23]">Categoria padrão.</span>{' '}
+              Nome, ícone, cor e palavras-chave não podem ser alterados.
+            </p>
+          </div>
+        )}
+
         {/* Name */}
         <div>
           <label className="block text-xs font-medium text-[#6B7280] mb-1.5">Nome</label>
@@ -380,7 +397,9 @@ export default function CategoriesView() {
             onChange={(e) => setFormData((p) => ({ ...p, name: e.target.value }))}
             placeholder="Ex: Assinaturas"
             maxLength={40}
-            className="w-full px-3 py-2.5 rounded-[10px] bg-[#F8F9FB] border border-[#E5E7EB] text-sm text-[#1A1D23] placeholder:text-[#9CA3AF] outline-none focus:border-[#A8C5E0] transition-colors"
+            disabled={readOnly}
+            readOnly={readOnly}
+            className={`${inputBase} ${readOnly ? inputDisabled : inputEnabled}`}
           />
           {creating && formData.name.trim().length > 0 && (
             <p className="text-[10px] text-[#9CA3AF] mt-1">
@@ -398,11 +417,12 @@ export default function CategoriesView() {
                 key={iconName}
                 type="button"
                 onClick={() => setFormData((p) => ({ ...p, icon: iconName }))}
+                disabled={readOnly}
                 className={`w-9 h-9 rounded-[10px] flex items-center justify-center transition-all duration-75 ${
                   formData.icon === iconName
                     ? 'bg-[#1A1D23] text-white scale-105'
                     : 'bg-[#F1F3F7] text-[#6B7280] hover:bg-[#E5E7EB]'
-                }`}
+                } ${readOnly ? 'opacity-60 cursor-not-allowed hover:bg-[#F1F3F7]' : ''}`}
                 aria-label={iconName}
               >
                 <Icon name={iconName} size={18} />
@@ -420,9 +440,10 @@ export default function CategoriesView() {
                 key={hex}
                 type="button"
                 onClick={() => setFormData((p) => ({ ...p, color: hex }))}
+                disabled={readOnly}
                 className={`w-7 h-7 rounded-full transition-all duration-75 flex items-center justify-center ${
                   formData.color === hex ? 'ring-2 ring-offset-2 ring-[#1A1D23] scale-110' : ''
-                }`}
+                } ${readOnly ? 'opacity-60 cursor-not-allowed' : ''}`}
                 style={{ background: hex }}
                 aria-label={hex}
               >
@@ -435,45 +456,49 @@ export default function CategoriesView() {
         {/* Keywords */}
         <div>
           <label className="block text-xs font-medium text-[#6B7280] mb-1.5">Palavras-chave</label>
-          <div className="flex items-center gap-2">
-            <input
-              type="text"
-              value={keywordInput}
-              onChange={(e) => setKeywordInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ',') {
-                  e.preventDefault();
-                  addKeyword();
-                }
-              }}
-              placeholder="Digite e pressione Enter"
-              className="flex-1 px-3 py-2 rounded-[10px] bg-[#F8F9FB] border border-[#E5E7EB] text-sm text-[#1A1D23] placeholder:text-[#9CA3AF] outline-none focus:border-[#A8C5E0] transition-colors"
-            />
-            <button
-              type="button"
-              onClick={addKeyword}
-              disabled={!keywordInput.trim()}
-              className="px-3 py-2 rounded-[10px] text-xs font-semibold text-white bg-[#5BBF8E] hover:bg-[#4AA77C] active:bg-[#3FA876] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              Adicionar
-            </button>
-          </div>
+          {!readOnly && (
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={keywordInput}
+                onChange={(e) => setKeywordInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ',') {
+                    e.preventDefault();
+                    addKeyword();
+                  }
+                }}
+                placeholder="Digite e pressione Enter"
+                className="flex-1 px-3 py-2 rounded-[10px] bg-[#F8F9FB] border border-[#E5E7EB] text-sm text-[#1A1D23] placeholder:text-[#9CA3AF] outline-none focus:border-[#A8C5E0] transition-colors"
+              />
+              <button
+                type="button"
+                onClick={addKeyword}
+                disabled={!keywordInput.trim()}
+                className="px-3 py-2 rounded-[10px] text-xs font-semibold text-white bg-[#5BBF8E] hover:bg-[#4AA77C] active:bg-[#3FA876] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Adicionar
+              </button>
+            </div>
+          )}
           {formData.keywords.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 mt-2">
+            <div className={`flex flex-wrap gap-1.5 ${readOnly ? '' : 'mt-2'}`}>
               {formData.keywords.map((kw) => (
                 <span
                   key={kw}
                   className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-medium bg-[#F1F3F7] text-[#6B7280]"
                 >
                   {kw}
-                  <button
-                    type="button"
-                    onClick={() => removeKeyword(kw)}
-                    className="hover:text-[#E07070] transition-colors"
-                    aria-label={`Remover ${kw}`}
-                  >
-                    <X size={10} />
-                  </button>
+                  {!readOnly && (
+                    <button
+                      type="button"
+                      onClick={() => removeKeyword(kw)}
+                      className="hover:text-[#E07070] transition-colors"
+                      aria-label={`Remover ${kw}`}
+                    >
+                      <X size={10} />
+                    </button>
+                  )}
                 </span>
               ))}
             </div>
@@ -482,23 +507,25 @@ export default function CategoriesView() {
 
         {/* Actions */}
         <div className="flex gap-2 pt-1">
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={!isFormValid || saving}
-            className="flex-1 py-2.5 rounded-[10px] text-sm font-bold text-white bg-[#5BBF8E] disabled:opacity-40 transition-opacity"
-          >
-            {saving ? 'Salvando…' : creating ? 'Criar categoria' : 'Salvar'}
-          </button>
+          {!readOnly && (
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={!isFormValid || saving}
+              className="flex-1 py-2.5 rounded-[10px] text-sm font-bold text-white bg-[#5BBF8E] disabled:opacity-40 transition-opacity"
+            >
+              {saving ? 'Salvando…' : creating ? 'Criar categoria' : 'Salvar'}
+            </button>
+          )}
           <button
             type="button"
             onClick={cancelEdit}
             disabled={saving}
-            className="px-5 py-2.5 rounded-[10px] text-sm font-bold text-[#6B7280] border border-[#E5E7EB] disabled:opacity-60"
+            className={`${readOnly ? 'flex-1' : 'px-5'} py-2.5 rounded-[10px] text-sm font-bold text-[#6B7280] border border-[#E5E7EB] disabled:opacity-60`}
           >
-            Cancelar
+            {readOnly ? 'Fechar' : 'Cancelar'}
           </button>
-          {editingId && !categories.find((c) => c.id === editingId)?.is_default && (
+          {editingId && !readOnly && !categories.find((c) => c.id === editingId)?.is_default && (
             <button
               type="button"
               onClick={() => { setDeletingId(editingId); setEditingId(null); }}

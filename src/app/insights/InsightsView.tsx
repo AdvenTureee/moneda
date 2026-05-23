@@ -6,13 +6,14 @@ import remarkGfm from 'remark-gfm';
 import type { Components } from 'react-markdown';
 import Icon from '@/components/Icon';
 import Mo from '@/components/Mo';
-import DonutChart from '@/components/charts/DonutChart';
+import CategoryBreakdown from '@/components/CategoryBreakdown';
 import MonthlyTrendChart, { type MonthlyTrendPoint } from '@/components/charts/MonthlyTrendChart';
 import BudgetProgressList, { type BudgetProgressItem } from '@/components/charts/BudgetProgressList';
+import BudgetEmptyCTA from '@/components/charts/BudgetEmptyCTA';
 import ChartCard from '@/components/charts/ChartCard';
 import CategoryChip from '@/components/CategoryChip';
 import { formatCurrency } from '@/lib/utils';
-import type { Category, AIInsight } from '@/types';
+import type { Category, AIInsight, Expense } from '@/types';
 
 interface TopCategory {
   categoryId: string;
@@ -30,6 +31,7 @@ interface InsightsViewProps {
   expenseCount: number;
   changePct: number | null;
   topCategories: TopCategory[];
+  expensesByCategory: Record<string, Expense[]>;
   insights: AIInsight[];
   categories: Category[];
   monthlyTotals: MonthlyTrendPoint[];
@@ -63,6 +65,7 @@ export default function InsightsView({
   expenseCount,
   changePct,
   topCategories,
+  expensesByCategory,
   insights: initialInsights,
   categories,
   monthlyTotals,
@@ -74,13 +77,6 @@ export default function InsightsView({
   const [search, setSearch] = useState('');
   const [activeType, setActiveType] = useState<string | null>(null);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
-
-  const donutSegments = topCategories.map((cat) => ({
-    category: cat.categoryName,
-    amount: cat.amount,
-    color: cat.categoryColor,
-    icon: cat.categoryIcon,
-  }));
 
   const filteredInsights = useMemo(() => {
     let result = [...insights];
@@ -230,29 +226,11 @@ export default function InsightsView({
             title="Gastos por categoria"
             ariaLabel="Gastos por categoria"
           >
-            <div className="flex items-center gap-5">
-              <DonutChart
-                segments={donutSegments}
-                size="md"
-                centerLabel="Total"
-                centerValue={formatCurrency(totalSpent)}
-              />
-
-              <div className="flex-1 space-y-2 overflow-hidden">
-                {topCategories.map((cat) => (
-                  <div key={cat.categoryId} className="flex items-center gap-2">
-                    <span
-                      className="w-2.5 h-2.5 rounded-full shrink-0"
-                      style={{ background: cat.categoryColor }}
-                      aria-hidden
-                    />
-                    <Icon name={cat.categoryIcon} size={14} className="shrink-0" />
-                    <span className="flex-1 text-xs text-[#1A1D23] truncate">{cat.categoryName}</span>
-                    <span className="text-xs font-semibold text-[#1A1D23] tabular-nums shrink-0">{formatCurrency(cat.amount)}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <CategoryBreakdown
+              categories={topCategories}
+              total={totalSpent}
+              expensesByCategory={expensesByCategory}
+            />
           </ChartCard>
         </div>
       )}
@@ -264,10 +242,14 @@ export default function InsightsView({
         </div>
       )}
 
-      {/* Budget progress */}
-      {budgetProgress.length > 0 && (
+      {/* Budget progress (ou CTA quando não há orçamentos definidos) */}
+      {topCategories.length > 0 && (
         <div className="mb-6">
-          <BudgetProgressList items={budgetProgress} />
+          {budgetProgress.length > 0 ? (
+            <BudgetProgressList items={budgetProgress} />
+          ) : (
+            <BudgetEmptyCTA />
+          )}
         </div>
       )}
 

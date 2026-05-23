@@ -4,9 +4,8 @@ import AppShell from '@/components/AppShell';
 import DashboardMetric from '@/components/DashboardMetric';
 import AIInsightBanner from '@/components/AIInsightBanner';
 import ExpenseCard from '@/components/ExpenseCard';
-import DonutChart from '@/components/charts/DonutChart';
+import CategoryBreakdown from '@/components/CategoryBreakdown';
 import DailyHistogram from '@/components/charts/DailyHistogram';
-import Icon from '@/components/Icon';
 import TrackedMascot from '@/components/TrackedMascot';
 import MoTipBubble from '@/components/MoTipBubble';
 import Mo from '@/components/Mo';
@@ -64,13 +63,6 @@ export default async function DashboardPage({
     getLatestInsight(user.id, period),
     getMonthlyBudgetCents(user.id, period),
   ]);
-
-  const donutSegments = metrics.topCategories.map((cat) => ({
-    category: cat.categoryName,
-    amount: cat.amount,
-    color: cat.categoryColor,
-    icon: cat.categoryIcon,
-  }));
 
   // Orçamento mensal = renda base (profiles.monthly_income_cents) + incomes
   // válidos no período. Se nada disso existir, cai nos budgets por categoria
@@ -149,46 +141,25 @@ export default async function DashboardPage({
           />
         </section>
 
-        {/* Donut chart */}
+        {/* Category breakdown */}
         {metrics.topCategories.length > 0 && (
           <section
             className="mb-6 bg-white rounded-[16px] p-5 animate-fade-up delay-3"
             style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
             aria-label="Gastos por categoria"
           >
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-2">
               <h2 className="text-base font-heading text-[#1A1D23]">Por categoria</h2>
               <Link href="/feed" className="text-xs font-medium text-[#A8C5E0]">
                 Ver tudo
               </Link>
             </div>
 
-            <div className="flex items-center gap-5">
-              <DonutChart
-                segments={donutSegments}
-                size="md"
-                centerLabel="Total"
-                centerValue={formatCurrency(metrics.totalSpent)}
-              />
-
-              <div className="flex-1 space-y-2 overflow-hidden">
-                {metrics.topCategories.slice(0, 4).map((cat, i) => (
-                  <div key={cat.categoryId} className={`flex items-center gap-2 animate-fade-up delay-${i + 3}`}>
-                    <span
-                      className="w-2.5 h-2.5 rounded-full shrink-0"
-                      style={{ background: cat.categoryColor }}
-                      aria-hidden
-                    />
-                    <span className="flex-1 text-xs text-[#1A1D23] truncate">
-                      <Icon name={cat.categoryIcon} size={14} className="inline" /> {cat.categoryName}
-                    </span>
-                    <span className="text-xs font-semibold text-[#1A1D23] tabular-nums shrink-0">
-                      {formatCurrency(cat.amount)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <CategoryBreakdown
+              categories={metrics.topCategories}
+              total={metrics.totalSpent}
+              expensesByCategory={metrics.expensesByCategory}
+            />
           </section>
         )}
 
