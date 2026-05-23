@@ -28,9 +28,17 @@ export default function LoginPage() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get('error') === 'auth_callback_failed') {
-      setError('Falha na autenticação com Google. Tente novamente.');
-    }
+    const err = params.get('error');
+    if (!err) return;
+    const reason = params.get('reason');
+    const reasonText = reason ? ` (${decodeURIComponent(reason)})` : '';
+    const map: Record<string, string> = {
+      auth_callback_failed: 'Falha na autenticação com Google. Tente novamente.',
+      oauth_provider: 'Provedor (Google) recusou o login.',
+      missing_code: 'Resposta do Google inválida. Tente novamente.',
+      exchange_failed: 'Não foi possível concluir o login.',
+    };
+    setError((map[err] ?? 'Falha na autenticação. Tente novamente.') + reasonText);
   }, []);
 
   async function handleSubmit(e: React.FormEvent) {

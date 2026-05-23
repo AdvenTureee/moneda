@@ -1,5 +1,9 @@
 import { redirect } from 'next/navigation';
-import { createSessionClient, isSupabaseEnabled } from '@/lib/supabase/server';
+import {
+  createSessionClient,
+  createServiceClient,
+  isSupabaseEnabled,
+} from '@/lib/supabase/server';
 import { getCategories } from '@/lib/categories';
 import { MOCK_USER } from '@/data/mock';
 import OnboardingView from './OnboardingView';
@@ -14,13 +18,20 @@ export default async function OnboardingPage() {
     const supabase = await createSessionClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) redirect('/login');
+    userId = user.id;
 
-    // If already onboarded, don't trap them here.
-    if (user.user_metadata?.onboarded === true) {
+    // If already onboarded (per profiles.onboarded), don't trap them here.
+    // Não usamos user_metadata porque provedores OAuth sobrescrevem a cada login.
+    const admin = createServiceClient();
+    const { data: profile } = await admin
+      .from('profiles')
+      .select('onboarded')
+      .eq('id', userId)
+      .single();
+    if (profile?.onboarded === true) {
       redirect('/');
     }
 
-    userId = user.id;
     const fullName =
       (user.user_metadata?.name as string | undefined) ??
       (user.user_metadata?.full_name as string | undefined) ??

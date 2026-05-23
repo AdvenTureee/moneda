@@ -79,13 +79,15 @@ export async function completeOnboardingAction(
       const userId = user.id;
       const admin = createServiceClient();
 
-      // 1. Profile fields
+      // 1. Profile fields (incluindo o flag `onboarded` — fica em profiles
+      //    porque user_metadata é sobrescrito a cada login OAuth).
       const { error: profileError } = await admin
         .from('profiles')
         .update({
           monthly_income_cents: payload.monthlyIncomeCents || null,
           billing_closing_day: payload.billingClosingDay,
           has_pet: payload.hasPet,
+          onboarded: true,
         })
         .eq('id', userId);
       if (profileError) {
@@ -132,14 +134,8 @@ export async function completeOnboardingAction(
         }
       }
 
-      // 4. Mark onboarded
-      const { error: metaError } = await supabase.auth.updateUser({
-        data: { onboarded: true },
-      });
-      if (metaError) {
-        console.error('[completeOnboarding] updateUser:', metaError);
-        return { ok: false, error: 'Não foi possível concluir. Tente novamente.' };
-      }
+      // (onboarded já gravado em profiles no passo 1 — não usamos
+      // auth.updateUser porque user_metadata é sobrescrito por providers OAuth.)
     } else {
       // Mock mode: persist via in-memory store.
       const userId = MOCK_USER.id;

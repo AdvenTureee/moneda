@@ -17,6 +17,18 @@ import { getDashboardMetrics } from '@/lib/expenses';
 import { getBudgets } from '@/lib/budgets';
 import { getLatestInsight } from '@/lib/insights';
 import { getMonthlyBudgetCents } from '@/lib/monthlyBudget';
+import { createServiceClient, isSupabaseEnabled } from '@/lib/supabase/server';
+
+async function isUserOnboarded(userId: string): Promise<boolean> {
+  if (!isSupabaseEnabled()) return true;
+  const admin = createServiceClient();
+  const { data } = await admin
+    .from('profiles')
+    .select('onboarded')
+    .eq('id', userId)
+    .single();
+  return data?.onboarded === true;
+}
 import { formatCurrency, getCurrentPeriod } from '@/lib/utils';
 import { createSessionClient } from '@/lib/supabase/server';
 
@@ -35,8 +47,9 @@ export default async function DashboardPage({
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  // First-login → send to onboarding to define an initial budget.
-  if (user.user_metadata?.onboarded !== true) {
+  // First-login → send to onboarding. Lê de profiles.onboarded (não de
+  // user_metadata, que provedores OAuth como o Google sobrescrevem a cada login).
+  if (!(await isUserOnboarded(user.id))) {
     redirect('/onboarding');
   }
 

@@ -251,6 +251,7 @@ export type Database = {
           id: string
           monthly_income_cents: number | null
           name: string
+          onboarded: boolean
           phone: string | null
           salary_day: number | null
           timezone: string
@@ -266,6 +267,7 @@ export type Database = {
           id: string
           monthly_income_cents?: number | null
           name: string
+          onboarded?: boolean
           phone?: string | null
           salary_day?: number | null
           timezone?: string
@@ -281,6 +283,7 @@ export type Database = {
           id?: string
           monthly_income_cents?: number | null
           name?: string
+          onboarded?: boolean
           phone?: string | null
           salary_day?: number | null
           timezone?: string
