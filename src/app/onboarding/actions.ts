@@ -1,66 +1,173 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { createSessionClient, isSupabaseEnabled } from '@/lib/supabase/server';
-import { upsertBudget } from '@/lib/budgets';
-import { MOCK_USER } from '@/data/mock';
+import {
+  createSessionClient,
+  createServiceClient,
+  isSupabaseEnabled,
+} from '@/lib/supabase/server';
+import { MOCK_USER, addUserCategory, addSessionExpense } from '@/data/mock';
 
 export type OnboardingResult = { ok: true } | { ok: false; error: string };
 
-export interface OnboardingBudgetItem {
-  categoryId: string;
+export interface OnboardingRecurringExpense {
+  description: string;
   amountCents: number;
+  categoryId: string;
+}
+
+export interface OnboardingCustomCategory {
+  name: string;
+  icon: string;
+  color: string;
+}
+
+export interface OnboardingPayload {
+  monthlyIncomeCents: number;
+  billingClosingDay: number;
+  hasPet: boolean;
+  recurringExpenses: OnboardingRecurringExpense[];
+  customCategories: OnboardingCustomCategory[];
+}
+
+function slugifyCategoryName(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .replace(/^([0-9])/, 'c$1');
+}
+
+function buildCustomCategoryId(userId: string, name: string, index: number): string {
+  const base = slugifyCategoryName(name) || `cat${index}`;
+  return `u_${userId.replace(/-/g, '').slice(0, 8)}_${base}`.slice(0, 60);
+}
+
+function validatePayload(p: OnboardingPayload): string | null {
+  if (!Number.isFinite(p.monthlyIncomeCents) || p.monthlyIncomeCents < 0) {
+    return 'Renda mensal inválida.';
+  }
+  if (!Number.isInteger(p.billingClosingDay) || p.billingClosingDay < 1 || p.billingClosingDay > 28) {
+    return 'Dia de fechamento deve estar entre 1 e 28.';
+  }
+  for (const r of p.recurringExpenses) {
+    if (!r.description.trim()) return 'Cada gasto recorrente precisa de uma descrição.';
+    if (!Number.isFinite(r.amountCents) || r.amountCents <= 0) return 'Valor do gasto inválido.';
+    if (!r.categoryId) return 'Selecione uma categoria para cada gasto.';
+  }
+  for (const c of p.customCategories) {
+    if (!c.name.trim()) return 'Categoria personalizada precisa de um nome.';
+    if (!/^#[0-9A-Fa-f]{6}$/.test(c.color)) return 'Cor de categoria inválida.';
+    if (!c.icon.trim()) return 'Selecione um ícone para a categoria.';
+  }
+  return null;
 }
 
 export async function completeOnboardingAction(
-  items: OnboardingBudgetItem[],
-  period: string,
+  payload: OnboardingPayload,
 ): Promise<OnboardingResult> {
-  try {
-    let userId = MOCK_USER.id;
+  const validationError = validatePayload(payload);
+  if (validationError) return { ok: false, error: validationError };
 
+  try {
     if (isSupabaseEnabled()) {
       const supabase = await createSessionClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return { ok: false, error: 'Sessão expirada. Entre novamente.' };
-      userId = user.id;
+      const userId = user.id;
+      const admin = createServiceClient();
 
-      // Persist non-zero budgets for the period.
-      const nonZero = items.filter((it) => it.amountCents > 0);
-      await Promise.all(
-        nonZero.map((it) =>
-          upsertBudget({
-            userId,
-            categoryId: it.categoryId,
-            period,
-            amountCents: it.amountCents,
-          }),
-        ),
-      );
+      // 1. Profile fields
+      const { error: profileError } = await admin
+        .from('profiles')
+        .update({
+          monthly_income_cents: payload.monthlyIncomeCents || null,
+          billing_closing_day: payload.billingClosingDay,
+          has_pet: payload.hasPet,
+        })
+        .eq('id', userId);
+      if (profileError) {
+        console.error('[completeOnboarding] profile update:', profileError);
+        return { ok: false, error: 'Não foi possível salvar seu perfil.' };
+      }
 
-      // Mark the user as onboarded so the dashboard stops redirecting them here.
-      const { error } = await supabase.auth.updateUser({ data: { onboarded: true } });
-      if (error) {
-        console.error('[completeOnboarding] updateUser:', error);
+      // 2. Custom categories
+      if (payload.customCategories.length > 0) {
+        const inserts = payload.customCategories.map((c, i) => ({
+          id: buildCustomCategoryId(userId, c.name, i),
+          user_id: userId,
+          name: c.name.trim(),
+          icon: c.icon,
+          color: c.color,
+          keywords: [] as string[],
+          is_default: false,
+          sort_order: 1000 + i,
+        }));
+        const { error: catError } = await admin.from('categories').insert(inserts);
+        if (catError) {
+          console.error('[completeOnboarding] custom categories:', catError);
+          return { ok: false, error: 'Não foi possível criar suas categorias.' };
+        }
+      }
+
+      // 3. Recurring expenses
+      if (payload.recurringExpenses.length > 0) {
+        const nowIso = new Date().toISOString();
+        const inserts = payload.recurringExpenses.map((r) => ({
+          user_id: userId,
+          amount_cents: r.amountCents,
+          category_id: r.categoryId,
+          description: r.description.trim(),
+          payment_method: 'other',
+          source: 'manual',
+          occurred_at: nowIso,
+          is_recurring: true,
+        }));
+        const { error: expError } = await admin.from('expenses').insert(inserts);
+        if (expError) {
+          console.error('[completeOnboarding] recurring expenses:', expError);
+          return { ok: false, error: 'Não foi possível salvar seus gastos recorrentes.' };
+        }
+      }
+
+      // 4. Mark onboarded
+      const { error: metaError } = await supabase.auth.updateUser({
+        data: { onboarded: true },
+      });
+      if (metaError) {
+        console.error('[completeOnboarding] updateUser:', metaError);
         return { ok: false, error: 'Não foi possível concluir. Tente novamente.' };
       }
     } else {
-      // Mock mode — persist non-zero budgets via the in-memory store.
-      const nonZero = items.filter((it) => it.amountCents > 0);
-      await Promise.all(
-        nonZero.map((it) =>
-          upsertBudget({
-            userId,
-            categoryId: it.categoryId,
-            period,
-            amountCents: it.amountCents,
-          }),
-        ),
-      );
+      // Mock mode: persist via in-memory store.
+      const userId = MOCK_USER.id;
+      payload.customCategories.forEach((c, i) => {
+        addUserCategory({
+          id: buildCustomCategoryId(userId, c.name, i),
+          name: c.name.trim(),
+          icon: c.icon,
+          color: c.color,
+          keywords: [],
+        });
+      });
+      payload.recurringExpenses.forEach((r) => {
+        addSessionExpense({
+          id: `mock-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          userId,
+          amount: r.amountCents,
+          category: r.categoryId,
+          description: r.description.trim(),
+          source: 'manual',
+          tags: [],
+          createdAt: new Date(),
+        });
+      });
     }
 
     revalidatePath('/');
-    revalidatePath('/perfil/orcamento');
+    revalidatePath('/perfil');
     return { ok: true };
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Erro inesperado.';

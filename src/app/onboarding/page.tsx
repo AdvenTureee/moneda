@@ -1,7 +1,6 @@
 import { redirect } from 'next/navigation';
 import { createSessionClient, isSupabaseEnabled } from '@/lib/supabase/server';
 import { getCategories } from '@/lib/categories';
-import { getCurrentPeriod } from '@/lib/utils';
 import { MOCK_USER } from '@/data/mock';
 import OnboardingView from './OnboardingView';
 
@@ -29,13 +28,14 @@ export default async function OnboardingPage() {
     if (fullName) firstName = fullName.split(' ')[0];
   }
 
-  const period = getCurrentPeriod();
-  const categories = await getCategories(userId);
+  // Pet precisa ser visível no passo 3 caso o usuário escolha "Sim",
+  // então pulamos o gate de has_pet aqui (decisão é client-side).
+  const categories = await getCategories(userId, { applyHasPetGate: false });
+  const defaultCategories = categories.filter((c) => c.is_default);
 
   return (
     <OnboardingView
-      categories={categories}
-      period={period}
+      defaultCategories={defaultCategories}
       firstName={firstName}
     />
   );

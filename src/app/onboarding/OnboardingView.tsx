@@ -2,109 +2,179 @@
 
 import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { WarningCircle, Sparkle } from '@phosphor-icons/react';
-import Icon from '@/components/Icon';
+import {
+  WarningCircle,
+  Trash,
+  Plus,
+  CaretLeft,
+  Minus,
+} from '@phosphor-icons/react';
+import Icon, { AVAILABLE_ICONS } from '@/components/Icon';
 import Mo from '@/components/Mo';
 import { formatCurrency } from '@/lib/utils';
-import { completeOnboardingAction, type OnboardingBudgetItem } from './actions';
+import {
+  completeOnboardingAction,
+  type OnboardingPayload,
+  type OnboardingRecurringExpense,
+  type OnboardingCustomCategory,
+} from './actions';
 import type { Category } from '@/types';
 
 interface OnboardingViewProps {
-  categories: Category[];
-  period: string;
+  defaultCategories: Category[];
   firstName: string;
 }
 
-function formatPeriod(p: string): string {
-  const [year, month] = p.split('-').map(Number);
-  const date = new Date(year, month - 1, 1);
-  const formatted = date.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
-  return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+type Step = 'income' | 'closing' | 'pet' | 'expenses' | 'categories';
+const STEP_ORDER: Step[] = ['income', 'closing', 'pet', 'expenses', 'categories'];
+
+interface ExpenseRow {
+  tempId: string;
+  description: string;
+  amountCents: number;
+  amountDisplay: string;
+  categoryId: string;
 }
 
-// Approximate weights for typical Brazilian household spending. Categories not
-// listed fall back to a small share so custom user categories still get budget.
-const SUGGESTED_WEIGHTS: Record<string, number> = {
-  casa: 0.30,
-  alimentacao: 0.25,
-  transporte: 0.12,
-  lazer: 0.10,
-  saude: 0.10,
-  educacao: 0.08,
-  outros: 0.05,
-};
-const FALLBACK_WEIGHT = 0.05;
+const SWATCHES = [
+  '#F59E0B', '#EF4444', '#10B981', '#3B82F6',
+  '#8B5CF6', '#EC4899', '#06B6D4', '#6B7280',
+];
 
-function getNormalizedWeights(categories: Category[]): Record<string, number> {
-  if (categories.length === 0) return {};
-  const raw: Record<string, number> = {};
-  for (const cat of categories) {
-    raw[cat.id] = SUGGESTED_WEIGHTS[cat.id] ?? FALLBACK_WEIGHT;
-  }
-  const sum = Object.values(raw).reduce((s, v) => s + v, 0);
-  if (sum === 0) return raw;
-  const out: Record<string, number> = {};
-  for (const id of Object.keys(raw)) out[id] = raw[id] / sum;
-  return out;
+function newRow(defaultCategoryId: string): ExpenseRow {
+  return {
+    tempId: `r-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    description: '',
+    amountCents: 0,
+    amountDisplay: '',
+    categoryId: defaultCategoryId,
+  };
 }
 
-function distribute(totalCents: number, categories: Category[]): Record<string, number> {
-  if (categories.length === 0) return {};
-  const weights = getNormalizedWeights(categories);
-  const result: Record<string, number> = {};
-  let allocated = 0;
-  for (let i = 0; i < categories.length; i++) {
-    const cat = categories[i];
-    if (i === categories.length - 1) {
-      result[cat.id] = Math.max(0, totalCents - allocated);
-    } else {
-      const cents = Math.round(totalCents * (weights[cat.id] ?? 0));
-      result[cat.id] = cents;
-      allocated += cents;
-    }
-  }
-  return result;
+function formatCentsInput(cents: number): string {
+  if (cents <= 0) return '';
+  return new Intl.NumberFormat('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(cents / 100);
 }
 
-const SLIDER_MIN = 0;          // R$ 0
-const SLIDER_MAX = 1500000;    // R$ 15.000
-const SLIDER_STEP = 5000;      // R$ 50
+function parseCentsInput(raw: string): number {
+  const digits = raw.replace(/\D/g, '');
+  return digits ? parseInt(digits, 10) : 0;
+}
 
-export default function OnboardingView({ categories, period, firstName }: OnboardingViewProps) {
+export default function OnboardingView({ defaultCategories, firstName }: OnboardingViewProps) {
   const router = useRouter();
-  const [budgets, setBudgets] = useState<Record<string, number>>({});
-  const [sliderValue, setSliderValue] = useState(0);
+  const [stepIdx, setStepIdx] = useState(0);
+  const step: Step = STEP_ORDER[stepIdx];
+
+  // Q1
+  const [incomeCents, setIncomeCents] = useState(0);
+  const [incomeDisplay, setIncomeDisplay] = useState('');
+
+  // Q2
+  const [closingDay, setClosingDay] = useState(10);
+
+  // Q3
+  const [hasPet, setHasPet] = useState<boolean | null>(null);
+
+  // Q4
+  const visibleCategories = useMemo(
+    () => defaultCategories.filter((c) => (hasPet ? true : c.id !== 'pet')),
+    [defaultCategories, hasPet],
+  );
+  const firstCategoryId = visibleCategories[0]?.id ?? '';
+  const [expenseRows, setExpenseRows] = useState<ExpenseRow[]>([]);
+
+  // Q5
+  const [showCustomForm, setShowCustomForm] = useState(false);
+  const [customDraft, setCustomDraft] = useState<OnboardingCustomCategory>({
+    name: '',
+    icon: 'Tag',
+    color: SWATCHES[0],
+  });
+  const [customCategories, setCustomCategories] = useState<OnboardingCustomCategory[]>([]);
+
+  // Submit
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
-  const totalPlanned = useMemo(
-    () => Object.values(budgets).reduce((sum, v) => sum + v, 0),
-    [budgets],
-  );
+  const canNext = (() => {
+    switch (step) {
+      case 'income': return incomeCents > 0;
+      case 'closing': return closingDay >= 1 && closingDay <= 28;
+      case 'pet': return hasPet !== null;
+      case 'expenses': return expenseRows.every(
+        (r) => r.description.trim() && r.amountCents > 0 && r.categoryId,
+      );
+      case 'categories': return true;
+    }
+  })();
 
-  // If user manually edits a category after using the slider, the total can
-  // diverge from the slider position. Show that drift in the helper text.
-  const drift = totalPlanned - sliderValue;
-  const hasDrift = sliderValue > 0 && Math.abs(drift) > 100;
-
-  function handleChange(catId: string, raw: string) {
-    const digits = raw.replace(/\D/g, '');
-    const cents = digits ? parseInt(digits, 10) : 0;
-    setBudgets((prev) => ({ ...prev, [catId]: cents }));
-    setError(null);
+  function handleIncomeChange(raw: string) {
+    const cents = parseCentsInput(raw);
+    setIncomeCents(cents);
+    setIncomeDisplay(formatCentsInput(cents));
   }
 
-  function handleSliderChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const total = parseInt(e.target.value, 10);
-    setSliderValue(total);
-    setBudgets(distribute(total, categories));
-    setError(null);
+  function adjustClosing(delta: number) {
+    setClosingDay((d) => Math.max(1, Math.min(28, d + delta)));
   }
 
-  function persist(items: OnboardingBudgetItem[]) {
+  function addExpenseRow() {
+    if (!firstCategoryId) return;
+    setExpenseRows((rows) => [...rows, newRow(firstCategoryId)]);
+  }
+
+  function updateRow(tempId: string, patch: Partial<ExpenseRow>) {
+    setExpenseRows((rows) => rows.map((r) => (r.tempId === tempId ? { ...r, ...patch } : r)));
+  }
+
+  function removeRow(tempId: string) {
+    setExpenseRows((rows) => rows.filter((r) => r.tempId !== tempId));
+  }
+
+  function saveCustomCategory() {
+    if (!customDraft.name.trim()) return;
+    setCustomCategories((cs) => [...cs, customDraft]);
+    setCustomDraft({ name: '', icon: 'Tag', color: SWATCHES[0] });
+    setShowCustomForm(false);
+  }
+
+  function removeCustomCategory(idx: number) {
+    setCustomCategories((cs) => cs.filter((_, i) => i !== idx));
+  }
+
+  function goNext() {
     setError(null);
+    if (stepIdx < STEP_ORDER.length - 1) {
+      setStepIdx((i) => i + 1);
+    } else {
+      submit();
+    }
+  }
+
+  function goBack() {
+    setError(null);
+    if (stepIdx > 0) setStepIdx((i) => i - 1);
+  }
+
+  function submit() {
+    setError(null);
+    const payload: OnboardingPayload = {
+      monthlyIncomeCents: incomeCents,
+      billingClosingDay: closingDay,
+      hasPet: hasPet === true,
+      recurringExpenses: expenseRows.map<OnboardingRecurringExpense>((r) => ({
+        description: r.description.trim(),
+        amountCents: r.amountCents,
+        categoryId: r.categoryId,
+      })),
+      customCategories,
+    };
     startTransition(async () => {
-      const result = await completeOnboardingAction(items, period);
+      const result = await completeOnboardingAction(payload);
       if (!result.ok) {
         setError(result.error);
         return;
@@ -114,144 +184,376 @@ export default function OnboardingView({ categories, period, firstName }: Onboar
     });
   }
 
-  function handleSave() {
-    const items: OnboardingBudgetItem[] = categories.map((cat) => ({
-      categoryId: cat.id,
-      amountCents: budgets[cat.id] ?? 0,
-    }));
-    persist(items);
-  }
-
-  function handleSkip() {
-    persist([]);
-  }
-
   return (
     <main
       className="min-h-screen flex flex-col"
       style={{ paddingBottom: 'calc(2rem + env(safe-area-inset-bottom, 0px))' }}
     >
       <div className="max-w-lg mx-auto px-4 w-full flex-1 flex flex-col">
-        {/* Welcome header */}
-        <header className="pt-8 pb-6 text-center animate-fade-up delay-0">
-          <Mo variant="happy" size={120} className="mx-auto animate-bounce-in" />
-          <h1 className="text-2xl font-heading text-[#1A1D23] mt-3">
-            Olá, {firstName}! 👋
-          </h1>
-          <p className="text-sm text-[#6B7280] mt-2 max-w-[300px] mx-auto leading-relaxed">
-            Vamos começar definindo quanto você quer gastar em cada categoria neste mês.
-          </p>
-        </header>
-
-        {/* Total + auto-distribute slider */}
-        <div
-          className="bg-gradient-to-br from-[#5BBF8E] to-[#4AA77C] text-white rounded-[20px] p-5 mb-6 animate-fade-up delay-1"
-          style={{ boxShadow: '0 8px 24px rgba(91, 191, 142, 0.25)' }}
-        >
-          <div className="flex items-center justify-between">
-            <p className="text-xs font-semibold uppercase tracking-wider opacity-85">
-              Orçamento de {formatPeriod(period)}
-            </p>
-            <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider bg-white/20 rounded-full px-2 py-0.5">
-              <Sparkle size={10} weight="fill" /> Com pressa?
-            </span>
+        {/* Top bar: back + progress dots */}
+        <div className="flex items-center gap-3 pt-6 pb-4">
+          <button
+            type="button"
+            onClick={goBack}
+            disabled={stepIdx === 0 || pending}
+            aria-label="Voltar"
+            className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-[#F1F3F7] transition-colors disabled:opacity-30"
+          >
+            <CaretLeft size={18} weight="bold" className="text-[#1A1D23]" />
+          </button>
+          <div className="flex-1 flex items-center justify-center gap-1.5">
+            {STEP_ORDER.map((_, i) => (
+              <span
+                key={i}
+                className={`h-1.5 rounded-full transition-all ${
+                  i === stepIdx
+                    ? 'w-6 bg-[#5BBF8E]'
+                    : i < stepIdx
+                      ? 'w-3 bg-[#5BBF8E]/40'
+                      : 'w-3 bg-[#E5E7EB]'
+                }`}
+              />
+            ))}
           </div>
-          <p className="text-3xl font-extrabold mt-1.5 tabular-nums">
-            {formatCurrency(totalPlanned)}
-          </p>
-          <p className="text-xs opacity-85 mt-1 min-h-[16px]">
-            {sliderValue === 0 && 'Arraste o controle para distribuir entre as categorias.'}
-            {sliderValue > 0 && !hasDrift && 'Distribuído automaticamente entre as categorias.'}
-            {sliderValue > 0 && hasDrift && (
-              drift > 0
-                ? `${formatCurrency(Math.abs(drift))} acima do controle.`
-                : `${formatCurrency(Math.abs(drift))} abaixo do controle.`
-            )}
-          </p>
-
-          <div className="mt-4">
-            <input
-              type="range"
-              min={SLIDER_MIN}
-              max={SLIDER_MAX}
-              step={SLIDER_STEP}
-              value={sliderValue}
-              onChange={handleSliderChange}
-              className="budget-slider"
-              aria-label="Definir orçamento total e distribuir automaticamente"
-              aria-valuetext={formatCurrency(sliderValue)}
-            />
-            <div className="flex items-center justify-between mt-2 text-[10px] font-semibold uppercase tracking-wider opacity-70 tabular-nums">
-              <span>R$ 0</span>
-              <span>R$ {(SLIDER_MAX / 100).toLocaleString('pt-BR')}</span>
-            </div>
-          </div>
+          <div className="w-9 h-9" />
         </div>
 
-        {/* Category list */}
-        <div className="space-y-2.5 mb-6 animate-fade-up delay-2">
-          {categories.map((cat) => {
-            const cents = budgets[cat.id] ?? 0;
-            const display = cents > 0
-              ? new Intl.NumberFormat('pt-BR', {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                }).format(cents / 100)
-              : '';
+        {step === 'income' && (
+          <section className="flex-1">
+            <Mo variant="happy" size={96} className="mx-auto" />
+            <h1 className="text-2xl font-heading text-center text-[#1A1D23] mt-3">
+              Olá, {firstName}! 👋
+            </h1>
+            <p className="text-sm text-[#6B7280] text-center mt-2 mb-6 max-w-[320px] mx-auto">
+              Vamos começar com sua renda mensal. Ela é a base de todas as nossas sugestões.
+            </p>
+            <div
+              className="flex items-center gap-2 border-2 rounded-[12px] px-4 py-4 transition-colors"
+              style={{
+                borderColor: incomeCents > 0 ? '#5BBF8E' : '#E5E7EB',
+                background: incomeCents > 0 ? '#EEF9F4' : '#fff',
+              }}
+            >
+              <span className="text-2xl font-bold text-[#9CA3AF]">R$</span>
+              <input
+                type="tel"
+                inputMode="numeric"
+                value={incomeDisplay}
+                onChange={(e) => handleIncomeChange(e.target.value)}
+                placeholder="0,00"
+                className="flex-1 text-4xl font-extrabold bg-transparent outline-none tabular-nums text-[#1A1D23] placeholder:text-[#9CA3AF]"
+                aria-label="Renda mensal em reais"
+              />
+            </div>
+          </section>
+        )}
 
-            return (
-              <div
-                key={cat.id}
-                className="bg-white rounded-[14px] p-3.5 flex items-center justify-between gap-3 border border-[#F1F3F7]"
-                style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}
-              >
-                <div className="flex items-center gap-3 min-w-0 flex-1">
+        {step === 'closing' && (
+          <section className="flex-1">
+            <Mo variant="happy" size={96} className="mx-auto" />
+            <h2 className="text-xl font-heading text-center text-[#1A1D23] mt-3">
+              Fechamento do cartão
+            </h2>
+            <p className="text-sm text-[#6B7280] text-center mt-2 mb-6 max-w-[320px] mx-auto">
+              Em qual dia a fatura do seu cartão fecha? Vamos usar para insights de ciclo de cobrança.
+            </p>
+            <div className="bg-white border border-[#E5E7EB] rounded-[16px] p-6">
+              <p className="text-xs uppercase tracking-wider text-[#9CA3AF] font-semibold text-center mb-4">
+                Dia do mês
+              </p>
+              <div className="flex items-center justify-center gap-6">
+                <button
+                  type="button"
+                  onClick={() => adjustClosing(-1)}
+                  aria-label="Diminuir"
+                  className="w-12 h-12 rounded-full border border-[#E5E7EB] flex items-center justify-center hover:bg-[#F1F3F7] active:scale-95 transition-all"
+                >
+                  <Minus size={20} weight="bold" className="text-[#6B7280]" />
+                </button>
+                <div className="text-5xl font-extrabold text-[#1A1D23] tabular-nums w-20 text-center">
+                  {closingDay}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => adjustClosing(1)}
+                  aria-label="Aumentar"
+                  className="w-12 h-12 rounded-full border border-[#E5E7EB] flex items-center justify-center hover:bg-[#F1F3F7] active:scale-95 transition-all"
+                >
+                  <Plus size={20} weight="bold" className="text-[#6B7280]" />
+                </button>
+              </div>
+              <p className="text-[11px] text-[#9CA3AF] text-center mt-4">
+                Encontre na fatura do seu cartão (entre 1 e 28).
+              </p>
+            </div>
+          </section>
+        )}
+
+        {step === 'pet' && (
+          <section className="flex-1">
+            <Mo variant="happy" size={96} className="mx-auto" />
+            <h2 className="text-xl font-heading text-center text-[#1A1D23] mt-3">
+              Você tem pet?
+            </h2>
+            <p className="text-sm text-[#6B7280] text-center mt-2 mb-6 max-w-[320px] mx-auto">
+              Se sim, ativamos a categoria <strong>Pet</strong> para você acompanhar esses gastos.
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { value: true, label: 'Sim 🐾' },
+                { value: false, label: 'Não' },
+              ].map((opt) => {
+                const active = hasPet === opt.value;
+                return (
+                  <button
+                    key={String(opt.value)}
+                    type="button"
+                    onClick={() => setHasPet(opt.value)}
+                    className={`py-8 rounded-[16px] border-2 text-lg font-bold transition-all active:scale-[0.98] ${
+                      active
+                        ? 'border-[#5BBF8E] bg-[#EEF9F4] text-[#1A1D23]'
+                        : 'border-[#E5E7EB] bg-white text-[#6B7280] hover:border-[#A8C5E0]'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {step === 'expenses' && (
+          <section className="flex-1">
+            <h2 className="text-xl font-heading text-[#1A1D23]">Gastos recorrentes</h2>
+            <p className="text-sm text-[#6B7280] mt-1 mb-4">
+              Cadastre seus gastos mensais (aluguel, assinaturas...). Você pode pular e adicionar depois.
+            </p>
+
+            <div className="space-y-3 mb-4">
+              {expenseRows.map((row) => (
+                <div
+                  key={row.tempId}
+                  className="bg-white border border-[#E5E7EB] rounded-[12px] p-3 space-y-2"
+                >
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={row.description}
+                      onChange={(e) => updateRow(row.tempId, { description: e.target.value })}
+                      placeholder="Ex: Aluguel, Netflix..."
+                      className="flex-1 border border-[#E5E7EB] rounded-[8px] px-3 py-2 text-sm outline-none focus:border-[#A8C5E0] transition-colors"
+                      maxLength={80}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeRow(row.tempId)}
+                      aria-label="Remover gasto"
+                      className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-[#FDF0F0] transition-colors"
+                    >
+                      <Trash size={16} className="text-[#B14C4C]" />
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1 border border-[#E5E7EB] rounded-[8px] px-3 py-2 bg-[#F8F9FB] flex-1 focus-within:border-[#A8C5E0] focus-within:bg-white transition-all">
+                      <span className="text-xs font-bold text-[#9CA3AF]">R$</span>
+                      <input
+                        type="tel"
+                        inputMode="numeric"
+                        value={row.amountDisplay}
+                        onChange={(e) => {
+                          const cents = parseCentsInput(e.target.value);
+                          updateRow(row.tempId, {
+                            amountCents: cents,
+                            amountDisplay: formatCentsInput(cents),
+                          });
+                        }}
+                        placeholder="0,00"
+                        className="w-full text-right text-sm font-semibold bg-transparent outline-none tabular-nums"
+                        aria-label="Valor"
+                      />
+                    </div>
+                    <select
+                      value={row.categoryId}
+                      onChange={(e) => updateRow(row.tempId, { categoryId: e.target.value })}
+                      className="border border-[#E5E7EB] rounded-[8px] px-3 py-2 text-sm bg-white outline-none focus:border-[#A8C5E0] transition-colors"
+                      aria-label="Categoria"
+                    >
+                      {visibleCategories.map((c) => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              onClick={addExpenseRow}
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-[12px] border-2 border-dashed border-[#E5E7EB] text-sm font-semibold text-[#6B7280] hover:border-[#A8C5E0] hover:text-[#1A1D23] transition-colors"
+            >
+              <Plus size={16} weight="bold" /> Adicionar gasto
+            </button>
+          </section>
+        )}
+
+        {step === 'categories' && (
+          <section className="flex-1">
+            <h2 className="text-xl font-heading text-[#1A1D23]">Suas categorias</h2>
+            <p className="text-sm text-[#6B7280] mt-1 mb-4">
+              Estas são as categorias que você terá disponíveis. Não se preocupe, você pode mudar depois.
+            </p>
+
+            <div className="grid grid-cols-3 gap-2 mb-4">
+              {visibleCategories.map((cat) => (
+                <div
+                  key={cat.id}
+                  className="flex flex-col items-center gap-1 rounded-[12px] py-3 px-2 border border-[#E5E7EB] bg-white"
+                >
                   <div
-                    className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
+                    className="w-10 h-10 rounded-full flex items-center justify-center"
                     style={{ backgroundColor: `${cat.color}18`, color: cat.color }}
                   >
                     <Icon name={cat.icon} size={20} />
                   </div>
-                  <p className="text-sm font-semibold text-[#1A1D23] truncate">
+                  <span className="text-[11px] font-medium text-[#1A1D23] text-center leading-tight">
                     {cat.name}
-                  </p>
+                  </span>
                 </div>
+              ))}
 
-                <div className="w-32 shrink-0">
-                  <div className="flex items-center gap-1 border border-[#E5E7EB] rounded-[10px] px-3 py-2 bg-[#F8F9FB] focus-within:border-[#A8C5E0] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#A8C5E0]/15 transition-all">
-                    <span className="text-xs font-bold text-[#9CA3AF]">R$</span>
-                    <input
-                      type="tel"
-                      inputMode="numeric"
-                      value={display}
-                      onChange={(e) => handleChange(cat.id, e.target.value)}
-                      placeholder="0,00"
-                      className="w-full text-right text-sm font-semibold text-[#1A1D23] bg-transparent outline-none tabular-nums placeholder:text-[#9CA3AF]"
-                      aria-label={`Orçamento para ${cat.name}`}
-                    />
+              {customCategories.map((cat, idx) => (
+                <div
+                  key={`custom-${idx}`}
+                  className="relative flex flex-col items-center gap-1 rounded-[12px] py-3 px-2 border border-[#5BBF8E]/40 bg-[#EEF9F4]"
+                >
+                  <button
+                    type="button"
+                    onClick={() => removeCustomCategory(idx)}
+                    className="absolute top-1 right-1 w-5 h-5 flex items-center justify-center rounded-full bg-white/80 hover:bg-white"
+                    aria-label={`Remover ${cat.name}`}
+                  >
+                    <Trash size={10} className="text-[#B14C4C]" />
+                  </button>
+                  <div
+                    className="w-10 h-10 rounded-full flex items-center justify-center"
+                    style={{ backgroundColor: `${cat.color}18`, color: cat.color }}
+                  >
+                    <Icon name={cat.icon} size={20} />
+                  </div>
+                  <span className="text-[11px] font-medium text-[#1A1D23] text-center leading-tight">
+                    {cat.name}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            {!showCustomForm ? (
+              <button
+                type="button"
+                onClick={() => setShowCustomForm(true)}
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-[12px] border-2 border-dashed border-[#E5E7EB] text-sm font-semibold text-[#6B7280] hover:border-[#A8C5E0] hover:text-[#1A1D23] transition-colors"
+              >
+                <Plus size={16} weight="bold" /> Criar categoria personalizada
+              </button>
+            ) : (
+              <div className="bg-white border border-[#E5E7EB] rounded-[16px] p-4 space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-[#6B7280] uppercase mb-1.5">Nome</label>
+                  <input
+                    type="text"
+                    value={customDraft.name}
+                    onChange={(e) => setCustomDraft((d) => ({ ...d, name: e.target.value }))}
+                    placeholder="Ex: Investimentos"
+                    className="w-full border border-[#E5E7EB] rounded-[8px] px-3 py-2 text-sm outline-none focus:border-[#A8C5E0]"
+                    maxLength={40}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-[#6B7280] uppercase mb-1.5">Ícone</label>
+                  <div className="grid grid-cols-8 gap-1.5 max-h-32 overflow-y-auto">
+                    {AVAILABLE_ICONS.map((iconName) => {
+                      const selected = customDraft.icon === iconName;
+                      return (
+                        <button
+                          key={iconName}
+                          type="button"
+                          onClick={() => setCustomDraft((d) => ({ ...d, icon: iconName }))}
+                          aria-pressed={selected}
+                          className={`aspect-square flex items-center justify-center rounded-[8px] transition-colors ${
+                            selected
+                              ? 'bg-[#1A1D23] text-white'
+                              : 'bg-[#F8F9FB] text-[#6B7280] hover:bg-[#F1F3F7]'
+                          }`}
+                        >
+                          <Icon name={iconName} size={16} />
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
+                <div>
+                  <label className="block text-xs font-bold text-[#6B7280] uppercase mb-1.5">Cor</label>
+                  <div className="flex gap-2">
+                    {SWATCHES.map((color) => {
+                      const selected = customDraft.color === color;
+                      return (
+                        <button
+                          key={color}
+                          type="button"
+                          onClick={() => setCustomDraft((d) => ({ ...d, color }))}
+                          aria-label={`Cor ${color}`}
+                          className={`w-8 h-8 rounded-full transition-transform ${
+                            selected ? 'ring-2 ring-offset-2 ring-[#1A1D23] scale-110' : ''
+                          }`}
+                          style={{ backgroundColor: color }}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+                <div className="flex gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowCustomForm(false);
+                      setCustomDraft({ name: '', icon: 'Tag', color: SWATCHES[0] });
+                    }}
+                    className="flex-1 py-2.5 rounded-full text-sm font-semibold text-[#6B7280] hover:bg-[#F1F3F7] transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={saveCustomCategory}
+                    disabled={!customDraft.name.trim()}
+                    className="flex-1 py-2.5 rounded-full text-sm font-semibold text-white bg-[#5BBF8E] hover:bg-[#4AA77C] disabled:opacity-40 transition-colors"
+                  >
+                    Adicionar
+                  </button>
+                </div>
               </div>
-            );
-          })}
-        </div>
+            )}
+          </section>
+        )}
 
         {error && (
           <div
             role="alert"
-            className="mb-4 flex items-center gap-2 px-4 py-3 rounded-[12px] bg-[#FDF0F0] text-[#B14C4C] border border-[#F4D7D7]"
+            className="mt-4 flex items-center gap-2 px-4 py-3 rounded-[12px] bg-[#FDF0F0] text-[#B14C4C] border border-[#F4D7D7]"
           >
             <WarningCircle size={18} className="shrink-0" />
             <p className="text-sm font-medium">{error}</p>
           </div>
         )}
 
-        {/* Actions */}
-        <div className="mt-auto pt-2 space-y-3 animate-fade-up delay-3">
+        {/* CTA */}
+        <div className="mt-auto pt-6 space-y-2">
           <button
             type="button"
-            onClick={handleSave}
-            disabled={pending}
+            onClick={goNext}
+            disabled={!canNext || pending}
             className="w-full bg-[#1A1D23] hover:bg-[#2A2E37] text-white font-bold py-4 rounded-full transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             style={{ boxShadow: '0 6px 20px rgba(26, 29, 35, 0.15)' }}
           >
@@ -260,18 +562,24 @@ export default function OnboardingView({ categories, period, firstName }: Onboar
                 <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 Salvando...
               </>
+            ) : step === 'categories' ? (
+              'Concluir'
+            ) : step === 'income' && incomeCents > 0 ? (
+              `Continuar — ${formatCurrency(incomeCents)}/mês`
             ) : (
               'Continuar'
             )}
           </button>
-          <button
-            type="button"
-            onClick={handleSkip}
-            disabled={pending}
-            className="w-full py-3 text-sm font-medium text-[#6B7280] hover:text-[#1A1D23] transition-colors disabled:opacity-40"
-          >
-            Pular por agora
-          </button>
+          {step === 'expenses' && expenseRows.length === 0 && (
+            <button
+              type="button"
+              onClick={goNext}
+              disabled={pending}
+              className="w-full py-2 text-sm font-medium text-[#6B7280] hover:text-[#1A1D23] transition-colors disabled:opacity-40"
+            >
+              Pular esta etapa
+            </button>
+          )}
         </div>
       </div>
     </main>

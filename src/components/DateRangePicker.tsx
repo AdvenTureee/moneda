@@ -3,6 +3,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { CalendarBlank, CaretDown } from '@phosphor-icons/react';
+import DatePicker from '@/components/DatePicker';
 
 export interface DateRange {
   /** ISO timestamp at the start of the local day, e.g. "2026-05-01T03:00:00.000Z" in GMT-3. */
@@ -183,26 +184,28 @@ export default function DateRangePicker({ value, onChange }: DateRangePickerProp
                 Personalizado
               </p>
               <div className="space-y-2">
-                <label className="block">
+                <div>
                   <span className="block text-[11px] text-[#6B7280] mb-0.5">De</span>
-                  <input
-                    type="date"
+                  <DatePicker
                     value={customFrom}
-                    onChange={(e) => setCustomFrom(e.target.value)}
+                    onChange={setCustomFrom}
                     max={customTo || undefined}
-                    className="w-full px-2 py-1.5 rounded-[6px] border border-[#E5E7EB] text-xs text-[#1A1D23] outline-none focus:border-[#A8C5E0]"
+                    ariaLabel="Data inicial"
+                    placeholder="Início"
+                    className="w-full flex items-center gap-1.5 px-2 py-1.5 rounded-[6px] border border-[#E5E7EB] bg-white text-xs text-left outline-none focus:border-[#A8C5E0] transition-colors"
                   />
-                </label>
-                <label className="block">
+                </div>
+                <div>
                   <span className="block text-[11px] text-[#6B7280] mb-0.5">Até</span>
-                  <input
-                    type="date"
+                  <DatePicker
                     value={customTo}
-                    onChange={(e) => setCustomTo(e.target.value)}
+                    onChange={setCustomTo}
                     min={customFrom || undefined}
-                    className="w-full px-2 py-1.5 rounded-[6px] border border-[#E5E7EB] text-xs text-[#1A1D23] outline-none focus:border-[#A8C5E0]"
+                    ariaLabel="Data final"
+                    placeholder="Fim"
+                    className="w-full flex items-center gap-1.5 px-2 py-1.5 rounded-[6px] border border-[#E5E7EB] bg-white text-xs text-left outline-none focus:border-[#A8C5E0] transition-colors"
                   />
-                </label>
+                </div>
                 <button
                   type="button"
                   onClick={applyCustom}

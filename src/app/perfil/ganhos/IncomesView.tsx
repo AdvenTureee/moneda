@@ -2,8 +2,9 @@
 
 import { useState, useTransition, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Trash, Check, WarningCircle, CalendarBlank, Plus, ArrowsClockwise } from '@phosphor-icons/react';
+import { ArrowLeft, Trash, Check, WarningCircle, Plus, ArrowsClockwise } from '@phosphor-icons/react';
 import Icon from '@/components/Icon';
+import DatePicker from '@/components/DatePicker';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { saveIncomeAction, deleteIncomeAction } from '../actions-finance';
 import type { Income, IncomeSource } from '@/types';
@@ -201,16 +202,12 @@ export default function IncomesView({ initialIncomes }: IncomesViewProps) {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-bold text-[#6B7280] uppercase mb-1.5">Recebido em</label>
-              <div className="relative flex items-center">
-                <CalendarBlank size={16} className="absolute left-3 text-[#9CA3AF] pointer-events-none" />
-                <input
-                  type="date"
-                  value={receivedAtDate}
-                  onChange={(e) => setReceivedAtDate(e.target.value)}
-                  className="w-full border border-[#E5E7EB] rounded-[12px] pl-10 pr-3 py-3 text-sm text-[#1A1D23] bg-[#F8F9FB] outline-none focus:border-[#A8C5E0] focus:bg-white transition-colors"
-                  required
-                />
-              </div>
+              <DatePicker
+                value={receivedAtDate}
+                onChange={setReceivedAtDate}
+                ariaLabel="Data de recebimento"
+                className="w-full flex items-center gap-2 border border-[#E5E7EB] rounded-[12px] px-3 py-3 text-sm text-left bg-[#F8F9FB] outline-none focus:border-[#A8C5E0] transition-colors"
+              />
             </div>
 
             <div className="flex flex-col justify-end">

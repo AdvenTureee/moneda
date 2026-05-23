@@ -6,27 +6,35 @@ export async function GET(request: NextRequest) {
   const code = searchParams.get('code');
   const next = searchParams.get('next') ?? '/';
 
-  if (code) {
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-      {
-        cookies: {
-          getAll() { return request.cookies.getAll(); },
-          setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-          },
-        },
-      }
-    );
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error) {
-      return NextResponse.redirect(`${origin}${next}`);
-    }
-    console.error('[auth/callback] exchangeCodeForSession failed', error);
-  } else {
+  if (!code) {
     console.error('[auth/callback] missing code param', { url: request.url });
+    return NextResponse.redirect(`${origin}/login?error=auth_callback_failed`);
   }
 
-  return NextResponse.redirect(`${origin}/login?error=auth_callback_failed`);
+  // IMPORTANTE: criar a response antes do client e gravar os cookies de sessão
+  // NELA, não no `request`. Caso contrário o browser nunca recebe os cookies
+  // e o próximo request volta para /login via middleware.
+  const response = NextResponse.redirect(`${origin}${next}`);
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+    {
+      cookies: {
+        getAll() { return request.cookies.getAll(); },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) =>
+            response.cookies.set(name, value, options));
+        },
+      },
+    },
+  );
+
+  const { error } = await supabase.auth.exchangeCodeForSession(code);
+  if (error) {
+    console.error('[auth/callback] exchangeCodeForSession failed', error);
+    return NextResponse.redirect(`${origin}/login?error=auth_callback_failed`);
+  }
+
+  return response;
 }

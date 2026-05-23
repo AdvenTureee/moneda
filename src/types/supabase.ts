@@ -144,6 +144,7 @@ export type Database = {
           deleted_at: string | null
           description: string
           id: string
+          is_recurring: boolean
           metadata: Json
           occurred_at: string
           payment_method: string
@@ -160,6 +161,7 @@ export type Database = {
           deleted_at?: string | null
           description: string
           id?: string
+          is_recurring?: boolean
           metadata?: Json
           occurred_at?: string
           payment_method?: string
@@ -176,6 +178,7 @@ export type Database = {
           deleted_at?: string | null
           description?: string
           id?: string
+          is_recurring?: boolean
           metadata?: Json
           occurred_at?: string
           payment_method?: string
@@ -244,7 +247,9 @@ export type Database = {
           created_at: string
           currency: string
           email: string
+          has_pet: boolean
           id: string
+          monthly_income_cents: number | null
           name: string
           phone: string | null
           salary_day: number | null
@@ -257,7 +262,9 @@ export type Database = {
           created_at?: string
           currency?: string
           email: string
+          has_pet?: boolean
           id: string
+          monthly_income_cents?: number | null
           name: string
           phone?: string | null
           salary_day?: number | null
@@ -270,7 +277,9 @@ export type Database = {
           created_at?: string
           currency?: string
           email?: string
+          has_pet?: boolean
           id?: string
+          monthly_income_cents?: number | null
           name?: string
           phone?: string | null
           salary_day?: number | null

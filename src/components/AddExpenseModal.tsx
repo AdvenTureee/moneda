@@ -5,7 +5,9 @@ import { createPortal } from 'react-dom';
 import { X } from '@phosphor-icons/react';
 import Icon from '@/components/Icon';
 import ConfirmDialog from '@/components/ConfirmDialog';
+import DatePicker from '@/components/DatePicker';
 import { formatCurrency } from '@/lib/utils';
+import { toLocalDateInput, todayLocalDate, localDateToIso } from '@/lib/date';
 import type { Expense, ExpenseInput, Category } from '@/types';
 
 interface AddExpenseModalProps {
@@ -13,22 +15,6 @@ interface AddExpenseModalProps {
   onClose: () => void;
   onSave: (input: ExpenseInput) => void;
   editExpense?: Expense;
-}
-
-function toLocalDateInput(date: Date): string {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-}
-
-function todayLocalDate(): string {
-  return toLocalDateInput(new Date());
-}
-
-function localDateToIso(value: string, reference?: Date): string {
-  // Preserve the time-of-day from `reference` (e.g. original occurred_at) when editing.
-  const [y, m, d] = value.split('-').map(Number);
-  const ref = reference ?? new Date();
-  const out = new Date(y, (m ?? 1) - 1, d ?? 1, ref.getHours(), ref.getMinutes(), ref.getSeconds());
-  return out.toISOString();
 }
 
 export default function AddExpenseModal({
@@ -237,13 +223,11 @@ export default function AddExpenseModal({
         {/* Date */}
         <div className="px-5 mb-6">
           <p className="text-sm font-semibold text-[#6B7280] mb-2">Data do gasto</p>
-          <input
-            type="date"
+          <DatePicker
             value={occurredAtInput}
-            onChange={(e) => setOccurredAtInput(e.target.value)}
+            onChange={setOccurredAtInput}
             max={todayLocalDate()}
-            className="w-full border border-[#E5E7EB] rounded-[10px] px-4 py-3 text-[15px] text-[#1A1D23] outline-none focus:border-[#A8C5E0] transition-colors tabular-nums"
-            aria-label="Data do gasto"
+            ariaLabel="Data do gasto"
           />
         </div>
 

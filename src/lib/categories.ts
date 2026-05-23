@@ -21,7 +21,10 @@ export interface CategoryWithMeta extends Category {
   sort_order: number;
 }
 
-async function getCategoriesFromDB(userId: string): Promise<CategoryWithMeta[]> {
+async function getCategoriesFromDB(
+  userId: string,
+  opts: { applyHasPetGate: boolean },
+): Promise<CategoryWithMeta[]> {
   const db = createServiceClient();
   const { data, error } = await db
     .from('categories')
@@ -31,15 +34,28 @@ async function getCategoriesFromDB(userId: string): Promise<CategoryWithMeta[]> 
     .order('name', { ascending: true });
 
   if (error) throw new Error(`getCategories: ${error.message}`);
-  return (data as CategoryRow[]).map((row) => ({
-    id: row.id,
-    name: row.name,
-    icon: row.icon,
-    color: row.color,
-    keywords: row.keywords,
-    is_default: row.is_default,
-    sort_order: row.sort_order,
-  }));
+
+  let includesPet = true;
+  if (opts.applyHasPetGate && (data as CategoryRow[]).some((row) => row.id === 'pet')) {
+    const { data: profile } = await db
+      .from('profiles')
+      .select('has_pet')
+      .eq('id', userId)
+      .single();
+    includesPet = profile?.has_pet === true;
+  }
+
+  return (data as CategoryRow[])
+    .filter((row) => includesPet || row.id !== 'pet')
+    .map((row) => ({
+      id: row.id,
+      name: row.name,
+      icon: row.icon,
+      color: row.color,
+      keywords: row.keywords,
+      is_default: row.is_default,
+      sort_order: row.sort_order,
+    }));
 }
 
 function getCategoriesFromMock(): CategoryWithMeta[] {
@@ -56,8 +72,17 @@ function getCategoriesFromMock(): CategoryWithMeta[] {
   return [...defaults, ...userCats];
 }
 
-export async function getCategories(userId: string): Promise<CategoryWithMeta[]> {
-  if (isSupabaseEnabled()) return getCategoriesFromDB(userId);
+export interface GetCategoriesOptions {
+  /** Quando true (padrão), oculta a categoria Pet de usuários sem `profile.has_pet`. */
+  applyHasPetGate?: boolean;
+}
+
+export async function getCategories(
+  userId: string,
+  options: GetCategoriesOptions = {},
+): Promise<CategoryWithMeta[]> {
+  const applyHasPetGate = options.applyHasPetGate ?? true;
+  if (isSupabaseEnabled()) return getCategoriesFromDB(userId, { applyHasPetGate });
   return getCategoriesFromMock();
 }
 
