@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { CaretLeft, Check, X, Trash, Plus } from '@phosphor-icons/react';
+import { CaretLeft, Check, X, Trash, Plus, MagnifyingGlass } from '@phosphor-icons/react';
 import Icon from '@/components/Icon';
 import { useCategories } from '@/hooks/useCategories';
 
@@ -45,6 +45,13 @@ export default function CategoriesView() {
 
   // Toast
   const [feedback, setFeedback] = useState<Feedback>(null);
+
+  // Search
+  const [search, setSearch] = useState('');
+  const filteredCategories = useMemo(
+    () => categories.filter((cat) => cat.name.toLowerCase().includes(search.toLowerCase())),
+    [categories, search]
+  );
 
   function resetForm() {
     setFormData({ name: '', icon: DEFAULT_ICON, color: DEFAULT_COLOR, keywords: [] });
@@ -175,6 +182,23 @@ export default function CategoriesView() {
         </div>
       </header>
 
+      {/* Search Bar */}
+      <div className="relative mb-4">
+        <MagnifyingGlass
+          size={16}
+          className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9CA3AF]"
+          aria-hidden
+        />
+        <input
+          type="search"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Buscar categoria..."
+          className="w-full pl-9 pr-4 py-2.5 rounded-[10px] bg-white border border-[#E5E7EB] text-sm text-[#1A1D23] placeholder:text-[#9CA3AF] outline-none focus:border-[#A8C5E0] transition-colors"
+          aria-label="Buscar categorias"
+        />
+      </div>
+
       {/* Error state */}
       {error && (
         <div className="bg-[#FDF0F0] border border-[#F4D7D7] rounded-[12px] p-4 mb-4">
@@ -200,7 +224,7 @@ export default function CategoriesView() {
       {/* Category list */}
       {!loading && !error && (
         <div className="space-y-2 mb-6">
-          {categories.map((cat) => {
+          {filteredCategories.map((cat) => {
             const isEditing = editingId === cat.id;
             const isDeleting = deletingId === cat.id;
 
@@ -296,6 +320,15 @@ export default function CategoriesView() {
           <Icon name="Tag" size={48} className="mb-4 opacity-30" />
           <p className="text-base font-heading text-[#1A1D23]">Nenhuma categoria</p>
           <p className="text-sm text-[#6B7280] mt-1">Crie sua primeira categoria de gasto.</p>
+        </div>
+      )}
+
+      {/* Empty search state */}
+      {!loading && !error && search && filteredCategories.length === 0 && categories.length > 0 && (
+        <div className="flex flex-col items-center py-12 text-center">
+          <MagnifyingGlass size={36} className="text-[#9CA3AF] mb-3 opacity-40" />
+          <p className="text-sm font-semibold text-[#1A1D23]">Nenhuma categoria encontrada</p>
+          <p className="text-xs text-[#6B7280] mt-1">Tente buscar por outro termo.</p>
         </div>
       )}
 

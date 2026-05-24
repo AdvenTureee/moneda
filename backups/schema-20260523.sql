@@ -149,7 +149,7 @@ CREATE TABLE IF NOT EXISTS "public"."budgets" (
     "amount_cents" bigint NOT NULL,
     "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
     "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
-    CONSTRAINT "budgets_amount_cents_check" CHECK (("amount_cents" > 0)),
+    CONSTRAINT "budgets_amount_cents_check" CHECK (("amount_cents" >= 0)),
     CONSTRAINT "budgets_period_check" CHECK (("period" ~ '^([0-9]{4}-[0-9]{2}|default)$'::"text"))
 );
 

@@ -27,24 +27,24 @@ function buildPreview(markdown: string): string {
 
 const markdownComponents: Components = {
   p: ({ children }) => (
-    <p className="text-sm text-[#1A1D23] leading-relaxed mb-2 last:mb-0">{children}</p>
+    <p className="text-sm text-white/90 leading-relaxed mb-2 last:mb-0">{children}</p>
   ),
   strong: ({ children }) => (
-    <strong className="font-semibold text-[#1A1D23]">{children}</strong>
+    <strong className="font-semibold text-white">{children}</strong>
   ),
   ul: ({ children }) => <ul className="space-y-1 mb-2 last:mb-0">{children}</ul>,
   ol: ({ children }) => (
     <ol className="space-y-1 mb-2 last:mb-0 list-decimal ml-4">{children}</ol>
   ),
-  li: ({ children }) => <li className="text-sm text-[#1A1D23] ml-4 list-disc">{children}</li>,
+  li: ({ children }) => <li className="text-sm text-white/90 ml-4 list-disc">{children}</li>,
   h1: ({ children }) => (
-    <h1 className="text-base font-heading text-[#1A1D23] mb-2">{children}</h1>
+    <h1 className="text-base font-heading text-white mb-2">{children}</h1>
   ),
   h2: ({ children }) => (
-    <h2 className="text-base font-heading text-[#1A1D23] mb-2">{children}</h2>
+    <h2 className="text-base font-heading text-white mb-2">{children}</h2>
   ),
   h3: ({ children }) => (
-    <h3 className="text-sm font-heading text-[#1A1D23] mb-1.5">{children}</h3>
+    <h3 className="text-sm font-heading text-white mb-1.5">{children}</h3>
   ),
 };
 

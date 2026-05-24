@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useTransition, useEffect } from 'react';
+import { useState, useTransition, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Check, WarningCircle } from '@phosphor-icons/react';
+import { ArrowLeft, Check, WarningCircle, MagnifyingGlass } from '@phosphor-icons/react';
 import Icon from '@/components/Icon';
 import { formatCurrency } from '@/lib/utils';
 import { saveCategoryBudgetAction } from '../actions-finance';
@@ -38,6 +38,12 @@ export default function BudgetForm({ initialBudgets, period }: BudgetFormProps) 
       })
       .catch(() => {});
   }, [initialBudgets]);
+
+  const [search, setSearch] = useState('');
+  const filteredCategories = useMemo(
+    () => categories.filter((cat) => cat.name.toLowerCase().includes(search.toLowerCase())),
+    [categories, search]
+  );
 
   const [hasChanges, setHasChanges] = useState(false);
   const [feedback, setFeedback] = useState<Feedback>(null);
@@ -131,9 +137,26 @@ export default function BudgetForm({ initialBudgets, period }: BudgetFormProps) 
         </p>
       </div>
 
+      {/* Search Bar */}
+      <div className="relative mb-4">
+        <MagnifyingGlass
+          size={16}
+          className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9CA3AF]"
+          aria-hidden
+        />
+        <input
+          type="search"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Buscar categoria..."
+          className="w-full pl-9 pr-4 py-2.5 rounded-[10px] bg-white border border-[#E5E7EB] text-sm text-[#1A1D23] placeholder:text-[#9CA3AF] outline-none focus:border-[#A8C5E0] transition-colors"
+          aria-label="Buscar categorias"
+        />
+      </div>
+
       {/* Category List */}
       <div className="space-y-3 mb-8">
-        {categories.map((cat) => {
+        {filteredCategories.map((cat) => {
           const valueCents = budgetsMap[cat.id] ?? 0;
           const displayValue = valueCents > 0
             ? new Intl.NumberFormat('pt-BR', {
@@ -183,6 +206,15 @@ export default function BudgetForm({ initialBudgets, period }: BudgetFormProps) 
           );
         })}
       </div>
+
+      {/* Empty search state */}
+      {search && filteredCategories.length === 0 && (
+        <div className="flex flex-col items-center py-12 text-center">
+          <MagnifyingGlass size={36} className="text-[#9CA3AF] mb-3 opacity-40" />
+          <p className="text-sm font-semibold text-[#1A1D23]">Nenhuma categoria encontrada</p>
+          <p className="text-xs text-[#6B7280] mt-1">Tente buscar por outro termo.</p>
+        </div>
+      )}
 
       {/* Bottom Actions */}
       <div className="mt-6">

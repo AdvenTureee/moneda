@@ -194,7 +194,7 @@ CREATE TABLE public.budgets (
   category_id  text NOT NULL REFERENCES public.categories(id) ON DELETE CASCADE,
   -- '2026-05' = orçamento para maio/2026; 'default' = padrão mensal recorrente.
   period       text NOT NULL CHECK (period ~ '^([0-9]{4}-[0-9]{2}|default)$'),
-  amount_cents bigint NOT NULL CHECK (amount_cents > 0),
+  amount_cents bigint NOT NULL CHECK (amount_cents >= 0),
   created_at   timestamptz NOT NULL DEFAULT now(),
   updated_at   timestamptz NOT NULL DEFAULT now(),
 
