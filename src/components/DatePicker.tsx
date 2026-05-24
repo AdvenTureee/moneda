@@ -2,7 +2,7 @@
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { CalendarBlank, CaretLeft, CaretRight } from '@phosphor-icons/react';
+import { CalendarBlank, CaretLeft, CaretRight, Clock } from '@phosphor-icons/react';
 import {
   toLocalDateInput,
   todayLocalDate,
@@ -14,6 +14,9 @@ export interface DatePickerProps {
   /** Data em `YYYY-MM-DD` local. String vazia = sem seleção. */
   value: string;
   onChange: (value: string) => void;
+  /** Horário em `HH:mm`. Quando fornecido, exibe o seletor de horário no popup. */
+  timeValue?: string;
+  onTimeChange?: (time: string) => void;
   /** `YYYY-MM-DD` mínimo aceito (inclusivo). */
   min?: string;
   /** `YYYY-MM-DD` máximo aceito (inclusivo). */
@@ -54,6 +57,8 @@ function startOfMonthGrid(viewMonth: Date): Date {
 export default function DatePicker({
   value,
   onChange,
+  timeValue,
+  onTimeChange,
   min,
   max,
   placeholder = 'Selecionar data',
@@ -88,7 +93,7 @@ export default function DatePicker({
       const btn = buttonRef.current;
       if (!btn) return;
       const rect = btn.getBoundingClientRect();
-      const popupHeight = 320;
+      const popupHeight = onTimeChange ? 376 : 320;
       const spaceBelow = window.innerHeight - rect.bottom;
       const top = spaceBelow < popupHeight && rect.top > popupHeight
         ? rect.top - popupHeight - 4
@@ -141,7 +146,10 @@ export default function DatePicker({
   const goPrev = () => setViewMonth((m) => new Date(m.getFullYear(), m.getMonth() - 1, 1));
   const goNext = () => setViewMonth((m) => new Date(m.getFullYear(), m.getMonth() + 1, 1));
 
-  const display = value ? formatLocalDateBr(value) : '';
+  const displayDate = value ? formatLocalDateBr(value) : '';
+  const displayText = displayDate
+    ? (timeValue ? `${displayDate}  ·  ${timeValue}` : displayDate)
+    : '';
 
   return (
     <>
@@ -160,9 +168,9 @@ export default function DatePicker({
       >
         <CalendarBlank size={16} weight="bold" className="text-[#6B7280] shrink-0" />
         <span
-          className={`flex-1 tabular-nums ${display ? 'text-[#1A1D23]' : 'text-[#9CA3AF]'}`}
+          className={`flex-1 tabular-nums ${displayText ? 'text-[#1A1D23]' : 'text-[#9CA3AF]'}`}
         >
-          {display || placeholder}
+          {displayText || placeholder}
         </span>
       </button>
 
@@ -235,7 +243,7 @@ export default function DatePicker({
                     disabled={disabledDay}
                     onClick={() => {
                       onChange(toLocalDateInput(d));
-                      setOpen(false);
+                      if (!onTimeChange) setOpen(false);
                     }}
                     className={`h-8 rounded-full text-[12px] tabular-nums transition-colors ${
                       isSelected
@@ -255,6 +263,25 @@ export default function DatePicker({
               })}
             </div>
 
+            {/* Seletor de horário */}
+            {onTimeChange && (
+              <div className="mt-3 pt-2 border-t border-[#F1F3F7] px-1">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-1.5">
+                    <Clock size={13} weight="bold" className="text-[#6B7280]" />
+                    <span className="text-[11px] font-semibold text-[#6B7280]">Horário</span>
+                  </div>
+                  <input
+                    type="time"
+                    value={timeValue ?? ''}
+                    onChange={(e) => onTimeChange(e.target.value)}
+                    className="text-[13px] font-semibold text-[#1A1D23] border border-[#E5E7EB] rounded-[8px] px-2 py-1 outline-none focus:border-[#A8C5E0] bg-white transition-colors"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </div>
+              </div>
+            )}
+
             {/* Atalho "Hoje" */}
             <div className="flex justify-between items-center mt-3 pt-2 border-t border-[#F1F3F7] px-1">
               <button
@@ -262,7 +289,7 @@ export default function DatePicker({
                 onClick={() => {
                   if (!isOutOfRange(today)) {
                     onChange(todayLocal);
-                    setOpen(false);
+                    if (!onTimeChange) setOpen(false);
                   }
                 }}
                 disabled={isOutOfRange(today)}
@@ -275,7 +302,7 @@ export default function DatePicker({
                 onClick={() => setOpen(false)}
                 className="text-[11px] font-medium text-[#6B7280] hover:text-[#1A1D23]"
               >
-                Fechar
+                {onTimeChange ? 'Confirmar' : 'Fechar'}
               </button>
             </div>
           </div>

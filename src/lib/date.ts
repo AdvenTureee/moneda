@@ -45,3 +45,21 @@ export function formatLocalDateBr(value: string): string {
   if (!value) return '';
   return parseLocalDate(value).toLocaleDateString('pt-BR');
 }
+
+/** Hora atual no fuso local como `HH:mm`. */
+export function currentTimeHHmm(): string {
+  const now = new Date();
+  return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+}
+
+/** Extrai `HH:mm` no fuso local de um objeto Date. */
+export function timeHHmmFromDate(date: Date): string {
+  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+}
+
+/** Combina `YYYY-MM-DD` + `HH:mm` em ISO UTC (interpretação local). */
+export function localDateTimeToIso(date: string, time: string): string {
+  const [y, m, d] = date.split('-').map(Number);
+  const [h = 0, min = 0] = time.split(':').map(Number);
+  return new Date(y, (m ?? 1) - 1, d ?? 1, h, min, 0).toISOString();
+}

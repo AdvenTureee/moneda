@@ -7,7 +7,7 @@ import Icon from '@/components/Icon';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import DatePicker from '@/components/DatePicker';
 import { formatCurrency } from '@/lib/utils';
-import { toLocalDateInput, todayLocalDate, localDateToIso } from '@/lib/date';
+import { toLocalDateInput, todayLocalDate, currentTimeHHmm, timeHHmmFromDate, localDateTimeToIso } from '@/lib/date';
 import { useCategories } from '@/hooks/useCategories';
 import type { Expense, ExpenseInput } from '@/types';
 
@@ -30,6 +30,7 @@ export default function AddExpenseModal({
   const [description, setDescription] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [occurredAtInput, setOccurredAtInput] = useState(todayLocalDate());
+  const [timeInput, setTimeInput] = useState(currentTimeHHmm());
   const { data: categories } = useCategories();
   const [confirmDiscard, setConfirmDiscard] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -44,6 +45,7 @@ export default function AddExpenseModal({
       setDescription('');
       setSelectedCategory('');
       setOccurredAtInput(todayLocalDate());
+      setTimeInput(currentTimeHHmm());
       setTimeout(() => inputRef.current?.focus(), 100);
     } else if (isOpen && editExpense) {
       setAmountCents(editExpense.amount);
@@ -55,7 +57,9 @@ export default function AddExpenseModal({
       );
       setDescription(editExpense.description);
       setSelectedCategory(editExpense.category);
-      setOccurredAtInput(toLocalDateInput(new Date(editExpense.createdAt)));
+      const editDate = new Date(editExpense.createdAt);
+      setOccurredAtInput(toLocalDateInput(editDate));
+      setTimeInput(timeHHmmFromDate(editDate));
       setTimeout(() => inputRef.current?.focus(), 100);
     }
   }, [isOpen, editExpense]);
@@ -80,17 +84,16 @@ export default function AddExpenseModal({
 
   const handleSave = useCallback(() => {
     if (amountCents <= 0 || !selectedCategory) return;
-    const referenceDate = editExpense ? new Date(editExpense.createdAt) : new Date();
     onSave({
       amount: amountCents,
       category: selectedCategory,
       description: description.trim() || (categories.find((c) => c.id === selectedCategory)?.name ?? 'Gasto'),
       source: 'manual',
       tags: [],
-      occurredAt: localDateToIso(occurredAtInput, referenceDate),
+      occurredAt: localDateTimeToIso(occurredAtInput, timeInput),
     });
     onClose();
-  }, [amountCents, description, selectedCategory, occurredAtInput, editExpense, categories, onSave, onClose]);
+  }, [amountCents, description, selectedCategory, occurredAtInput, timeInput, categories, onSave, onClose]);
 
   const handleBackdropClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
@@ -216,8 +219,10 @@ export default function AddExpenseModal({
           <DatePicker
             value={occurredAtInput}
             onChange={setOccurredAtInput}
+            timeValue={timeInput}
+            onTimeChange={setTimeInput}
             max={todayLocalDate()}
-            ariaLabel="Data do gasto"
+            ariaLabel="Data e horário do gasto"
           />
         </div>
 
