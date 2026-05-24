@@ -134,11 +134,11 @@ export default function DateRangePicker({ value, onChange }: DateRangePickerProp
         ref={buttonRef}
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="inline-flex items-center gap-2 px-3 py-2 rounded-[10px] bg-white border border-[#E5E7EB] text-xs font-medium text-[#1A1D23] hover:bg-[#F8F9FB] transition-colors"
+        className="inline-flex items-center gap-2 px-3 py-2.5 rounded-[10px] bg-white border border-[#E5E7EB] text-sm font-medium text-[#1A1D23] hover:bg-[#F8F9FB] transition-colors"
         aria-label={`Período: ${labelFor(value)}`}
         aria-expanded={open}
       >
-        <CalendarBlank size={14} weight="bold" className="text-[#6B7280]" />
+        <CalendarBlank size={16} weight="bold" className="text-[#6B7280]" />
         <span>{labelFor(value)}</span>
         <CaretDown
           size={10}

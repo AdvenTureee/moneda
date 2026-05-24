@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { X, ArrowRight, Lightbulb } from '@phosphor-icons/react';
+import { useState, type ReactNode } from 'react';
+import { X, ArrowRight, Sparkle } from '@phosphor-icons/react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import type { Components } from 'react-markdown';
@@ -12,6 +12,7 @@ interface AIInsightBannerProps {
   dismissible?: boolean;
   /** When true, shows only a short preview of the message. */
   preview?: boolean;
+  children?: ReactNode;
 }
 
 const PREVIEW_CHAR_LIMIT = 240;
@@ -27,24 +28,24 @@ function buildPreview(markdown: string): string {
 
 const markdownComponents: Components = {
   p: ({ children }) => (
-    <p className="text-sm text-white/90 leading-relaxed mb-2 last:mb-0">{children}</p>
+    <p className="text-base font-semibold text-white/90 leading-relaxed mb-2 last:mb-0">{children}</p>
   ),
   strong: ({ children }) => (
-    <strong className="font-semibold text-white">{children}</strong>
+    <strong className="font-bold text-white">{children}</strong>
   ),
   ul: ({ children }) => <ul className="space-y-1 mb-2 last:mb-0">{children}</ul>,
   ol: ({ children }) => (
     <ol className="space-y-1 mb-2 last:mb-0 list-decimal ml-4">{children}</ol>
   ),
-  li: ({ children }) => <li className="text-sm text-white/90 ml-4 list-disc">{children}</li>,
+  li: ({ children }) => <li className="text-base font-semibold text-white/90 ml-4 list-disc">{children}</li>,
   h1: ({ children }) => (
-    <h1 className="text-base font-heading text-white mb-2">{children}</h1>
+    <h1 className="text-lg font-extrabold text-white mb-2">{children}</h1>
   ),
   h2: ({ children }) => (
-    <h2 className="text-base font-heading text-white mb-2">{children}</h2>
+    <h2 className="text-lg font-extrabold text-white mb-2">{children}</h2>
   ),
   h3: ({ children }) => (
-    <h3 className="text-sm font-heading text-white mb-1.5">{children}</h3>
+    <h3 className="text-base font-extrabold text-white mb-1.5">{children}</h3>
   ),
 };
 
@@ -53,6 +54,7 @@ export default function AIInsightBanner({
   cta,
   dismissible = true,
   preview = false,
+  children,
 }: AIInsightBannerProps) {
   const [dismissed, setDismissed] = useState(false);
 
@@ -64,33 +66,40 @@ export default function AIInsightBanner({
     <div
       role="complementary"
       aria-label="Insight da Mo"
-      className="relative bg-white rounded-[16px] overflow-hidden"
-      style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
+      className="relative bg-gradient-to-br from-[#5BBF8E] to-[#4AA77C] text-white rounded-[20px] p-5 shadow-md"
+      style={{ boxShadow: '0 8px 24px rgba(91, 191, 142, 0.25)' }}
     >
-      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#A8C5E0] to-[#5BBF8E]" />
-
-      <div className="flex items-start gap-3 px-5 py-5">
-        <div className="w-10 h-10 rounded-full bg-[#EEF6FF] flex items-center justify-center shrink-0">
-          <Lightbulb size={20} className="text-[#A8C5E0]" />
+      <div className="flex items-start gap-3">
+        <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+          <Sparkle size={24} weight="fill" className="text-white" />
         </div>
 
         <div className="flex-1 min-w-0 pr-6">
-          <div className="text-sm text-[#1A1D23] leading-relaxed">
+          <div className="text-sm leading-relaxed">
             <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
               {rendered}
             </ReactMarkdown>
           </div>
 
-          {cta && (
-            <a
-              href={cta.href ?? '#'}
-              onClick={cta.onClick}
-              className="inline-flex items-center gap-1 mt-3 text-xs font-semibold text-[#A8C5E0] hover:text-[#7AAECF] transition-colors"
-              style={{ minWidth: 44, minHeight: 44 }}
-            >
-              {cta.label}
-              <ArrowRight size={14} aria-hidden />
-            </a>
+          {(cta || children) && (
+            <div className="flex items-center justify-between mt-3">
+              {cta && (
+                <a
+                  href={cta.href ?? '#'}
+                  onClick={cta.onClick}
+                  className="inline-flex items-center gap-1 text-base font-semibold text-white/80 hover:text-white transition-colors"
+                  style={{ minWidth: 44, minHeight: 44 }}
+                >
+                  {cta.label}
+                  <ArrowRight size={14} aria-hidden />
+                </a>
+              )}
+              {children && (
+                <div className="flex items-center gap-2">
+                  {children}
+                </div>
+              )}
+            </div>
           )}
         </div>
       </div>
@@ -99,7 +108,7 @@ export default function AIInsightBanner({
         <button
           onClick={() => setDismissed(true)}
           aria-label="Fechar insight"
-          className="absolute top-3 right-3 flex items-center justify-center text-[#9CA3AF] hover:text-[#6B7280] hover:bg-[#F8F9FB] transition-all rounded-full"
+          className="absolute top-3 right-3 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/15 transition-all rounded-full"
           style={{ width: 32, height: 32 }}
         >
           <X size={14} aria-hidden />

@@ -95,7 +95,7 @@ export default async function DashboardPage({
             <MonthPicker value={period} />
           </div>
           <div
-            className="w-14 h-14 rounded-full flex items-center justify-center text-lg font-bold text-white shrink-0 overflow-hidden"
+            className="w-14 h-14 rounded-full flex items-center justify-center text-lg font-bold text-white shrink-0 overflow-hidden ring-4 ring-[#5BBF8E] ring-offset-0"
             style={{ background: '#A8C5E0' }}
             aria-label={user.email ?? 'Usuário'}
           >
@@ -147,13 +147,13 @@ export default async function DashboardPage({
         {/* Category breakdown */}
         {metrics.topCategories.length > 0 && (
           <section
-            className="mb-6 bg-white rounded-[16px] p-5 animate-fade-up delay-3"
+            className="mb-6 bg-white rounded-[16px] p-5 animate-fade-up delay-4"
             style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
             aria-label="Gastos por categoria"
           >
             <div className="flex items-center justify-between mb-2">
               <h2 className="text-base font-heading text-[#1A1D23]">Por categoria</h2>
-              <Link href="/feed" className="text-xs font-medium text-[#A8C5E0]">
+              <Link href="/feed" className="text-base font-medium text-[#A8C5E0]">
                 Ver tudo
               </Link>
             </div>
@@ -174,17 +174,21 @@ export default async function DashboardPage({
         )}
 
         {/* AI Insight banner */}
-        <section className="mb-6 animate-fade-up delay-4" aria-label="Resumo do mês">
-          <RegenerateInsightButton period={period} hasInsight={Boolean(latestInsight)} />
+        <section className="mb-6 animate-fade-up delay-5" aria-label="Resumo do mês">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-base font-heading text-[#1A1D23]">Resumo do mês</h2>
+          </div>
           <AIInsightBanner
             message={insightMessage}
             preview
             cta={{ label: 'Ver mais', href: `/insights?period=${period}` }}
-          />
+          >
+            <RegenerateInsightButton period={period} hasInsight={Boolean(latestInsight)} hideHeading variant="card" />
+          </AIInsightBanner>
         </section>
 
         {/* Recent expenses */}
-        <section aria-label="Últimos gastos" className="animate-fade-up delay-5">
+        <section aria-label="Últimos gastos" className="animate-fade-up delay-6">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-base font-heading text-[#1A1D23]">Últimos gastos</h2>
             <Link href="/feed" className="text-xs font-medium text-[#A8C5E0]">
