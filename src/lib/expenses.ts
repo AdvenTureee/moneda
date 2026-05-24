@@ -71,6 +71,7 @@ function rowToExpense(row: ExpensesRow): Expense {
     description: row.description,
     source: row.source as import('@/types').ExpenseSource,
     tags: row.tags,
+    isRecurring: (row as any).is_recurring ?? false,
     createdAt: new Date(row.occurred_at),
   };
 }
@@ -121,6 +122,7 @@ async function createExpenseInDB(input: ExpenseInput): Promise<Expense> {
     source: input.source,
     tags: input.tags,
     occurred_at: input.occurredAt ?? new Date().toISOString(),
+    ...(input.isRecurring !== undefined && { is_recurring: input.isRecurring }),
   };
 
   const { data, error } = await db
@@ -301,11 +303,12 @@ function getDashboardMetricsFromMock(userId: string, period: string): DashboardM
 // ---------------------------------------------------------------------------
 async function updateExpenseInDB(id: string, input: Partial<ExpenseInput>): Promise<Expense> {
   const db = createServiceClient();
-  const updates: Partial<ExpensesRow> = {};
+  const updates: Partial<ExpensesRow> & { is_recurring?: boolean } = {};
   if (input.amount !== undefined) updates.amount_cents = input.amount;
   if (input.category !== undefined) updates.category_id = input.category;
   if (input.description !== undefined) updates.description = input.description;
   if (input.occurredAt !== undefined) updates.occurred_at = input.occurredAt;
+  if (input.isRecurring !== undefined) updates.is_recurring = input.isRecurring;
 
   const { data, error } = await db
     .from('expenses')
@@ -378,6 +381,7 @@ export async function createExpense(input: ExpenseInput): Promise<Expense> {
     description: input.description,
     source: input.source,
     tags: input.tags,
+    isRecurring: input.isRecurring ?? false,
     createdAt: input.occurredAt ? new Date(input.occurredAt) : new Date(),
   };
   addSessionExpense(expense);

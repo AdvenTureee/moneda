@@ -61,6 +61,7 @@ export async function POST(req: NextRequest) {
     source: body.source ?? 'manual',
     tags: body.tags ?? [],
     occurredAt: body.occurredAt,
+    isRecurring: body.isRecurring,
   };
 
   const expense = await createExpense(input);
@@ -89,6 +90,7 @@ export async function PATCH(req: NextRequest) {
     category: body.category,
     description: body.description,
     occurredAt: body.occurredAt,
+    isRecurring: body.isRecurring,
   });
   invalidateExpenseCaches(user.id);
   return NextResponse.json({ data: expense });

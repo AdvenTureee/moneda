@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { X } from '@phosphor-icons/react';
+import { X, ArrowsClockwise } from '@phosphor-icons/react';
 import Icon from '@/components/Icon';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import DatePicker from '@/components/DatePicker';
@@ -31,6 +31,7 @@ export default function AddExpenseModal({
   const [selectedCategory, setSelectedCategory] = useState('');
   const [occurredAtInput, setOccurredAtInput] = useState(todayLocalDate());
   const [timeInput, setTimeInput] = useState(currentTimeHHmm());
+  const [isRecurring, setIsRecurring] = useState(false);
   const { data: categories } = useCategories();
   const [confirmDiscard, setConfirmDiscard] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -46,6 +47,7 @@ export default function AddExpenseModal({
       setSelectedCategory('');
       setOccurredAtInput(todayLocalDate());
       setTimeInput(currentTimeHHmm());
+      setIsRecurring(false);
       setTimeout(() => inputRef.current?.focus(), 100);
     } else if (isOpen && editExpense) {
       setAmountCents(editExpense.amount);
@@ -60,6 +62,7 @@ export default function AddExpenseModal({
       const editDate = new Date(editExpense.createdAt);
       setOccurredAtInput(toLocalDateInput(editDate));
       setTimeInput(timeHHmmFromDate(editDate));
+      setIsRecurring(editExpense.isRecurring ?? false);
       setTimeout(() => inputRef.current?.focus(), 100);
     }
   }, [isOpen, editExpense]);
@@ -91,9 +94,10 @@ export default function AddExpenseModal({
       source: 'manual',
       tags: [],
       occurredAt: localDateTimeToIso(occurredAtInput, timeInput),
+      isRecurring,
     });
     onClose();
-  }, [amountCents, description, selectedCategory, occurredAtInput, timeInput, categories, onSave, onClose]);
+  }, [amountCents, description, selectedCategory, occurredAtInput, timeInput, isRecurring, categories, onSave, onClose]);
 
   const handleBackdropClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
@@ -213,17 +217,36 @@ export default function AddExpenseModal({
           />
         </div>
 
-        {/* Date */}
+        {/* Date + Recorrente */}
         <div className="px-5 mb-6">
-          <p className="text-sm font-semibold text-[#6B7280] mb-2">Data do gasto</p>
-          <DatePicker
-            value={occurredAtInput}
-            onChange={setOccurredAtInput}
-            timeValue={timeInput}
-            onTimeChange={setTimeInput}
-            max={todayLocalDate()}
-            ariaLabel="Data e horário do gasto"
-          />
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <p className="text-sm font-semibold text-[#6B7280] mb-2">Data do gasto</p>
+              <DatePicker
+                value={occurredAtInput}
+                onChange={setOccurredAtInput}
+                timeValue={timeInput}
+                onTimeChange={setTimeInput}
+                max={todayLocalDate()}
+                ariaLabel="Data e horário do gasto"
+              />
+            </div>
+            <div className="flex flex-col justify-end">
+              <button
+                type="button"
+                onClick={() => setIsRecurring((v) => !v)}
+                aria-pressed={isRecurring}
+                className={`flex items-center gap-2 justify-center border rounded-[10px] px-4 py-3 text-[15px] font-semibold transition-colors duration-75 active:scale-95 ${
+                  isRecurring
+                    ? 'border-[#5BBF8E] bg-[#EEF9F4] text-[#3FA876]'
+                    : 'border-[#E5E7EB] bg-white text-[#6B7280] hover:border-[#A8C5E0]'
+                }`}
+              >
+                <ArrowsClockwise size={16} className={isRecurring ? 'animate-spin-slow' : ''} />
+                <span>Recorrente</span>
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Save button */}
@@ -250,6 +273,13 @@ export default function AddExpenseModal({
         @keyframes slideUp {
           from { transform: translateY(100%); }
           to { transform: translateY(0); }
+        }
+        @keyframes spin-slow {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        .animate-spin-slow {
+          animation: spin-slow 8s linear infinite;
         }
       `}</style>
       <ConfirmDialog

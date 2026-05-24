@@ -29,6 +29,7 @@ export interface Expense {
   description: string;
   source: ExpenseSource;
   tags: string[];
+  isRecurring?: boolean;
   createdAt: Date;
 }
 
@@ -41,6 +42,7 @@ export interface ExpenseInput {
   tags: string[];
   /** ISO timestamp for when the expense happened. Defaults to now on create. */
   occurredAt?: string;
+  isRecurring?: boolean;
 }
 
 
