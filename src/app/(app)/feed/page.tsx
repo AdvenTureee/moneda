@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { MagnifyingGlass } from '@phosphor-icons/react';
 import ExpenseCard from '@/components/ExpenseCard';
@@ -34,7 +34,7 @@ function rangeFromSearchParams(params: URLSearchParams): DateRange | null {
   return { from, to, presetId: 'custom' };
 }
 
-export default function FeedPage() {
+function FeedPageInner() {
   const searchParams = useSearchParams();
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [search, setSearch] = useState('');
@@ -345,5 +345,13 @@ export default function FeedPage() {
         onCancel={() => setDeletingExpense(null)}
       />
     </>
+  );
+}
+
+export default function FeedPage() {
+  return (
+    <Suspense fallback={null}>
+      <FeedPageInner />
+    </Suspense>
   );
 }
