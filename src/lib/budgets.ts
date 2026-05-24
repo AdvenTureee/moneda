@@ -1,7 +1,9 @@
+import { unstable_cache } from 'next/cache';
 import type { Budget, BudgetInput } from '@/types';
 import type { Database } from '@/types/supabase';
 import { createServiceClient, isSupabaseEnabled } from '@/lib/supabase/server';
 import { generateId } from '@/lib/utils';
+import { cacheTags } from '@/lib/cache';
 
 type BudgetsRow = Database['public']['Tables']['budgets']['Row'];
 
@@ -20,7 +22,7 @@ function rowToBudget(row: BudgetsRow): Budget {
   };
 }
 
-export async function getBudgets(userId: string, period: string): Promise<Budget[]> {
+async function getBudgetsImpl(userId: string, period: string): Promise<Budget[]> {
   if (isSupabaseEnabled()) {
     const db = createServiceClient();
     const { data, error } = await db
@@ -35,6 +37,23 @@ export async function getBudgets(userId: string, period: string): Promise<Budget
 
   // Fallback
   return sessionBudgets.filter((b) => b.userId === userId && b.period === period);
+}
+
+export async function getBudgets(userId: string, period: string): Promise<Budget[]> {
+  const raw = await unstable_cache(
+    () => getBudgetsImpl(userId, period),
+    ['budgets', userId, period],
+    {
+      tags: [cacheTags.budgets(userId)],
+      revalidate: 60,
+    },
+  )();
+  // unstable_cache serializa Date → string. Re-hidrata aqui.
+  return raw.map((b) => ({
+    ...b,
+    createdAt: new Date(b.createdAt),
+    updated_at: new Date(b.updated_at),
+  }));
 }
 
 export async function upsertBudget(input: BudgetInput): Promise<Budget> {

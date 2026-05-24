@@ -1,6 +1,8 @@
+import { unstable_cache } from 'next/cache';
 import type { AIInsight } from '@/types';
 import type { Database } from '@/types/supabase';
 import { createServiceClient, isSupabaseEnabled } from '@/lib/supabase/server';
+import { cacheTags } from '@/lib/cache';
 
 type AIInsightRow = Database['public']['Tables']['ai_insights']['Row'];
 
@@ -17,7 +19,7 @@ function rowToAIInsight(row: AIInsightRow): AIInsight {
   };
 }
 
-export async function getLatestInsight(userId: string, period: string): Promise<AIInsight | null> {
+async function getLatestInsightImpl(userId: string, period: string): Promise<AIInsight | null> {
   if (isSupabaseEnabled()) {
     const db = createServiceClient();
     const { data, error } = await db
@@ -36,9 +38,29 @@ export async function getLatestInsight(userId: string, period: string): Promise<
   return null;
 }
 
-export async function getUserInsights(
+function rehydrateInsight(raw: AIInsight): AIInsight {
+  return {
+    ...raw,
+    generatedAt: new Date(raw.generatedAt),
+    createdAt: new Date(raw.createdAt),
+  };
+}
+
+export async function getLatestInsight(userId: string, period: string): Promise<AIInsight | null> {
+  const raw = await unstable_cache(
+    () => getLatestInsightImpl(userId, period),
+    ['latest-insight', userId, period],
+    {
+      tags: [cacheTags.insights(userId)],
+      revalidate: 60,
+    },
+  )();
+  return raw ? rehydrateInsight(raw) : null;
+}
+
+async function getUserInsightsImpl(
   userId: string,
-  options?: { type?: AIInsight['type']; period?: string }
+  options?: { type?: AIInsight['type']; period?: string },
 ): Promise<AIInsight[]> {
   if (isSupabaseEnabled()) {
     const db = createServiceClient();
@@ -57,4 +79,20 @@ export async function getUserInsights(
   }
 
   return [];
+}
+
+export async function getUserInsights(
+  userId: string,
+  options?: { type?: AIInsight['type']; period?: string },
+): Promise<AIInsight[]> {
+  const keyParts = ['user-insights', userId, options?.type ?? '', options?.period ?? ''];
+  const raw = await unstable_cache(
+    () => getUserInsightsImpl(userId, options),
+    keyParts,
+    {
+      tags: [cacheTags.insights(userId)],
+      revalidate: 60,
+    },
+  )();
+  return raw.map(rehydrateInsight);
 }

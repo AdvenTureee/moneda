@@ -1,4 +1,6 @@
+import { unstable_cache } from 'next/cache';
 import { createServiceClient, isSupabaseEnabled } from '@/lib/supabase/server';
+import { cacheTags } from '@/lib/cache';
 
 /**
  * Orçamento mensal disponível para o usuário.
@@ -11,7 +13,7 @@ import { createServiceClient, isSupabaseEnabled } from '@/lib/supabase/server';
  *
  * Period no formato 'YYYY-MM'.
  */
-export async function getMonthlyBudgetCents(
+async function getMonthlyBudgetCentsImpl(
   userId: string,
   period: string,
 ): Promise<number> {
@@ -44,4 +46,20 @@ export async function getMonthlyBudgetCents(
   }, 0);
 
   return base + incomesTotal;
+}
+
+export async function getMonthlyBudgetCents(
+  userId: string,
+  period: string,
+): Promise<number> {
+  return unstable_cache(
+    () => getMonthlyBudgetCentsImpl(userId, period),
+    ['monthly-budget-cents', userId, period],
+    {
+      // Renda + incomes mudam raramente; invalida via revalidateTag em
+      // saveIncomeAction/deleteIncomeAction.
+      tags: [cacheTags.profile(userId), cacheTags.budgets(userId)],
+      revalidate: 300,
+    },
+  )();
 }

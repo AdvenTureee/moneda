@@ -1,10 +1,7 @@
 import { redirect } from 'next/navigation';
-import AppShell from '@/components/AppShell';
 import { createSessionClient, createServiceClient, isSupabaseEnabled } from '@/lib/supabase/server';
 import { DEFAULT_NOTIFICATION_PREFS, type NotificationPrefs } from '../notification-prefs';
 import NotificationsForm from './NotificationsForm';
-
-export const dynamic = 'force-dynamic';
 
 export default async function NotificacoesPage() {
   const supabase = await createSessionClient();
@@ -26,9 +23,5 @@ export default async function NotificacoesPage() {
     }
   }
 
-  return (
-    <AppShell>
-      <NotificationsForm initial={prefs} />
-    </AppShell>
-  );
+  return <NotificationsForm initial={prefs} />;
 }

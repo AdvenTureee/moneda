@@ -1,7 +1,9 @@
+import { unstable_cache } from 'next/cache';
 import type { Category } from '@/types';
 import type { Database } from '@/types/supabase';
 import { createServiceClient, isSupabaseEnabled } from '@/lib/supabase/server';
 import { CATEGORIES, addUserCategory, updateUserCategory, deleteUserCategory, getUserCategories } from '@/data/mock';
+import { cacheTags } from '@/lib/cache';
 
 type CategoryRow = Database['public']['Tables']['categories']['Row'];
 type CategoryInsert = Database['public']['Tables']['categories']['Insert'];
@@ -77,13 +79,29 @@ export interface GetCategoriesOptions {
   applyHasPetGate?: boolean;
 }
 
+async function getCategoriesImpl(
+  userId: string,
+  applyHasPetGate: boolean,
+): Promise<CategoryWithMeta[]> {
+  if (isSupabaseEnabled()) return getCategoriesFromDB(userId, { applyHasPetGate });
+  return getCategoriesFromMock();
+}
+
 export async function getCategories(
   userId: string,
   options: GetCategoriesOptions = {},
 ): Promise<CategoryWithMeta[]> {
   const applyHasPetGate = options.applyHasPetGate ?? true;
-  if (isSupabaseEnabled()) return getCategoriesFromDB(userId, { applyHasPetGate });
-  return getCategoriesFromMock();
+  return unstable_cache(
+    () => getCategoriesImpl(userId, applyHasPetGate),
+    ['categories', userId, applyHasPetGate ? 'gated' : 'all'],
+    {
+      // Categorias mudam raríssimo → TTL longo, invalidação explícita via
+      // revalidateTag em criar/editar/deletar categoria.
+      tags: [cacheTags.categories(userId)],
+      revalidate: 3600,
+    },
+  )();
 }
 
 export async function createCategory(

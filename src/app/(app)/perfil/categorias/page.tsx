@@ -1,18 +1,11 @@
 import { redirect } from 'next/navigation';
-import AppShell from '@/components/AppShell';
 import { createSessionClient } from '@/lib/supabase/server';
 import CategoriesView from './CategoriesView';
-
-export const dynamic = 'force-dynamic';
 
 export default async function CategoriasPage() {
   const supabase = await createSessionClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  return (
-    <AppShell>
-      <CategoriesView />
-    </AppShell>
-  );
+  return <CategoriesView />;
 }

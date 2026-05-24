@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { createSessionClient } from '@/lib/supabase/server';
 import {
   getCategories,
@@ -7,6 +8,11 @@ import {
   deleteCategory,
   getCategoryExpenseCount,
 } from '@/lib/categories';
+import { cacheTags } from '@/lib/cache';
+
+function invalidateCategoryCaches(userId: string) {
+  revalidateTag(cacheTags.categories(userId), { expire: 0 });
+}
 
 export async function GET() {
   try {
@@ -42,6 +48,7 @@ export async function POST(req: NextRequest) {
           return NextResponse.json({ error: 'Campos obrigatórios: id, name, icon, color.' }, { status: 400 });
         }
         const cat = await createCategory(user.id, { id, name, icon, color, keywords: keywords ?? [] });
+        invalidateCategoryCaches(user.id);
         return NextResponse.json({ data: cat });
       }
 
@@ -51,6 +58,7 @@ export async function POST(req: NextRequest) {
           return NextResponse.json({ error: 'Campo obrigatório: id.' }, { status: 400 });
         }
         const cat = await updateCategory(user.id, id, { name, icon, color, keywords });
+        invalidateCategoryCaches(user.id);
         return NextResponse.json({ data: cat });
       }
 
@@ -68,6 +76,7 @@ export async function POST(req: NextRequest) {
         }
 
         await deleteCategory(user.id, id);
+        invalidateCategoryCaches(user.id);
         return NextResponse.json({ ok: true });
       }
 

@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import AppShell from '@/components/AppShell';
+import PageRefreshWrapper from '@/components/PageRefreshWrapper';
 import DashboardMetric from '@/components/DashboardMetric';
 import AIInsightBanner from '@/components/AIInsightBanner';
 import ExpenseCard from '@/components/ExpenseCard';
@@ -31,7 +31,9 @@ async function isUserOnboarded(userId: string): Promise<boolean> {
 import { formatCurrency, getCurrentPeriod } from '@/lib/utils';
 import { createSessionClient } from '@/lib/supabase/server';
 
-export const dynamic = 'force-dynamic';
+// A page lê cookies de auth (createSessionClient) → Next a renderiza dinamicamente
+// por padrão. As queries de DB dentro do render usam `unstable_cache` com tags
+// (revalidate: 60s) — invalidação on-demand via revalidateTag em mutations.
 
 function isValidPeriod(s: unknown): s is string {
   return typeof s === 'string' && /^\d{4}-(0[1-9]|1[0-2])$/.test(s);
@@ -83,7 +85,8 @@ export default async function DashboardPage({
   const insightMessage = latestInsight ? latestInsight.message : welcomeMessage;
 
   return (
-    <AppShell>
+    <>
+      <PageRefreshWrapper>
       <div className="max-w-lg mx-auto px-4">
         {/* Header */}
         <header className="relative z-40 flex items-center justify-between py-5 animate-fade-up delay-0">
@@ -213,7 +216,8 @@ export default async function DashboardPage({
 
         <div className="h-6" />
       </div>
+      </PageRefreshWrapper>
       {remaining > 0 && <Confetti trigger sessionKey="dashboard-confetti" />}
-    </AppShell>
+    </>
   );
 }

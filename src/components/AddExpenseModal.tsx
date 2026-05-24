@@ -8,7 +8,8 @@ import ConfirmDialog from '@/components/ConfirmDialog';
 import DatePicker from '@/components/DatePicker';
 import { formatCurrency } from '@/lib/utils';
 import { toLocalDateInput, todayLocalDate, localDateToIso } from '@/lib/date';
-import type { Expense, ExpenseInput, Category } from '@/types';
+import { useCategories } from '@/hooks/useCategories';
+import type { Expense, ExpenseInput } from '@/types';
 
 interface AddExpenseModalProps {
   isOpen: boolean;
@@ -29,8 +30,7 @@ export default function AddExpenseModal({
   const [description, setDescription] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [occurredAtInput, setOccurredAtInput] = useState(todayLocalDate());
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [categoriesLoaded, setCategoriesLoaded] = useState(false);
+  const { data: categories } = useCategories();
   const [confirmDiscard, setConfirmDiscard] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const isEditing = !!editExpense;
@@ -59,16 +59,6 @@ export default function AddExpenseModal({
       setTimeout(() => inputRef.current?.focus(), 100);
     }
   }, [isOpen, editExpense]);
-
-  useEffect(() => {
-    fetch('/api/categories')
-      .then((res) => res.ok ? res.json() : null)
-      .then((json) => {
-        if (json?.data) setCategories(json.data);
-      })
-      .catch(() => {})
-      .finally(() => setCategoriesLoaded(true));
-  }, []);
 
   const handleAmountChange = useCallback((raw: string) => {
     // Accept only digits

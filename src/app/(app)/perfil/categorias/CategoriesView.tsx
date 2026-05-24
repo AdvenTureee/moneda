@@ -1,15 +1,10 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { CaretLeft, Check, X, Trash, Plus } from '@phosphor-icons/react';
 import Icon from '@/components/Icon';
-import type { Category } from '@/types';
-
-interface CategoryWithMeta extends Category {
-  is_default: boolean;
-  sort_order: number;
-}
+import { useCategories } from '@/hooks/useCategories';
 
 const CATEGORY_ICONS = [
   'Hamburger', 'Car', 'GameController', 'Pill', 'House', 'Books',
@@ -33,10 +28,10 @@ function slugify(text: string): string {
 
 type Feedback = { kind: 'success' | 'error'; text: string } | null;
 
+type CategoryItem = ReturnType<typeof useCategories>['data'][number];
+
 export default function CategoriesView() {
-  const [categories, setCategories] = useState<CategoryWithMeta[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data: categories, loading, error, refresh, invalidate } = useCategories();
 
   // Edit/create state
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -51,34 +46,12 @@ export default function CategoriesView() {
   // Toast
   const [feedback, setFeedback] = useState<Feedback>(null);
 
-  const fetchCategories = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch('/api/categories');
-      if (!res.ok) {
-        const d = await res.json();
-        throw new Error(d.error ?? 'Erro ao carregar categorias');
-      }
-      const d = await res.json();
-      setCategories(d.data ?? []);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Erro desconhecido');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchCategories();
-  }, [fetchCategories]);
-
   function resetForm() {
     setFormData({ name: '', icon: DEFAULT_ICON, color: DEFAULT_COLOR, keywords: [] });
     setKeywordInput('');
   }
 
-  function startEdit(cat: CategoryWithMeta) {
+  function startEdit(cat: CategoryItem) {
     setEditingId(cat.id);
     setCreating(false);
     setDeletingId(null);
@@ -131,7 +104,8 @@ export default function CategoriesView() {
         });
         const d = await res.json();
         if (!res.ok) throw new Error(d.error);
-        setCategories((prev) => [...prev, { ...d.data, is_default: false, sort_order: 100 }]);
+        invalidate();
+        await refresh();
         setFeedback({ kind: 'success', text: 'Categoria criada.' });
         setCreating(false);
         resetForm();
@@ -145,7 +119,8 @@ export default function CategoriesView() {
         });
         const d = await res.json();
         if (!res.ok) throw new Error(d.error);
-        setCategories((prev) => prev.map((c) => c.id === editingId ? { ...c, ...d.data } : c));
+        invalidate();
+        await refresh();
         setFeedback({ kind: 'success', text: 'Categoria atualizada.' });
         setEditingId(null);
         resetForm();
@@ -168,7 +143,8 @@ export default function CategoriesView() {
       });
       const d = await res.json();
       if (!res.ok) throw new Error(d.error);
-      setCategories((prev) => prev.filter((c) => c.id !== id));
+      invalidate();
+      await refresh();
       setFeedback({ kind: 'success', text: 'Categoria excluída.' });
       setDeletingId(null);
     } catch (e) {
@@ -205,7 +181,7 @@ export default function CategoriesView() {
           <p className="text-sm font-medium text-[#B14C4C]">{error}</p>
           <button
             type="button"
-            onClick={fetchCategories}
+            onClick={() => refresh()}
             className="mt-2 text-xs font-semibold text-[#E07070] hover:underline"
           >
             Tentar novamente

@@ -1,7 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { getExpenses, createExpense, updateExpense, deleteExpense } from '@/lib/expenses';
 import type { ExpenseFilters, ExpenseInput } from '@/types';
 import { createSessionClient } from '@/lib/supabase/server';
+import { cacheTags } from '@/lib/cache';
+
+function invalidateExpenseCaches(userId: string) {
+  // Toda mutation de expense mexe em métricas/insights/monthly totals do usuário.
+  // expire: 0 → invalida imediato (read-your-own-writes em Route Handler).
+  const opts = { expire: 0 } as const;
+  revalidateTag(cacheTags.expenses(userId), opts);
+  revalidateTag(cacheTags.metrics(userId), opts);
+  revalidateTag(cacheTags.insights(userId), opts);
+  revalidateTag(cacheTags.monthlyTotals(userId), opts);
+}
 
 export async function GET(req: NextRequest) {
   const supabase = await createSessionClient();
@@ -52,6 +64,7 @@ export async function POST(req: NextRequest) {
   };
 
   const expense = await createExpense(input);
+  invalidateExpenseCaches(user.id);
   return NextResponse.json({ data: expense }, { status: 201 });
 }
 
@@ -77,6 +90,7 @@ export async function PATCH(req: NextRequest) {
     description: body.description,
     occurredAt: body.occurredAt,
   });
+  invalidateExpenseCaches(user.id);
   return NextResponse.json({ data: expense });
 }
 
@@ -92,5 +106,6 @@ export async function DELETE(req: NextRequest) {
   }
 
   await deleteExpense(id);
+  invalidateExpenseCaches(user.id);
   return NextResponse.json({ ok: true });
 }

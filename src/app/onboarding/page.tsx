@@ -8,7 +8,6 @@ import { getCategories } from '@/lib/categories';
 import { MOCK_USER } from '@/data/mock';
 import OnboardingView from './OnboardingView';
 
-export const dynamic = 'force-dynamic';
 
 export default async function OnboardingPage() {
   let userId = MOCK_USER.id;

@@ -3,7 +3,6 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { MagnifyingGlass } from '@phosphor-icons/react';
-import AppShell from '@/components/AppShell';
 import ExpenseCard from '@/components/ExpenseCard';
 import AddExpenseModal from '@/components/AddExpenseModal';
 import ConfirmDialog from '@/components/ConfirmDialog';
@@ -11,8 +10,10 @@ import CategoryChip from '@/components/CategoryChip';
 import DateRangePicker, { buildPreset, type DateRange } from '@/components/DateRangePicker';
 import Icon from '@/components/Icon';
 import Mo from '@/components/Mo';
+import PullToRefresh from '@/components/PullToRefresh';
 import { groupExpensesByDate, formatCurrency } from '@/lib/utils';
-import type { Expense, Category, ExpenseInput } from '@/types';
+import { useCategories } from '@/hooks/useCategories';
+import type { Expense, ExpenseInput } from '@/types';
 
 function parseDateInputToIso(input: string, end: boolean): string | null {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(input)) return null;
@@ -47,7 +48,7 @@ export default function FeedPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const [allExpenses, setAllExpenses] = useState<Expense[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const { data: categories, invalidate: invalidateCategories, refresh: refreshCategories } = useCategories();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
@@ -124,15 +125,6 @@ export default function FeedPage() {
     fetchExpenses();
   }, [fetchExpenses]);
 
-  useEffect(() => {
-    fetch('/api/categories')
-      .then((res) => res.ok ? res.json() : null)
-      .then((json) => {
-        if (json?.data) setCategories(json.data);
-      })
-      .catch(() => { });
-  }, []);
-
   const filtered = useMemo(() => {
     let result = allExpenses;
 
@@ -171,6 +163,11 @@ export default function FeedPage() {
     }
   }, [deletingExpense, fetchExpenses]);
 
+  const handleRefresh = useCallback(async () => {
+    invalidateCategories();
+    await Promise.all([refreshCategories(), fetchExpenses()]);
+  }, [invalidateCategories, refreshCategories, fetchExpenses]);
+
   const handleEditSave = useCallback(async (input: ExpenseInput) => {
     if (!editingExpense) return;
     try {
@@ -187,7 +184,8 @@ export default function FeedPage() {
   }, [editingExpense, fetchExpenses]);
 
   return (
-    <AppShell>
+    <>
+      <PullToRefresh onRefresh={handleRefresh}>
       <div className="max-w-lg mx-auto px-4 pb-24">
         {/* Header */}
         <header className="py-6 animate-fade-up delay-0">
@@ -329,6 +327,7 @@ export default function FeedPage() {
             })
         )}
       </div>
+      </PullToRefresh>
       <AddExpenseModal
         isOpen={!!editingExpense}
         onClose={() => setEditingExpense(null)}
@@ -345,6 +344,6 @@ export default function FeedPage() {
         onConfirm={confirmDelete}
         onCancel={() => setDeletingExpense(null)}
       />
-    </AppShell>
+    </>
   );
 }

@@ -1,7 +1,9 @@
+import { unstable_cache } from 'next/cache';
 import type { Category, Expense, ExpenseFilters, ExpenseInput, DashboardMetrics } from '@/types';
 import type { Database } from '@/types/supabase';
 import { createServiceClient, isSupabaseEnabled } from '@/lib/supabase/server';
 import { getCategoriesByIds } from '@/lib/categories';
+import { cacheTags } from '@/lib/cache';
 
 type ExpensesRow = Database['public']['Tables']['expenses']['Row'];
 type ExpensesInsert = Database['public']['Tables']['expenses']['Insert'];
@@ -387,12 +389,40 @@ export async function getExpenseById(id: string): Promise<Expense | null> {
   return mockGetAll(MOCK_USER.id).find((e) => e.id === id) ?? null;
 }
 
-export async function getDashboardMetrics(
+async function getDashboardMetricsImpl(
   userId: string,
-  period: string
+  period: string,
 ): Promise<DashboardMetrics> {
   if (isSupabaseEnabled()) return getDashboardMetricsFromDB(userId, period);
   return getDashboardMetricsFromMock(userId, period);
+}
+
+function rehydrateExpense(raw: Expense): Expense {
+  return { ...raw, createdAt: new Date(raw.createdAt) };
+}
+
+export async function getDashboardMetrics(
+  userId: string,
+  period: string,
+): Promise<DashboardMetrics> {
+  const raw = await unstable_cache(
+    () => getDashboardMetricsImpl(userId, period),
+    ['dashboard-metrics', userId, period],
+    {
+      tags: [cacheTags.metrics(userId), cacheTags.expenses(userId)],
+      revalidate: 60,
+    },
+  )();
+  // unstable_cache serializa Date → string. Re-hidrata as expenses aqui.
+  const expensesByCategory: Record<string, Expense[]> = {};
+  for (const [key, list] of Object.entries(raw.expensesByCategory)) {
+    expensesByCategory[key] = list.map(rehydrateExpense);
+  }
+  return {
+    ...raw,
+    recentExpenses: raw.recentExpenses.map(rehydrateExpense),
+    expensesByCategory,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -462,13 +492,30 @@ function getMonthlyTotalsFromMock(
   return result;
 }
 
+async function getMonthlyTotalsImpl(
+  userId: string,
+  endPeriod: string,
+  months: number,
+): Promise<MonthlyTotal[]> {
+  if (isSupabaseEnabled()) return getMonthlyTotalsFromDB(userId, endPeriod, months);
+  return getMonthlyTotalsFromMock(userId, endPeriod, months);
+}
+
 export async function getMonthlyTotals(
   userId: string,
   endPeriod: string,
   months: number = 6,
 ): Promise<MonthlyTotal[]> {
-  if (isSupabaseEnabled()) return getMonthlyTotalsFromDB(userId, endPeriod, months);
-  return getMonthlyTotalsFromMock(userId, endPeriod, months);
+  return unstable_cache(
+    () => getMonthlyTotalsImpl(userId, endPeriod, months),
+    ['monthly-totals', userId, endPeriod, String(months)],
+    {
+      // Meses fechados quase nunca mudam. TTL maior; invalidação explícita
+      // ocorre via revalidateTag nas mutations de expense.
+      tags: [cacheTags.monthlyTotals(userId), cacheTags.expenses(userId)],
+      revalidate: 300,
+    },
+  )();
 }
 
 

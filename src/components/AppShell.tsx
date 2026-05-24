@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import BottomNav from '@/components/BottomNav';
 import AddExpenseModal from '@/components/AddExpenseModal';
 import CoinDropAnimation from '@/components/CoinDropAnimation';
@@ -16,7 +16,6 @@ export default function AppShell({ children }: AppShellProps) {
   const [modalOpen, setModalOpen] = useState(false);
   const [showCoinDrop, setShowCoinDrop] = useState(false);
   const router = useRouter();
-  const pathname = usePathname();
 
   const handleSave = useCallback(
     async (input: ExpenseInput) => {
@@ -41,9 +40,7 @@ export default function AppShell({ children }: AppShellProps) {
         className="app-shell"
         style={{ paddingBottom: 'calc(56px + env(safe-area-inset-bottom, 0px))' }}
       >
-        <div key={pathname} className="animate-fade-in-fast">
-          {children}
-        </div>
+        {children}
       </main>
       <ScrollFadeIndicator />
       <BottomNav onAddExpense={() => setModalOpen(true)} />

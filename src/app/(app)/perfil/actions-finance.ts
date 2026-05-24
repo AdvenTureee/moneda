@@ -1,11 +1,12 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
+import { updateTag } from 'next/cache';
 import { createSessionClient, isSupabaseEnabled } from '@/lib/supabase/server';
 import { upsertBudget } from '@/lib/budgets';
 import { createIncome, deleteIncome } from '@/lib/incomes';
 import { MOCK_USER } from '@/data/mock';
 import type { IncomeSource } from '@/types';
+import { cacheTags } from '@/lib/cache';
 
 export type ActionResult = { ok: true; message?: string } | { ok: false; error: string };
 
@@ -33,8 +34,9 @@ export async function saveCategoryBudgetAction(
       amountCents,
     });
 
-    revalidatePath('/');
-    revalidatePath('/perfil/orcamento');
+    // updateTag → próximo render espera dados frescos (read-your-own-writes).
+    updateTag(cacheTags.budgets(userId));
+    updateTag(cacheTags.metrics(userId));
     return { ok: true, message: 'Orçamento atualizado com sucesso!' };
   } catch (err: any) {
     return { ok: false, error: err.message || 'Falha ao salvar orçamento.' };
@@ -78,8 +80,9 @@ export async function saveIncomeAction(
       receivedAt,
     });
 
-    revalidatePath('/');
-    revalidatePath('/perfil/ganhos');
+    // Income afeta o orçamento mensal calculado em getMonthlyBudgetCents().
+    updateTag(cacheTags.profile(userId));
+    updateTag(cacheTags.budgets(userId));
     return { ok: true, message: 'Ganho lançado com sucesso!' };
   } catch (err: any) {
     return { ok: false, error: err.message || 'Falha ao salvar ganho.' };
@@ -101,8 +104,8 @@ export async function deleteIncomeAction(id: string): Promise<ActionResult> {
 
     await deleteIncome(id, userId);
 
-    revalidatePath('/');
-    revalidatePath('/perfil/ganhos');
+    updateTag(cacheTags.profile(userId));
+    updateTag(cacheTags.budgets(userId));
     return { ok: true, message: 'Ganho removido com sucesso!' };
   } catch (err: any) {
     return { ok: false, error: err.message || 'Falha ao deletar ganho.' };

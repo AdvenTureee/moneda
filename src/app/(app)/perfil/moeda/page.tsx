@@ -1,9 +1,6 @@
 import { redirect } from 'next/navigation';
-import AppShell from '@/components/AppShell';
 import { createSessionClient, createServiceClient, isSupabaseEnabled } from '@/lib/supabase/server';
 import CurrencyForm from './CurrencyForm';
-
-export const dynamic = 'force-dynamic';
 
 export default async function MoedaPage() {
   const supabase = await createSessionClient();
@@ -21,9 +18,5 @@ export default async function MoedaPage() {
     if (data?.currency) current = data.currency;
   }
 
-  return (
-    <AppShell>
-      <CurrencyForm initialCurrency={current} />
-    </AppShell>
-  );
+  return <CurrencyForm initialCurrency={current} />;
 }

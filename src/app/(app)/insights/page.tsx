@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import AppShell from '@/components/AppShell';
+import PageRefreshWrapper from '@/components/PageRefreshWrapper';
 import InsightsView from './InsightsView';
 import { getDashboardMetrics, getMonthlyTotals } from '@/lib/expenses';
 import { getBudgets } from '@/lib/budgets';
@@ -9,7 +9,6 @@ import { getCurrentPeriod, getPreviousPeriod } from '@/lib/utils';
 import { createSessionClient } from '@/lib/supabase/server';
 import type { BudgetProgressItem } from '@/components/charts/BudgetProgressList';
 
-export const dynamic = 'force-dynamic';
 
 function isValidPeriod(s: unknown): s is string {
   return typeof s === 'string' && /^\d{4}-(0[1-9]|1[0-2])$/.test(s);
@@ -85,7 +84,7 @@ export default async function InsightsPage({
     });
 
   return (
-    <AppShell>
+    <PageRefreshWrapper>
       <InsightsView
         period={period}
         monthName={monthName}
@@ -99,6 +98,6 @@ export default async function InsightsPage({
         monthlyTotals={monthlyTotals}
         budgetProgress={budgetProgress}
       />
-    </AppShell>
+    </PageRefreshWrapper>
   );
 }
