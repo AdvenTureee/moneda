@@ -8,6 +8,7 @@ export interface MoProps {
   className?: string;
   pupilX?: number;
   pupilY?: number;
+  eyesClosed?: boolean;
 }
 
 const PALETTE = {
@@ -24,6 +25,7 @@ export default function Mo({
   className = '',
   pupilX = 0,
   pupilY = 0,
+  eyesClosed = false,
 }: MoProps) {
   // Pupil tracking — clamp into [-1, 1] then translate within the eye.
   const px = Math.max(-1, Math.min(1, pupilX)) * 2.2;
@@ -52,47 +54,48 @@ export default function Mo({
       aria-hidden
       role="img"
     >
-      {/* Stubby legs — drawn first so they sit behind the coin */}
-      <path
-        d="M 43,70 Q 42,76 42,81"
-        stroke={PALETTE.ink}
-        strokeWidth={6.5}
-        strokeLinecap="round"
-        fill="none"
-      />
-      <path
-        d="M 57,70 Q 58,76 58,81"
-        stroke={PALETTE.ink}
-        strokeWidth={6.5}
-        strokeLinecap="round"
-        fill="none"
-      />
-
-      {/* Stubby arms */}
-      <path
-        d="M 24,52 Q 18,57 15,61"
-        stroke={PALETTE.ink}
-        strokeWidth={5.5}
-        strokeLinecap="round"
-        fill="none"
-      />
-      <path
-        d="M 76,52 Q 82,57 85,61"
-        stroke={PALETTE.ink}
-        strokeWidth={5.5}
-        strokeLinecap="round"
-        fill="none"
-      />
-
       {/* Coin edge (back disc, darker — shows the thickness on the right/bottom) */}
       <circle
-        cx={52}
-        cy={44.5}
+        cx={55}
+        cy={44}
         r={32}
         fill={PALETTE.coinShadow}
         stroke={PALETTE.ink}
         strokeWidth={2.8}
       />
+
+      {/* Stubby legs — between disc and front face */}
+      <path
+        d="M 42,72 Q 41,80 41,87"
+        stroke={PALETTE.ink}
+        strokeWidth={6.5}
+        strokeLinecap="round"
+        fill="none"
+      />
+      <path
+        d="M 58,72 Q 59,80 59,87"
+        stroke={PALETTE.ink}
+        strokeWidth={6.5}
+        strokeLinecap="round"
+        fill="none"
+      />
+
+      {/* Stubby arms — between disc and front face */}
+      <path
+        d="M 21,52 Q 16,57 13,61"
+        stroke={PALETTE.ink}
+        strokeWidth={5.5}
+        strokeLinecap="round"
+        fill="none"
+      />
+      <path
+        d="M 79,52 Q 84,57 89,61"
+        stroke={PALETTE.ink}
+        strokeWidth={5.5}
+        strokeLinecap="round"
+        fill="none"
+      />
+
       {/* Main coin face — solid flat yellow */}
       <circle
         cx={50}
@@ -123,6 +126,14 @@ export default function Mo({
         fill="none"
       />
 
+      {/* Eyes — closed slits or open with whites/pupils */}
+      {eyesClosed ? (
+        <g>
+          <path d="M 33,36 Q 38,39 43,36" stroke={PALETTE.ink} strokeWidth={2} strokeLinecap="round" fill="none" />
+          <path d="M 57,36 Q 62,39 67,36" stroke={PALETTE.ink} strokeWidth={2} strokeLinecap="round" fill="none" />
+        </g>
+      ) : (
+        <>
       {/* Eye whites — tall ovals (Cuphead-style) */}
       <ellipse
         cx={leftEyeCx}
@@ -176,6 +187,7 @@ export default function Mo({
           <circle cx={pupilRightCx} cy={pupilCy} r={pupilR} fill={PALETTE.ink} />
         </g>
       )}
+      </>)}
 
       {/* Smile — always cheerful, gentle upward curve */}
       <path

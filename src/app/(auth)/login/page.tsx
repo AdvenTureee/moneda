@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { useAuthMascot } from '../AuthMascotContext';
 
 function GoogleIcon() {
   return (
@@ -25,6 +26,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [forgotLoading, setForgotLoading] = useState(false);
+  const { setEyesClosed } = useAuthMascot();
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -157,6 +159,8 @@ export default function LoginPage() {
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            onFocus={() => setEyesClosed(true)}
+            onBlur={() => setEyesClosed(false)}
             placeholder="••••••••"
             className="w-full px-3.5 py-2.5 rounded-[10px] bg-[#F8F9FB] border border-[#E5E7EB] text-sm text-[#1A1D23] placeholder:text-[#9CA3AF] outline-none focus:border-[#A8C5E0] transition-colors"
           />
