@@ -66,14 +66,14 @@ export default function Mo({
 
       {/* Stubby legs — between disc and front face */}
       <path
-        d="M 42,72 Q 41,80 41,87"
+        d="M 42,72 Q 38,79 41,83 Q 40,85 40,87"
         stroke={PALETTE.ink}
         strokeWidth={6.5}
         strokeLinecap="round"
         fill="none"
       />
       <path
-        d="M 58,72 Q 59,80 59,87"
+        d="M 58,72 Q 62,79 59,83 Q 60,85 60,87"
         stroke={PALETTE.ink}
         strokeWidth={6.5}
         strokeLinecap="round"
