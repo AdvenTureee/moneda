@@ -251,12 +251,7 @@ function FeedPageInner() {
         </div>
 
         {/* Expense list grouped by date */}
-        {loading ? (
-            <div className="flex flex-col items-center py-16 text-center">
-              <Mo variant="thinking" size={128} className="mb-4 animate-bounce-in" />
-              <p className="text-base font-semibold text-[#1A1D23]">Carregando...</p>
-            </div>
-          ) : error ? (
+        {loading ? null : error ? (
             <div className="flex flex-col items-center py-16 text-center">
               <Icon name="Warning" size={48} className="mb-4 opacity-30" />
               <p className="text-base font-semibold text-[#B14C4C]">{error}</p>

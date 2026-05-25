@@ -218,14 +218,14 @@ export default function ProfileView({
 
   return (
     <div className="max-w-lg mx-auto px-4 pb-24">
-      <header className="py-6">
+      <header className="py-6 animate-fade-up delay-0">
         <h1 className="text-2xl font-heading text-[#1A1D23]">Perfil</h1>
         <p className="text-sm text-[#6B7280] mt-1">Gerencie sua conta e preferências.</p>
       </header>
 
       {/* Identity card */}
       <section
-        className="bg-white rounded-[16px] p-5 mb-6"
+        className="bg-white rounded-[16px] p-5 mb-6 animate-fade-up delay-1"
         style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
       >
         <div className="flex items-center gap-4">
@@ -379,6 +379,7 @@ export default function ProfileView({
       </section>
 
       {/* Finanças section */}
+      <div className="animate-fade-up delay-2">
       <h2 className="text-xs font-heading uppercase tracking-wider text-[#9CA3AF] mb-2 px-1">
         Finanças
       </h2>
@@ -407,8 +408,10 @@ export default function ProfileView({
           <CaretRight size={18} className="text-[#E5E7EB] group-hover:text-[#9CA3AF] transition-colors" />
         </Link>
       </div>
+      </div>
 
       {/* Categorias section */}
+      <div className="animate-fade-up delay-3">
       <h2 className="text-xs font-heading uppercase tracking-wider text-[#9CA3AF] mb-2 px-1">
         Categorias
       </h2>
@@ -430,8 +433,10 @@ export default function ProfileView({
           <CaretRight size={18} className="text-[#E5E7EB] group-hover:text-[#9CA3AF] transition-colors" />
         </Link>
       </div>
+      </div>
 
       {/* Preferências section */}
+      <div className="animate-fade-up delay-4">
       <h2 className="text-xs font-heading uppercase tracking-wider text-[#9CA3AF] mb-2 px-1">
         Preferências
       </h2>
@@ -460,8 +465,10 @@ export default function ProfileView({
           <CaretRight size={18} className="text-[#E5E7EB] group-hover:text-[#9CA3AF] transition-colors" />
         </Link>
       </div>
+      </div>
 
       {/* Dados section */}
+      <div className="animate-fade-up delay-5">
       <h2 className="text-xs font-heading uppercase tracking-wider text-[#9CA3AF] mb-2 px-1">
         Dados
       </h2>
@@ -484,8 +491,10 @@ export default function ProfileView({
           <CaretRight size={18} className="text-[#E5E7EB] group-hover:text-[#9CA3AF] transition-colors" />
         </a>
       </div>
+      </div>
 
       {/* Account actions */}
+      <div className="animate-fade-up delay-6">
       <h2 className="text-xs font-heading uppercase tracking-wider text-[#9CA3AF] mb-2 px-1">
         Conta
       </h2>
@@ -618,10 +627,11 @@ export default function ProfileView({
           </div>
         </button>
       </div>
+      </div>
 
       {/* Delete account */}
       {allowDelete && (
-        <section className="mb-8">
+        <section className="mb-8 animate-fade-up delay-7">
           <div
             className="bg-white rounded-[16px] p-5 border border-[#F4D7D7]"
             style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}
