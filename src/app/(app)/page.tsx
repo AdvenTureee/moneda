@@ -91,7 +91,7 @@ export default async function DashboardPage({
         {/* Header */}
         <header className="relative z-40 flex items-center justify-between py-5 animate-fade-up delay-0">
           <div className="flex items-center gap-3">
-            <TrackedMascot variant="idle" size={88} />
+            <TrackedMascot variant="idle" size={100} />
             <MonthPicker value={period} />
           </div>
           <div
