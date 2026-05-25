@@ -29,21 +29,19 @@ export default function Mo({
   const px = Math.max(-1, Math.min(1, pupilX)) * 2.2;
   const py = Math.max(-1, Math.min(1, pupilY)) * 3.2;
 
-  const leftEyeCx = 39;
-  const rightEyeCx = 61;
+  const leftEyeCx = 38;
+  const rightEyeCx = 62;
   const eyeCy = 36;
-  const eyeRx = 6;
-  const eyeRy = 8;
-  const pupilR = 3;
+  const eyeRx = 8;
+  const eyeRy = 10;
+  const pupilR = 4;
 
   const pupilLeftCx = leftEyeCx + px;
   const pupilRightCx = rightEyeCx + px;
   // Pupil rests slightly below center for a "looking up" cute expression.
   const pupilCy = eyeCy + 1.6 + py;
 
-  // Pie-eye notch (upper-right quadrant cut-out, classic rubber hose).
-  const piePath = (cx: number, cy: number) =>
-    `M ${cx},${cy} L ${cx + pupilR},${cy} A ${pupilR},${pupilR} 0 0 0 ${cx},${cy - pupilR} Z`;
+
 
   return (
     <svg
@@ -106,8 +104,8 @@ export default function Mo({
       />
 
       {/* Cheeks (pastel blush, 30% opacity) */}
-      <ellipse cx={28} cy={48} rx={4} ry={2.2} fill={PALETTE.blush} opacity={0.3} />
-      <ellipse cx={72} cy={48} rx={4} ry={2.2} fill={PALETTE.blush} opacity={0.3} />
+      <ellipse cx={28} cy={48} rx={6} ry={4.5} fill={PALETTE.blush} opacity={0.35} />
+      <ellipse cx={72} cy={48} rx={6} ry={4.5} fill={PALETTE.blush} opacity={0.35} />
 
       {/* Eyebrows — small floating arches above each eye */}
       <path
@@ -144,6 +142,9 @@ export default function Mo({
         stroke={PALETTE.ink}
         strokeWidth={1.9}
       />
+      {/* Eye highlights — sparkle dots for a cuter glassy look */}
+      <circle cx={leftEyeCx - 2.5} cy={eyeCy - 3} r={2} fill="white" />
+      <circle cx={rightEyeCx - 2.5} cy={eyeCy - 3} r={2} fill="white" />
 
       {/* Pupils — pie-eye (default) or cifrão for the happy variant */}
       {variant === 'happy' ? (
@@ -172,9 +173,7 @@ export default function Mo({
       ) : (
         <g>
           <circle cx={pupilLeftCx} cy={pupilCy} r={pupilR} fill={PALETTE.ink} />
-          <path d={piePath(pupilLeftCx, pupilCy)} fill={PALETTE.esclera} />
           <circle cx={pupilRightCx} cy={pupilCy} r={pupilR} fill={PALETTE.ink} />
-          <path d={piePath(pupilRightCx, pupilCy)} fill={PALETTE.esclera} />
         </g>
       )}
 
