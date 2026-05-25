@@ -9,6 +9,8 @@ export interface MoProps {
   pupilX?: number;
   pupilY?: number;
   eyesClosed?: boolean;
+  browX?: number;
+  browY?: number;
 }
 
 const PALETTE = {
@@ -26,6 +28,8 @@ export default function Mo({
   pupilX = 0,
   pupilY = 0,
   eyesClosed = false,
+  browX = 0,
+  browY = 0,
 }: MoProps) {
   // Pupil tracking — clamp into [-1, 1] then translate within the eye.
   const px = Math.max(-1, Math.min(1, pupilX)) * 2.2;
@@ -34,8 +38,8 @@ export default function Mo({
   const leftEyeCx = 38;
   const rightEyeCx = 62;
   const eyeCy = 36;
-  const eyeRx = 8;
-  const eyeRy = 10;
+  const eyeRx = 7;
+  const eyeRy = 8.5;
   const pupilR = 4;
 
   const pupilLeftCx = leftEyeCx + px;
@@ -54,6 +58,30 @@ export default function Mo({
       aria-hidden
       role="img"
     >
+      <style>{`
+        @keyframes float-body {
+          0%, 100% { transform: translateY(0) scale(1); }
+          50% { transform: translateY(-1.5px) scale(1.025); }
+        }
+        .animate-body-float {
+          animation: float-body 3s ease-in-out infinite;
+          transform-origin: 50px 42px;
+        }
+        @keyframes float-limb {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-2.5px); }
+        }
+        .animate-float-l1 { animation: float-limb 3s ease-in-out infinite; }
+        .animate-float-l2 { animation: float-limb 3s ease-in-out infinite 0.1s; }
+        .animate-float-a1 { animation: float-limb 3s ease-in-out infinite 0.2s; }
+        .animate-float-a2 { animation: float-limb 3s ease-in-out infinite 0.3s; }
+        @keyframes brow-move {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-1.2px); }
+        }
+        .animate-brow-float { animation: brow-move 3s ease-in-out infinite; }
+      `}</style>
+      <g className="animate-body-float">
       {/* Coin edge (back disc, darker — shows the thickness on the right/bottom) */}
       <circle
         cx={55}
@@ -65,6 +93,7 @@ export default function Mo({
       />
 
       {/* Stubby legs — between disc and front face */}
+      <g className="animate-float-l1">
       <path
         d="M 42,72 Q 38,79 41,83 Q 40,85 40,87"
         stroke={PALETTE.ink}
@@ -72,6 +101,8 @@ export default function Mo({
         strokeLinecap="round"
         fill="none"
       />
+      </g>
+      <g className="animate-float-l2">
       <path
         d="M 58,72 Q 62,79 59,83 Q 60,85 60,87"
         stroke={PALETTE.ink}
@@ -79,8 +110,10 @@ export default function Mo({
         strokeLinecap="round"
         fill="none"
       />
+      </g>
 
       {/* Stubby arms — between disc and front face */}
+      <g className="animate-float-a1">
       <path
         d="M 21,52 Q 16,57 13,61"
         stroke={PALETTE.ink}
@@ -88,6 +121,8 @@ export default function Mo({
         strokeLinecap="round"
         fill="none"
       />
+      </g>
+      <g className="animate-float-a2">
       <path
         d="M 79,52 Q 84,57 89,61"
         stroke={PALETTE.ink}
@@ -95,6 +130,7 @@ export default function Mo({
         strokeLinecap="round"
         fill="none"
       />
+      </g>
 
       {/* Main coin face — solid flat yellow */}
       <circle
@@ -110,21 +146,23 @@ export default function Mo({
       <ellipse cx={28} cy={48} rx={6} ry={4.5} fill={PALETTE.blush} opacity={0.35} />
       <ellipse cx={72} cy={48} rx={6} ry={4.5} fill={PALETTE.blush} opacity={0.35} />
 
-      {/* Eyebrows — small floating arches above each eye */}
+      {/* Eyebrows — movable arches via browX/browY (positive browX = apart, positive browY = up) */}
+      <g className="animate-brow-float">
       <path
-        d="M 33,25 Q 38,22 43,25"
+        d={`M ${33 - browX},${25 - browY} Q ${38 - browX},${22 - browY} ${43 - browX},${25 - browY}`}
         stroke={PALETTE.ink}
         strokeWidth={2}
         strokeLinecap="round"
         fill="none"
       />
       <path
-        d="M 67,25 Q 62,22 57,25"
+        d={`M ${67 + browX},${25 - browY} Q ${62 + browX},${22 - browY} ${57 + browX},${25 - browY}`}
         stroke={PALETTE.ink}
         strokeWidth={2}
         strokeLinecap="round"
         fill="none"
       />
+      </g>
 
       {/* Eyes — closed slits or open with whites/pupils */}
       {eyesClosed ? (
@@ -154,8 +192,8 @@ export default function Mo({
         strokeWidth={1.9}
       />
       {/* Eye highlights — sparkle dots for a cuter glassy look */}
-      <circle cx={leftEyeCx - 2.5} cy={eyeCy - 3} r={2} fill="white" />
-      <circle cx={rightEyeCx - 2.5} cy={eyeCy - 3} r={2} fill="white" />
+      <circle cx={leftEyeCx - 2.2} cy={eyeCy - 2.5} r={1.5} fill="white" />
+      <circle cx={rightEyeCx - 2.2} cy={eyeCy - 2.5} r={1.5} fill="white" />
 
       {/* Pupils — pie-eye (default) or cifrão for the happy variant */}
       {variant === 'happy' ? (
@@ -198,6 +236,10 @@ export default function Mo({
         fill="none"
       />
 
+      {/* Dimples — C-shaped curves opening toward the smile */}
+      <path d="M 38,49 Q 42,52 38,54" stroke={PALETTE.ink} strokeWidth={2} strokeLinecap="round" fill="none" />
+      <path d="M 62,49 Q 58,52 62,54" stroke={PALETTE.ink} strokeWidth={2} strokeLinecap="round" fill="none" />
+
       {/* Floating "?" for thinking variant */}
       {variant === 'thinking' && (
         <g fontFamily="ui-sans-serif, system-ui, sans-serif">
@@ -212,6 +254,7 @@ export default function Mo({
           </text>
         </g>
       )}
+      </g>
     </svg>
   );
 }
