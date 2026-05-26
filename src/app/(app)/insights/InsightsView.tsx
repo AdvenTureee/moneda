@@ -202,8 +202,8 @@ export default function InsightsView({
 
       {/* Hero total */}
       <section
-        className="bg-gradient-to-br from-[#A8C5E0] to-[#7AAECF] text-white rounded-[20px] p-5 mb-6 shadow-md"
-        style={{ boxShadow: '0 8px 24px rgba(168, 197, 224, 0.3)' }}
+        className="bg-gradient-to-br from-[#5BBF8E] to-[#3FA876] text-white rounded-[20px] p-5 mb-6 shadow-md"
+        style={{ boxShadow: '0 8px 24px rgba(91, 191, 142, 0.3)' }}
       >
         <p className="text-xs font-semibold uppercase tracking-wider opacity-85">Gasto total</p>
         <p className="text-3xl font-extrabold mt-1.5 tabular-nums">
@@ -218,6 +218,17 @@ export default function InsightsView({
           )}
         </div>
       </section>
+
+      {/* Budget progress (ou CTA quando não há orçamentos definidos) */}
+      {topCategories.length > 0 && (
+        <div className="mb-6">
+          {budgetProgress.length > 0 ? (
+            <BudgetProgressList items={budgetProgress} />
+          ) : (
+            <BudgetEmptyCTA />
+          )}
+        </div>
+      )}
 
       {/* Category breakdown */}
       {topCategories.length > 0 && (
@@ -239,17 +250,6 @@ export default function InsightsView({
       {monthlyTotals.some((m) => m.total > 0) && (
         <div className="mb-6">
           <MonthlyTrendChart data={monthlyTotals} currentPeriod={period} />
-        </div>
-      )}
-
-      {/* Budget progress (ou CTA quando não há orçamentos definidos) */}
-      {topCategories.length > 0 && (
-        <div className="mb-6">
-          {budgetProgress.length > 0 ? (
-            <BudgetProgressList items={budgetProgress} />
-          ) : (
-            <BudgetEmptyCTA />
-          )}
         </div>
       )}
 

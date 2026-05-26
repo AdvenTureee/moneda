@@ -17,12 +17,6 @@ interface BudgetProgressListProps {
   items: BudgetProgressItem[];
 }
 
-function statusColor(pct: number): string {
-  if (pct > 1) return '#E07070';
-  if (pct >= 0.7) return '#F0A855';
-  return '#5BBF8E';
-}
-
 export default function BudgetProgressList({ items }: BudgetProgressListProps) {
   if (items.length === 0) return null;
 
@@ -37,7 +31,6 @@ export default function BudgetProgressList({ items }: BudgetProgressListProps) {
             const rawPct = item.spent / item.budget;
             const fillPct = Math.min(rawPct, 1) * 100;
             const overflowPct = rawPct > 1 ? Math.min((rawPct - 1) * 100, 100) : 0;
-            const color = statusColor(rawPct);
 
             return (
               <li key={item.categoryId} className="space-y-1.5">
@@ -76,7 +69,7 @@ export default function BudgetProgressList({ items }: BudgetProgressListProps) {
                 >
                   <div
                     className="absolute inset-y-0 left-0 rounded-full transition-[width] duration-500 ease-out"
-                    style={{ width: `${fillPct}%`, background: color }}
+                    style={{ width: `${fillPct}%`, background: item.categoryColor }}
                   />
                   {overflowPct > 0 && (
                     <div

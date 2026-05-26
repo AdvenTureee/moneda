@@ -2,9 +2,9 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import Icon from './Icon';
-import { MO_TIPS } from '@/data/moTips';
+import { MO_TIPS, getGreeting } from '@/data/moTips';
 
-const ROTATION_MS = 8000;
+const ROTATION_MS = 14000;
 const FADE_MS = 250;
 
 function pickRandomIndex(exclude: number): number {
@@ -17,7 +17,9 @@ function pickRandomIndex(exclude: number): number {
 }
 
 export default function MoTipBubble() {
-  const [index, setIndex] = useState(() => Math.floor(Math.random() * MO_TIPS.length));
+  const greeting = getGreeting();
+  const [greetingShown, setGreetingShown] = useState(false);
+  const [index, setIndex] = useState(0);
   const [fading, setFading] = useState(false);
   const timerRef = useRef<number | null>(null);
   const fadeRef = useRef<number | null>(null);
@@ -26,10 +28,13 @@ export default function MoTipBubble() {
     setFading(true);
     if (fadeRef.current !== null) window.clearTimeout(fadeRef.current);
     fadeRef.current = window.setTimeout(() => {
+      if (!greetingShown) {
+        setGreetingShown(true);
+      }
       setIndex((current) => pickRandomIndex(current));
       setFading(false);
     }, FADE_MS);
-  }, []);
+  }, [greetingShown]);
 
   const scheduleNext = useCallback(() => {
     if (timerRef.current !== null) window.clearTimeout(timerRef.current);
@@ -57,8 +62,9 @@ export default function MoTipBubble() {
     };
   }, [scheduleNext]);
 
-  const tip = MO_TIPS[index];
-  const isFinance = tip.kind === 'finance';
+  const tip = greetingShown ? MO_TIPS[index] : greeting;
+  const iconName = tip.kind === 'finance' ? 'TrendUp' : 'Lightbulb';
+  const iconColor = tip.kind === 'finance' ? 'text-[#5BBF8E]' : 'text-[#E0B040]';
 
   const handleClick = () => {
     advance();
@@ -84,9 +90,9 @@ export default function MoTipBubble() {
         aria-live="polite"
       >
         <Icon
-          name={isFinance ? 'TrendUp' : 'Lightbulb'}
+          name={iconName}
           size={18}
-          className={`shrink-0 mt-0.5 ${isFinance ? 'text-[#5BBF8E]' : 'text-[#E0B040]'}`}
+          className={`shrink-0 mt-0.5 ${iconColor}`}
         />
         <p
           className="text-sm text-[#1A1D23] leading-snug"
@@ -95,6 +101,10 @@ export default function MoTipBubble() {
           {tip.text}
         </p>
       </div>
+      {/* Ícone sutil "toque" no canto inferior direito */}
+      <span aria-hidden className="absolute bottom-1 right-2 opacity-30">
+        <Icon name="HandTap" size={16} />
+      </span>
     </button>
   );
 }
