@@ -4,14 +4,14 @@ import DashboardMetric from '@/components/DashboardMetric';
 import AIInsightBanner from '@/components/AIInsightBanner';
 import ExpenseCard from '@/components/ExpenseCard';
 import CategoryBreakdown from '@/components/CategoryBreakdown';
-import DailyHistogram from '@/components/charts/DailyHistogram';
+import SpendingTimelineChart from '@/components/charts/SpendingTimelineChart';
 import TrackedMascot from '@/components/TrackedMascot';
 import MoTipBubble from '@/components/MoTipBubble';
 import Mo from '@/components/Mo';
 import Confetti from '@/components/Confetti';
 import MonthPicker from '@/components/MonthPicker';
 import RegenerateInsightButton from '@/components/RegenerateInsightButton';
-import { getDashboardMetrics } from '@/lib/expenses';
+import { getDashboardMetrics, getSpendingTimeline } from '@/lib/expenses';
 import { getBudgets } from '@/lib/budgets';
 import { getLatestInsight } from '@/lib/insights';
 import { getMonthlyBudgetCents } from '@/lib/monthlyBudget';
@@ -47,11 +47,12 @@ export default async function DashboardPage({
   const period = isValidPeriod(rawPeriod) ? rawPeriod : getCurrentPeriod();
 
   // Parallel DB queries
-  const [metrics, budgets, latestInsight, monthlyBudgetCents] = await Promise.all([
+  const [metrics, budgets, latestInsight, monthlyBudgetCents, spendingTimeline] = await Promise.all([
     getDashboardMetrics(user.id, period),
     getBudgets(user.id, period),
     getLatestInsight(user.id, period),
     getMonthlyBudgetCents(user.id, period),
+    getSpendingTimeline(user.id, period),
   ]);
 
   // Orçamento mensal = renda base (profiles.monthly_income_cents) + incomes
@@ -152,12 +153,10 @@ export default async function DashboardPage({
           </section>
         )}
 
-        {/* Daily histogram */}
-        {metrics.dailySpending.length > 0 && (
-          <section className="mb-6 animate-fade-up delay-5">
-            <DailyHistogram data={metrics.dailySpending} period={period} />
-          </section>
-        )}
+        {/* Spending timeline */}
+        <section className="mb-6 animate-fade-up delay-5">
+          <SpendingTimelineChart data={spendingTimeline} />
+        </section>
 
         {/* AI Insight banner */}
         <section className="mb-6 animate-fade-up delay-6" aria-label="Resumo do mês">

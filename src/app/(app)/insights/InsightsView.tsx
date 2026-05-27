@@ -7,23 +7,9 @@ import remarkGfm from 'remark-gfm';
 import type { Components } from 'react-markdown';
 import Icon from '@/components/Icon';
 import Mo from '@/components/Mo';
-import CategoryBreakdown from '@/components/CategoryBreakdown';
-import MonthlyTrendChart, { type MonthlyTrendPoint } from '@/components/charts/MonthlyTrendChart';
-import BudgetProgressList, { type BudgetProgressItem } from '@/components/charts/BudgetProgressList';
-import BudgetEmptyCTA from '@/components/charts/BudgetEmptyCTA';
-import ChartCard from '@/components/charts/ChartCard';
 import CategoryChip from '@/components/CategoryChip';
 import { formatCurrency } from '@/lib/utils';
-import type { Category, AIInsight, Expense } from '@/types';
-
-interface TopCategory {
-  categoryId: string;
-  categoryName: string;
-  categoryIcon: string;
-  categoryColor: string;
-  amount: number;
-  percentage: number;
-}
+import type { AIInsight } from '@/types';
 
 interface InsightsViewProps {
   period: string;
@@ -31,12 +17,7 @@ interface InsightsViewProps {
   totalSpent: number;
   expenseCount: number;
   changePct: number | null;
-  topCategories: TopCategory[];
-  expensesByCategory: Record<string, Expense[]>;
   insights: AIInsight[];
-  categories: Category[];
-  monthlyTotals: MonthlyTrendPoint[];
-  budgetProgress: BudgetProgressItem[];
 }
 
 const TYPE_FILTERS = [
@@ -65,12 +46,7 @@ export default function InsightsView({
   totalSpent,
   expenseCount,
   changePct,
-  topCategories,
-  expensesByCategory,
   insights: initialInsights,
-  categories,
-  monthlyTotals,
-  budgetProgress,
 }: InsightsViewProps) {
   const [generating, setGenerating] = useState(false);
   const [insights, setInsights] = useState<AIInsight[]>(initialInsights);
@@ -207,7 +183,7 @@ export default function InsightsView({
             <h1 className="text-xl font-heading text-[#1A1D23]">Insights</h1>
             <p className="text-xs text-[#6B7280] mt-1 capitalize">{monthName}</p>
           </div>
-          {topCategories.length > 0 && (
+          {expenseCount > 0 && (
             <button
               type="button"
               onClick={handleGenerate}
@@ -238,53 +214,6 @@ export default function InsightsView({
           )}
         </div>
       </section>
-
-      {/* Budget progress (ou CTA quando não há orçamentos definidos) */}
-      {topCategories.length > 0 && (
-        <div className="mb-6 animate-fade-up delay-2">
-          {budgetProgress.length > 0 ? (
-            <BudgetProgressList items={budgetProgress} />
-          ) : (
-            <BudgetEmptyCTA />
-          )}
-        </div>
-      )}
-
-      {/* Category breakdown */}
-      {topCategories.length > 0 && (
-        <div className="mb-6 animate-fade-up delay-3">
-          <ChartCard
-            title="Gastos por categoria"
-            ariaLabel="Gastos por categoria"
-          >
-            <CategoryBreakdown
-              categories={topCategories}
-              total={totalSpent}
-              expensesByCategory={expensesByCategory}
-            />
-          </ChartCard>
-        </div>
-      )}
-
-      {/* Monthly trend */}
-      {monthlyTotals.some((m) => m.total > 0) && (
-        <div className="mb-6 animate-fade-up delay-4">
-          <MonthlyTrendChart data={monthlyTotals} currentPeriod={period} />
-        </div>
-      )}
-
-      {/* Empty state — no expenses */}
-      {topCategories.length === 0 && (
-        <section
-          className="themed-card bg-white rounded-[16px] p-8 mb-6 text-center"
-        >
-          <Mo variant="sad" size={128} className="mx-auto mb-3 animate-bounce-in" />
-          <p className="text-base font-semibold text-[#1A1D23]">Nenhum gasto no período</p>
-          <p className="text-sm text-[#6B7280] mt-1 max-w-[260px] mx-auto">
-            Cadastre seus gastos que eu analiso tudo pra você! 🪙
-          </p>
-        </section>
-      )}
 
       {/* AI Insights Section */}
       <section className="mb-6">
@@ -344,7 +273,7 @@ export default function InsightsView({
         )}
 
         {/* Empty state — no insights yet */}
-        {!generating && insights.length === 0 && topCategories.length > 0 && (
+        {!generating && insights.length === 0 && expenseCount > 0 && (
           <div
             className="themed-card bg-white rounded-[16px] p-6 text-center"
           >

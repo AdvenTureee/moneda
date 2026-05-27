@@ -44,7 +44,7 @@ export default function ExpenseCard({
           }}
           aria-hidden
         >
-          <Icon name={category?.icon ?? 'Package'} size={20} />
+          <Icon name={category?.icon ?? 'Package'} size={20} color={category?.color ?? '#6B7280'} />
         </div>
 
         <div className="flex-1 min-w-0">

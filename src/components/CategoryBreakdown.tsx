@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import DonutChart from '@/components/charts/DonutChart';
+import WaffleChart, { WaffleSelectionPreview } from '@/components/charts/WaffleChart';
 import CategoryBarList from '@/components/charts/CategoryBarList';
 import CategoryDetailModal from '@/components/CategoryDetailModal';
 import type { Expense } from '@/types';
@@ -56,6 +56,7 @@ export default function CategoryBreakdown({
         color: cat.categoryColor,
         total: cat.amount,
         expenses: expensesByCategory[cat.categoryId] ?? [],
+        selectedIds: [cat.categoryId],
       };
     }
 
@@ -72,6 +73,7 @@ export default function CategoryBreakdown({
       color: isSingle ? grouped[0].categoryColor : OTHERS_COLOR,
       total: aggregatedTotal,
       expenses: aggregatedExpenses,
+      selectedIds: grouped.map((c) => c.categoryId),
     };
   }, [selection, categories, groupedIds, expensesByCategory]);
 
@@ -82,16 +84,18 @@ export default function CategoryBreakdown({
 
   return (
     <>
-      <DonutChart
+      <WaffleChart
         categories={categories}
         total={total}
         onCategoryClick={handleClick}
       />
-      <CategoryBarList
-        categories={categories}
-        total={total}
-        onCategoryClick={handleClick}
-      />
+      <div className="mt-5">
+        <CategoryBarList
+          categories={categories}
+          total={total}
+          onCategoryClick={handleClick}
+        />
+      </div>
       <CategoryDetailModal
         isOpen={modalData !== null}
         onClose={() => setSelection(null)}
@@ -100,6 +104,15 @@ export default function CategoryBreakdown({
         categoryColor={modalData?.color ?? OTHERS_COLOR}
         total={modalData?.total ?? 0}
         expenses={modalData?.expenses ?? []}
+        wafflePreview={
+          modalData ? (
+            <WaffleSelectionPreview
+              categories={categories}
+              total={total}
+              selectedCategoryIds={modalData.selectedIds}
+            />
+          ) : undefined
+        }
       />
     </>
   );

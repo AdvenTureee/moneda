@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { X, ArrowsClockwise } from '@phosphor-icons/react';
 import Icon from '@/components/Icon';
@@ -17,6 +17,8 @@ interface AddExpenseModalProps {
   onSave: (input: ExpenseInput) => void;
   editExpense?: Expense;
 }
+
+const CATEGORY_PREVIEW_LIMIT = 8;
 
 export default function AddExpenseModal({
   isOpen,
@@ -36,6 +38,7 @@ export default function AddExpenseModal({
   const [occurredAtInput, setOccurredAtInput] = useState(todayLocalDate());
   const [timeInput, setTimeInput] = useState(currentTimeHHmm());
   const [isRecurring, setIsRecurring] = useState(false);
+  const [categoriesExpanded, setCategoriesExpanded] = useState(false);
   const { data: categories } = useCategories();
   const [confirmDiscard, setConfirmDiscard] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -43,6 +46,8 @@ export default function AddExpenseModal({
   const openFrameRef = useRef<number | null>(null);
   const dragStartYRef = useRef(0);
   const dragStartTimeRef = useRef(0);
+  const isDraggingRef = useRef(false);
+  const dragYRef = useRef(0);
   const isEditing = !!editExpense;
 
   useEffect(() => setMounted(true), []);
@@ -51,6 +56,9 @@ export default function AddExpenseModal({
     setIsClosing(true);
     setConfirmDiscard(false);
     setDragY(0);
+    dragYRef.current = 0;
+    isDraggingRef.current = false;
+    setIsDragging(false);
     if (closeTimerRef.current) window.clearTimeout(closeTimerRef.current);
     closeTimerRef.current = window.setTimeout(() => {
       setShouldRender(false);
@@ -96,6 +104,7 @@ export default function AddExpenseModal({
       setOccurredAtInput(todayLocalDate());
       setTimeInput(currentTimeHHmm());
       setIsRecurring(false);
+      setCategoriesExpanded(false);
       setTimeout(() => inputRef.current?.focus(), 100);
     } else if (isOpen && editExpense) {
       setAmountCents(editExpense.amount);
@@ -111,9 +120,23 @@ export default function AddExpenseModal({
       setOccurredAtInput(toLocalDateInput(editDate));
       setTimeInput(timeHHmmFromDate(editDate));
       setIsRecurring(editExpense.isRecurring ?? false);
+      setCategoriesExpanded(false);
       setTimeout(() => inputRef.current?.focus(), 100);
     }
   }, [isOpen, editExpense]);
+
+  useEffect(() => {
+    if (!isOpen || !selectedCategory) return;
+    const selectedIndex = categories.findIndex((cat) => cat.id === selectedCategory);
+    if (selectedIndex >= CATEGORY_PREVIEW_LIMIT) setCategoriesExpanded(true);
+  }, [categories, isOpen, selectedCategory]);
+
+  const visibleCategories = useMemo(
+    () => (categoriesExpanded ? categories : categories.slice(0, CATEGORY_PREVIEW_LIMIT)),
+    [categories, categoriesExpanded],
+  );
+  const hasHiddenCategories = categories.length > CATEGORY_PREVIEW_LIMIT;
+  const hiddenCategoryCount = Math.max(categories.length - CATEGORY_PREVIEW_LIMIT, 0);
 
   const handleAmountChange = useCallback((raw: string) => {
     // Accept only digits
@@ -161,35 +184,57 @@ export default function AddExpenseModal({
   );
 
   const handleHandlePointerDown = useCallback((e: React.PointerEvent<HTMLButtonElement>) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    e.preventDefault();
+    e.stopPropagation();
     dragStartYRef.current = e.clientY;
     dragStartTimeRef.current = performance.now();
+    dragYRef.current = 0;
+    isDraggingRef.current = true;
     setIsDragging(true);
     e.currentTarget.setPointerCapture(e.pointerId);
   }, []);
 
   const handleHandlePointerMove = useCallback((e: React.PointerEvent<HTMLButtonElement>) => {
-    if (!isDragging) return;
-    setDragY(Math.max(0, e.clientY - dragStartYRef.current));
-  }, [isDragging]);
+    if (!isDraggingRef.current) return;
+    e.preventDefault();
+    const nextDragY = Math.max(0, e.clientY - dragStartYRef.current);
+    dragYRef.current = nextDragY;
+    setDragY(nextDragY);
+  }, []);
 
   const handleHandlePointerUp = useCallback((e: React.PointerEvent<HTMLButtonElement>) => {
-    if (!isDragging) return;
+    if (!isDraggingRef.current) return;
+    e.preventDefault();
+    const finalDragY = dragYRef.current;
     const elapsed = Math.max(performance.now() - dragStartTimeRef.current, 1);
-    const velocity = dragY / elapsed;
+    const velocity = finalDragY / elapsed;
+    isDraggingRef.current = false;
+    dragYRef.current = 0;
     setIsDragging(false);
     if (e.currentTarget.hasPointerCapture(e.pointerId)) {
       e.currentTarget.releasePointerCapture(e.pointerId);
     }
 
-    if (dragY > 80 || velocity > 0.65) {
+    if (finalDragY > 80 || velocity > 0.65) {
       finishClose();
       return;
     }
 
     setDragY(0);
-  }, [dragY, finishClose, isDragging]);
+  }, [finishClose]);
 
   const handleHandlePointerCancel = useCallback(() => {
+    isDraggingRef.current = false;
+    dragYRef.current = 0;
+    setIsDragging(false);
+    setDragY(0);
+  }, []);
+
+  const handleHandleLostPointerCapture = useCallback(() => {
+    if (!isDraggingRef.current) return;
+    isDraggingRef.current = false;
+    dragYRef.current = 0;
     setIsDragging(false);
     setDragY(0);
   }, []);
@@ -225,12 +270,14 @@ export default function AddExpenseModal({
         {/* Drag handle */}
         <button
           type="button"
-          className="flex touch-none select-none justify-center pt-3 pb-1 cursor-grab active:cursor-grabbing"
+          className="flex w-full touch-none select-none justify-center pt-3 pb-2 cursor-grab active:cursor-grabbing"
           aria-label="Arraste para baixo para fechar"
           onPointerDown={handleHandlePointerDown}
           onPointerMove={handleHandlePointerMove}
           onPointerUp={handleHandlePointerUp}
           onPointerCancel={handleHandlePointerCancel}
+          onLostPointerCapture={handleHandleLostPointerCapture}
+          onContextMenu={(e) => e.preventDefault()}
         >
           <span className="w-10 h-1 rounded-full bg-[#E5E7EB]" />
         </button>
@@ -276,28 +323,25 @@ export default function AddExpenseModal({
           <div className="px-5 mb-5">
             <p className="text-sm font-semibold text-[#6B7280] mb-3">Categoria</p>
             <div className="grid grid-cols-2 min-[380px]:grid-cols-3 sm:grid-cols-4 gap-2">
-            {categories.map((cat) => {
+            {visibleCategories.map((cat) => {
               const isSelected = selectedCategory === cat.id;
+              const categoryBg = `${cat.color}${isSelected ? '26' : '14'}`;
               return (
                 <button
                   key={cat.id}
                   onClick={() => setSelectedCategory(cat.id)}
                   aria-pressed={isSelected}
-                  className={`flex flex-col items-center gap-1 rounded-[10px] py-2.5 px-1 border transition-all duration-75 active:scale-95 ${
-                    isSelected
-                      ? 'border-[#5BBF8E] bg-[#EEF9F4]'
-                      : 'border-[#E5E7EB] bg-white hover:border-[#A8C5E0]'
-                  }`}
+                  className="flex flex-col items-center gap-1 rounded-[10px] border py-2.5 px-1 transition-all duration-75 hover:brightness-[0.98] active:scale-95"
                   style={{
-                    background: isSelected ? 'var(--field-active-bg)' : 'var(--color-surface)',
-                    borderColor: isSelected ? 'var(--color-success)' : 'var(--color-border)',
+                    background: categoryBg,
+                    borderColor: isSelected ? cat.color : `${cat.color}40`,
+                    boxShadow: isSelected ? `0 0 0 1px ${cat.color}55` : undefined,
                   }}
                 >
-                  <Icon name={cat.icon} size={20} aria-hidden />
+                  <Icon name={cat.icon} size={20} color={cat.color} aria-hidden />
                   <span
-                    className={`text-[10px] font-medium leading-tight text-center ${
-                      isSelected ? 'text-[#3FA876]' : 'text-[#6B7280]'
-                    }`}
+                    className="text-center text-[10px] font-semibold leading-tight"
+                    style={{ color: isSelected ? cat.color : 'var(--color-text-secondary)' }}
                   >
                     {cat.name}
                   </span>
@@ -305,6 +349,15 @@ export default function AddExpenseModal({
               );
             })}
             </div>
+            {hasHiddenCategories && (
+              <button
+                type="button"
+                onClick={() => setCategoriesExpanded((prev) => !prev)}
+                className="mt-2 w-full rounded-[10px] border border-[#E5E7EB] bg-white px-4 py-2.5 text-sm font-semibold text-[#6B7280] transition-colors hover:border-[#A8C5E0] hover:bg-[#F8F9FB] active:scale-[0.98]"
+              >
+                {categoriesExpanded ? 'Recolher' : `Ver mais (${hiddenCategoryCount})`}
+              </button>
+            )}
           </div>
 
           {/* Description */}

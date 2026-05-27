@@ -1,0 +1,276 @@
+'use client';
+
+import { useEffect, useMemo, useState } from 'react';
+import { formatCurrency } from '@/lib/utils';
+
+interface TopCategory {
+  categoryId: string;
+  categoryName: string;
+  categoryIcon: string;
+  categoryColor: string;
+  amount: number;
+  percentage: number;
+}
+
+interface WaffleChartProps {
+  categories: TopCategory[];
+  total: number;
+  onCategoryClick?: (categoryId: string | null) => void;
+}
+
+interface Cell {
+  index: number;
+  categoryId: string;
+  categoryName: string;
+  categoryColor: string;
+  amount: number;
+  percentage: number;
+  isOthers: boolean;
+}
+
+interface WaffleSelectionPreviewProps {
+  categories: TopCategory[];
+  total: number;
+  selectedCategoryIds: string[];
+}
+
+const GRID = 10;
+const CELL_COUNT = GRID * GRID;
+const MIN_PCT = 0.03;
+const OTHERS_COLOR = '#6B7280';
+
+export default function WaffleChart({
+  categories,
+  total,
+  onCategoryClick,
+}: WaffleChartProps) {
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => setReady(true));
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
+  const groups = useMemo(() => {
+    if (total <= 0) return [];
+
+    const visible: TopCategory[] = [];
+    const grouped: TopCategory[] = [];
+    for (const cat of categories) {
+      if (cat.amount / total < MIN_PCT) grouped.push(cat);
+      else visible.push(cat);
+    }
+
+    const result = [...visible];
+    if (grouped.length > 0) {
+      const amount = grouped.reduce((sum, cat) => sum + cat.amount, 0);
+      const percentage = total > 0 ? (amount / total) * 100 : 0;
+      result.push({
+        categoryId: '__others__',
+        categoryName: grouped.length === 1 ? grouped[0].categoryName : 'Outros',
+        categoryIcon: grouped.length === 1 ? grouped[0].categoryIcon : 'Package',
+        categoryColor: grouped.length === 1 ? grouped[0].categoryColor : OTHERS_COLOR,
+        amount,
+        percentage,
+      });
+    }
+
+    return result;
+  }, [categories, total]);
+
+  const cells = useMemo<Cell[]>(() => {
+    if (groups.length === 0 || total <= 0) return [];
+
+    const raw = groups.map((group) => ({
+      group,
+      exact: (group.amount / total) * CELL_COUNT,
+      count: Math.floor((group.amount / total) * CELL_COUNT),
+    }));
+    let used = raw.reduce((sum, item) => sum + item.count, 0);
+    const byRemainder = [...raw].sort((a, b) => (b.exact - b.count) - (a.exact - a.count));
+    for (const item of byRemainder) {
+      if (used >= CELL_COUNT) break;
+      item.count += 1;
+      used += 1;
+    }
+
+    const byId = new Map(byRemainder.map((item) => [item.group.categoryId, item.count]));
+    const out: Cell[] = [];
+    for (const group of groups) {
+      const count = byId.get(group.categoryId) ?? 0;
+      for (let i = 0; i < count; i++) {
+        out.push({
+          index: out.length,
+          categoryId: group.categoryId,
+          categoryName: group.categoryName,
+          categoryColor: group.categoryColor,
+          amount: group.amount,
+          percentage: total > 0 ? (group.amount / total) * 100 : 0,
+          isOthers: group.categoryId === '__others__',
+        });
+      }
+    }
+
+    return out.slice(0, CELL_COUNT);
+  }, [groups, total]);
+
+  if (total <= 0 || cells.length === 0) {
+    return (
+      <div className="py-4 text-center text-sm text-[#6B7280]">
+        Nenhuma categoria para exibir.
+      </div>
+    );
+  }
+
+  const hovered = hoveredId ? groups.find((group) => group.categoryId === hoveredId) : null;
+
+  return (
+    <div className="grid grid-cols-[minmax(168px,192px)_minmax(0,1fr)] items-center gap-5 max-[420px]:grid-cols-1 max-[420px]:gap-3">
+      <div
+        className="relative ml-3 mr-auto aspect-square w-full max-w-[192px] max-[420px]:mx-auto max-[420px]:max-w-[188px]"
+        role="img"
+        aria-label="Gráfico waffle de gastos por categoria"
+      >
+        <div className="grid grid-cols-10 gap-1">
+          {cells.map((cell) => {
+            const isHovered = hoveredId === cell.categoryId;
+            const isDimmed = hoveredId !== null && !isHovered;
+            return (
+              <button
+                key={`${cell.categoryId}-${cell.index}`}
+                type="button"
+                className="aspect-square rounded-[4px] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#A8C5E0] focus-visible:ring-offset-2"
+                style={{
+                  backgroundColor: cell.categoryColor,
+                  opacity: isDimmed ? 0.28 : 1,
+                  transform: ready ? (isHovered ? 'scale(1.08)' : 'scale(1)') : 'scale(0.65)',
+                  transition:
+                    'opacity 160ms ease-out, transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1)',
+                  transitionDelay: ready ? '0ms' : `${Math.min(cell.index * 8, 420)}ms`,
+                }}
+                onMouseEnter={() => setHoveredId(cell.categoryId)}
+                onMouseLeave={() => setHoveredId(null)}
+                onFocus={() => setHoveredId(cell.categoryId)}
+                onBlur={() => setHoveredId(null)}
+                onClick={() => onCategoryClick?.(cell.isOthers ? null : cell.categoryId)}
+                aria-label={`${cell.categoryName}: ${formatCurrency(cell.amount)}, ${cell.percentage.toFixed(0)}%`}
+              />
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="flex min-h-[152px] min-w-0 flex-col items-center justify-center text-center max-[420px]:min-h-0">
+        <p className="text-[11px] font-semibold uppercase tracking-wide text-[#6B7280]">Distribuição</p>
+        <p className="mt-1 text-[28px] font-extrabold leading-tight tabular-nums text-[#1A1D23] max-[420px]:text-2xl">
+          {formatCurrency(total)}
+        </p>
+        {hovered && (
+          <div className="mt-3 w-full max-w-[220px] rounded-[10px] border border-[#E5E7EB] bg-[#F8F9FB] px-3 py-2">
+            <p className="truncate text-sm font-semibold text-[#1A1D23]">{hovered.categoryName}</p>
+            <p className="text-xs text-[#6B7280] tabular-nums mt-0.5">
+              {formatCurrency(hovered.amount)} · {((hovered.amount / total) * 100).toFixed(0)}%
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function buildCells(categories: TopCategory[], total: number): Cell[] {
+  if (total <= 0) return [];
+
+  const visible: TopCategory[] = [];
+  const grouped: TopCategory[] = [];
+  for (const cat of categories) {
+    if (cat.amount / total < MIN_PCT) grouped.push(cat);
+    else visible.push(cat);
+  }
+
+  const groups: TopCategory[] = [...visible];
+  if (grouped.length > 0) {
+    const amount = grouped.reduce((sum, cat) => sum + cat.amount, 0);
+    const percentage = total > 0 ? (amount / total) * 100 : 0;
+    groups.push({
+      categoryId: '__others__',
+      categoryName: grouped.length === 1 ? grouped[0].categoryName : 'Outros',
+      categoryIcon: grouped.length === 1 ? grouped[0].categoryIcon : 'Package',
+      categoryColor: grouped.length === 1 ? grouped[0].categoryColor : OTHERS_COLOR,
+      amount,
+      percentage,
+    });
+  }
+
+  const raw = groups.map((group) => ({
+    group,
+    exact: (group.amount / total) * CELL_COUNT,
+    count: Math.floor((group.amount / total) * CELL_COUNT),
+  }));
+  let used = raw.reduce((sum, item) => sum + item.count, 0);
+  const byRemainder = [...raw].sort((a, b) => (b.exact - b.count) - (a.exact - a.count));
+  for (const item of byRemainder) {
+    if (used >= CELL_COUNT) break;
+    item.count += 1;
+    used += 1;
+  }
+
+  const byId = new Map(byRemainder.map((item) => [item.group.categoryId, item.count]));
+  const out: Cell[] = [];
+  for (const group of groups) {
+    const count = byId.get(group.categoryId) ?? 0;
+    for (let i = 0; i < count; i++) {
+      out.push({
+        index: out.length,
+        categoryId: group.categoryId,
+        categoryName: group.categoryName,
+        categoryColor: group.categoryColor,
+        amount: group.amount,
+        percentage: total > 0 ? (group.amount / total) * 100 : 0,
+        isOthers: group.categoryId === '__others__',
+      });
+    }
+  }
+  return out.slice(0, CELL_COUNT);
+}
+
+export function WaffleSelectionPreview({
+  categories,
+  total,
+  selectedCategoryIds,
+}: WaffleSelectionPreviewProps) {
+  const selected = new Set(selectedCategoryIds);
+  const groupedIds = categories
+    .filter((cat) => total > 0 && cat.amount / total < MIN_PCT)
+    .map((cat) => cat.categoryId);
+  const cells = buildCells(categories, total);
+  if (cells.length === 0) return null;
+
+  return (
+    <div className="flex justify-center rounded-[12px] border border-[#E5E7EB] bg-[#F8F9FB] p-3">
+      <div
+        className="grid w-full max-w-[150px] grid-cols-10 gap-1"
+        role="img"
+        aria-label="Parte selecionada no waffle de categorias"
+      >
+        {cells.map((cell) => {
+          const isSelected =
+            selected.has(cell.categoryId) ||
+            (cell.categoryId === '__others__' && groupedIds.some((id) => selected.has(id)));
+          return (
+            <span
+              key={`${cell.categoryId}-${cell.index}`}
+              className="aspect-square rounded-[3px]"
+              style={{
+                backgroundColor: isSelected ? cell.categoryColor : 'var(--color-surface-alt)',
+                border: isSelected ? '0' : '1px solid var(--color-border)',
+                opacity: isSelected ? 1 : 0.72,
+              }}
+            />
+          );
+        })}
+      </div>
+    </div>
+  );
+}

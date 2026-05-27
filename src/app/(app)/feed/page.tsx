@@ -10,6 +10,7 @@ import CategoryChip from '@/components/CategoryChip';
 import DateRangePicker, { buildPreset, type DateRange } from '@/components/DateRangePicker';
 import Icon from '@/components/Icon';
 import Mo from '@/components/Mo';
+import { useToast } from '@/components/ToastProvider';
 import { groupExpensesByDate, formatCurrency } from '@/lib/utils';
 import { useCategories } from '@/hooks/useCategories';
 import type { Expense, ExpenseInput } from '@/types';
@@ -35,6 +36,7 @@ function rangeFromSearchParams(params: URLSearchParams): DateRange | null {
 
 function FeedPageInner() {
   const searchParams = useSearchParams();
+  const { showToast } = useToast();
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [dateRange, setDateRange] = useState<DateRange>(() => buildPreset('all'));
@@ -165,28 +167,32 @@ function FeedPageInner() {
   const confirmDelete = useCallback(async () => {
     if (!deletingExpense) return;
     try {
-      await fetch(`/api/expenses?id=${deletingExpense.id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/expenses?id=${deletingExpense.id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Erro ao excluir gasto');
       setDeletingExpense(null);
+      showToast('success', 'Gasto excluído com sucesso');
       fetchExpenses();
     } catch {
       setDeletingExpense(null);
     }
-  }, [deletingExpense, fetchExpenses]);
+  }, [deletingExpense, fetchExpenses, showToast]);
 
   const handleEditSave = useCallback(async (input: ExpenseInput) => {
     if (!editingExpense) return;
     try {
-      await fetch('/api/expenses', {
+      const res = await fetch('/api/expenses', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: editingExpense.id, ...input }),
       });
+      if (!res.ok) throw new Error('Erro ao atualizar gasto');
       setEditingExpense(null);
+      showToast('success', 'Gasto atualizado com sucesso');
       fetchExpenses();
     } catch {
       // ignore
     }
-  }, [editingExpense, fetchExpenses]);
+  }, [editingExpense, fetchExpenses, showToast]);
 
   return (
     <>

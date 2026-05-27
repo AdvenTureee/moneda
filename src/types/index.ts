@@ -87,6 +87,25 @@ export interface DashboardMetrics {
   expensesByCategory: Record<string, Expense[]>;
 }
 
+export type SpendingTimelineMode = 'year' | 'month' | 'day';
+
+export interface SpendingTimelineBucket {
+  key: string;
+  label: string;
+  amount: number;
+  planned?: number;
+}
+
+export interface SpendingTimelineData {
+  period: string;
+  selectedDay: string;
+  monthlyPlanned: number;
+  annualPlanned: number;
+  year: SpendingTimelineBucket[];
+  month: SpendingTimelineBucket[];
+  hourlyByDate: Record<string, SpendingTimelineBucket[]>;
+}
+
 export interface Budget {
   id: string;
   userId: string;
@@ -139,4 +158,3 @@ export interface IncomeInput {
   recurringRule?: any | null;
   receivedAt?: Date;
 }
-

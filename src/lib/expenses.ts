@@ -1,9 +1,11 @@
 import { unstable_cache } from 'next/cache';
-import type { Category, Expense, ExpenseFilters, ExpenseInput, DashboardMetrics } from '@/types';
+import type { Category, Expense, ExpenseFilters, ExpenseInput, DashboardMetrics, SpendingTimelineBucket, SpendingTimelineData } from '@/types';
 import type { Database } from '@/types/supabase';
 import { createServiceClient, isSupabaseEnabled } from '@/lib/supabase/server';
 import { getCategories, getCategoriesByIds } from '@/lib/categories';
+import { getBudgets } from '@/lib/budgets';
 import { cacheTags } from '@/lib/cache';
+import { getMonthlyBudgetCents } from '@/lib/monthlyBudget';
 
 type ExpensesRow = Database['public']['Tables']['expenses']['Row'];
 type ExpensesInsert = Database['public']['Tables']['expenses']['Insert'];
@@ -617,4 +619,167 @@ export async function getMonthlyTotals(
   )();
 }
 
+function periodFromParts(year: number, month: number): string {
+  return `${year}-${String(month).padStart(2, '0')}`;
+}
 
+function localDateKey(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+function shortMonthLabel(year: number, month: number): string {
+  return new Date(year, month - 1, 1)
+    .toLocaleDateString('pt-BR', { month: 'short' })
+    .replace('.', '');
+}
+
+async function getPlannedMonthlyBudget(userId: string, period: string): Promise<number> {
+  const monthlyBudget = await getMonthlyBudgetCents(userId, period);
+  if (monthlyBudget > 0) return monthlyBudget;
+  const budgets = await getBudgets(userId, period);
+  return budgets.reduce((sum, budget) => sum + budget.amountCents, 0);
+}
+
+function buildMonthBuckets(year: number, month: number): SpendingTimelineBucket[] {
+  const daysInMonth = new Date(year, month, 0).getDate();
+  return Array.from({ length: daysInMonth }, (_, i) => {
+    const day = i + 1;
+    const key = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    return { key, label: String(day), amount: 0 };
+  });
+}
+
+function buildHourlyBuckets(): SpendingTimelineBucket[] {
+  return Array.from({ length: 24 }, (_, hour) => ({
+    key: String(hour).padStart(2, '0'),
+    label: `${String(hour).padStart(2, '0')}h`,
+    amount: 0,
+  }));
+}
+
+async function getSpendingTimelineFromDB(
+  userId: string,
+  period: string,
+): Promise<SpendingTimelineData> {
+  const db = createServiceClient();
+  const [year, month] = period.split('-').map(Number);
+  const yearStart = new Date(year, 0, 1);
+  const yearEnd = new Date(year + 1, 0, 1);
+
+  const { data, error } = await db
+    .from('expenses')
+    .select('amount_cents, occurred_at')
+    .eq('user_id', userId)
+    .is('deleted_at', null)
+    .gte('occurred_at', yearStart.toISOString())
+    .lt('occurred_at', yearEnd.toISOString());
+
+  if (error) throw new Error(`getSpendingTimeline: ${error.message}`);
+
+  const yearBuckets: SpendingTimelineBucket[] = Array.from({ length: 12 }, (_, i) => ({
+    key: periodFromParts(year, i + 1),
+    label: shortMonthLabel(year, i + 1),
+    amount: 0,
+  }));
+  const monthBuckets = buildMonthBuckets(year, month);
+  const hourlyByDate: Record<string, SpendingTimelineBucket[]> = {};
+  for (const bucket of monthBuckets) hourlyByDate[bucket.key] = buildHourlyBuckets();
+
+  for (const row of data ?? []) {
+    const d = new Date(row.occurred_at as string);
+    const amount = row.amount_cents as number;
+    if (d.getFullYear() !== year) continue;
+
+    yearBuckets[d.getMonth()].amount += amount;
+
+    if (d.getMonth() + 1 === month) {
+      const dateKey = localDateKey(d);
+      const dayIndex = d.getDate() - 1;
+      if (monthBuckets[dayIndex]) monthBuckets[dayIndex].amount += amount;
+      const hourBucket = hourlyByDate[dateKey]?.[d.getHours()];
+      if (hourBucket) hourBucket.amount += amount;
+    }
+  }
+
+  const plannedByMonth = await Promise.all(
+    yearBuckets.map((bucket) => getPlannedMonthlyBudget(userId, bucket.key)),
+  );
+  plannedByMonth.forEach((planned, index) => {
+    yearBuckets[index].planned = planned;
+  });
+  const monthlyPlanned = plannedByMonth[month - 1] ?? 0;
+  const annualPlanned = plannedByMonth.reduce((sum, value) => sum + value, 0);
+
+  return {
+    period,
+    selectedDay: `${period}-01`,
+    monthlyPlanned,
+    annualPlanned,
+    year: yearBuckets,
+    month: monthBuckets,
+    hourlyByDate,
+  };
+}
+
+function getSpendingTimelineFromMock(
+  userId: string,
+  period: string,
+): SpendingTimelineData {
+  const [year, month] = period.split('-').map(Number);
+  const yearBuckets: SpendingTimelineBucket[] = Array.from({ length: 12 }, (_, i) => {
+    const bucketPeriod = periodFromParts(year, i + 1);
+    const metrics = getDashboardMetricsFromMock(userId, bucketPeriod);
+    return { key: bucketPeriod, label: shortMonthLabel(year, i + 1), amount: metrics.totalSpent };
+  });
+  const currentMetrics = getDashboardMetricsFromMock(userId, period);
+  const monthBuckets = buildMonthBuckets(year, month);
+  for (const day of currentMetrics.dailySpending) {
+    const [, , dayStr] = day.date.split('-');
+    const index = Number(dayStr) - 1;
+    if (monthBuckets[index]) monthBuckets[index].amount = day.amount;
+  }
+
+  const hourlyByDate: Record<string, SpendingTimelineBucket[]> = {};
+  for (const bucket of monthBuckets) hourlyByDate[bucket.key] = buildHourlyBuckets();
+  for (const expense of Object.values(currentMetrics.expensesByCategory).flat()) {
+    const d = new Date(expense.createdAt);
+    const dateKey = localDateKey(d);
+    if (hourlyByDate[dateKey]) hourlyByDate[dateKey][d.getHours()].amount += expense.amount;
+  }
+
+  return {
+    period,
+    selectedDay: `${period}-01`,
+    monthlyPlanned: 0,
+    annualPlanned: 0,
+    year: yearBuckets,
+    month: monthBuckets,
+    hourlyByDate,
+  };
+}
+
+async function getSpendingTimelineImpl(
+  userId: string,
+  period: string,
+): Promise<SpendingTimelineData> {
+  if (isSupabaseEnabled()) return getSpendingTimelineFromDB(userId, period);
+  return getSpendingTimelineFromMock(userId, period);
+}
+
+export async function getSpendingTimeline(
+  userId: string,
+  period: string,
+): Promise<SpendingTimelineData> {
+  return unstable_cache(
+    () => getSpendingTimelineImpl(userId, period),
+    ['spending-timeline', userId, period],
+    {
+      tags: [
+        cacheTags.expenses(userId),
+        cacheTags.budgets(userId),
+        cacheTags.profile(userId),
+      ],
+      revalidate: 300,
+    },
+  )();
+}

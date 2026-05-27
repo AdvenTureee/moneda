@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from '@phosphor-icons/react';
 import Icon from '@/components/Icon';
@@ -17,6 +17,7 @@ interface CategoryDetailModalProps {
   categoryColor: string;
   total: number;
   expenses: Expense[];
+  wafflePreview?: ReactNode;
 }
 
 export default function CategoryDetailModal({
@@ -27,6 +28,7 @@ export default function CategoryDetailModal({
   categoryColor,
   total,
   expenses,
+  wafflePreview,
 }: CategoryDetailModalProps) {
   const [mounted, setMounted] = useState(false);
 
@@ -65,7 +67,7 @@ export default function CategoryDetailModal({
             style={{
               width: 44,
               height: 44,
-              backgroundColor: `${categoryColor}26`,
+              backgroundColor: `${categoryColor}22`,
             }}
             aria-hidden
           >
@@ -94,6 +96,8 @@ export default function CategoryDetailModal({
 
         {/* Body */}
         <div className="px-5 pb-5 overflow-y-auto">
+          {wafflePreview && <div className="mb-3">{wafflePreview}</div>}
+
           {expenses.length === 0 ? (
             <div className="flex flex-col items-center py-8 text-center">
               <Mo variant="sad" size={96} className="mb-3" />
