@@ -82,12 +82,12 @@ export default function CategoryBarList({
             <button
               type="button"
               onClick={() => onCategoryClick?.(item.isOthers ? null : item.categoryId)}
-              className="category-focus-row w-full text-left px-3 py-3 rounded-[14px] transition-colors hover:bg-[#F8F9FB] active:bg-[#F1F3F7] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#A8C5E0] focus-visible:ring-offset-2"
+              className="category-focus-row group w-full cursor-pointer text-left px-3 py-3 rounded-[14px] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#A8C5E0] focus-visible:ring-offset-2"
               aria-label={ariaLabel}
             >
               <div className="flex items-center gap-3">
                 <span
-                  className="flex items-center justify-center shrink-0 rounded-full"
+                  className="category-focus-icon flex items-center justify-center shrink-0 rounded-full transition-transform duration-150 ease-out group-hover:scale-105 group-active:scale-95"
                   style={{
                     width: 36,
                     height: 36,
@@ -114,15 +114,15 @@ export default function CategoryBarList({
 
               <div className="mt-2 ml-[48px]">
                 <div
-                  className="h-2 rounded-full overflow-hidden"
+                  className="category-focus-track h-2 rounded-full overflow-hidden"
                   style={{ backgroundColor: bgColor }}
                 >
                   <div
-                    className="h-full rounded-full"
+                    className="category-focus-fill h-full rounded-full"
                     style={{
                       width: fillWidth,
                       backgroundColor: item.categoryColor,
-                      transition: `width 480ms cubic-bezier(0.16, 1, 0.3, 1) ${i * 60}ms`,
+                      transitionDelay: `${i * 60}ms, 0ms`,
                     }}
                   />
                 </div>

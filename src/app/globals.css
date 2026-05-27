@@ -407,15 +407,93 @@ html[data-theme="dark"] .brand-title {
   border-top: 1px solid color-mix(in srgb, var(--color-border) 64%, transparent);
 }
 
-.category-focus-row:hover,
-.category-focus-row:active,
-.category-focus-row:focus-visible {
+.category-focus-row {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  background: transparent;
+  box-shadow:
+    inset 0 0 0 1px transparent,
+    0 0 0 rgb(15 23 42 / 0);
+  transform: translateY(0) scale(1);
+  transition:
+    box-shadow 180ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 120ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.category-focus-row::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  opacity: 0;
   background:
     linear-gradient(
       135deg,
-      color-mix(in srgb, var(--color-surface-alt) 78%, transparent),
-      color-mix(in srgb, var(--color-surface-alt) 50%, transparent)
-    ) !important;
+      color-mix(in srgb, var(--color-surface-alt) 92%, transparent),
+      color-mix(in srgb, var(--color-surface-alt) 68%, transparent)
+    );
+  transition: opacity 180ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.category-focus-row:hover,
+.category-focus-row:active,
+.category-focus-row:focus-visible {
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--color-border) 72%, transparent),
+    0 8px 20px rgb(15 23 42 / 0.06);
+}
+
+.category-focus-row:hover::before,
+.category-focus-row:active::before,
+.category-focus-row:focus-visible::before {
+  opacity: 1;
+}
+
+.category-focus-row:active {
+  transform: translateY(0) scale(0.99);
+}
+
+.category-focus-track {
+  box-shadow: inset 0 0 0 1px transparent;
+  transition: box-shadow 180ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.category-focus-row:hover .category-focus-track,
+.category-focus-row:active .category-focus-track,
+.category-focus-row:focus-visible .category-focus-track {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 12%, transparent);
+}
+
+.category-focus-fill {
+  filter: brightness(1) saturate(1);
+  transition:
+    width 480ms cubic-bezier(0.16, 1, 0.3, 1),
+    filter 180ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.category-focus-row:hover .category-focus-fill,
+.category-focus-row:active .category-focus-fill,
+.category-focus-row:focus-visible .category-focus-fill {
+  filter: brightness(1.08) saturate(1.06);
+}
+
+html[data-theme="dark"] .category-focus-row:hover,
+html[data-theme="dark"] .category-focus-row:active,
+html[data-theme="dark"] .category-focus-row:focus-visible {
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--color-border) 86%, transparent),
+    0 10px 24px rgb(0 0 0 / 0.18);
+}
+
+html[data-theme="dark"] .category-focus-row::before {
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--color-surface-alt) 88%, #2B3848 12%),
+      color-mix(in srgb, var(--color-surface-alt) 68%, transparent)
+    );
 }
 
 .danger-button {
