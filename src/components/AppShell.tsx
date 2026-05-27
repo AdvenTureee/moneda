@@ -22,6 +22,7 @@ function ShellContent({ children }: { children: React.ReactNode }) {
       }).catch(() => {});
       showToast('success', 'Gasto adicionado com sucesso');
       router.refresh();
+      window.dispatchEvent(new CustomEvent('expense-mutated'));
     },
     [router, showToast]
   );

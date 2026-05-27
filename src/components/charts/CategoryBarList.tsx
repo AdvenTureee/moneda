@@ -58,6 +58,11 @@ export default function CategoryBarList({
     return visible;
   }, [categories, total]);
 
+  const [expanded, setExpanded] = useState(false);
+  const showLimit = 3;
+  const visible = expanded ? items : items.slice(0, showLimit);
+  const hasMore = items.length > showLimit;
+
   // Largura das barras inicia em 0 e cresce após mount para animação suave.
   const [animateIn, setAnimateIn] = useState(false);
   useEffect(() => {
@@ -69,7 +74,7 @@ export default function CategoryBarList({
 
   return (
     <ul className="category-focus-panel">
-      {items.map((item, i) => {
+      {visible.map((item, i) => {
         const percentage = (item.amount / total) * 100;
         const fillWidth = animateIn ? `${Math.max(percentage, 1.5)}%` : '0%';
         const bgColor = `${item.categoryColor}26`; // 15% alpha
@@ -134,6 +139,17 @@ export default function CategoryBarList({
           </li>
         );
       })}
+      {hasMore && (
+        <li>
+          <button
+            type="button"
+            onClick={() => setExpanded((prev) => !prev)}
+            className="w-full py-3 rounded-[12px] text-sm font-semibold text-[#6B7280] bg-[#F1F3F7] hover:bg-[#E5E7EB] transition-colors active:scale-[0.98]"
+          >
+            {expanded ? 'Recolher' : `Ver mais (${items.length - showLimit} restantes)`}
+          </button>
+        </li>
+      )}
     </ul>
   );
 }

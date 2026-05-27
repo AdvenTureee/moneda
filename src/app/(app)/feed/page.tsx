@@ -10,7 +10,6 @@ import CategoryChip from '@/components/CategoryChip';
 import DateRangePicker, { buildPreset, type DateRange } from '@/components/DateRangePicker';
 import Icon from '@/components/Icon';
 import Mo from '@/components/Mo';
-import PullToRefresh from '@/components/PullToRefresh';
 import { groupExpensesByDate, formatCurrency } from '@/lib/utils';
 import { useCategories } from '@/hooks/useCategories';
 import type { Expense, ExpenseInput } from '@/types';
@@ -48,11 +47,12 @@ function FeedPageInner() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const [allExpenses, setAllExpenses] = useState<Expense[]>([]);
-  const { data: categories, invalidate: invalidateCategories, refresh: refreshCategories } = useCategories();
+  const { data: categories } = useCategories();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [deletingExpense, setDeletingExpense] = useState<Expense | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   const chipsRef = useRef<HTMLDivElement | null>(null);
   const [chipsScroll, setChipsScroll] = useState<{ atStart: boolean; atEnd: boolean }>({
@@ -95,6 +95,9 @@ function FeedPageInner() {
   }, [chipsScroll]);
 
   const fetchExpenses = useCallback(async () => {
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
     setLoading(true);
     setError(null);
     try {
@@ -104,7 +107,7 @@ function FeedPageInner() {
       if (dateRange.from) params.set('startDate', dateRange.from);
       if (dateRange.to) params.set('endDate', dateRange.to);
       const url = `/api/expenses${params.size ? '?' + params.toString() : ''}`;
-      const res = await fetch(url);
+      const res = await fetch(url, { signal: controller.signal });
       if (!res.ok) {
         if (res.status === 401) {
           window.location.href = '/login';
@@ -115,6 +118,7 @@ function FeedPageInner() {
       const json = await res.json();
       setAllExpenses(json.data ?? []);
     } catch (e) {
+      if ((e as Error)?.name === 'AbortError') return;
       setError(e instanceof Error ? e.message : 'Erro desconhecido');
     } finally {
       setLoading(false);
@@ -123,6 +127,12 @@ function FeedPageInner() {
 
   useEffect(() => {
     fetchExpenses();
+  }, [fetchExpenses]);
+
+  useEffect(() => {
+    const handler = () => fetchExpenses();
+    window.addEventListener('expense-mutated', handler);
+    return () => window.removeEventListener('expense-mutated', handler);
   }, [fetchExpenses]);
 
   const filtered = useMemo(() => {
@@ -163,11 +173,6 @@ function FeedPageInner() {
     }
   }, [deletingExpense, fetchExpenses]);
 
-  const handleRefresh = useCallback(async () => {
-    invalidateCategories();
-    await Promise.all([refreshCategories(), fetchExpenses()]);
-  }, [invalidateCategories, refreshCategories, fetchExpenses]);
-
   const handleEditSave = useCallback(async (input: ExpenseInput) => {
     if (!editingExpense) return;
     try {
@@ -185,7 +190,6 @@ function FeedPageInner() {
 
   return (
     <>
-      <PullToRefresh onRefresh={handleRefresh}>
       <div className="max-w-lg mx-auto px-4 pb-24">
         {/* Header */}
         <header className="py-6 animate-fade-up delay-0">
@@ -320,7 +324,6 @@ function FeedPageInner() {
             })
         )}
       </div>
-      </PullToRefresh>
       <AddExpenseModal
         isOpen={!!editingExpense}
         onClose={() => setEditingExpense(null)}

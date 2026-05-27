@@ -180,6 +180,7 @@ export default async function DashboardPage({
           <AIInsightBanner
             message={insightMessage}
             preview
+            dismissible={false}
             cta={{ label: 'Ver mais', href: `/insights?period=${period}` }}
           >
             <RegenerateInsightButton period={period} hasInsight={Boolean(latestInsight)} hideHeading variant="card" />
