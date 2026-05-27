@@ -149,6 +149,11 @@ export type Database = {
           occurred_at: string
           payment_method: string
           recurring_rule: Json | null
+          receipt_file_name: string | null
+          receipt_mime_type: string | null
+          receipt_path: string | null
+          receipt_size_bytes: number | null
+          receipt_uploaded_at: string | null
           source: string
           tags: string[]
           updated_at: string
@@ -166,6 +171,11 @@ export type Database = {
           occurred_at?: string
           payment_method?: string
           recurring_rule?: Json | null
+          receipt_file_name?: string | null
+          receipt_mime_type?: string | null
+          receipt_path?: string | null
+          receipt_size_bytes?: number | null
+          receipt_uploaded_at?: string | null
           source?: string
           tags?: string[]
           updated_at?: string
@@ -183,6 +193,11 @@ export type Database = {
           occurred_at?: string
           payment_method?: string
           recurring_rule?: Json | null
+          receipt_file_name?: string | null
+          receipt_mime_type?: string | null
+          receipt_path?: string | null
+          receipt_size_bytes?: number | null
+          receipt_uploaded_at?: string | null
           source?: string
           tags?: string[]
           updated_at?: string

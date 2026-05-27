@@ -186,9 +186,11 @@ function FeedPageInner() {
         body: JSON.stringify({ id: editingExpense.id, ...input }),
       });
       if (!res.ok) throw new Error('Erro ao atualizar gasto');
+      const data = await res.json().catch(() => null);
       setEditingExpense(null);
       showToast('success', 'Gasto atualizado com sucesso');
       fetchExpenses();
+      return data?.data;
     } catch {
       // ignore
     }
@@ -338,6 +340,7 @@ function FeedPageInner() {
                               variant="full"
                               onEdit={() => setEditingExpense(expense)}
                               onDelete={() => handleDelete(expense)}
+                              onReceiptChanged={fetchExpenses}
                             />
                           </div>
                         ))}

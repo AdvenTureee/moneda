@@ -2,10 +2,11 @@
 
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { X, ArrowsClockwise } from '@phosphor-icons/react';
+import { ArrowsClockwise, Eye, Paperclip, Trash, X } from '@phosphor-icons/react';
 import Icon from '@/components/Icon';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import DatePicker from '@/components/DatePicker';
+import { useToast } from '@/components/ToastProvider';
 import { formatCurrency } from '@/lib/utils';
 import { toLocalDateInput, todayLocalDate, currentTimeHHmm, timeHHmmFromDate, localDateTimeToIso } from '@/lib/date';
 import { useCategories } from '@/hooks/useCategories';
@@ -14,7 +15,7 @@ import type { Expense, ExpenseInput } from '@/types';
 interface AddExpenseModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (input: ExpenseInput) => void;
+  onSave: (input: ExpenseInput) => void | Expense | Promise<void | Expense>;
   editExpense?: Expense;
 }
 
@@ -39,9 +40,13 @@ export default function AddExpenseModal({
   const [timeInput, setTimeInput] = useState(currentTimeHHmm());
   const [isRecurring, setIsRecurring] = useState(false);
   const [categoriesExpanded, setCategoriesExpanded] = useState(false);
+  const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [receiptBusy, setReceiptBusy] = useState(false);
   const { data: categories } = useCategories();
+  const { showToast } = useToast();
   const [confirmDiscard, setConfirmDiscard] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const receiptInputRef = useRef<HTMLInputElement>(null);
   const closeTimerRef = useRef<number | null>(null);
   const openFrameRef = useRef<number | null>(null);
   const dragStartYRef = useRef(0);
@@ -105,6 +110,7 @@ export default function AddExpenseModal({
       setTimeInput(currentTimeHHmm());
       setIsRecurring(false);
       setCategoriesExpanded(false);
+      setReceiptFile(null);
       setTimeout(() => inputRef.current?.focus(), 100);
     } else if (isOpen && editExpense) {
       setAmountCents(editExpense.amount);
@@ -121,6 +127,7 @@ export default function AddExpenseModal({
       setTimeInput(timeHHmmFromDate(editDate));
       setIsRecurring(editExpense.isRecurring ?? false);
       setCategoriesExpanded(false);
+      setReceiptFile(null);
       setTimeout(() => inputRef.current?.focus(), 100);
     }
   }, [isOpen, editExpense]);
@@ -156,19 +163,71 @@ export default function AddExpenseModal({
     );
   }, []);
 
-  const handleSave = useCallback(() => {
+  const uploadReceiptForExpense = useCallback(async (expenseId: string, file: File) => {
+    const formData = new FormData();
+    formData.set('expenseId', expenseId);
+    formData.set('file', file);
+    const res = await fetch('/api/expenses/receipt', { method: 'POST', body: formData });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error ?? 'Não foi possível anexar o comprovante.');
+    }
+  }, []);
+
+  const openExistingReceipt = useCallback(async () => {
+    if (!editExpense?.receipt) return;
+    setReceiptBusy(true);
+    try {
+      const res = await fetch(`/api/expenses/receipt?expenseId=${editExpense.id}`);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.url) throw new Error(data.error ?? 'Não foi possível abrir.');
+      window.open(data.url, '_blank', 'noopener,noreferrer');
+    } catch (error) {
+      showToast('error', error instanceof Error ? error.message : 'Erro ao abrir comprovante');
+    } finally {
+      setReceiptBusy(false);
+    }
+  }, [editExpense, showToast]);
+
+  const removeExistingReceipt = useCallback(async () => {
+    if (!editExpense?.receipt) return;
+    setReceiptBusy(true);
+    try {
+      const res = await fetch(`/api/expenses/receipt?expenseId=${editExpense.id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Não foi possível remover o comprovante.');
+      window.dispatchEvent(new CustomEvent('expense-mutated'));
+      setReceiptFile(null);
+      showToast('success', 'Comprovante removido');
+    } catch (error) {
+      showToast('error', error instanceof Error ? error.message : 'Erro ao remover comprovante');
+    } finally {
+      setReceiptBusy(false);
+    }
+  }, [editExpense, showToast]);
+
+  const handleSave = useCallback(async () => {
     if (amountCents <= 0 || !selectedCategory) return;
-    onSave({
-      amount: amountCents,
-      category: selectedCategory,
-      description: description.trim() || (categories.find((c) => c.id === selectedCategory)?.name ?? 'Gasto'),
-      source: 'manual',
-      tags: [],
-      occurredAt: localDateTimeToIso(occurredAtInput, timeInput),
-      isRecurring,
-    });
-    onClose();
-  }, [amountCents, description, selectedCategory, occurredAtInput, timeInput, isRecurring, categories, onSave, onClose]);
+    try {
+      const saved = await onSave({
+        amount: amountCents,
+        category: selectedCategory,
+        description: description.trim() || (categories.find((c) => c.id === selectedCategory)?.name ?? 'Gasto'),
+        source: 'manual',
+        tags: [],
+        occurredAt: localDateTimeToIso(occurredAtInput, timeInput),
+        isRecurring,
+      });
+      const expenseId = editExpense?.id ?? saved?.id;
+      if (receiptFile && expenseId) {
+        await uploadReceiptForExpense(expenseId, receiptFile);
+        showToast('success', 'Comprovante anexado');
+        window.dispatchEvent(new CustomEvent('expense-mutated'));
+      }
+      onClose();
+    } catch (error) {
+      showToast('error', error instanceof Error ? error.message : 'Erro ao salvar gasto');
+    }
+  }, [amountCents, description, selectedCategory, occurredAtInput, timeInput, isRecurring, categories, onSave, editExpense, receiptFile, uploadReceiptForExpense, onClose, showToast]);
 
   const handleBackdropClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
@@ -374,6 +433,55 @@ export default function AddExpenseModal({
               className="themed-field w-full border border-[#E5E7EB] rounded-[10px] px-4 py-3 text-[15px] text-[#1A1D23] outline-none placeholder:text-[#9CA3AF] focus:border-[#A8C5E0] transition-colors"
               maxLength={120}
             />
+          </div>
+
+          {/* Receipt */}
+          <div className="px-5 mb-4">
+            <p className="text-sm font-semibold text-[#6B7280] mb-2">Comprovante</p>
+            <input
+              ref={receiptInputRef}
+              type="file"
+              className="hidden"
+              accept="image/jpeg,image/png,image/webp,image/heic,image/heif,application/pdf"
+              onChange={(event) => setReceiptFile(event.target.files?.[0] ?? null)}
+            />
+            <div className="themed-card flex items-center gap-2 rounded-[10px] bg-white p-2.5">
+              <button
+                type="button"
+                onClick={() => receiptInputRef.current?.click()}
+                className="flex min-w-0 flex-1 items-center gap-2 rounded-[8px] px-2 py-1.5 text-left transition-colors hover:bg-[#F8F9FB]"
+              >
+                <Paperclip size={17} className="shrink-0 text-[#7AAECF]" />
+                <span className="min-w-0 flex-1 truncate text-sm font-medium text-[#1A1D23]">
+                  {receiptFile?.name ?? editExpense?.receipt?.fileName ?? 'Adicionar comprovante'}
+                </span>
+              </button>
+              {editExpense?.receipt && !receiptFile && (
+                <button
+                  type="button"
+                  onClick={openExistingReceipt}
+                  disabled={receiptBusy}
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] bg-[#EEF9F4] text-[#5BBF8E] transition-colors hover:bg-[#DDF4EA] disabled:opacity-50"
+                  aria-label="Ver comprovante"
+                >
+                  <Eye size={16} />
+                </button>
+              )}
+              {(editExpense?.receipt || receiptFile) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (receiptFile) setReceiptFile(null);
+                    else removeExistingReceipt();
+                  }}
+                  disabled={receiptBusy}
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] bg-[#FDF0F0] text-[#E07070] transition-colors hover:bg-[#FBE2E2] disabled:opacity-50"
+                  aria-label="Remover comprovante"
+                >
+                  <Trash size={16} />
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Date + Recorrente */}

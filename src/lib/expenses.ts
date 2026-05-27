@@ -74,6 +74,15 @@ function rowToExpense(row: ExpensesRow): Expense {
     source: row.source as import('@/types').ExpenseSource,
     tags: row.tags,
     isRecurring: (row as any).is_recurring ?? false,
+    receipt: row.receipt_path
+      ? {
+          path: row.receipt_path,
+          fileName: row.receipt_file_name ?? 'Comprovante',
+          mimeType: row.receipt_mime_type ?? 'application/octet-stream',
+          sizeBytes: row.receipt_size_bytes ?? 0,
+          uploadedAt: new Date(row.receipt_uploaded_at ?? row.updated_at ?? row.created_at),
+        }
+      : null,
     createdAt: new Date(row.occurred_at),
   };
 }
@@ -90,7 +99,7 @@ async function getExpensesFromDB(filters: ExpenseFilters): Promise<Expense[]> {
 
   let query = db
     .from('expenses')
-    .select('id,amount_cents,category_id,description,occurred_at,source,tags,is_recurring')
+    .select('id,amount_cents,category_id,description,occurred_at,source,tags,is_recurring,receipt_path,receipt_file_name,receipt_mime_type,receipt_size_bytes,receipt_uploaded_at,updated_at,created_at')
     .eq('user_id', userId)
     .is('deleted_at', null)
     .order('occurred_at', { ascending: false });
@@ -179,6 +188,11 @@ async function getDashboardMetricsFromDBViaRPC(
       source: string;
       tags: string[];
       is_recurring: boolean;
+      receipt_path?: string | null;
+      receipt_file_name?: string | null;
+      receipt_mime_type?: string | null;
+      receipt_size_bytes?: number | null;
+      receipt_uploaded_at?: string | null;
     }>;
   };
 
@@ -196,6 +210,15 @@ async function getDashboardMetricsFromDBViaRPC(
         source: e.source as Expense['source'],
         tags: e.tags ?? [],
         isRecurring: e.is_recurring ?? false,
+        receipt: e.receipt_path
+          ? {
+              path: e.receipt_path,
+              fileName: e.receipt_file_name ?? 'Comprovante',
+              mimeType: e.receipt_mime_type ?? 'application/octet-stream',
+              sizeBytes: e.receipt_size_bytes ?? 0,
+              uploadedAt: new Date(e.receipt_uploaded_at ?? e.occurred_at),
+            }
+          : null,
         createdAt: new Date(e.occurred_at),
       },
       categories,
@@ -245,7 +268,7 @@ async function getDashboardMetricsFromDBViaQuery(
 
   const { data, error } = await db
     .from('expenses')
-    .select('id,amount_cents,category_id,description,occurred_at,source,tags,is_recurring')
+    .select('id,amount_cents,category_id,description,occurred_at,source,tags,is_recurring,receipt_path,receipt_file_name,receipt_mime_type,receipt_size_bytes,receipt_uploaded_at,updated_at,created_at')
     .eq('user_id', userId)
     .is('deleted_at', null)
     .gte('occurred_at', start)
@@ -420,12 +443,21 @@ async function updateExpenseInDB(id: string, input: Partial<ExpenseInput>): Prom
 
 async function deleteExpenseFromDB(id: string): Promise<void> {
   const db = createServiceClient();
+  const { data: existing } = await db
+    .from('expenses')
+    .select('receipt_path')
+    .eq('id', id)
+    .single();
+
   const { error } = await db
     .from('expenses')
     .update({ deleted_at: new Date().toISOString() })
     .eq('id', id);
 
   if (error) throw new Error(`deleteExpense: ${error.message}`);
+  if (existing?.receipt_path) {
+    await db.storage.from('expense_receipts').remove([existing.receipt_path]);
+  }
 }
 
 function updateExpenseFromMock(id: string, input: Partial<ExpenseInput>): Expense | null {
@@ -499,7 +531,13 @@ async function getDashboardMetricsImpl(
 }
 
 function rehydrateExpense(raw: Expense): Expense {
-  return { ...raw, createdAt: new Date(raw.createdAt) };
+  return {
+    ...raw,
+    createdAt: new Date(raw.createdAt),
+    receipt: raw.receipt
+      ? { ...raw.receipt, uploadedAt: new Date(raw.receipt.uploadedAt) }
+      : null,
+  };
 }
 
 export async function getDashboardMetrics(

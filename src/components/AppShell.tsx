@@ -15,7 +15,7 @@ function ShellContent({ children }: { children: React.ReactNode }) {
 
   const handleSave = useCallback(
     async (input: ExpenseInput) => {
-      await fetch('/api/expenses', {
+      const res = await fetch('/api/expenses', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(input),
@@ -23,6 +23,8 @@ function ShellContent({ children }: { children: React.ReactNode }) {
       showToast('success', 'Gasto adicionado com sucesso');
       router.refresh();
       window.dispatchEvent(new CustomEvent('expense-mutated'));
+      const data = res ? await res.json().catch(() => null) : null;
+      return data?.data;
     },
     [router, showToast]
   );

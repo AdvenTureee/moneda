@@ -30,6 +30,13 @@ export interface Expense {
   source: ExpenseSource;
   tags: string[];
   isRecurring?: boolean;
+  receipt?: {
+    path: string;
+    fileName: string;
+    mimeType: string;
+    sizeBytes: number;
+    uploadedAt: Date;
+  } | null;
   createdAt: Date;
 }
 

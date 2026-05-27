@@ -86,7 +86,7 @@ export default function CategoryBarList({
           <li key={item.categoryId}>
             <button
               type="button"
-              onClick={() => onCategoryClick?.(item.isOthers ? null : item.categoryId)}
+              onClick={() => onCategoryClick?.(item.categoryId === '__others__' ? null : item.categoryId)}
               className="category-focus-row group grid w-full cursor-pointer grid-cols-[36px_minmax(0,1fr)] gap-3 rounded-[12px] px-3 py-2.5 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[#A8C5E0] focus-visible:ring-offset-2"
               aria-label={ariaLabel}
             >
