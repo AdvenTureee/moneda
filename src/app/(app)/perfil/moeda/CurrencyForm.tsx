@@ -38,8 +38,8 @@ export default function CurrencyForm({ initialCurrency }: CurrencyFormProps) {
   }
 
   return (
-    <div className="max-w-lg mx-auto px-4 pb-24">
-      <header className="py-6">
+    <div className="max-w-lg mx-auto px-4 pb-24 [scrollbar-gutter:stable]">
+      <header className="py-6 animate-fade-up delay-0">
         <Link
           href="/perfil"
           className="inline-flex items-center gap-1 text-sm text-[#6B7280] hover:text-[#1A1D23] transition-colors mb-3"
@@ -54,7 +54,7 @@ export default function CurrencyForm({ initialCurrency }: CurrencyFormProps) {
       </header>
 
       <div
-        className="themed-card bg-white rounded-[16px] overflow-hidden divide-y divide-[#F1F2F4] mb-6"
+        className="themed-card bg-white rounded-[16px] overflow-hidden divide-y divide-[#F1F2F4] mb-6 animate-fade-up delay-1"
       >
         {OPTIONS.map((opt) => (
           <button
@@ -87,7 +87,7 @@ export default function CurrencyForm({ initialCurrency }: CurrencyFormProps) {
         type="button"
         onClick={handleSave}
         disabled={saving || selected === initialCurrency}
-        className="w-full py-3 rounded-[12px] text-sm font-semibold text-white bg-[#5BBF8E] hover:bg-[#4AA77C] active:bg-[#3FA876] transition-colors duration-150 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full py-3 rounded-[12px] text-sm font-semibold text-white bg-[#5BBF8E] hover:bg-[#4AA77C] active:bg-[#3FA876] transition-colors duration-150 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed animate-fade-up delay-2"
         style={{ boxShadow: '0 4px 14px rgba(91, 191, 142, 0.3)' }}
       >
         {saving ? 'Salvando…' : 'Salvar'}

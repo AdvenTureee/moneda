@@ -52,7 +52,7 @@ export async function getLatestInsight(userId: string, period: string): Promise<
     ['latest-insight', userId, period],
     {
       tags: [cacheTags.insights(userId)],
-      revalidate: 60,
+      revalidate: 300,
     },
   )();
   return raw ? rehydrateInsight(raw) : null;
@@ -91,7 +91,7 @@ export async function getUserInsights(
     keyParts,
     {
       tags: [cacheTags.insights(userId)],
-      revalidate: 60,
+      revalidate: 300,
     },
   )();
   return raw.map(rehydrateInsight);

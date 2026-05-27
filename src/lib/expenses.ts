@@ -2,7 +2,7 @@ import { unstable_cache } from 'next/cache';
 import type { Category, Expense, ExpenseFilters, ExpenseInput, DashboardMetrics } from '@/types';
 import type { Database } from '@/types/supabase';
 import { createServiceClient, isSupabaseEnabled } from '@/lib/supabase/server';
-import { getCategoriesByIds } from '@/lib/categories';
+import { getCategories, getCategoriesByIds } from '@/lib/categories';
 import { cacheTags } from '@/lib/cache';
 
 type ExpensesRow = Database['public']['Tables']['expenses']['Row'];
@@ -88,7 +88,7 @@ async function getExpensesFromDB(filters: ExpenseFilters): Promise<Expense[]> {
 
   let query = db
     .from('expenses')
-    .select('*')
+    .select('id,amount_cents,category_id,description,occurred_at,source,tags,is_recurring')
     .eq('user_id', userId)
     .is('deleted_at', null)
     .order('occurred_at', { ascending: false });
@@ -148,9 +148,94 @@ async function getExpenseByIdFromDB(id: string): Promise<Expense | null> {
   return rowToExpense(data as ExpensesRow);
 }
 
-async function getDashboardMetricsFromDB(
+async function getDashboardMetricsFromDBViaRPC(
   userId: string,
-  period: string
+  period: string,
+): Promise<DashboardMetrics | null> {
+  const db = createServiceClient();
+
+  const { data: raw, error } = await (db as any).rpc('get_dashboard_page', {
+    p_user_id: userId,
+    p_period: period,
+  });
+
+  if (error) {
+    if ((error as { code?: string })?.code === '42883') return null;
+    throw new Error(`getDashboardMetrics: ${error.message}`);
+  }
+
+  const result = raw as {
+    total_spent: number;
+    expense_count: number;
+    top_categories: Array<{ category_id: string; amount: number }>;
+    daily_spending: Array<{ date: string; amount: number }>;
+    all_expenses: Array<{
+      id: string;
+      amount: number;
+      category: string;
+      description: string;
+      occurred_at: string;
+      source: string;
+      tags: string[];
+      is_recurring: boolean;
+    }>;
+  };
+
+  const allCategories = await getCategories(userId);
+  const categories = new Map(allCategories.map((c) => [c.id, c]));
+
+  const allExpenses: Expense[] = result.all_expenses.map((e) =>
+    attachCategoryData(
+      {
+        id: e.id,
+        userId,
+        amount: e.amount,
+        category: e.category,
+        description: e.description,
+        source: e.source as Expense['source'],
+        tags: e.tags ?? [],
+        isRecurring: e.is_recurring ?? false,
+        createdAt: new Date(e.occurred_at),
+      },
+      categories,
+    ),
+  );
+
+  const totalSpent = result.total_spent;
+
+  const topCategories = result.top_categories.map((tc) => {
+    const cat = categories.get(tc.category_id);
+    return {
+      categoryId: tc.category_id,
+      categoryName: cat?.name ?? FALLBACK_CATEGORY.name,
+      categoryIcon: cat?.icon ?? FALLBACK_CATEGORY.icon,
+      categoryColor: cat?.color ?? FALLBACK_CATEGORY.color,
+      amount: tc.amount,
+      percentage: totalSpent > 0 ? Math.round((tc.amount / totalSpent) * 100) : 0,
+    };
+  });
+
+  const recentExpenses = allExpenses.slice(0, 5);
+
+  const expensesByCategory: Record<string, Expense[]> = {};
+  for (const e of allExpenses) {
+    (expensesByCategory[e.category] ??= []).push(e);
+  }
+
+  return {
+    period,
+    totalSpent,
+    expenseCount: result.expense_count,
+    topCategories,
+    dailySpending: result.daily_spending,
+    recentExpenses,
+    expensesByCategory,
+  };
+}
+
+async function getDashboardMetricsFromDBViaQuery(
+  userId: string,
+  period: string,
 ): Promise<DashboardMetrics> {
   const db = createServiceClient();
   const [year, month] = period.split('-').map(Number);
@@ -159,7 +244,7 @@ async function getDashboardMetricsFromDB(
 
   const { data, error } = await db
     .from('expenses')
-    .select('*')
+    .select('id,amount_cents,category_id,description,occurred_at,source,tags,is_recurring')
     .eq('user_id', userId)
     .is('deleted_at', null)
     .gte('occurred_at', start)
@@ -168,7 +253,9 @@ async function getDashboardMetricsFromDB(
   if (error) throw new Error(`getDashboardMetrics: ${error.message}`);
 
   const rows = (data as ExpensesRow[]).map(rowToExpense);
-  const { expenses: enriched, categories } = await enrichWithCategoriesFromDB(userId, rows);
+  const allCategories = await getCategories(userId);
+  const categories = new Map(allCategories.map((c) => [c.id, c]));
+  const enriched = rows.map((e) => attachCategoryData(e, categories));
   const totalSpent = enriched.reduce((sum, e) => sum + e.amount, 0);
 
   const byCat: Record<string, number> = {};
@@ -201,7 +288,7 @@ async function getDashboardMetricsFromDB(
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([date, amount]) => ({ date, amount }));
 
-  const recentExpenses = [...enriched]
+  const recentExpenses = enriched
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     .slice(0, 5);
 
@@ -222,6 +309,15 @@ async function getDashboardMetricsFromDB(
     recentExpenses,
     expensesByCategory,
   };
+}
+
+async function getDashboardMetricsFromDB(
+  userId: string,
+  period: string
+): Promise<DashboardMetrics> {
+  const viaRpc = await getDashboardMetricsFromDBViaRPC(userId, period);
+  if (viaRpc) return viaRpc;
+  return getDashboardMetricsFromDBViaQuery(userId, period);
 }
 
 // ---------------------------------------------------------------------------
@@ -414,7 +510,7 @@ export async function getDashboardMetrics(
     ['dashboard-metrics', userId, period],
     {
       tags: [cacheTags.metrics(userId), cacheTags.expenses(userId)],
-      revalidate: 60,
+      revalidate: 300,
     },
   )();
   // unstable_cache serializa Date → string. Re-hidrata as expenses aqui.

@@ -201,7 +201,7 @@ export default function InsightsView({
   return (
     <div className="max-w-lg mx-auto px-4 pb-24">
       {/* Header */}
-      <header className="py-5">
+      <header className="py-5 animate-fade-up delay-0">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl font-heading text-[#1A1D23]">Insights</h1>
@@ -223,7 +223,7 @@ export default function InsightsView({
 
       {/* Hero total */}
       <section
-        className="ai-insight-banner text-white rounded-[20px] p-5 mb-6 shadow-md"
+        className="ai-insight-banner text-white rounded-[20px] p-5 mb-6 shadow-md animate-fade-up delay-1"
       >
         <p className="text-xs font-semibold uppercase tracking-wider opacity-85">Gasto total</p>
         <p className="text-3xl font-extrabold mt-1.5 tabular-nums">
@@ -241,7 +241,7 @@ export default function InsightsView({
 
       {/* Budget progress (ou CTA quando não há orçamentos definidos) */}
       {topCategories.length > 0 && (
-        <div className="mb-6">
+        <div className="mb-6 animate-fade-up delay-2">
           {budgetProgress.length > 0 ? (
             <BudgetProgressList items={budgetProgress} />
           ) : (
@@ -252,7 +252,7 @@ export default function InsightsView({
 
       {/* Category breakdown */}
       {topCategories.length > 0 && (
-        <div className="mb-6 animate-fade-up delay-2">
+        <div className="mb-6 animate-fade-up delay-3">
           <ChartCard
             title="Gastos por categoria"
             ariaLabel="Gastos por categoria"
@@ -268,7 +268,7 @@ export default function InsightsView({
 
       {/* Monthly trend */}
       {monthlyTotals.some((m) => m.total > 0) && (
-        <div className="mb-6">
+        <div className="mb-6 animate-fade-up delay-4">
           <MonthlyTrendChart data={monthlyTotals} currentPeriod={period} />
         </div>
       )}

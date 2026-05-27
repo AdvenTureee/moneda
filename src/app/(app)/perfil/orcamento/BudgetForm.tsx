@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition, useEffect, useMemo } from 'react';
+import { useState, useTransition, useMemo } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, MagnifyingGlass } from '@phosphor-icons/react';
 import { useToast } from '@/components/ToastProvider';
@@ -12,31 +12,20 @@ import type { Budget, Category } from '@/types';
 interface BudgetFormProps {
   initialBudgets: Budget[];
   period: string;
+  initialCategories: Category[];
 }
 
-export default function BudgetForm({ initialBudgets, period }: BudgetFormProps) {
-  const [categories, setCategories] = useState<Category[]>([]);
+export default function BudgetForm({ initialBudgets, period, initialCategories }: BudgetFormProps) {
+  const [categories] = useState<Category[]>(initialCategories);
 
-  // Map categoryId to cents
-  const [budgetsMap, setBudgetsMap] = useState<Record<string, number>>({});
-
-  useEffect(() => {
-    fetch('/api/categories')
-      .then((res) => res.ok ? res.json() : null)
-      .then((json) => {
-        const cats: Category[] = json?.data ?? [];
-        setCategories(cats);
-        setBudgetsMap(() => {
-          const initial: Record<string, number> = {};
-          cats.forEach((cat) => {
-            const b = initialBudgets.find((x) => x.categoryId === cat.id);
-            initial[cat.id] = b ? b.amountCents : 0;
-          });
-          return initial;
-        });
-      })
-      .catch(() => {});
-  }, [initialBudgets]);
+  const [budgetsMap, setBudgetsMap] = useState<Record<string, number>>(() => {
+    const initial: Record<string, number> = {};
+    initialCategories.forEach((cat) => {
+      const b = initialBudgets.find((x) => x.categoryId === cat.id);
+      initial[cat.id] = b ? b.amountCents : 0;
+    });
+    return initial;
+  });
 
   const [search, setSearch] = useState('');
   const filteredCategories = useMemo(
@@ -94,9 +83,9 @@ export default function BudgetForm({ initialBudgets, period }: BudgetFormProps) 
   };
 
   return (
-    <div className="max-w-lg mx-auto px-4 pb-8">
+    <div className="max-w-lg mx-auto px-4 pb-8 [scrollbar-gutter:stable]">
       {/* Header */}
-      <div className="flex items-center gap-3 py-5 mb-2">
+      <div className="flex items-center gap-3 py-5 mb-2 animate-fade-up delay-0">
         <Link
           href="/perfil"
           className="p-2 hover:bg-[#F1F3F7] rounded-full transition-colors"
@@ -112,7 +101,7 @@ export default function BudgetForm({ initialBudgets, period }: BudgetFormProps) 
 
       {/* Planned Limit Card */}
       <div
-        className="ai-insight-banner text-white rounded-[20px] p-5 mb-6 shadow-md transition-all duration-300"
+        className="ai-insight-banner text-white rounded-[20px] p-5 mb-6 shadow-md transition-all duration-300 animate-fade-up delay-1"
       >
         <p className="text-xs font-semibold uppercase tracking-wider opacity-85">Limite Planejado Total</p>
         <p className="text-3xl font-extrabold mt-1.5 tabular-nums">
@@ -124,7 +113,7 @@ export default function BudgetForm({ initialBudgets, period }: BudgetFormProps) 
       </div>
 
       {/* Search Bar */}
-      <div className="relative mb-4">
+      <div className="relative mb-4 animate-fade-up delay-2">
         <MagnifyingGlass
           size={16}
           className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9CA3AF]"
@@ -141,7 +130,7 @@ export default function BudgetForm({ initialBudgets, period }: BudgetFormProps) 
       </div>
 
       {/* Category List */}
-      <div className="space-y-3 mb-8">
+      <div className="space-y-3 mb-8 animate-fade-up delay-3">
         {filteredCategories.map((cat) => {
           const valueCents = budgetsMap[cat.id] ?? 0;
           const displayValue = valueCents > 0
@@ -202,7 +191,7 @@ export default function BudgetForm({ initialBudgets, period }: BudgetFormProps) 
       )}
 
       {/* Bottom Actions */}
-      <div className="mt-6">
+      <div className="mt-6 animate-fade-up delay-4">
         <button
           onClick={handleSaveAll}
           disabled={saving || !hasChanges}

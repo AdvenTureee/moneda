@@ -156,9 +156,9 @@ export default function CategoriesView() {
   const isFormValid = formData.name.trim().length > 0;
 
   return (
-    <div className="max-w-lg mx-auto px-4 pb-24">
+    <div className="max-w-lg mx-auto px-4 pb-24 [scrollbar-gutter:stable]">
       {/* Header */}
-      <header className="flex items-center gap-3 py-5">
+      <header className="flex items-center gap-3 py-5 animate-fade-up delay-0">
         <Link
           href="/perfil"
           className="flex items-center justify-center w-8 h-8 rounded-full text-[#6B7280] hover:bg-[#F1F3F7] transition-colors"
@@ -173,7 +173,7 @@ export default function CategoriesView() {
       </header>
 
       {/* Search Bar */}
-      <div className="relative mb-4">
+      <div className="relative mb-4 animate-fade-up delay-1">
         <MagnifyingGlass
           size={16}
           className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9CA3AF]"
@@ -213,7 +213,7 @@ export default function CategoriesView() {
 
       {/* Category list */}
       {!loading && !error && (
-        <div className="space-y-2 mb-6">
+        <div className="space-y-2 mb-6 animate-fade-up delay-2">
           {filteredCategories.map((cat) => {
             const isEditing = editingId === cat.id;
             const isDeleting = deletingId === cat.id;

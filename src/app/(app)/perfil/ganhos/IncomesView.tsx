@@ -110,9 +110,9 @@ export default function IncomesView({ initialIncomes }: IncomesViewProps) {
   const totalIncomes = initialIncomes.reduce((sum, item) => sum + item.amount, 0);
 
   return (
-    <div className="max-w-lg mx-auto px-4 pb-24">
+    <div className="max-w-lg mx-auto px-4 pb-24 [scrollbar-gutter:stable]">
       {/* Header */}
-      <div className="flex items-center gap-3 py-5 mb-2">
+      <div className="flex items-center gap-3 py-5 mb-2 animate-fade-up delay-0">
         <Link
           href="/perfil"
           className="p-2 hover:bg-[#F1F3F7] rounded-full transition-colors"
@@ -128,9 +128,10 @@ export default function IncomesView({ initialIncomes }: IncomesViewProps) {
 
       {/* Summary Card */}
       <div
-        className="bg-gradient-to-br from-[#3B82F6] to-[#2563EB] text-white rounded-[20px] p-5 mb-6 shadow-md transition-all"
+        className="ai-insight-banner text-white rounded-[20px] p-5 mb-6 shadow-md transition-all animate-fade-up delay-1"
         style={{
-          boxShadow: '0 8px 24px rgba(37, 99, 235, 0.25)',
+          background: 'linear-gradient(135deg, #D4A34A, #B8860B)',
+          boxShadow: '0 8px 24px rgba(180, 130, 30, 0.25)',
         }}
       >
         <p className="text-xs font-semibold uppercase tracking-wider opacity-85">Total de Entradas</p>
@@ -144,7 +145,7 @@ export default function IncomesView({ initialIncomes }: IncomesViewProps) {
 
       {/* Form Card */}
       <section
-        className="themed-card bg-white rounded-[20px] p-5 border border-[#F1F3F7] mb-8"
+        className="themed-card bg-white rounded-[20px] p-5 border border-[#F1F3F7] mb-8 animate-fade-up delay-2"
       >
         <h2 className="text-sm font-bold text-[#1A1D23] mb-4">Lançar Nova Receita</h2>
         <form onSubmit={handleAddIncome} className="space-y-4">
@@ -206,7 +207,7 @@ export default function IncomesView({ initialIncomes }: IncomesViewProps) {
                 aria-pressed={isRecurring}
                 className={`flex items-center gap-2.5 justify-center border rounded-[12px] py-3 text-sm font-semibold select-none touch-manipulation transition-colors duration-75 active:scale-95 overflow-hidden ${
                   isRecurring
-                    ? 'border-[#3B82F6] bg-[#EBF3FE] text-[#2563EB]'
+                    ? 'border-[#D4A34A] bg-[#FEF8E7] text-[#B8860B]'
                     : 'border-[#E5E7EB] bg-[#F8F9FB] text-[#6B7280] hover:border-[#A8C5E0]'
                 }`}
                 style={{ WebkitTapHighlightColor: 'transparent' }}
@@ -234,7 +235,7 @@ export default function IncomesView({ initialIncomes }: IncomesViewProps) {
                         : 'border-[#E5E7EB] bg-white hover:border-[#A8C5E0]'
                     }`}
                   >
-                    <Icon name={src.icon} size={18} />
+                    <Icon name={src.icon} size={18} className={isSelected ? 'text-[#047857]' : 'text-[#6B7280]'} />
                     <span
                       className={`text-[10px] font-bold ${
                         isSelected ? 'text-[#047857]' : 'text-[#6B7280]'
@@ -271,7 +272,7 @@ export default function IncomesView({ initialIncomes }: IncomesViewProps) {
       </section>
 
       {/* History section */}
-      <section>
+      <section className="animate-fade-up delay-3">
         <h2 className="text-xs font-semibold uppercase tracking-wider text-[#9CA3AF] mb-3 px-1">
           Histórico de Receitas ({initialIncomes.length})
         </h2>

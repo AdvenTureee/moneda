@@ -45,7 +45,7 @@ export async function getBudgets(userId: string, period: string): Promise<Budget
     ['budgets', userId, period],
     {
       tags: [cacheTags.budgets(userId)],
-      revalidate: 60,
+      revalidate: 300,
     },
   )();
   // unstable_cache serializa Date → string. Re-hidrata aqui.

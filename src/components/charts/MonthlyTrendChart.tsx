@@ -84,7 +84,7 @@ export default function MonthlyTrendChart({ data, currentPeriod }: MonthlyTrendC
   const avg = Math.round(total / data.length);
 
   return (
-    <div ref={containerRef} className="animate-fade-up delay-3">
+    <div ref={containerRef}>
       <ChartCard
         title="Evolução dos últimos meses"
         ariaLabel="Evolução de gastos nos últimos meses"

@@ -21,7 +21,7 @@ export default function BudgetProgressList({ items }: BudgetProgressListProps) {
   if (items.length === 0) return null;
 
   return (
-    <div className="animate-fade-up delay-4">
+    <div>
       <ChartCard
         title="Orçamentos por categoria"
         ariaLabel="Acompanhamento de orçamento por categoria"

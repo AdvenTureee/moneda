@@ -1,11 +1,12 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import {
   createSessionClient,
   createServiceClient,
   isSupabaseEnabled,
 } from '@/lib/supabase/server';
+import { cacheTags } from '@/lib/cache';
 import { MOCK_USER, addUserCategory, addSessionExpense } from '@/data/mock';
 
 export type OnboardingResult = { ok: true } | { ok: false; error: string };
@@ -94,6 +95,7 @@ export async function completeOnboardingAction(
         console.error('[completeOnboarding] profile update:', profileError);
         return { ok: false, error: 'Não foi possível salvar seu perfil.' };
       }
+      revalidateTag(cacheTags.profile(userId), { expire: 0 });
 
       // 2. Custom categories
       if (payload.customCategories.length > 0) {

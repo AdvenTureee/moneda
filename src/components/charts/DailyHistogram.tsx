@@ -121,7 +121,7 @@ export default function DailyHistogram({ data, period }: DailyHistogramProps) {
   const allZero = bars.every((b) => b.amount === 0);
 
   return (
-    <div ref={containerRef} className="animate-fade-up delay-3">
+    <div ref={containerRef}>
       <ChartCard
         title="Gastos diários"
         ariaLabel="Histograma de gastos diários"

@@ -1,6 +1,5 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import PageRefreshWrapper from '@/components/PageRefreshWrapper';
 import DashboardMetric from '@/components/DashboardMetric';
 import AIInsightBanner from '@/components/AIInsightBanner';
 import ExpenseCard from '@/components/ExpenseCard';
@@ -16,18 +15,7 @@ import { getDashboardMetrics } from '@/lib/expenses';
 import { getBudgets } from '@/lib/budgets';
 import { getLatestInsight } from '@/lib/insights';
 import { getMonthlyBudgetCents } from '@/lib/monthlyBudget';
-import { createServiceClient, isSupabaseEnabled } from '@/lib/supabase/server';
-
-async function isUserOnboarded(userId: string): Promise<boolean> {
-  if (!isSupabaseEnabled()) return true;
-  const admin = createServiceClient();
-  const { data } = await admin
-    .from('profiles')
-    .select('onboarded')
-    .eq('id', userId)
-    .single();
-  return data?.onboarded === true;
-}
+import { isUserOnboarded } from '@/lib/profiles';
 import { formatCurrency, getCurrentPeriod } from '@/lib/utils';
 import { createSessionClient } from '@/lib/supabase/server';
 
@@ -86,7 +74,6 @@ export default async function DashboardPage({
 
   return (
     <>
-      <PageRefreshWrapper>
       <div className="max-w-lg mx-auto px-4">
         {/* Header */}
         <header className="relative z-40 flex items-center justify-between py-5 animate-fade-up delay-0">
@@ -110,7 +97,7 @@ export default async function DashboardPage({
         <MoTipBubble />
 
         {/* Hero: restante do mês (principal) */}
-        <section className="mb-5 animate-fade-up delay-1" aria-label="Restante do mês">
+        <section className="mb-5 animate-fade-up delay-2" aria-label="Restante do mês">
           <p className="text-xs text-[#6B7280] font-medium mb-1">
             Restante este mês
           </p>
@@ -133,7 +120,7 @@ export default async function DashboardPage({
         </section>
 
         {/* Metric cards */}
-        <section className="flex gap-3 mb-6 animate-fade-up delay-2" aria-label="Métricas do mês">
+        <section className="flex gap-3 mb-6 animate-fade-up delay-3" aria-label="Métricas do mês">
           <DashboardMetric
             label="Orçamento"
             value={formatCurrency(BUDGET_CENTS)}
@@ -167,13 +154,13 @@ export default async function DashboardPage({
 
         {/* Daily histogram */}
         {metrics.dailySpending.length > 0 && (
-          <section className="mb-6">
+          <section className="mb-6 animate-fade-up delay-5">
             <DailyHistogram data={metrics.dailySpending} period={period} />
           </section>
         )}
 
         {/* AI Insight banner */}
-        <section className="mb-6 animate-fade-up delay-5" aria-label="Resumo do mês">
+        <section className="mb-6 animate-fade-up delay-6" aria-label="Resumo do mês">
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-base font-heading text-[#1A1D23]">Resumo do mês</h2>
           </div>
@@ -188,7 +175,7 @@ export default async function DashboardPage({
         </section>
 
         {/* Recent expenses */}
-        <section aria-label="Últimos gastos" className="animate-fade-up delay-6">
+        <section aria-label="Últimos gastos" className="animate-fade-up delay-7">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-base font-heading text-[#1A1D23]">Últimos gastos</h2>
             <Link href="/feed" className="text-xs font-medium text-[#A8C5E0]">
@@ -207,7 +194,7 @@ export default async function DashboardPage({
           ) : (
             <div className="space-y-2">
               {metrics.recentExpenses.map((expense, i) => (
-                <div key={expense.id} className={`animate-fade-up delay-${Math.min(i + 6, 8)}`}>
+                <div key={expense.id} className={`animate-fade-up delay-${Math.min(i + 7, 9)}`}>
                   <ExpenseCard
                     expense={expense}
                     variant="compact"
@@ -220,7 +207,6 @@ export default async function DashboardPage({
 
         <div className="h-6" />
       </div>
-      </PageRefreshWrapper>
       {remaining > 0 && <Confetti trigger sessionKey="dashboard-confetti" />}
     </>
   );

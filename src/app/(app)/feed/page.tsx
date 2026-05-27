@@ -190,7 +190,7 @@ function FeedPageInner() {
 
   return (
     <>
-      <div className="max-w-lg mx-auto px-4 pb-24">
+      <div className="max-w-lg mx-auto px-4 pb-24 [scrollbar-gutter:stable]">
         {/* Header */}
         <header className="py-6 animate-fade-up delay-0">
           <h1 className="text-2xl font-heading text-[#1A1D23]">Feed de Gastos</h1>
@@ -254,75 +254,94 @@ function FeedPageInner() {
         </div>
 
         {/* Expense list grouped by date */}
-        {loading ? null : error ? (
-            <div className="flex flex-col items-center py-16 text-center">
-              <Icon name="Warning" size={48} className="mb-4 opacity-30" />
-              <p className="text-base font-semibold text-[#B14C4C]">{error}</p>
-              <button
-                onClick={fetchExpenses}
-                className="mt-2 px-4 py-2 bg-[#5BBF8E] hover:bg-[#4AA77C] active:bg-[#3FA876] text-white rounded-[10px] text-sm font-semibold transition-colors duration-150 active:scale-[0.98]"
-              >
-                Tentar novamente
-              </button>
-            </div>
-          ) : groups.length === 0 ? (
-            <div className="flex flex-col items-center py-16 text-center">
-              {search || activeCategory || dateRange.presetId !== 'all' ? (
-                <>
-                  <Mo variant="thinking" size={128} className="mb-4 animate-bounce-in" />
-                  <p className="text-base font-semibold text-[#1A1D23]">
-                    Nenhum gasto encontrado
-                  </p>
-                  <p className="text-sm text-[#6B7280] mt-1">
-                    Tente ajustar os filtros.
-                  </p>
-                </>
-              ) : (
-                <>
-                  <Mo variant="idle" size={128} className="mb-4 animate-bounce-in" />
-                  <p className="text-base font-semibold text-[#1A1D23]">
-                    Nada por aqui ainda
-                  </p>
-                  <p className="text-sm text-[#6B7280] mt-1">
-                    Comece adicionando sua primeira despesa tocando em <strong>+</strong>.
-                  </p>
-                </>
-              )}
-            </div>
-          ) : (
-            groups.map((group, gi) => {
-              const dayTotal = group.items.reduce((sum, e) => sum + e.amount, 0);
-              return (
-                <div key={group.dateKey} className={`mb-4 animate-fade-up delay-${Math.min(gi, 6)}`}>
-                  {/* Date section header */}
-                  <div
-                    className="themed-card flex items-center justify-between px-4 py-2.5 mb-2 bg-white rounded-[10px]"
-                  >
-                    <span className="text-xs font-semibold text-[#6B7280]">
-                      {group.label}
-                    </span>
-                    <span className="text-xs font-semibold text-[#E07070] tabular-nums">
-                      −{formatCurrency(dayTotal)}
-                    </span>
-                  </div>
-
-                  {/* Expense cards */}
-                  <div className="space-y-2">
-                    {group.items.map((expense, ei) => (
-                      <div key={expense.id} className={`animate-fade-up delay-${Math.min(gi * 2 + ei + 1, 8)}`}>
-                        <ExpenseCard
-                          expense={expense}
-                          variant="full"
-                          onEdit={() => setEditingExpense(expense)}
-                          onDelete={() => handleDelete(expense)}
-                        />
-                      </div>
-                    ))}
-                  </div>
+        <div className="relative min-h-[500px]">
+          {/* Skeleton layer */}
+          <div
+            className="absolute inset-0 space-y-4 transition-opacity duration-200"
+            style={{ opacity: loading ? 1 : 0 }}
+            aria-hidden={!loading}
+          >
+            {[0, 1, 2].map((i) => (
+              <div key={i}>
+                <div className="h-10 bg-[#F4F6FA] rounded-[10px] mb-2" />
+                <div className="space-y-2">
+                  <div className="h-[76px] bg-[#F4F6FA] rounded-[10px]" />
+                  {i < 2 && <div className="h-[76px] bg-[#F4F6FA] rounded-[10px]" />}
                 </div>
-              );
-            })
-        )}
+              </div>
+            ))}
+          </div>
+
+          {/* Content layer */}
+          <div
+            className="transition-opacity duration-200"
+            style={{ opacity: loading ? 0 : 1 }}
+          >
+            {error ? (
+                <div className="flex flex-col items-center py-16 text-center">
+                  <Icon name="Warning" size={48} className="mb-4 opacity-30" />
+                  <p className="text-base font-semibold text-[#B14C4C]">{error}</p>
+                  <button
+                    onClick={fetchExpenses}
+                    className="mt-2 px-4 py-2 bg-[#5BBF8E] hover:bg-[#4AA77C] active:bg-[#3FA876] text-white rounded-[10px] text-sm font-semibold transition-colors duration-150 active:scale-[0.98]"
+                  >
+                    Tentar novamente
+                  </button>
+                </div>
+              ) : groups.length === 0 ? (
+                <div className="flex flex-col items-center py-16 text-center">
+                  {search || activeCategory || dateRange.presetId !== 'all' ? (
+                    <>
+                      <Mo variant="thinking" size={128} className="mb-4 animate-bounce-in" />
+                      <p className="text-base font-semibold text-[#1A1D23]">
+                        Nenhum gasto encontrado
+                      </p>
+                      <p className="text-sm text-[#6B7280] mt-1">
+                        Tente ajustar os filtros.
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-sm text-[#6B7280] mt-1">
+                      Comece adicionando sua primeira despesa tocando em <strong>+</strong>.
+                    </p>
+                  )}
+                </div>
+              ) : (
+                groups.map((group, gi) => {
+                  const dayTotal = group.items.reduce((sum, e) => sum + e.amount, 0);
+                  return (
+                    <div key={group.dateKey} className={`mb-4 animate-fade-up delay-${Math.min(gi + 2, 8)}`}>
+                      {/* Date section header */}
+                      <div
+                        className="themed-card flex items-center justify-between px-4 py-2.5 mb-2 bg-white rounded-[10px]"
+                      >
+                        <span className="text-xs font-semibold text-[#6B7280]">
+                          {group.label}
+                        </span>
+                        <span className="text-xs font-semibold text-[#E07070] tabular-nums">
+                          −{formatCurrency(dayTotal)}
+                        </span>
+                      </div>
+
+                      {/* Expense cards */}
+                      <div className="space-y-2">
+                        {group.items.map((expense, ei) => (
+                          <div key={expense.id}>
+                            <ExpenseCard
+                              expense={expense}
+                              variant="full"
+                              onEdit={() => setEditingExpense(expense)}
+                              onDelete={() => handleDelete(expense)}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })
+            )}
+          </div>
+        </div>
       </div>
       <AddExpenseModal
         isOpen={!!editingExpense}
