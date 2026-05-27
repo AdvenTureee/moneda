@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useState, useTransition } from 'react';
 import { CaretLeft, Check } from '@phosphor-icons/react';
-import Toast from '@/components/Toast';
+import { useToast } from '@/components/ToastProvider';
 import { updateCurrency } from '../actions';
 import { formatCurrency } from '@/lib/utils';
 
@@ -21,7 +21,7 @@ const OPTIONS: { code: string; label: string; flag: string }[] = [
 export default function CurrencyForm({ initialCurrency }: CurrencyFormProps) {
   const [selected, setSelected] = useState(initialCurrency);
   const [saving, startSaving] = useTransition();
-  const [feedback, setFeedback] = useState<{ kind: 'success' | 'error'; text: string } | null>(null);
+  const { showToast } = useToast();
 
   function handleSave() {
     if (selected === initialCurrency) return;
@@ -30,9 +30,9 @@ export default function CurrencyForm({ initialCurrency }: CurrencyFormProps) {
     startSaving(async () => {
       const result = await updateCurrency(fd);
       if (result.ok) {
-        setFeedback({ kind: 'success', text: result.message ?? 'Salvo.' });
+        showToast('success', result.message ?? 'Salvo.');
       } else {
-        setFeedback({ kind: 'error', text: result.error });
+        showToast('error', result.error);
       }
     });
   }
@@ -97,13 +97,6 @@ export default function CurrencyForm({ initialCurrency }: CurrencyFormProps) {
         A formatação de novos valores usará a moeda escolhida. Telas existentes podem precisar de reload.
       </p>
 
-      {feedback && (
-        <Toast
-          kind={feedback.kind}
-          text={feedback.text}
-          onClose={() => setFeedback(null)}
-        />
-      )}
     </div>
   );
 }

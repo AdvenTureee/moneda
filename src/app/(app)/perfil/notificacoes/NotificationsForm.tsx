@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useState, useTransition } from 'react';
 import { CaretLeft } from '@phosphor-icons/react';
-import Toast from '@/components/Toast';
+import { useToast } from '@/components/ToastProvider';
 import { updateNotificationPrefs } from '../actions';
 import type { NotificationPrefs } from '../notification-prefs';
 
@@ -32,7 +32,7 @@ const ITEMS: { key: keyof NotificationPrefs; label: string; description: string 
 export default function NotificationsForm({ initial }: NotificationsFormProps) {
   const [prefs, setPrefs] = useState<NotificationPrefs>(initial);
   const [saving, startSaving] = useTransition();
-  const [feedback, setFeedback] = useState<{ kind: 'success' | 'error'; text: string } | null>(null);
+  const { showToast } = useToast();
 
   function toggle(key: keyof NotificationPrefs) {
     setPrefs((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -45,11 +45,11 @@ export default function NotificationsForm({ initial }: NotificationsFormProps) {
     }
     startSaving(async () => {
       const result = await updateNotificationPrefs(fd);
-      setFeedback(
-        result.ok
-          ? { kind: 'success', text: result.message ?? 'Salvo.' }
-          : { kind: 'error', text: result.error },
-      );
+      if (result.ok) {
+        showToast('success', result.message ?? 'Salvo.');
+      } else {
+        showToast('error', result.error);
+      }
     });
   }
 
@@ -124,13 +124,6 @@ export default function NotificationsForm({ initial }: NotificationsFormProps) {
         O envio de emails depende de SMTP configurado no Supabase. Push notifications ainda não estão habilitadas.
       </p>
 
-      {feedback && (
-        <Toast
-          kind={feedback.kind}
-          text={feedback.text}
-          onClose={() => setFeedback(null)}
-        />
-      )}
     </div>
   );
 }

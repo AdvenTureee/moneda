@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Trash, Check, Plus, ArrowsClockwise } from '@phosphor-icons/react';
-import Toast from '@/components/Toast';
+import { useToast } from '@/components/ToastProvider';
 import Icon from '@/components/Icon';
 import DatePicker from '@/components/DatePicker';
 import { formatCurrency, formatDate } from '@/lib/utils';
@@ -13,8 +13,6 @@ import type { Income, IncomeSource } from '@/types';
 interface IncomesViewProps {
   initialIncomes: Income[];
 }
-
-type Feedback = { kind: 'success' | 'error'; text: string } | null;
 
 const INCOME_SOURCES = [
   { id: 'salary' as IncomeSource, name: 'Salário', icon: 'Briefcase', color: '#10B981' },
@@ -36,7 +34,7 @@ export default function IncomesView({ initialIncomes }: IncomesViewProps) {
     return today.toISOString().split('T')[0]; // YYYY-MM-DD
   });
 
-  const [feedback, setFeedback] = useState<Feedback>(null);
+  const { showToast } = useToast();
   const [isAdding, startAdding] = useTransition();
   const [isDeleting, startDeleting] = useTransition();
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -62,7 +60,6 @@ export default function IncomesView({ initialIncomes }: IncomesViewProps) {
     e.preventDefault();
     if (amountCents <= 0 || !description.trim()) return;
 
-    setFeedback(null);
     startAdding(async () => {
       try {
         const result = await saveIncomeAction(
@@ -74,7 +71,7 @@ export default function IncomesView({ initialIncomes }: IncomesViewProps) {
         );
 
         if (result.ok) {
-          setFeedback({ kind: 'success', text: 'Receita lançada com sucesso!' });
+          showToast('success', 'Receita lançada com sucesso!');
           // Reset form fields
           setAmountCents(0);
           setAmountDisplay('');
@@ -83,10 +80,10 @@ export default function IncomesView({ initialIncomes }: IncomesViewProps) {
           setIsRecurring(false);
           setReceivedAtDate(new Date().toISOString().split('T')[0]);
         } else {
-          setFeedback({ kind: 'error', text: result.error });
+          showToast('error', result.error);
         }
       } catch (err: any) {
-        setFeedback({ kind: 'error', text: err.message || 'Erro inesperado ao salvar.' });
+        showToast('error', err.message || 'Erro inesperado ao salvar.');
       }
     });
   };
@@ -94,17 +91,16 @@ export default function IncomesView({ initialIncomes }: IncomesViewProps) {
   const handleDeleteIncome = (id: string) => {
     if (!window.confirm('Tem certeza que deseja excluir esta receita?')) return;
     setDeletingId(id);
-    setFeedback(null);
     startDeleting(async () => {
       try {
         const result = await deleteIncomeAction(id);
         if (result.ok) {
-          setFeedback({ kind: 'success', text: 'Receita excluída.' });
+          showToast('success', 'Receita excluída.');
         } else {
-          setFeedback({ kind: 'error', text: result.error });
+          showToast('error', result.error);
         }
       } catch (err: any) {
-        setFeedback({ kind: 'error', text: err.message || 'Erro ao deletar.' });
+        showToast('error', err.message || 'Erro ao deletar.');
       } finally {
         setDeletingId(null);
       }
@@ -352,14 +348,6 @@ export default function IncomesView({ initialIncomes }: IncomesViewProps) {
           </div>
         )}
       </section>
-
-      {feedback && (
-        <Toast
-          kind={feedback.kind}
-          text={feedback.text}
-          onClose={() => setFeedback(null)}
-        />
-      )}
 
       <style jsx global>{`
         @keyframes spin-slow {

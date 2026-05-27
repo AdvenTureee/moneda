@@ -3,7 +3,7 @@
 import { useState, useTransition, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, MagnifyingGlass } from '@phosphor-icons/react';
-import Toast from '@/components/Toast';
+import { useToast } from '@/components/ToastProvider';
 import Icon from '@/components/Icon';
 import { formatCurrency } from '@/lib/utils';
 import { saveCategoryBudgetAction } from '../actions-finance';
@@ -13,8 +13,6 @@ interface BudgetFormProps {
   initialBudgets: Budget[];
   period: string;
 }
-
-type Feedback = { kind: 'success' | 'error'; text: string } | null;
 
 export default function BudgetForm({ initialBudgets, period }: BudgetFormProps) {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -47,7 +45,7 @@ export default function BudgetForm({ initialBudgets, period }: BudgetFormProps) 
   );
 
   const [hasChanges, setHasChanges] = useState(false);
-  const [feedback, setFeedback] = useState<Feedback>(null);
+  const { showToast } = useToast();
   const [saving, startSaving] = useTransition();
 
   function formatPeriod(p: string) {
@@ -68,13 +66,11 @@ export default function BudgetForm({ initialBudgets, period }: BudgetFormProps) 
       [catId]: cents,
     }));
     setHasChanges(true);
-    setFeedback(null);
   };
 
   const totalPlanned = Object.values(budgetsMap).reduce((sum, val) => sum + val, 0);
 
   const handleSaveAll = () => {
-    setFeedback(null);
     startSaving(async () => {
       try {
         const promises = categories.map((cat) => {
@@ -86,13 +82,13 @@ export default function BudgetForm({ initialBudgets, period }: BudgetFormProps) 
         const errorResult = results.find((r) => !r.ok);
 
         if (errorResult && 'error' in errorResult) {
-          setFeedback({ kind: 'error', text: errorResult.error });
+          showToast('error', errorResult.error);
         } else {
-          setFeedback({ kind: 'success', text: 'Orçamentos salvos com sucesso!' });
+          showToast('success', 'Orçamentos salvos com sucesso!');
           setHasChanges(false);
         }
       } catch (err: any) {
-        setFeedback({ kind: 'error', text: err.message || 'Erro inesperado ao salvar.' });
+        showToast('error', err.message || 'Erro inesperado ao salvar.');
       }
     });
   };
@@ -226,13 +222,6 @@ export default function BudgetForm({ initialBudgets, period }: BudgetFormProps) 
         </button>
       </div>
 
-      {feedback && (
-        <Toast
-          kind={feedback.kind}
-          text={feedback.text}
-          onClose={() => setFeedback(null)}
-        />
-      )}
     </div>
   );
 }

@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { CaretLeft, Check, X, Trash, Plus, MagnifyingGlass } from '@phosphor-icons/react';
 import Icon, { AVAILABLE_ICONS } from '@/components/Icon';
-import Toast from '@/components/Toast';
+import { useToast } from '@/components/ToastProvider';
 import { useCategories } from '@/hooks/useCategories';
 
 const COLOR_SWATCHES = [
@@ -22,8 +22,6 @@ function slugify(text: string): string {
     .replace(/^_|_$/g, '');
 }
 
-type Feedback = { kind: 'success' | 'error'; text: string } | null;
-
 type CategoryItem = ReturnType<typeof useCategories>['data'][number];
 
 export default function CategoriesView() {
@@ -40,7 +38,7 @@ export default function CategoriesView() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   // Toast
-  const [feedback, setFeedback] = useState<Feedback>(null);
+  const { showToast } = useToast();
 
   // Search
   const [search, setSearch] = useState('');
@@ -58,7 +56,6 @@ export default function CategoriesView() {
     setEditingId(cat.id);
     setCreating(false);
     setDeletingId(null);
-    setFeedback(null);
     setFormData({ name: cat.name, icon: cat.icon, color: cat.color, keywords: [...cat.keywords] });
     setKeywordInput('');
   }
@@ -73,7 +70,6 @@ export default function CategoriesView() {
     setCreating(true);
     setEditingId(null);
     setDeletingId(null);
-    setFeedback(null);
     const usedIcons = new Set(categories.map((c) => c.icon));
     const freeIcon = AVAILABLE_ICONS.find((i) => !usedIcons.has(i)) ?? DEFAULT_ICON;
     setFormData({ name: '', icon: freeIcon, color: DEFAULT_COLOR, keywords: [] });
@@ -95,7 +91,6 @@ export default function CategoriesView() {
   async function handleSave() {
     if (!formData.name.trim()) return;
     setSaving(true);
-    setFeedback(null);
 
     try {
       if (creating) {
@@ -109,7 +104,7 @@ export default function CategoriesView() {
         if (!res.ok) throw new Error(d.error);
         invalidate();
         await refresh();
-        setFeedback({ kind: 'success', text: 'Categoria criada.' });
+        showToast('success', 'Categoria criada.');
         setCreating(false);
         resetForm();
       } else if (editingId) {
@@ -124,12 +119,12 @@ export default function CategoriesView() {
         if (!res.ok) throw new Error(d.error);
         invalidate();
         await refresh();
-        setFeedback({ kind: 'success', text: 'Categoria atualizada.' });
+        showToast('success', 'Categoria atualizada.');
         setEditingId(null);
         resetForm();
       }
     } catch (e) {
-      setFeedback({ kind: 'error', text: e instanceof Error ? e.message : 'Erro ao salvar.' });
+      showToast('error', e instanceof Error ? e.message : 'Erro ao salvar.');
     } finally {
       setSaving(false);
     }
@@ -137,7 +132,6 @@ export default function CategoriesView() {
 
   async function handleDelete(id: string) {
     setSaving(true);
-    setFeedback(null);
     try {
       const res = await fetch('/api/categories', {
         method: 'POST',
@@ -148,10 +142,10 @@ export default function CategoriesView() {
       if (!res.ok) throw new Error(d.error);
       invalidate();
       await refresh();
-      setFeedback({ kind: 'success', text: 'Categoria excluída.' });
+      showToast('success', 'Categoria excluída.');
       setDeletingId(null);
     } catch (e) {
-      setFeedback({ kind: 'error', text: e instanceof Error ? e.message : 'Erro ao excluir.' });
+      showToast('error', e instanceof Error ? e.message : 'Erro ao excluir.');
     } finally {
       setSaving(false);
     }
@@ -350,13 +344,7 @@ export default function CategoriesView() {
         </button>
       )}
 
-      {feedback && (
-        <Toast
-          kind={feedback.kind}
-          text={feedback.text}
-          onClose={() => setFeedback(null)}
-        />
-      )}
+      
     </div>
   );
 

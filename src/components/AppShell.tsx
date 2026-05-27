@@ -4,17 +4,13 @@ import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import BottomNav from '@/components/BottomNav';
 import AddExpenseModal from '@/components/AddExpenseModal';
-import Toast from '@/components/Toast';
+import { ToastProvider, useToast } from '@/components/ToastProvider';
 import ScrollFadeIndicator from '@/components/ScrollFadeIndicator';
 import type { ExpenseInput } from '@/types';
 
-interface AppShellProps {
-  children: React.ReactNode;
-}
-
-export default function AppShell({ children }: AppShellProps) {
+function ShellContent({ children }: { children: React.ReactNode }) {
   const [modalOpen, setModalOpen] = useState(false);
-  const [toastText, setToastText] = useState<string | null>(null);
+  const { showToast } = useToast();
   const router = useRouter();
 
   const handleSave = useCallback(
@@ -24,10 +20,10 @@ export default function AppShell({ children }: AppShellProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(input),
       }).catch(() => {});
-      setToastText('Gasto adicionado com sucesso');
+      showToast('success', 'Gasto adicionado com sucesso');
       router.refresh();
     },
-    [router]
+    [router, showToast]
   );
 
   return (
@@ -45,13 +41,18 @@ export default function AppShell({ children }: AppShellProps) {
         onClose={() => setModalOpen(false)}
         onSave={handleSave}
       />
-      {toastText && (
-        <Toast
-          kind="success"
-          text={toastText}
-          onClose={() => setToastText(null)}
-        />
-      )}
     </>
   );
+}
+
+export default function AppShell({ children }: AppShellProps) {
+  return (
+    <ToastProvider>
+      <ShellContent>{children}</ShellContent>
+    </ToastProvider>
+  );
+}
+
+interface AppShellProps {
+  children: React.ReactNode;
 }

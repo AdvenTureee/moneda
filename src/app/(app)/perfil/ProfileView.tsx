@@ -20,7 +20,7 @@ import {
   Moon,
   Sun,
 } from '@phosphor-icons/react';
-import Toast from '@/components/Toast';
+import { useToast } from '@/components/ToastProvider';
 import {
   updateDisplayName,
   updateEmail,
@@ -60,7 +60,6 @@ const CURRENCY_LABELS: Record<string, string> = {
   GBP: 'Libra Esterlina (GBP)',
 };
 
-type Feedback = { kind: 'success' | 'error'; text: string } | null;
 type ProfileIconTone =
   | 'green'
   | 'blue'
@@ -98,7 +97,7 @@ export default function ProfileView({
   const [editing, setEditing] = useState(false);
   const [editingEmail, setEditingEmail] = useState(false);
   const [draftEmail, setDraftEmail] = useState(email);
-  const [feedback, setFeedback] = useState<Feedback>(null);
+  const { showToast } = useToast();
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [savingName, startSaveName] = useTransition();
   const [savingEmail, startSaveEmail] = useTransition();
@@ -119,7 +118,6 @@ export default function ProfileView({
   const hasEmailIdentity = linkedProviders.includes('email');
 
   async function handleLinkGoogle() {
-    setFeedback(null);
     setLinkingGoogle(true);
     const supabase = createClient();
     const { error } = await supabase.auth.linkIdentity({
@@ -128,7 +126,7 @@ export default function ProfileView({
     });
     if (error) {
       console.error('[linkIdentity:google]', error);
-      setFeedback({ kind: 'error', text: 'Não foi possível vincular o Google. Tente novamente.' });
+      showToast('error', 'Não foi possível vincular o Google. Tente novamente.');
       setLinkingGoogle(false);
     }
     // se ok, navegação acontece via OAuth — sem reset de estado aqui.
@@ -136,9 +134,9 @@ export default function ProfileView({
 
   function applyResult(result: ActionResult) {
     if (result.ok) {
-      setFeedback({ kind: 'success', text: result.message ?? 'Pronto.' });
+      showToast('success', result.message ?? 'Pronto.');
     } else {
-      setFeedback({ kind: 'error', text: result.error });
+      showToast('error', result.error);
     }
   }
 
@@ -178,7 +176,6 @@ export default function ProfileView({
   }
 
   function handleSendReset() {
-    setFeedback(null);
     startSendReset(async () => {
       const result = await sendPasswordReset();
       applyResult(result);
@@ -186,7 +183,6 @@ export default function ProfileView({
   }
 
   function handleSetPassword() {
-    setFeedback(null);
     const fd = new FormData();
     fd.set('password', newPassword);
     startSavePassword(async () => {
@@ -203,20 +199,19 @@ export default function ProfileView({
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
-    setFeedback(null);
     try {
       const formData = new FormData();
       formData.set('file', file);
       const res = await fetch('/api/upload-avatar', { method: 'POST', body: formData });
       const data = await res.json();
       if (!res.ok) {
-        setFeedback({ kind: 'error', text: data.error ?? 'Erro ao fazer upload.' });
+        showToast('error', data.error ?? 'Erro ao fazer upload.');
         return;
       }
       setCurrentAvatarUrl(data.url);
-      setFeedback({ kind: 'success', text: 'Foto atualizada.' });
+      showToast('success', 'Foto atualizada.');
     } catch {
-      setFeedback({ kind: 'error', text: 'Erro ao conectar com o servidor.' });
+      showToast('error', 'Erro ao conectar com o servidor.');
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -224,7 +219,6 @@ export default function ProfileView({
   }
 
   function handleSignOut() {
-    setFeedback(null);
     startSignOut(() => {
       void signOut();
     });
@@ -304,7 +298,6 @@ export default function ProfileView({
                   type="button"
                   onClick={() => {
                     setDraftName(name);
-                    setFeedback(null);
                     setEditing(true);
                   }}
                   className="w-8 h-8 -mr-1 flex items-center justify-center text-[#A8C5E0] hover:bg-[#F8F9FB] rounded-full transition-colors shrink-0"
@@ -321,7 +314,6 @@ export default function ProfileView({
                   type="button"
                   onClick={() => {
                     setDraftEmail(email);
-                    setFeedback(null);
                     setEditingEmail(true);
                   }}
                   className="w-8 h-8 -mr-1 flex items-center justify-center text-[#A8C5E0] hover:bg-[#F8F9FB] rounded-full transition-colors shrink-0"
@@ -570,7 +562,6 @@ export default function ProfileView({
               type="button"
               onClick={() => {
                 setShowSetPassword((s) => !s);
-                setFeedback(null);
               }}
               disabled={anyBusy}
               className="w-full flex items-center gap-3 px-5 py-4 text-left disabled:opacity-60 hover:bg-[#F8F9FB] transition-colors"
@@ -722,13 +713,7 @@ export default function ProfileView({
         </section>
       )}
 
-      {feedback && (
-        <Toast
-          kind={feedback.kind}
-          text={feedback.text}
-          onClose={() => setFeedback(null)}
-        />
-      )}
+      
     </div>
   );
 }
