@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import type { Components } from 'react-markdown';
@@ -112,6 +113,26 @@ export default function InsightsView({
       return next;
     });
   }
+
+  const searchParams = useSearchParams();
+  const autoOpened = useRef(false);
+
+  useEffect(() => {
+    if (autoOpened.current) return;
+    const openType = searchParams.get('open');
+    if (!openType) return;
+    const target = insights.find((i) => i.type === openType && i.period === period);
+    if (!target) return;
+    autoOpened.current = true;
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      next.add(target.id);
+      return next;
+    });
+    requestAnimationFrame(() => {
+      document.getElementById(`insight-${target.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }, [searchParams, insights, period]);
 
   async function handleGenerate() {
     setGenerating(true);
@@ -382,6 +403,7 @@ export default function InsightsView({
                       return (
                         <div
                           key={insight.id}
+                          id={`insight-${insight.id}`}
                           className="themed-card bg-white rounded-[12px] overflow-hidden transition-shadow duration-150"
                           style={{
                             boxShadow: expanded

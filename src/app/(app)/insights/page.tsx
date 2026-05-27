@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { redirect } from 'next/navigation';
 import PageRefreshWrapper from '@/components/PageRefreshWrapper';
 import InsightsView from './InsightsView';
@@ -85,6 +86,7 @@ export default async function InsightsPage({
 
   return (
     <PageRefreshWrapper>
+      <Suspense fallback={<div className="max-w-lg mx-auto px-4 pb-24 pt-5"><div className="h-6 w-32 bg-[#F1F3F7] rounded animate-pulse mb-4" /><div className="h-40 bg-[#F1F3F7] rounded-[20px] animate-pulse mb-6" /></div>}>
       <InsightsView
         period={period}
         monthName={monthName}
@@ -98,6 +100,7 @@ export default async function InsightsPage({
         monthlyTotals={monthlyTotals}
         budgetProgress={budgetProgress}
       />
+      </Suspense>
     </PageRefreshWrapper>
   );
 }
