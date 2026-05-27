@@ -8,9 +8,12 @@ import {
   Plus,
   CaretLeft,
   Minus,
+  Moon,
+  Sun,
 } from '@phosphor-icons/react';
 import Icon, { AVAILABLE_ICONS } from '@/components/Icon';
 import Mo from '@/components/Mo';
+import { useTheme, type ThemePreference } from '@/components/ThemeProvider';
 import { formatCurrency } from '@/lib/utils';
 import {
   completeOnboardingAction,
@@ -25,8 +28,8 @@ interface OnboardingViewProps {
   firstName: string;
 }
 
-type Step = 'income' | 'closing' | 'pet' | 'expenses' | 'categories';
-const STEP_ORDER: Step[] = ['income', 'closing', 'pet', 'expenses', 'categories'];
+type Step = 'income' | 'theme' | 'closing' | 'pet' | 'expenses' | 'categories';
+const STEP_ORDER: Step[] = ['income', 'theme', 'closing', 'pet', 'expenses', 'categories'];
 
 interface ExpenseRow {
   tempId: string;
@@ -66,6 +69,7 @@ function parseCentsInput(raw: string): number {
 
 export default function OnboardingView({ defaultCategories, firstName }: OnboardingViewProps) {
   const router = useRouter();
+  const { theme, setTheme } = useTheme();
   const [stepIdx, setStepIdx] = useState(0);
   const step: Step = STEP_ORDER[stepIdx];
 
@@ -74,12 +78,15 @@ export default function OnboardingView({ defaultCategories, firstName }: Onboard
   const [incomeDisplay, setIncomeDisplay] = useState('');
 
   // Q2
-  const [closingDay, setClosingDay] = useState(10);
+  // Theme preference is saved locally through ThemeProvider.
 
   // Q3
-  const [hasPet, setHasPet] = useState<boolean | null>(null);
+  const [closingDay, setClosingDay] = useState(10);
 
   // Q4
+  const [hasPet, setHasPet] = useState<boolean | null>(null);
+
+  // Q5
   const visibleCategories = useMemo(
     () => defaultCategories.filter((c) => (hasPet ? true : c.id !== 'pet')),
     [defaultCategories, hasPet],
@@ -87,7 +94,7 @@ export default function OnboardingView({ defaultCategories, firstName }: Onboard
   const firstCategoryId = visibleCategories[0]?.id ?? '';
   const [expenseRows, setExpenseRows] = useState<ExpenseRow[]>([]);
 
-  // Q5
+  // Q6
   const [showCustomForm, setShowCustomForm] = useState(false);
   const [customDraft, setCustomDraft] = useState<OnboardingCustomCategory>({
     name: '',
@@ -103,6 +110,7 @@ export default function OnboardingView({ defaultCategories, firstName }: Onboard
   const canNext = (() => {
     switch (step) {
       case 'income': return incomeCents > 0;
+      case 'theme': return true;
       case 'closing': return closingDay >= 1 && closingDay <= 28;
       case 'pet': return hasPet !== null;
       case 'expenses': return expenseRows.every(
@@ -244,6 +252,109 @@ export default function OnboardingView({ defaultCategories, firstName }: Onboard
                 className="flex-1 text-4xl font-extrabold bg-transparent outline-none tabular-nums text-[#1A1D23] placeholder:text-[#9CA3AF]"
                 aria-label="Renda mensal em reais"
               />
+            </div>
+          </section>
+        )}
+
+        {step === 'theme' && (
+          <section className="flex-1">
+            <Mo variant="happy" size={96} className="mx-auto" />
+            <h2 className="text-xl font-heading text-center text-[#1A1D23] mt-3">
+              Escolha seu visual
+            </h2>
+            <p className="text-sm text-[#6B7280] text-center mt-2 mb-6 max-w-[320px] mx-auto">
+              Você pode começar no modo claro ou escuro e mudar depois em Perfil.
+            </p>
+            <div className="grid grid-cols-2 gap-3" role="group" aria-label="Preferência de tema">
+              {[
+                {
+                  value: 'light' as ThemePreference,
+                  label: 'Claro',
+                  description: 'Leve e aberto',
+                  icon: Sun,
+                  previewBg: '#F8F9FB',
+                  previewSurface: '#FFFFFF',
+                  previewText: '#1A1D23',
+                },
+                {
+                  value: 'dark' as ThemePreference,
+                  label: 'Escuro',
+                  description: 'Calmo à noite',
+                  icon: Moon,
+                  previewBg: '#10151C',
+                  previewSurface: '#171E27',
+                  previewText: '#F5F7FA',
+                },
+              ].map((opt) => {
+                const active = theme === opt.value;
+                const OptionIcon = opt.icon;
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setTheme(opt.value)}
+                    aria-pressed={active}
+                    className={`rounded-[18px] border-2 p-3 text-left transition-all active:scale-[0.98] ${
+                      active
+                        ? 'border-[#5BBF8E] bg-[#EEF9F4]'
+                        : 'border-[#E5E7EB] bg-white hover:border-[#A8C5E0]'
+                    }`}
+                  >
+                    <div
+                      className="h-28 rounded-[14px] p-3 border overflow-hidden"
+                      style={{
+                        background: opt.previewBg,
+                        borderColor: active ? '#5BBF8E' : '#E5E7EB',
+                      }}
+                    >
+                      <div
+                        className="h-full rounded-[10px] p-3 flex flex-col justify-between"
+                        style={{ background: opt.previewSurface }}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span
+                            className="w-7 h-7 rounded-full flex items-center justify-center"
+                            style={{
+                              background: opt.value === 'dark' ? '#202A35' : '#EEF9F4',
+                              color: opt.value === 'dark' ? '#6FD4A2' : '#5BBF8E',
+                            }}
+                          >
+                            <OptionIcon size={15} weight="bold" />
+                          </span>
+                          <span
+                            className="w-10 h-2 rounded-full"
+                            style={{ background: opt.value === 'dark' ? '#303B49' : '#E5E7EB' }}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <span
+                            className="block h-2.5 w-16 rounded-full"
+                            style={{ background: opt.previewText, opacity: 0.9 }}
+                          />
+                          <span
+                            className="block h-2 w-24 rounded-full"
+                            style={{ background: opt.previewText, opacity: 0.32 }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="mt-3 flex items-center justify-between gap-2">
+                      <div>
+                        <p className="text-sm font-bold text-[#1A1D23]">{opt.label}</p>
+                        <p className="text-xs text-[#6B7280]">{opt.description}</p>
+                      </div>
+                      <span
+                        className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                          active ? 'border-[#5BBF8E]' : 'border-[#D1D9E6]'
+                        }`}
+                        aria-hidden
+                      >
+                        {active && <span className="w-2.5 h-2.5 rounded-full bg-[#5BBF8E]" />}
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </section>
         )}
@@ -564,6 +675,8 @@ export default function OnboardingView({ defaultCategories, firstName }: Onboard
               </>
             ) : step === 'categories' ? (
               'Concluir'
+            ) : step === 'theme' ? (
+              theme === 'dark' ? 'Continuar no modo escuro' : 'Continuar no modo claro'
             ) : step === 'income' && incomeCents > 0 ? (
               `Continuar — ${formatCurrency(incomeCents)}/mês`
             ) : (
