@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { usePathname } from 'next/navigation';
 
 const END_THRESHOLD = 12;
 const WAVE_DURATION_MS = 900;
@@ -14,6 +15,24 @@ export default function ScrollFadeIndicator() {
   const wasAtTopRef = useRef(true);
   const wasAtEndRef = useRef(false);
   const timeoutRef = useRef<number | null>(null);
+  const pathname = usePathname();
+
+  useEffect(() => {
+    setBoundary(null);
+    if (timeoutRef.current) {
+      window.clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+
+    const doc = document.documentElement;
+    const scrollY = window.scrollY;
+    const remaining = doc.scrollHeight - scrollY - window.innerHeight;
+    const hasScrollableContent = doc.scrollHeight > window.innerHeight + END_THRESHOLD;
+
+    hasScrolledAwayFromTopRef.current = hasScrollableContent && scrollY > END_THRESHOLD;
+    wasAtTopRef.current = hasScrollableContent && scrollY <= END_THRESHOLD;
+    wasAtEndRef.current = hasScrollableContent && remaining <= END_THRESHOLD;
+  }, [pathname]);
 
   useEffect(() => {
     function triggerWave(nextBoundary: Boundary) {
