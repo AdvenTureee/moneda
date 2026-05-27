@@ -23,7 +23,7 @@ export default function SplashAnimation({
         <Mo variant="happy" size={120} />
       </div>
       <div className="mt-5 animate-fade-up" style={{ animationDelay: '0.6s' }}>
-        <p className="text-[28px] font-extrabold text-[#1A1D23] text-center font-heading">
+        <p className="brand-title text-[28px] font-extrabold text-[#1A1D23] text-center font-heading">
           Moneda
         </p>
         <p className="text-sm text-[#6B7280] mt-1 text-center">

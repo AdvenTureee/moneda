@@ -46,15 +46,12 @@ export default function Mo({
   const pupilRightCx = rightEyeCx + px;
   // Pupil rests slightly below center for a "looking up" cute expression.
   const pupilCy = eyeCy + 1.6 + py;
-
-
-
   return (
     <svg
       width={size}
       height={size}
       viewBox="0 0 100 100"
-      className={className}
+      className={`mo-mascot ${className}`}
       aria-hidden
       role="img"
     >

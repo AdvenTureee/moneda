@@ -371,6 +371,32 @@ html[data-theme="dark"] textarea::placeholder {
   border-color: var(--color-border);
 }
 
+.mo-mascot {
+  display: block;
+  overflow: visible;
+  filter:
+    drop-shadow(0 5px 10px rgb(0 0 0 / 0.12))
+    drop-shadow(0 0 10px rgb(255 210 70 / 0.04));
+}
+
+html[data-theme="dark"] .mo-mascot {
+  filter:
+    drop-shadow(0 8px 18px rgb(0 0 0 / 0.28))
+    drop-shadow(0 0 12px rgb(255 210 70 / 0.06));
+}
+
+.brand-title {
+  text-shadow:
+    0 4px 12px rgb(15 23 42 / 0.10),
+    0 0 12px rgb(168 197 224 / 0.08);
+}
+
+html[data-theme="dark"] .brand-title {
+  text-shadow:
+    0 8px 22px rgb(0 0 0 / 0.34),
+    0 0 14px rgb(168 197 224 / 0.10);
+}
+
 .category-focus-panel {
   overflow: hidden;
   border-radius: 14px;
