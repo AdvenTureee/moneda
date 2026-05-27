@@ -125,6 +125,7 @@ export default function AddExpenseModal({
         style={{
           paddingBottom: 'calc(2rem + env(safe-area-inset-bottom, 0px))',
           animation: 'slideUp 0.25s cubic-bezier(0, 0, 0.2, 1)',
+          boxShadow: 'var(--shadow-overlay)',
         }}
         role="dialog"
         aria-modal
@@ -150,10 +151,11 @@ export default function AddExpenseModal({
         {/* Amount input */}
         <div className="mx-5 mb-5">
           <div
-            className="flex items-center gap-2 border-2 rounded-[10px] px-4 py-4 transition-colors"
+            className={`flex items-center gap-2 border-2 rounded-[10px] px-4 py-4 transition-colors ${
+              amountCents > 0 ? 'themed-field-active' : 'themed-field'
+            }`}
             style={{
-              borderColor: amountCents > 0 ? '#5BBF8E' : '#E5E7EB',
-              background: amountCents > 0 ? '#EEF9F4' : '#fff',
+              borderColor: amountCents > 0 ? 'var(--color-success)' : 'var(--color-border)',
             }}
           >
             <span className="text-2xl font-bold text-[#9CA3AF]">R$</span>
@@ -186,6 +188,10 @@ export default function AddExpenseModal({
                       ? 'border-[#5BBF8E] bg-[#EEF9F4]'
                       : 'border-[#E5E7EB] bg-white hover:border-[#A8C5E0]'
                   }`}
+                  style={{
+                    background: isSelected ? 'var(--field-active-bg)' : 'var(--color-surface)',
+                    borderColor: isSelected ? 'var(--color-success)' : 'var(--color-border)',
+                  }}
                 >
                   <Icon name={cat.icon} size={20} aria-hidden />
                   <span
@@ -212,7 +218,7 @@ export default function AddExpenseModal({
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Ex: iFood, Posto Shell..."
-            className="w-full border border-[#E5E7EB] rounded-[10px] px-4 py-3 text-[15px] text-[#1A1D23] outline-none placeholder:text-[#9CA3AF] focus:border-[#A8C5E0] transition-colors"
+            className="themed-field w-full border border-[#E5E7EB] rounded-[10px] px-4 py-3 text-[15px] text-[#1A1D23] outline-none placeholder:text-[#9CA3AF] focus:border-[#A8C5E0] transition-colors"
             maxLength={120}
           />
         </div>

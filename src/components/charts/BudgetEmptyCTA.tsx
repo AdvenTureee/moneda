@@ -5,8 +5,7 @@ export default function BudgetEmptyCTA() {
   return (
     <Link
       href="/perfil/orcamento"
-      className="flex items-center gap-3 bg-white rounded-[16px] p-4 transition-colors hover:bg-[#F8F9FB]"
-      style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
+      className="themed-card flex items-center gap-3 bg-white rounded-[16px] p-4 transition-colors hover:bg-[#F8F9FB]"
       aria-label="Definir orçamentos por categoria"
     >
       <span

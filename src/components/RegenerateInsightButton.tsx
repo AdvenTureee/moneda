@@ -44,7 +44,7 @@ export default function RegenerateInsightButton({
   }
 
   const btnClass = variant === 'card'
-    ? 'inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-full bg-white text-[#4AA77C] active:scale-95 transition-all duration-75 disabled:opacity-40 hover:brightness-95'
+    ? 'inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-full bg-white/90 text-[#2E7D5B] active:scale-95 transition-all duration-75 disabled:opacity-40 hover:bg-white'
     : 'inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-full bg-[#5BBF8E] text-white active:scale-95 transition-all duration-75 disabled:opacity-40 hover:brightness-105';
 
   const btnShadow = variant === 'card'

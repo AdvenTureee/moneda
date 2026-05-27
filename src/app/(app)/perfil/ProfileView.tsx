@@ -17,6 +17,8 @@ import {
   DownloadSimple,
   CurrencyDollar,
   Camera,
+  Moon,
+  Sun,
 } from '@phosphor-icons/react';
 import {
   updateDisplayName,
@@ -28,6 +30,7 @@ import {
   type ActionResult,
 } from './actions';
 import { createClient } from '@/lib/supabase/client';
+import { useTheme } from '@/components/ThemeProvider';
 
 function GoogleIcon() {
   return (
@@ -57,6 +60,29 @@ const CURRENCY_LABELS: Record<string, string> = {
 };
 
 type Feedback = { kind: 'success' | 'error'; text: string } | null;
+type ProfileIconTone =
+  | 'green'
+  | 'blue'
+  | 'neutral'
+  | 'warning'
+  | 'purple'
+  | 'danger'
+  | 'brand'
+  | 'google';
+
+function ProfileIcon({
+  tone,
+  children,
+}: {
+  tone: ProfileIconTone;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className={`profile-icon profile-icon--${tone}`}>
+      {children}
+    </div>
+  );
+}
 
 export default function ProfileView({
   email,
@@ -85,6 +111,7 @@ export default function ProfileView({
   const [newPassword, setNewPassword] = useState('');
   const [savingPassword, startSavePassword] = useTransition();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { isDark, toggleTheme } = useTheme();
 
   const initial = (name?.[0] ?? email?.[0] ?? '?').toUpperCase();
   const isGoogleLinked = linkedProviders.includes('google');
@@ -225,8 +252,7 @@ export default function ProfileView({
 
       {/* Identity card */}
       <section
-        className="bg-white rounded-[16px] p-5 mb-6 animate-fade-up delay-1"
-        style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
+        className="themed-card bg-white rounded-[16px] p-5 mb-6 animate-fade-up delay-1"
       >
         <div className="flex items-center gap-4">
           <div className="relative shrink-0">
@@ -316,7 +342,7 @@ export default function ProfileView({
               autoComplete="email"
               autoFocus
               disabled={savingEmail}
-              className="flex-1 px-3 py-2 rounded-[10px] bg-[#F8F9FB] border border-[#E5E7EB] text-sm text-[#1A1D23] outline-none focus:border-[#A8C5E0] transition-colors"
+              className="themed-field flex-1 px-3 py-2 rounded-[10px] bg-[#F8F9FB] border border-[#E5E7EB] text-sm text-[#1A1D23] outline-none focus:border-[#A8C5E0] transition-colors"
               placeholder="novo@email.com"
             />
             <button
@@ -352,7 +378,7 @@ export default function ProfileView({
               maxLength={80}
               autoFocus
               disabled={savingName}
-              className="flex-1 px-3 py-2 rounded-[10px] bg-[#F8F9FB] border border-[#E5E7EB] text-sm text-[#1A1D23] outline-none focus:border-[#A8C5E0] transition-colors"
+              className="themed-field flex-1 px-3 py-2 rounded-[10px] bg-[#F8F9FB] border border-[#E5E7EB] text-sm text-[#1A1D23] outline-none focus:border-[#A8C5E0] transition-colors"
               placeholder="Seu nome"
             />
             <button
@@ -384,13 +410,12 @@ export default function ProfileView({
         Finanças
       </h2>
       <div
-        className="bg-white rounded-[16px] overflow-hidden mb-6 divide-y divide-[#F1F2F4]"
-        style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
+        className="themed-card bg-white rounded-[16px] overflow-hidden mb-6 divide-y divide-[#F1F2F4]"
       >
         <Link href="/perfil/orcamento" className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-[#F8F9FB] transition-colors group">
-          <div className="w-9 h-9 rounded-full bg-[#EEF9F4] text-[#5BBF8E] flex items-center justify-center">
+          <ProfileIcon tone="green">
             <Wallet size={18} />
-          </div>
+          </ProfileIcon>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-[#1A1D23]">Configurar orçamento</p>
             <p className="text-xs text-[#6B7280]">Defina quanto pretende gastar no mês</p>
@@ -398,9 +423,9 @@ export default function ProfileView({
             <CaretRight size={18} className="text-[#E5E7EB] group-hover:text-[#9CA3AF] transition-colors" />
         </Link>
         <Link href="/perfil/ganhos" className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-[#F8F9FB] transition-colors group">
-          <div className="w-9 h-9 rounded-full bg-[#EBF3FE] text-[#3B82F6] flex items-center justify-center">
+          <ProfileIcon tone="blue">
             <CurrencyDollar size={18} />
-          </div>
+          </ProfileIcon>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-[#1A1D23]">Ganhos e receitas</p>
             <p className="text-xs text-[#6B7280]">Registre e gerencie suas fontes de renda</p>
@@ -416,16 +441,15 @@ export default function ProfileView({
         Categorias
       </h2>
       <div
-        className="bg-white rounded-[16px] overflow-hidden mb-6"
-        style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
+        className="themed-card bg-white rounded-[16px] overflow-hidden mb-6"
       >
         <Link
           href="/perfil/categorias"
           className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-[#F8F9FB] transition-colors group"
         >
-          <div className="w-9 h-9 rounded-full bg-[#F4F6F8] text-[#5B7FA8] flex items-center justify-center">
+          <ProfileIcon tone="brand">
             <Tag size={18} />
-          </div>
+          </ProfileIcon>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-[#1A1D23]">Gerenciar categorias</p>
             <p className="text-xs text-[#6B7280]">Crie ou edite categorias de gastos</p>
@@ -441,13 +465,35 @@ export default function ProfileView({
         Preferências
       </h2>
       <div
-        className="bg-white rounded-[16px] overflow-hidden divide-y divide-[#F1F2F4] mb-6"
-        style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
+        className="themed-card bg-white rounded-[16px] overflow-hidden divide-y divide-[#F1F2F4] mb-6"
       >
-        <Link href="/perfil/notificacoes" className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-[#F8F9FB] transition-colors group">
-          <div className="w-9 h-9 rounded-full bg-[#FEF6EB] text-[#F0A855] flex items-center justify-center">
-            <Bell size={18} />
+        <button
+          type="button"
+          onClick={toggleTheme}
+          role="switch"
+          aria-checked={isDark}
+          className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-[#F8F9FB] transition-colors group"
+        >
+          <ProfileIcon tone="neutral">
+            {isDark ? <Moon size={18} weight="bold" /> : <Sun size={18} weight="bold" />}
+          </ProfileIcon>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-[#1A1D23]">Modo escuro</p>
+            <p className="text-xs text-[#6B7280]">
+              {isDark ? 'Interface em tons escuros' : 'Interface clara padrão'}
+            </p>
           </div>
+          <span
+            aria-hidden
+            className={`theme-toggle ${isDark ? 'theme-toggle--dark' : 'theme-toggle--light'}`}
+          >
+            <span className="theme-toggle__thumb" />
+          </span>
+        </button>
+        <Link href="/perfil/notificacoes" className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-[#F8F9FB] transition-colors group">
+          <ProfileIcon tone="warning">
+            <Bell size={18} />
+          </ProfileIcon>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-[#1A1D23]">Notificações</p>
             <p className="text-xs text-[#6B7280]">Alertas de orçamento e lembretes</p>
@@ -455,9 +501,9 @@ export default function ProfileView({
           <CaretRight size={18} className="text-[#E5E7EB] group-hover:text-[#9CA3AF] transition-colors" />
         </Link>
         <Link href="/perfil/moeda" className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-[#F8F9FB] transition-colors group">
-          <div className="w-9 h-9 rounded-full bg-[#F1F3F7] text-[#6B7280] flex items-center justify-center">
+          <ProfileIcon tone="neutral">
             <CurrencyDollar size={18} />
-          </div>
+          </ProfileIcon>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-[#1A1D23]">Moeda</p>
             <p className="text-xs text-[#6B7280]">{CURRENCY_LABELS[currency] ?? currency}</p>
@@ -473,17 +519,16 @@ export default function ProfileView({
         Dados
       </h2>
       <div
-        className="bg-white rounded-[16px] overflow-hidden mb-6"
-        style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
+        className="themed-card bg-white rounded-[16px] overflow-hidden mb-6"
       >
         <a
           href="/api/export"
           download
           className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-[#F8F9FB] transition-colors group"
         >
-          <div className="w-9 h-9 rounded-full bg-[#F3E8FF] text-[#9333EA] flex items-center justify-center">
+          <ProfileIcon tone="purple">
             <DownloadSimple size={18} />
-          </div>
+          </ProfileIcon>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-[#1A1D23]">Exportar dados</p>
             <p className="text-xs text-[#6B7280]">Baixar todos os seus gastos em CSV</p>
@@ -499,8 +544,7 @@ export default function ProfileView({
         Conta
       </h2>
       <div
-        className="bg-white rounded-[16px] overflow-hidden divide-y divide-[#F1F2F4] mb-8"
-        style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
+        className="themed-card bg-white rounded-[16px] overflow-hidden divide-y divide-[#F1F2F4] mb-8"
       >
         {hasEmailIdentity ? (
           <button
@@ -509,9 +553,9 @@ export default function ProfileView({
             disabled={anyBusy}
             className="w-full flex items-center gap-3 px-5 py-4 text-left disabled:opacity-60 hover:bg-[#F8F9FB] transition-colors"
           >
-            <div className="w-9 h-9 rounded-full bg-[#EEF3F8] text-[#5B7FA8] flex items-center justify-center">
+            <ProfileIcon tone="brand">
               <Envelope size={16} />
-            </div>
+            </ProfileIcon>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-[#1A1D23]">
                 {sendingReset ? 'Enviando…' : 'Redefinir senha'}
@@ -531,9 +575,9 @@ export default function ProfileView({
               className="w-full flex items-center gap-3 px-5 py-4 text-left disabled:opacity-60 hover:bg-[#F8F9FB] transition-colors"
               aria-expanded={showSetPassword}
             >
-              <div className="w-9 h-9 rounded-full bg-[#EEF3F8] text-[#5B7FA8] flex items-center justify-center">
+              <ProfileIcon tone="brand">
                 <Envelope size={16} />
-              </div>
+              </ProfileIcon>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-[#1A1D23]">Definir senha</p>
                 <p className="text-xs text-[#6B7280]">
@@ -556,7 +600,7 @@ export default function ProfileView({
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full px-3.5 py-2.5 rounded-[10px] bg-white border border-[#E5E7EB] text-sm text-[#1A1D23] placeholder:text-[#9CA3AF] outline-none focus:border-[#A8C5E0] transition-colors"
+                  className="themed-field w-full px-3.5 py-2.5 rounded-[10px] bg-white border border-[#E5E7EB] text-sm text-[#1A1D23] placeholder:text-[#9CA3AF] outline-none focus:border-[#A8C5E0] transition-colors"
                 />
                 <div className="flex gap-2 pt-1">
                   <button
@@ -590,9 +634,9 @@ export default function ProfileView({
           disabled={anyBusy || linkingGoogle || isGoogleLinked}
           className="w-full flex items-center gap-3 px-5 py-4 text-left disabled:opacity-60 hover:bg-[#F8F9FB] transition-colors"
         >
-          <div className="w-9 h-9 rounded-full bg-white border border-[#E5E7EB] flex items-center justify-center">
+          <ProfileIcon tone="google">
             <GoogleIcon />
-          </div>
+          </ProfileIcon>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-[#1A1D23]">
               {isGoogleLinked
@@ -616,9 +660,9 @@ export default function ProfileView({
           disabled={anyBusy}
           className="w-full flex items-center gap-3 px-5 py-4 text-left disabled:opacity-60 hover:bg-[#F8F9FB] transition-colors"
         >
-          <div className="w-9 h-9 rounded-full bg-[#F4EEF8] text-[#8B6BB0] flex items-center justify-center">
+          <ProfileIcon tone="purple">
             <SignOut size={16} />
-          </div>
+          </ProfileIcon>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-[#1A1D23]">
               {signingOut ? 'Saindo…' : 'Sair da conta'}
@@ -633,8 +677,7 @@ export default function ProfileView({
       {allowDelete && (
         <section className="mb-8 animate-fade-up delay-7">
           <div
-            className="bg-white rounded-[16px] p-5 border border-[#F4D7D7]"
-            style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}
+            className="themed-card bg-white rounded-[16px] p-5 border border-[#F4D7D7]"
           >
             <p className="text-xs font-bold uppercase tracking-widest text-[#E07070] mb-2">
               Zona de Perigo
@@ -668,9 +711,9 @@ export default function ProfileView({
                 type="button"
                 onClick={() => setConfirmingDelete(true)}
                 disabled={anyBusy}
-                className="w-full flex items-center justify-center gap-2 py-3 rounded-[12px] text-sm font-bold text-[#E07070] border border-[#F4D7D7] hover:bg-[#FDF0F0] transition-colors disabled:opacity-60"
+                className="danger-button disabled:opacity-60"
               >
-                <Trash size={16} />
+                <Trash size={18} weight="bold" />
                 Excluir conta
               </button>
             )}
@@ -702,4 +745,3 @@ export default function ProfileView({
     </div>
   );
 }
-

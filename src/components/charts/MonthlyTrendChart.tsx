@@ -122,8 +122,8 @@ export default function MonthlyTrendChart({ data, currentPeriod }: MonthlyTrendC
           >
             <defs>
               <linearGradient id="trend-area" x1="0" x2="0" y1="0" y2="1">
-                <stop offset="0%" stopColor="#A8C5E0" stopOpacity="0.45" />
-                <stop offset="100%" stopColor="#A8C5E0" stopOpacity="0" />
+                <stop offset="0%" stopColor="var(--chart-primary)" stopOpacity="0.28" />
+                <stop offset="100%" stopColor="var(--chart-primary)" stopOpacity="0" />
               </linearGradient>
             </defs>
 
@@ -135,7 +135,7 @@ export default function MonthlyTrendChart({ data, currentPeriod }: MonthlyTrendC
                 y1={PAD.top + chartH * (1 - f)}
                 x2={totalWidth - PAD.right}
                 y2={PAD.top + chartH * (1 - f)}
-                stroke="#F1F3F7"
+                stroke="var(--chart-grid)"
                 strokeWidth={1}
                 strokeDasharray={f === 0.5 ? '0' : '4 4'}
               />
@@ -166,7 +166,7 @@ export default function MonthlyTrendChart({ data, currentPeriod }: MonthlyTrendC
             <path
               d={linePath}
               fill="none"
-              stroke="#7AAECF"
+              stroke="var(--chart-primary-strong)"
               strokeWidth={2.5}
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -177,11 +177,11 @@ export default function MonthlyTrendChart({ data, currentPeriod }: MonthlyTrendC
               const isCurrent = p.period === currentPeriod;
               const isHovered = hoveredIndex === p.index;
               const r = isHovered ? 6 : isCurrent ? 5 : 3.5;
-              const fill = isCurrent ? '#5BBF8E' : '#7AAECF';
+              const fill = isCurrent ? 'var(--chart-success)' : 'var(--chart-primary-strong)';
 
               return (
                 <g key={p.period}>
-                  <circle cx={p.x} cy={p.y} r={r + 2} fill="#FFFFFF" />
+                  <circle cx={p.x} cy={p.y} r={r + 2} fill="var(--chart-point-ring)" />
                   <circle
                     cx={p.x}
                     cy={p.y}
@@ -190,7 +190,7 @@ export default function MonthlyTrendChart({ data, currentPeriod }: MonthlyTrendC
                     className="transition-all duration-150"
                     style={
                       isCurrent
-                        ? { filter: 'drop-shadow(0 2px 6px rgba(91,191,142,0.35))' }
+                        ? { filter: 'drop-shadow(0 2px 6px rgba(91,191,142,0.25))' }
                         : undefined
                     }
                   />

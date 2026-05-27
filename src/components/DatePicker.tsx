@@ -163,7 +163,7 @@ export default function DatePicker({
         aria-haspopup="dialog"
         className={
           className ??
-          'w-full flex items-center gap-2 border border-[#E5E7EB] rounded-[10px] px-4 py-3 text-[15px] text-left outline-none focus:border-[#A8C5E0] disabled:opacity-50 disabled:cursor-not-allowed transition-colors bg-white'
+          'themed-field w-full flex items-center gap-2 border border-[#E5E7EB] rounded-[10px] px-4 py-3 text-[15px] text-left outline-none focus:border-[#A8C5E0] disabled:opacity-50 disabled:cursor-not-allowed transition-colors bg-white'
         }
       >
         <CalendarBlank size={16} weight="bold" className="text-[#6B7280] shrink-0" />
@@ -188,7 +188,7 @@ export default function DatePicker({
               top: position.top,
               left: position.left,
               width: 280,
-              boxShadow: '0 8px 24px rgba(0,0,0,0.16)',
+              boxShadow: 'var(--shadow-overlay)',
             }}
             role="dialog"
             aria-label="Selecionar data"
@@ -275,7 +275,7 @@ export default function DatePicker({
                     type="time"
                     value={timeValue ?? ''}
                     onChange={(e) => onTimeChange(e.target.value)}
-                    className="text-[13px] font-semibold text-[#1A1D23] border border-[#E5E7EB] rounded-[8px] px-2 py-1 outline-none focus:border-[#A8C5E0] bg-white transition-colors"
+                    className="themed-field text-[13px] font-semibold text-[#1A1D23] border border-[#E5E7EB] rounded-[8px] px-2 py-1 outline-none focus:border-[#A8C5E0] bg-white transition-colors"
                     onClick={(e) => e.stopPropagation()}
                   />
                 </div>

@@ -42,6 +42,7 @@ export const MO_TIPS: MoTip[] = [
   { id: 'app-insights', kind: 'app', text: 'Toque em Insights pra eu analisar seus gastos do mês e te mostrar padrões.' },
   { id: 'app-feed', kind: 'app', text: 'No Feed dá pra filtrar gastos por categoria, busca e período. Útil pra achar aquela compra antiga.' },
   { id: 'app-orcamento', kind: 'app', text: 'Defina um orçamento por categoria em Perfil → Orçamento. Eu te aviso quando algo passar do esperado.' },
+  { id: 'app-modo-escuro', kind: 'app', text: 'Em Perfil → Preferências você pode alternar entre modo claro e escuro.' },
   { id: 'app-export', kind: 'app', text: 'Precisa dos dados em planilha? Em Perfil você exporta tudo em CSV.' },
   { id: 'app-categorias', kind: 'app', text: 'Crie categorias personalizadas em Perfil → Categorias pra refletir como você organiza sua vida.' },
   { id: 'app-receitas', kind: 'app', text: 'Cadastre suas receitas em Perfil → Ganhos pra eu calcular o quanto sobra de verdade no mês.' },

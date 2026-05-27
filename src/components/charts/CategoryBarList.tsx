@@ -68,7 +68,7 @@ export default function CategoryBarList({
   if (items.length === 0) return null;
 
   return (
-    <ul className="divide-y divide-[#F1F3F7]">
+    <ul className="category-focus-panel">
       {items.map((item, i) => {
         const percentage = (item.amount / total) * 100;
         const fillWidth = animateIn ? `${Math.max(percentage, 1.5)}%` : '0%';
@@ -82,7 +82,7 @@ export default function CategoryBarList({
             <button
               type="button"
               onClick={() => onCategoryClick?.(item.isOthers ? null : item.categoryId)}
-              className="w-full text-left py-3 transition-colors hover:bg-[#F8F9FB] active:bg-[#F1F3F7] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#A8C5E0] focus-visible:ring-offset-2 focus-visible:rounded-md"
+              className="category-focus-row w-full text-left px-3 py-3 rounded-[14px] transition-colors hover:bg-[#F8F9FB] active:bg-[#F1F3F7] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#A8C5E0] focus-visible:ring-offset-2"
               aria-label={ariaLabel}
             >
               <div className="flex items-center gap-3">

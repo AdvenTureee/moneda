@@ -66,8 +66,7 @@ export default function AIInsightBanner({
     <div
       role="complementary"
       aria-label="Insight da Mo"
-      className="relative bg-gradient-to-br from-[#5BBF8E] to-[#4AA77C] text-white rounded-[20px] p-5 shadow-md"
-      style={{ boxShadow: '0 8px 24px rgba(91, 191, 142, 0.25)' }}
+      className="ai-insight-banner relative text-white rounded-[20px] p-5 shadow-md"
     >
       <div className="flex items-start gap-3">
         <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center shrink-0">

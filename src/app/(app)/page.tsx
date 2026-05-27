@@ -95,7 +95,7 @@ export default async function DashboardPage({
             <MonthPicker value={period} />
           </div>
           <div
-            className="w-14 h-14 rounded-full flex items-center justify-center text-lg font-bold text-white shrink-0 overflow-hidden ring-4 ring-[#5BBF8E] ring-offset-0"
+            className="w-14 h-14 rounded-full flex items-center justify-center text-lg font-bold text-white shrink-0 overflow-hidden ring-2 ring-[#5BBF8E]/70 ring-offset-0"
             style={{ background: '#A8C5E0' }}
             aria-label={user.email ?? 'Usuário'}
           >
@@ -116,7 +116,7 @@ export default async function DashboardPage({
           </p>
           <p
             className="text-[40px] font-extrabold tabular-nums leading-none"
-            style={{ color: remaining >= 0 ? '#1A1D23' : '#E07070' }}
+            style={{ color: remaining >= 0 ? 'var(--color-text-primary)' : 'var(--color-error)' }}
             aria-label={
               remaining >= 0
                 ? `Restante: ${formatCurrency(remaining)}`
@@ -147,8 +147,7 @@ export default async function DashboardPage({
         {/* Category breakdown */}
         {metrics.topCategories.length > 0 && (
           <section
-            className="mb-6 bg-white rounded-[16px] p-5 animate-fade-up delay-4"
-            style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
+            className="themed-card mb-6 bg-white rounded-[16px] p-5 animate-fade-up delay-4"
             aria-label="Gastos por categoria"
           >
             <div className="flex items-center justify-between mb-2">

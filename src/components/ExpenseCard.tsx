@@ -25,10 +25,9 @@ export default function ExpenseCard({
 
   return (
     <div
-      className={`w-full flex items-center gap-3 bg-white rounded-[10px] transition-all duration-75 ${
+      className={`themed-card w-full flex items-center gap-3 bg-white rounded-[10px] transition-all duration-75 ${
         isCompact ? 'px-3 py-2.5' : 'px-4 py-3'
       }`}
-      style={{ boxShadow: '0 1px 2px rgba(0, 0, 0, 0.04)' }}
       role="group"
       aria-label={`${expense.description}, ${formatCurrency(expense.amount)}`}
     >
@@ -82,7 +81,7 @@ export default function ExpenseCard({
           {onEdit && (
             <button
               onClick={(e) => { e.stopPropagation(); onEdit(); }}
-              className="p-1.5 rounded-md hover:bg-[#F1F3F7] transition-colors active:scale-90"
+              className="p-1.5 rounded-md bg-[#F1F3F7]/60 hover:bg-[#F1F3F7] transition-colors active:scale-90"
               aria-label="Editar gasto"
             >
               <PencilSimple size={14} className="text-[#9CA3AF] hover:text-[#6B7280]" />
@@ -91,7 +90,7 @@ export default function ExpenseCard({
           {onDelete && (
             <button
               onClick={(e) => { e.stopPropagation(); onDelete(); }}
-              className="p-1.5 rounded-md hover:bg-[#FDF0F0] transition-colors active:scale-90"
+              className="p-1.5 rounded-md bg-[#F1F3F7]/60 hover:bg-[#FDF0F0] transition-colors active:scale-90"
               aria-label="Excluir gasto"
             >
               <Trash size={14} className="text-[#9CA3AF] hover:text-[#E07070]" />

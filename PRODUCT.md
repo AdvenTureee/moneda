@@ -138,6 +138,7 @@ Ordenadas por impacto estimado no engajamento e retenção:
 - **🤖 CFO conversacional básico** — usuário pode perguntar via WhatsApp: "quanto gastei essa semana?", "qual minha maior categoria?", "estou dentro do orçamento?"
 - Primeiro insight automático via IA (Groq `llama-3.3-70b-versatile`)
 - UX polish: empty states, loading states, mobile-first
+- Preferência visual local: alternância entre modo claro e modo escuro em Perfil > Preferências.
 
 **Critério de saída:** 30-day retention > 40%.
 

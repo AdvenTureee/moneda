@@ -15,8 +15,7 @@ export default function DashboardMetric({
 }: DashboardMetricProps) {
   return (
     <div
-      className="bg-white rounded-[10px] px-4 py-3 flex-1"
-      style={{ boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)' }}
+      className="themed-card bg-white rounded-[10px] px-4 py-3 flex-1"
     >
       <p className="text-xs text-[#6B7280] font-medium mb-1">{label}</p>
       <p

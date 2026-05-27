@@ -193,8 +193,7 @@ function FeedPageInner() {
         </header>
 
         <div
-          className="bg-white rounded-[14px] p-3 space-y-3 mb-4 animate-fade-up delay-1"
-          style={{ boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}
+          className="themed-card bg-white rounded-[14px] p-3 space-y-3 mb-4 animate-fade-up delay-1"
         >
             {/* Search bar */}
             <div className="flex items-center gap-2">
@@ -209,7 +208,7 @@ function FeedPageInner() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Buscar gasto..."
-                  className="w-full pl-9 pr-4 py-2.5 rounded-[10px] bg-[#F4F6FA] border border-transparent text-sm text-[#1A1D23] placeholder:text-[#9CA3AF] outline-none focus:border-[#A8C5E0] transition-colors"
+                  className="themed-field w-full pl-9 pr-4 py-2.5 rounded-[10px] bg-[#F4F6FA] border border-transparent text-sm text-[#1A1D23] placeholder:text-[#9CA3AF] outline-none focus:border-[#A8C5E0] transition-colors"
                   aria-label="Buscar gastos"
                 />
               </div>
@@ -293,8 +292,7 @@ function FeedPageInner() {
                 <div key={group.dateKey} className={`mb-4 animate-fade-up delay-${Math.min(gi, 6)}`}>
                   {/* Date section header */}
                   <div
-                    className="flex items-center justify-between px-4 py-2.5 mb-2 bg-white rounded-[10px]"
-                    style={{ boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}
+                    className="themed-card flex items-center justify-between px-4 py-2.5 mb-2 bg-white rounded-[10px]"
                   >
                     <span className="text-xs font-semibold text-[#6B7280]">
                       {group.label}

@@ -175,7 +175,7 @@ export default function DailyHistogram({ data, period }: DailyHistogramProps) {
                     y={PAD.top}
                     width={slotW}
                     height={chartH}
-                    fill="#F8F9FB"
+                    fill="var(--chart-weekend-bg)"
                     pointerEvents="none"
                   />
                 ) : null
@@ -189,7 +189,7 @@ export default function DailyHistogram({ data, period }: DailyHistogramProps) {
                   y1={PAD.top + chartH * (1 - f)}
                   x2={width - PAD.right}
                   y2={PAD.top + chartH * (1 - f)}
-                  stroke="#F1F3F7"
+                  stroke="var(--chart-grid)"
                   strokeWidth={1}
                   strokeDasharray={f === 0.5 ? '0' : '4 4'}
                 />
@@ -215,7 +215,7 @@ export default function DailyHistogram({ data, period }: DailyHistogramProps) {
                   y1={PAD.top + chartH * (1 - avg / maxAmount)}
                   x2={width - PAD.right}
                   y2={PAD.top + chartH * (1 - avg / maxAmount)}
-                  stroke="#A8C5E0"
+                  stroke="var(--chart-primary)"
                   strokeWidth={1.5}
                   strokeDasharray="6 3"
                   strokeLinecap="round"
@@ -255,13 +255,13 @@ export default function DailyHistogram({ data, period }: DailyHistogramProps) {
                         width={barW}
                         height={h}
                         rx={2}
-                        fill={isPeak ? '#5BBF8E' : isHovered ? '#7AAECF' : '#A8C5E0'}
+                        fill={isPeak ? 'var(--chart-success)' : isHovered ? 'var(--chart-primary-strong)' : 'var(--chart-primary)'}
                         className="animate-bar-grow pointer-events-none"
                         style={{
                           transformBox: 'fill-box',
                           transformOrigin: 'bottom',
                           animationDelay: `${Math.min(i * 14, 600)}ms`,
-                          filter: isPeak ? 'drop-shadow(0 2px 6px rgba(91,191,142,0.35))' : 'none',
+                          filter: isPeak ? 'drop-shadow(0 2px 6px rgba(91,191,142,0.25))' : 'none',
                           transition: 'fill 150ms ease-out',
                         }}
                       />

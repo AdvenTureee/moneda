@@ -159,7 +159,7 @@ export default function DateRangePicker({ value, onChange }: DateRangePickerProp
             style={{
               top: position.top,
               right: position.right,
-              boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
+              boxShadow: 'var(--shadow-overlay)',
             }}
             role="dialog"
             aria-label="Filtro de data"
@@ -192,7 +192,7 @@ export default function DateRangePicker({ value, onChange }: DateRangePickerProp
                     max={customTo || undefined}
                     ariaLabel="Data inicial"
                     placeholder="Início"
-                    className="w-full flex items-center gap-1.5 px-2 py-1.5 rounded-[6px] border border-[#E5E7EB] bg-white text-xs text-left outline-none focus:border-[#A8C5E0] transition-colors"
+                    className="themed-field w-full flex items-center gap-1.5 px-2 py-1.5 rounded-[6px] border border-[#E5E7EB] bg-white text-xs text-left outline-none focus:border-[#A8C5E0] transition-colors"
                   />
                 </div>
                 <div>
@@ -203,7 +203,7 @@ export default function DateRangePicker({ value, onChange }: DateRangePickerProp
                     min={customFrom || undefined}
                     ariaLabel="Data final"
                     placeholder="Fim"
-                    className="w-full flex items-center gap-1.5 px-2 py-1.5 rounded-[6px] border border-[#E5E7EB] bg-white text-xs text-left outline-none focus:border-[#A8C5E0] transition-colors"
+                    className="themed-field w-full flex items-center gap-1.5 px-2 py-1.5 rounded-[6px] border border-[#E5E7EB] bg-white text-xs text-left outline-none focus:border-[#A8C5E0] transition-colors"
                   />
                 </div>
                 <button

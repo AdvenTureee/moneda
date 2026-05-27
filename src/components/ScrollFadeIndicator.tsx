@@ -1,19 +1,56 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
-const FADE_HEIGHT = 56;
-const RAMP_DISTANCE = 80;
+const END_THRESHOLD = 12;
+const WAVE_DURATION_MS = 900;
+
+type Boundary = 'top' | 'bottom';
 
 export default function ScrollFadeIndicator() {
-  const [opacity, setOpacity] = useState(0);
+  const [waveKey, setWaveKey] = useState(0);
+  const [boundary, setBoundary] = useState<Boundary | null>(null);
+  const hasScrolledAwayFromTopRef = useRef(false);
+  const wasAtTopRef = useRef(true);
+  const wasAtEndRef = useRef(false);
+  const timeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
+    function triggerWave(nextBoundary: Boundary) {
+      setWaveKey((key) => key + 1);
+      setBoundary(nextBoundary);
+
+      if (timeoutRef.current) {
+        window.clearTimeout(timeoutRef.current);
+      }
+
+      timeoutRef.current = window.setTimeout(() => {
+        setBoundary(null);
+      }, WAVE_DURATION_MS);
+    }
+
     function update() {
       const doc = document.documentElement;
+      const scrollY = window.scrollY;
       const remaining = doc.scrollHeight - window.scrollY - window.innerHeight;
-      const next = Math.max(0, Math.min(1, remaining / RAMP_DISTANCE));
-      setOpacity(next);
+      const hasScrollableContent = doc.scrollHeight > window.innerHeight + END_THRESHOLD;
+      const isAtTop = hasScrollableContent && scrollY <= END_THRESHOLD;
+      const isAtEnd = hasScrollableContent && remaining <= END_THRESHOLD;
+
+      if (hasScrollableContent && scrollY > END_THRESHOLD) {
+        hasScrolledAwayFromTopRef.current = true;
+      }
+
+      if (isAtTop && !wasAtTopRef.current && hasScrolledAwayFromTopRef.current) {
+        triggerWave('top');
+      }
+
+      if (isAtEnd && !wasAtEndRef.current) {
+        triggerWave('bottom');
+      }
+
+      wasAtTopRef.current = isAtTop;
+      wasAtEndRef.current = isAtEnd;
     }
 
     update();
@@ -26,20 +63,19 @@ export default function ScrollFadeIndicator() {
       window.removeEventListener('scroll', update);
       window.removeEventListener('resize', update);
       ro.disconnect();
+      if (timeoutRef.current) {
+        window.clearTimeout(timeoutRef.current);
+      }
     };
   }, []);
 
+  if (!boundary) return null;
+
   return (
     <div
+      key={waveKey}
       aria-hidden
-      className="fixed left-0 right-0 pointer-events-none z-30 transition-opacity duration-150"
-      style={{
-        height: FADE_HEIGHT,
-        bottom: 'calc(56px + env(safe-area-inset-bottom, 0px))',
-        opacity,
-        background:
-          'linear-gradient(to bottom, rgba(248, 249, 251, 0) 0%, rgba(248, 249, 251, 1) 100%)',
-      }}
+      className={`scroll-boundary-wave scroll-boundary-wave--${boundary}`}
     />
   );
 }

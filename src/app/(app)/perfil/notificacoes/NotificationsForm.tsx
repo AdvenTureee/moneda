@@ -74,8 +74,7 @@ export default function NotificationsForm({ initial }: NotificationsFormProps) {
       </header>
 
       <div
-        className="bg-white rounded-[16px] overflow-hidden divide-y divide-[#F1F2F4] mb-6"
-        style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
+        className="themed-card bg-white rounded-[16px] overflow-hidden divide-y divide-[#F1F2F4] mb-6"
       >
         {ITEMS.map((item) => {
           const checked = prefs[item.key];

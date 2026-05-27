@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { DM_Sans, Epilogue } from 'next/font/google';
+import { ThemeProvider } from '@/components/ThemeProvider';
 import './globals.css';
 
 const dmSans = DM_Sans({
@@ -21,12 +22,27 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#F8F9FB',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#F8F9FB' },
+    { media: '(prefers-color-scheme: dark)', color: '#10151C' },
+  ],
+  colorScheme: 'light dark',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
   viewportFit: 'cover',
 };
+
+const themeScript = `
+(() => {
+  try {
+    const theme = window.localStorage.getItem('moneda-theme');
+    document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light';
+  } catch {
+    document.documentElement.dataset.theme = 'light';
+  }
+})();
+`;
 
 export default function RootLayout({
   children,
@@ -34,9 +50,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="pt-BR" className={`${dmSans.variable} ${epilogue.variable}`}>
+    <html
+      lang="pt-BR"
+      className={`${dmSans.variable} ${epilogue.variable}`}
+      data-theme="light"
+      suppressHydrationWarning
+    >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
       <body className="bg-[#F8F9FB] min-h-full antialiased font-body">
-        {children}
+        <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
   );

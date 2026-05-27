@@ -65,7 +65,7 @@ export default function MonthPicker({ value, monthsBack = 12 }: MonthPickerProps
           />
           <div
             className="absolute left-0 top-full mt-1 z-50 w-44 max-h-72 overflow-y-auto bg-white rounded-[10px] py-1"
-            style={{ boxShadow: '0 4px 16px rgba(0,0,0,0.12)' }}
+            style={{ boxShadow: 'var(--shadow-overlay)' }}
             role="listbox"
           >
             {options.map((opt) => (

@@ -27,8 +27,13 @@ export default function CategoryChip({
       } ${
         selected
           ? 'bg-[#5BBF8E] text-white border-transparent'
-          : 'bg-[#F1F3F7] text-[#6B7280] border border-[#E5E7EB] hover:border-[#A8C5E0]'
+          : 'bg-[#F1F3F7] text-[#6B7280] border border-[#E5E7EB] hover:border-[#A8C5E0] hover:text-[#1A1D23]'
       }`}
+      style={{
+        background: selected ? 'var(--color-success)' : 'var(--color-surface-alt)',
+        borderColor: selected ? 'transparent' : 'var(--color-border)',
+        color: selected ? '#FFFFFF' : 'var(--color-text-secondary)',
+      }}
       aria-pressed={selected}
     >
       <Icon name={icon} size={isSmall ? 12 : 14} aria-hidden />

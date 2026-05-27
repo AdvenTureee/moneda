@@ -40,12 +40,34 @@
 --color-border-focus:     #A8C5E0   /* Borda de input em foco — azul-pastel */
 ```
 
+#### Modo Escuro
+
+O app suporta modo claro e escuro via `html[data-theme="light|dark"]`. A preferência é local ao dispositivo e deve ser salva em `localStorage` com a chave `moneda-theme`.
+
+```
+/* Dark theme */
+--color-bg:               #10151C
+--color-surface:          #171E27
+--color-surface-alt:      #202A35
+--color-text-primary:     #F5F7FA
+--color-text-secondary:   #B8C1CC
+--color-text-tertiary:    #8491A0
+--color-border:           #2A3542
+--color-error:            #F28A8A
+--color-error-bg:         #3A1F24
+--color-success:          #6FD4A2
+--color-success-bg:       #163328
+--color-warning:          #F5BE73
+--color-warning-bg:       #3A2A16
+```
+
 **Regras de uso:**
 - `--color-brand-blue` é a cor de ação primária (botão CTA, FAB, link ativo).
 - `--color-brand-green` é exclusivo para valores financeiros positivos e estados de sucesso.
 - `--color-error` (`#E07070`) é exclusivo para valores negativos, erros e alertas destrutivos.
 - Nunca usar `--color-brand-green` e `--color-error` simultaneamente no mesmo card sem separação visual clara.
 - Contraste mínimo de 4.5:1 para texto sobre qualquer superfície (WCAG AA).
+- Novos componentes devem usar tokens semânticos (`--color-bg`, `--color-surface`, `--color-text-*`, `--color-border`) para herdar o tema automaticamente.
 
 ### 1.2 Tipografia
 

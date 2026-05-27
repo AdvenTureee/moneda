@@ -17,8 +17,7 @@ export default function ChartCard({
 }: ChartCardProps) {
   return (
     <section
-      className={`bg-white rounded-[16px] p-5 ${className}`}
-      style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
+      className={`chart-muted-surface bg-white rounded-[16px] p-5 ${className}`}
       aria-label={ariaLabel}
     >
       {(title || headerRight) && (

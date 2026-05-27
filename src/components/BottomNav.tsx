@@ -32,7 +32,7 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
       style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
       aria-label="Navegação principal"
     >
-      <div className="flex items-center justify-around h-14 max-w-lg mx-auto px-2">
+      <div className="grid grid-cols-5 items-center h-14 max-w-lg mx-auto px-2">
         {NAV_ITEMS.map((item) => {
           if (item.isAction) {
             return (
@@ -40,10 +40,10 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
                 key={item.label}
                 onClick={onAddExpense}
                 aria-label="Adicionar gasto"
-                className="flex flex-col items-center justify-center w-16 h-16 rounded-full bg-[#5BBF8E] text-white -mt-6 active:scale-90 transition-transform duration-75"
-                style={{ boxShadow: '0 2px 8px rgba(0, 0, 0, 0.12)' }}
+                className="justify-self-center flex flex-col items-center justify-center w-[60px] h-[60px] rounded-full bg-[#5BBF8E] text-white -mt-5 active:scale-90 transition-transform duration-75"
+                style={{ boxShadow: 'var(--shadow-nav-action)' }}
               >
-                <item.icon size={30} />
+                <item.icon size={28} />
               </button>
             );
           }
@@ -56,7 +56,7 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
             <Link
               key={item.label}
               href={item.href}
-              className={`relative flex flex-col items-center justify-center gap-0.5 min-w-[44px] min-h-[44px] rounded-lg transition-colors duration-150 ${
+              className={`relative justify-self-center flex flex-col items-center justify-center gap-0.5 w-full min-w-[44px] min-h-[44px] rounded-lg transition-colors duration-150 ${
                 isActive
                   ? 'text-[#A8C5E0]'
                   : 'text-[#9CA3AF] hover:text-[#6B7280]'

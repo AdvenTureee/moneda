@@ -202,8 +202,7 @@ export default function InsightsView({
 
       {/* Hero total */}
       <section
-        className="bg-gradient-to-br from-[#5BBF8E] to-[#3FA876] text-white rounded-[20px] p-5 mb-6 shadow-md"
-        style={{ boxShadow: '0 8px 24px rgba(91, 191, 142, 0.3)' }}
+        className="ai-insight-banner text-white rounded-[20px] p-5 mb-6 shadow-md"
       >
         <p className="text-xs font-semibold uppercase tracking-wider opacity-85">Gasto total</p>
         <p className="text-3xl font-extrabold mt-1.5 tabular-nums">
@@ -256,8 +255,7 @@ export default function InsightsView({
       {/* Empty state — no expenses */}
       {topCategories.length === 0 && (
         <section
-          className="bg-white rounded-[16px] p-8 mb-6 text-center"
-          style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
+          className="themed-card bg-white rounded-[16px] p-8 mb-6 text-center"
         >
           <Mo variant="sad" size={128} className="mx-auto mb-3 animate-bounce-in" />
           <p className="text-base font-semibold text-[#1A1D23]">Nenhum gasto no período</p>
@@ -283,7 +281,7 @@ export default function InsightsView({
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Buscar insights..."
-                className="w-full pl-9 pr-4 py-2.5 rounded-[10px] bg-white border border-[#E5E7EB] text-sm text-[#1A1D23] placeholder:text-[#9CA3AF] outline-none focus:border-[#A8C5E0] transition-colors"
+                className="themed-field w-full pl-9 pr-4 py-2.5 rounded-[10px] bg-white border border-[#E5E7EB] text-sm text-[#1A1D23] placeholder:text-[#9CA3AF] outline-none focus:border-[#A8C5E0] transition-colors"
                 aria-label="Buscar insights"
               />
             </div>
@@ -315,8 +313,7 @@ export default function InsightsView({
         {/* Generating spinner */}
         {generating && (
           <div
-            className="bg-white rounded-[16px] p-5 mb-4"
-            style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
+            className="themed-card bg-white rounded-[16px] p-5 mb-4"
           >
             <div className="flex items-center gap-3">
               <span className="w-4 h-4 border-2 border-[#A8C5E0] border-t-transparent rounded-full animate-spin" />
@@ -328,8 +325,7 @@ export default function InsightsView({
         {/* Empty state — no insights yet */}
         {!generating && insights.length === 0 && topCategories.length > 0 && (
           <div
-            className="bg-white rounded-[16px] p-6 text-center"
-            style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
+            className="themed-card bg-white rounded-[16px] p-6 text-center"
           >
             <Mo variant="thinking" size={112} className="mx-auto mb-2" />
             <p className="text-sm text-[#6B7280]">
@@ -350,8 +346,7 @@ export default function InsightsView({
         {/* Empty filter results */}
         {!generating && insights.length > 0 && filteredInsights.length === 0 && (
           <div
-            className="bg-white rounded-[16px] p-6 text-center"
-            style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
+            className="themed-card bg-white rounded-[16px] p-6 text-center"
           >
             <Mo variant="thinking" size={104} className="mx-auto mb-2" />
             <p className="text-sm text-[#6B7280]">
@@ -387,11 +382,11 @@ export default function InsightsView({
                       return (
                         <div
                           key={insight.id}
-                          className="bg-white rounded-[12px] overflow-hidden transition-shadow duration-150"
+                          className="themed-card bg-white rounded-[12px] overflow-hidden transition-shadow duration-150"
                           style={{
                             boxShadow: expanded
-                              ? '0 2px 12px rgba(0,0,0,0.08)'
-                              : '0 1px 4px rgba(0,0,0,0.05)',
+                              ? 'var(--shadow-card)'
+                              : 'var(--shadow-card-soft)',
                           }}
                         >
                           {/* Card header */}

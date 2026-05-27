@@ -155,8 +155,7 @@ export default function IncomesView({ initialIncomes }: IncomesViewProps) {
 
       {/* Form Card */}
       <section
-        className="bg-white rounded-[20px] p-5 border border-[#F1F3F7] mb-8"
-        style={{ boxShadow: '0 4px 16px rgba(0,0,0,0.02)' }}
+        className="themed-card bg-white rounded-[20px] p-5 border border-[#F1F3F7] mb-8"
       >
         <h2 className="text-sm font-bold text-[#1A1D23] mb-4">Lançar Nova Receita</h2>
         <form onSubmit={handleAddIncome} className="space-y-4">
@@ -164,10 +163,11 @@ export default function IncomesView({ initialIncomes }: IncomesViewProps) {
           {/* Amount input */}
           <div>
             <div
-              className="flex items-center gap-2 border-2 rounded-[12px] px-4 py-3.5 transition-all focus-within:border-[#10B981] focus-within:bg-[#EEF9F4]/20"
+              className={`flex items-center gap-2 border-2 rounded-[12px] px-4 py-3.5 transition-all focus-within:border-[#10B981] ${
+                amountCents > 0 ? 'themed-field-active' : 'themed-field'
+              }`}
               style={{
-                borderColor: amountCents > 0 ? '#10B981' : '#E5E7EB',
-                background: amountCents > 0 ? '#EEF9F4/10' : '#fff',
+                borderColor: amountCents > 0 ? '#10B981' : 'var(--color-border)',
               }}
             >
               <span className="text-xl font-bold text-[#9CA3AF]">R$</span>

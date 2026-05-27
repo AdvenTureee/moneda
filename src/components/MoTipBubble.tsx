@@ -75,14 +75,14 @@ export default function MoTipBubble() {
     <button
       type="button"
       onClick={handleClick}
-      className="relative w-full text-left bg-white rounded-[14px] px-4 py-3 mb-5 animate-fade-up delay-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#A8C5E0]"
-      style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
+      className="themed-card relative w-full text-left bg-white rounded-[14px] px-4 py-3 mb-5 animate-fade-up delay-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#A8C5E0]"
       aria-label="Toque para a próxima dica da Mo"
     >
       {/* Cauda do balão — quadrado branco rotacionado, apontando para a Mo no header acima */}
       <span
         aria-hidden
         className="absolute -top-1.5 left-10 w-3 h-3 bg-white rotate-45"
+        style={{ background: 'var(--color-surface)' }}
       />
       <div
         className="relative flex items-start gap-2"

@@ -123,10 +123,7 @@ export default function BudgetForm({ initialBudgets, period }: BudgetFormProps) 
 
       {/* Planned Limit Card */}
       <div
-        className="bg-gradient-to-br from-[#5BBF8E] to-[#4AA77C] text-white rounded-[20px] p-5 mb-6 shadow-md transition-all duration-300"
-        style={{
-          boxShadow: '0 8px 24px rgba(91, 191, 142, 0.25)',
-        }}
+        className="ai-insight-banner text-white rounded-[20px] p-5 mb-6 shadow-md transition-all duration-300"
       >
         <p className="text-xs font-semibold uppercase tracking-wider opacity-85">Limite Planejado Total</p>
         <p className="text-3xl font-extrabold mt-1.5 tabular-nums">
@@ -149,7 +146,7 @@ export default function BudgetForm({ initialBudgets, period }: BudgetFormProps) 
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Buscar categoria..."
-          className="w-full pl-9 pr-4 py-2.5 rounded-[10px] bg-white border border-[#E5E7EB] text-sm text-[#1A1D23] placeholder:text-[#9CA3AF] outline-none focus:border-[#A8C5E0] transition-colors"
+          className="themed-field w-full pl-9 pr-4 py-2.5 rounded-[10px] bg-white border border-[#E5E7EB] text-sm text-[#1A1D23] placeholder:text-[#9CA3AF] outline-none focus:border-[#A8C5E0] transition-colors"
           aria-label="Buscar categorias"
         />
       </div>
@@ -168,8 +165,7 @@ export default function BudgetForm({ initialBudgets, period }: BudgetFormProps) 
           return (
             <div
               key={cat.id}
-              className="bg-white rounded-[16px] p-4 flex items-center justify-between gap-4 border border-[#F1F3F7] transition-all hover:border-[#E5E7EB]"
-              style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}
+              className="themed-card bg-white rounded-[16px] p-4 flex items-center justify-between gap-4 border border-[#F1F3F7] transition-all hover:border-[#E5E7EB]"
             >
               <div className="flex items-center gap-3 min-w-0 flex-1">
                 <div
@@ -189,7 +185,7 @@ export default function BudgetForm({ initialBudgets, period }: BudgetFormProps) 
 
               {/* Price input field */}
               <div className="w-32 shrink-0">
-                <div className="flex items-center gap-1 border border-[#E5E7EB] rounded-[12px] px-3 py-2 bg-[#F8F9FB] focus-within:border-[#A8C5E0] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#A8C5E0]/15 transition-all">
+                <div className="themed-field flex items-center gap-1 border border-[#E5E7EB] rounded-[12px] px-3 py-2 bg-[#F8F9FB] focus-within:border-[#A8C5E0] focus-within:ring-2 focus-within:ring-[#A8C5E0]/15 transition-all">
                   <span className="text-xs font-bold text-[#9CA3AF]">R$</span>
                   <input
                     type="tel"
