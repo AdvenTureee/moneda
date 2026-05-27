@@ -86,10 +86,11 @@ function labelFor(range: DateRange): string {
 export default function DateRangePicker({ value, onChange }: DateRangePickerProps) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const [position, setPosition] = useState<{ top: number; right: number } | null>(null);
+  const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
   const [customFrom, setCustomFrom] = useState(isoToDateInput(value.from));
   const [customTo, setCustomTo] = useState(isoToDateInput(value.to));
   const buttonRef = useRef<HTMLButtonElement | null>(null);
+  const pickerWidth = 280;
 
   useEffect(() => setMounted(true), []);
 
@@ -99,9 +100,10 @@ export default function DateRangePicker({ value, onChange }: DateRangePickerProp
       const btn = buttonRef.current;
       if (!btn) return;
       const rect = btn.getBoundingClientRect();
+      const width = Math.min(pickerWidth, window.innerWidth - 16);
       setPosition({
         top: rect.bottom + 4,
-        right: Math.max(8, window.innerWidth - rect.right),
+        left: Math.max(8, Math.min(rect.right - width, window.innerWidth - width - 8)),
       });
     };
     update();
@@ -134,16 +136,16 @@ export default function DateRangePicker({ value, onChange }: DateRangePickerProp
         ref={buttonRef}
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="inline-flex items-center gap-2 px-3 py-2.5 rounded-[10px] bg-white border border-[#E5E7EB] text-sm font-medium text-[#1A1D23] hover:bg-[#F8F9FB] transition-colors"
+        className="inline-flex items-center gap-2 rounded-[12px] border border-white/[0.07] bg-[linear-gradient(180deg,rgba(23,30,39,0.98)_0%,rgba(14,19,26,0.98)_100%)] px-3 py-2.5 text-sm font-semibold text-[#F5F7FA] shadow-[0_10px_22px_rgba(2,6,23,0.14),inset_0_1px_0_rgba(255,255,255,0.04)] transition-[border-color,box-shadow,transform] hover:border-white/12 hover:shadow-[0_12px_26px_rgba(2,6,23,0.18),inset_0_1px_0_rgba(255,255,255,0.06)] active:scale-[0.985]"
         aria-label={`Período: ${labelFor(value)}`}
         aria-expanded={open}
       >
-        <CalendarBlank size={16} weight="bold" className="text-[#6B7280]" />
+        <CalendarBlank size={16} weight="bold" className="text-[#9FB0C4]" />
         <span>{labelFor(value)}</span>
         <CaretDown
           size={10}
           weight="bold"
-          className={`text-[#6B7280] transition-transform ${open ? 'rotate-180' : ''}`}
+          className={`text-[#9FB0C4] transition-transform ${open ? 'rotate-180' : ''}`}
         />
       </button>
 
@@ -155,11 +157,10 @@ export default function DateRangePicker({ value, onChange }: DateRangePickerProp
             aria-hidden
           />
           <div
-            className="fixed z-[101] w-64 bg-white rounded-[10px] py-2"
+            className="fixed z-[101] max-h-[calc(100dvh-16px)] w-[min(280px,calc(100vw-16px))] overflow-y-auto rounded-[18px] border border-white/[0.07] bg-[linear-gradient(180deg,rgba(23,30,39,0.98)_0%,rgba(14,19,26,0.98)_100%)] p-1.5 shadow-[0_16px_34px_rgba(2,6,23,0.32),inset_0_1px_0_rgba(255,255,255,0.04)] backdrop-blur-xl"
             style={{
               top: position.top,
-              right: position.right,
-              boxShadow: 'var(--shadow-overlay)',
+              left: position.left,
             }}
             role="dialog"
             aria-label="Filtro de data"
@@ -169,48 +170,48 @@ export default function DateRangePicker({ value, onChange }: DateRangePickerProp
                 key={p.id}
                 type="button"
                 onClick={() => pickPreset(p.id)}
-                className={`w-full text-left px-3 py-2 text-sm transition-colors ${
+                className={`w-full rounded-[11px] px-3.5 py-2 text-left text-sm transition-colors ${
                   value.presetId === p.id
-                    ? 'bg-[#F1F3F7] text-[#1A1D23] font-semibold'
-                    : 'text-[#6B7280] hover:bg-[#F8F9FB]'
+                    ? 'bg-white/[0.09] text-[#F5F7FA] font-semibold'
+                    : 'text-[#C6D0DC] hover:bg-white/[0.075] hover:text-[#F5F7FA]'
                 }`}
               >
                 {p.label}
               </button>
             ))}
 
-            <div className="border-t border-[#F1F3F7] mt-1 pt-2 px-3 pb-2">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-[#9CA3AF] mb-2">
+            <div className="mt-1.5 border-t border-white/[0.075] px-2 pb-2 pt-3">
+              <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-[#8FA0B4]">
                 Personalizado
               </p>
               <div className="space-y-2">
                 <div>
-                  <span className="block text-[11px] text-[#6B7280] mb-0.5">De</span>
+                  <span className="mb-1 block text-[11px] text-[#9FB0C4]">De</span>
                   <DatePicker
                     value={customFrom}
                     onChange={setCustomFrom}
                     max={customTo || undefined}
                     ariaLabel="Data inicial"
                     placeholder="Início"
-                    className="themed-field w-full flex items-center gap-1.5 px-2 py-1.5 rounded-[6px] border border-[#E5E7EB] bg-white text-xs text-left outline-none focus:border-[#A8C5E0] transition-colors"
+                    className="flex w-full items-center gap-1.5 rounded-[9px] border border-white/[0.08] bg-white/[0.045] px-2.5 py-2 text-left text-xs outline-none transition-colors hover:border-white/12 focus:border-white/18 [&_span]:text-[#F5F7FA] [&_svg]:text-[#9FB0C4]"
                   />
                 </div>
                 <div>
-                  <span className="block text-[11px] text-[#6B7280] mb-0.5">Até</span>
+                  <span className="mb-1 block text-[11px] text-[#9FB0C4]">Até</span>
                   <DatePicker
                     value={customTo}
                     onChange={setCustomTo}
                     min={customFrom || undefined}
                     ariaLabel="Data final"
                     placeholder="Fim"
-                    className="themed-field w-full flex items-center gap-1.5 px-2 py-1.5 rounded-[6px] border border-[#E5E7EB] bg-white text-xs text-left outline-none focus:border-[#A8C5E0] transition-colors"
+                    className="flex w-full items-center gap-1.5 rounded-[9px] border border-white/[0.08] bg-white/[0.045] px-2.5 py-2 text-left text-xs outline-none transition-colors hover:border-white/12 focus:border-white/18 [&_span]:text-[#F5F7FA] [&_svg]:text-[#9FB0C4]"
                   />
                 </div>
                 <button
                   type="button"
                   onClick={applyCustom}
                   disabled={!customFrom || !customTo}
-                  className="w-full mt-1 px-3 py-1.5 rounded-[8px] bg-[#5BBF8E] hover:bg-[#4AA77C] active:bg-[#3FA876] text-white text-xs font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-150"
+                  className="mt-1 w-full rounded-[10px] bg-[#5BBF8E] px-3 py-2 text-xs font-semibold text-white transition-colors duration-150 hover:bg-[#4AA77C] active:bg-[#3FA876] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Aplicar
                 </button>

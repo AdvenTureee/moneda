@@ -191,7 +191,7 @@ export default function SpendingTimelineChart({ data }: SpendingTimelineChartPro
                 onChange={setSelectedDay}
                 placeholder="Selecionar dia"
                 ariaLabel="Selecionar dia do gráfico"
-                className="themed-field inline-flex h-9 w-auto min-w-[136px] items-center gap-2 rounded-[10px] border border-[#E5E7EB] bg-white px-2.5 text-left text-sm font-semibold outline-none transition-colors hover:border-[#A8C5E0] focus:border-[#A8C5E0] disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-9 w-auto min-w-[146px] items-center gap-2 rounded-[12px] border border-white/[0.07] bg-[linear-gradient(180deg,rgba(23,30,39,0.98)_0%,rgba(14,19,26,0.98)_100%)] px-3 text-left text-sm font-semibold shadow-[0_10px_22px_rgba(2,6,23,0.16),inset_0_1px_0_rgba(255,255,255,0.04)] outline-none transition-[border-color,box-shadow,transform] hover:border-white/12 hover:shadow-[0_12px_26px_rgba(2,6,23,0.20),inset_0_1px_0_rgba(255,255,255,0.06)] active:scale-[0.985] disabled:cursor-not-allowed disabled:opacity-50 [&_span]:text-[#F5F7FA] [&_svg]:text-[#9FB0C4]"
               />
             </div>
           )}
