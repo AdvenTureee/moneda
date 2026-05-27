@@ -3,13 +3,9 @@
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { CaretLeft, Check, X, Trash, Plus, MagnifyingGlass } from '@phosphor-icons/react';
-import Icon from '@/components/Icon';
+import Icon, { AVAILABLE_ICONS } from '@/components/Icon';
+import Toast from '@/components/Toast';
 import { useCategories } from '@/hooks/useCategories';
-
-const CATEGORY_ICONS = [
-  'Hamburger', 'Car', 'GameController', 'Pill', 'House', 'Books',
-  'Package', 'Briefcase', 'Rocket', 'TrendUp', 'Gift', 'Receipt',
-] as const;
 
 const COLOR_SWATCHES = [
   '#F59E0B', '#3B82F6', '#8B5CF6', '#EF4444', '#10B981', '#06B6D4', '#6B7280',
@@ -79,7 +75,7 @@ export default function CategoriesView() {
     setDeletingId(null);
     setFeedback(null);
     const usedIcons = new Set(categories.map((c) => c.icon));
-    const freeIcon = CATEGORY_ICONS.find((i) => !usedIcons.has(i)) ?? DEFAULT_ICON;
+    const freeIcon = AVAILABLE_ICONS.find((i) => !usedIcons.has(i)) ?? DEFAULT_ICON;
     setFormData({ name: '', icon: freeIcon, color: DEFAULT_COLOR, keywords: [] });
     setKeywordInput('');
   }
@@ -354,27 +350,12 @@ export default function CategoriesView() {
         </button>
       )}
 
-      {/* Feedback toast */}
       {feedback && (
-        <div
-          role={feedback.kind === 'error' ? 'alert' : 'status'}
-          className={`fixed bottom-20 left-4 right-4 z-50 rounded-[16px] px-5 py-4 shadow-lg animate-fade-up ${
-            feedback.kind === 'success'
-              ? 'bg-[#EEF9F4] text-[#2E7D5B] border border-[#D1EBDD]'
-              : 'bg-[#FDF0F0] text-[#B14C4C] border border-[#F4D7D7]'
-          }`}
-        >
-          <div className="flex items-center gap-3">
-            {feedback.kind === 'success' ? <Check size={18} /> : <X size={18} />}
-            <p className="font-medium text-sm">{feedback.text}</p>
-          </div>
-          <button
-            onClick={() => setFeedback(null)}
-            className="absolute top-4 right-4 text-current opacity-60 hover:opacity-100"
-          >
-            <X size={16} />
-          </button>
-        </div>
+        <Toast
+          kind={feedback.kind}
+          text={feedback.text}
+          onClose={() => setFeedback(null)}
+        />
       )}
     </div>
   );
@@ -421,7 +402,7 @@ export default function CategoriesView() {
         <div>
           <label className="block text-xs font-medium text-[#6B7280] mb-1.5">Ícone</label>
           <div className="flex flex-wrap gap-1.5">
-            {CATEGORY_ICONS.map((iconName) => (
+            {AVAILABLE_ICONS.map((iconName) => (
               <button
                 key={iconName}
                 type="button"

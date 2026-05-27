@@ -4,7 +4,7 @@ import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import BottomNav from '@/components/BottomNav';
 import AddExpenseModal from '@/components/AddExpenseModal';
-import CoinDropAnimation from '@/components/CoinDropAnimation';
+import Toast from '@/components/Toast';
 import ScrollFadeIndicator from '@/components/ScrollFadeIndicator';
 import type { ExpenseInput } from '@/types';
 
@@ -14,7 +14,7 @@ interface AppShellProps {
 
 export default function AppShell({ children }: AppShellProps) {
   const [modalOpen, setModalOpen] = useState(false);
-  const [showCoinDrop, setShowCoinDrop] = useState(false);
+  const [toastText, setToastText] = useState<string | null>(null);
   const router = useRouter();
 
   const handleSave = useCallback(
@@ -24,15 +24,11 @@ export default function AppShell({ children }: AppShellProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(input),
       }).catch(() => {});
-      setShowCoinDrop(true);
+      setToastText('Gasto adicionado com sucesso');
+      router.refresh();
     },
-    []
+    [router]
   );
-
-  const handleCoinDropComplete = useCallback(() => {
-    setShowCoinDrop(false);
-    router.refresh();
-  }, [router]);
 
   return (
     <>
@@ -49,7 +45,13 @@ export default function AppShell({ children }: AppShellProps) {
         onClose={() => setModalOpen(false)}
         onSave={handleSave}
       />
-      {showCoinDrop && <CoinDropAnimation onComplete={handleCoinDropComplete} />}
+      {toastText && (
+        <Toast
+          kind="success"
+          text={toastText}
+          onClose={() => setToastText(null)}
+        />
+      )}
     </>
   );
 }

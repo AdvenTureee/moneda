@@ -2,7 +2,8 @@
 
 import { useState, useTransition, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Check, WarningCircle, MagnifyingGlass } from '@phosphor-icons/react';
+import { ArrowLeft, MagnifyingGlass } from '@phosphor-icons/react';
+import Toast from '@/components/Toast';
 import Icon from '@/components/Icon';
 import { formatCurrency } from '@/lib/utils';
 import { saveCategoryBudgetAction } from '../actions-finance';
@@ -48,14 +49,6 @@ export default function BudgetForm({ initialBudgets, period }: BudgetFormProps) 
   const [hasChanges, setHasChanges] = useState(false);
   const [feedback, setFeedback] = useState<Feedback>(null);
   const [saving, startSaving] = useTransition();
-
-  // Clear feedback after 3 seconds on success
-  useEffect(() => {
-    if (feedback?.kind === 'success') {
-      const timer = setTimeout(() => setFeedback(null), 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [feedback]);
 
   function formatPeriod(p: string) {
     const [year, month] = p.split('-').map(Number);
@@ -233,25 +226,12 @@ export default function BudgetForm({ initialBudgets, period }: BudgetFormProps) 
         </button>
       </div>
 
-      {/* Feedback Toast */}
       {feedback && (
-        <div
-          role={feedback.kind === 'error' ? 'alert' : 'status'}
-          className={`fixed bottom-24 left-4 right-4 z-50 rounded-[16px] px-5 py-4 shadow-lg animate-in fade-in slide-in-from-bottom-4 duration-300 ${
-            feedback.kind === 'success'
-              ? 'bg-[#EEF9F4] text-[#2E7D5B] border border-[#D1EBDD]'
-              : 'bg-[#FDF0F0] text-[#B14C4C] border border-[#F4D7D7]'
-          }`}
-        >
-          <div className="flex items-center gap-3">
-            {feedback.kind === 'success' ? (
-              <Check size={18} className="shrink-0" />
-            ) : (
-              <WarningCircle size={18} className="shrink-0" />
-            )}
-            <p className="font-semibold text-sm">{feedback.text}</p>
-          </div>
-        </div>
+        <Toast
+          kind={feedback.kind}
+          text={feedback.text}
+          onClose={() => setFeedback(null)}
+        />
       )}
     </div>
   );

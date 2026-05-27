@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useState, useTransition } from 'react';
 import { CaretLeft, Check } from '@phosphor-icons/react';
+import Toast from '@/components/Toast';
 import { updateCurrency } from '../actions';
 import { formatCurrency } from '@/lib/utils';
 
@@ -97,16 +98,11 @@ export default function CurrencyForm({ initialCurrency }: CurrencyFormProps) {
       </p>
 
       {feedback && (
-        <div
-          role={feedback.kind === 'error' ? 'alert' : 'status'}
-          className={`fixed bottom-20 left-4 right-4 z-50 rounded-[16px] px-5 py-4 shadow-lg ${
-            feedback.kind === 'success'
-              ? 'bg-[#EEF9F4] text-[#2E7D5B] border border-[#D1EBDD]'
-              : 'bg-[#FDF0F0] text-[#B14C4C] border border-[#F4D7D7]'
-          }`}
-        >
-          <p className="font-medium text-sm">{feedback.text}</p>
-        </div>
+        <Toast
+          kind={feedback.kind}
+          text={feedback.text}
+          onClose={() => setFeedback(null)}
+        />
       )}
     </div>
   );

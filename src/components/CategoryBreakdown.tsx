@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import DonutChart from '@/components/charts/DonutChart';
 import CategoryBarList from '@/components/charts/CategoryBarList';
 import CategoryDetailModal from '@/components/CategoryDetailModal';
 import type { Expense } from '@/types';
@@ -81,6 +82,11 @@ export default function CategoryBreakdown({
 
   return (
     <>
+      <DonutChart
+        categories={categories}
+        total={total}
+        onCategoryClick={handleClick}
+      />
       <CategoryBarList
         categories={categories}
         total={total}
