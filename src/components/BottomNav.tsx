@@ -28,7 +28,7 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#E5E7EB] z-40"
+      className="fixed bottom-0 left-0 right-0 bg-white z-40"
       style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
       aria-label="Navegação principal"
     >

@@ -59,6 +59,7 @@
 
 html[data-theme="dark"] {
   color-scheme: dark;
+  background: var(--color-surface-alt);
 
   --background: #10151C;
   --foreground: #F5F7FA;
@@ -130,7 +131,6 @@ body {
 
 html[data-theme="dark"] body::before {
   opacity: 0.08;
-  mix-blend-mode: screen;
 }
 
 html[data-theme="dark"] * {
@@ -657,7 +657,7 @@ body::before {
 }
 
 html[data-theme="dark"] body::before {
-  opacity: 0.08;
+  opacity: 0;
 }
 
 h1, h2, h3, h4, h5, h6,
