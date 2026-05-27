@@ -36,20 +36,27 @@ BEGIN
 
     'top_categories', COALESCE((
       SELECT jsonb_agg(jsonb_build_object(
-        'category_id', pe.category_id,
-        'amount',       SUM(pe.amount_cents)
-      ) ORDER BY SUM(pe.amount_cents) DESC)
-      FROM period_expenses pe
-      GROUP BY pe.category_id
+        'category_id', sub.category_id,
+        'amount',       sub.amount
+      ) ORDER BY sub.amount DESC)
+      FROM (
+        SELECT pe.category_id, SUM(pe.amount_cents) AS amount
+        FROM period_expenses pe
+        GROUP BY pe.category_id
+      ) sub
     ), '[]'::jsonb),
 
     'daily_spending', COALESCE((
       SELECT jsonb_agg(jsonb_build_object(
-        'date',   to_char(pe.occurred_at, 'YYYY-MM-DD'),
-        'amount', SUM(pe.amount_cents)
-      ) ORDER BY to_char(pe.occurred_at, 'YYYY-MM-DD'))
-      FROM period_expenses pe
-      GROUP BY to_char(pe.occurred_at, 'YYYY-MM-DD')
+        'date',   sub.date,
+        'amount', sub.amount
+      ) ORDER BY sub.date)
+      FROM (
+        SELECT to_char(pe.occurred_at, 'YYYY-MM-DD') AS date,
+               SUM(pe.amount_cents) AS amount
+        FROM period_expenses pe
+        GROUP BY to_char(pe.occurred_at, 'YYYY-MM-DD')
+      ) sub
     ), '[]'::jsonb),
 
     'all_expenses', COALESCE((

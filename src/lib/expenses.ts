@@ -160,8 +160,7 @@ async function getDashboardMetricsFromDBViaRPC(
   });
 
   if (error) {
-    if ((error as { code?: string })?.code === '42883') return null;
-    throw new Error(`getDashboardMetrics: ${error.message}`);
+    return null;
   }
 
   const result = raw as {

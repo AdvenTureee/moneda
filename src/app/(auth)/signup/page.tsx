@@ -117,7 +117,7 @@ export default function SignupPage() {
             className="w-full flex items-center justify-center gap-2.5 py-2.5 rounded-[12px] border border-[#E5E7EB] bg-white text-sm font-medium text-[#1A1D23] hover:bg-[#F8F9FB] transition-colors disabled:opacity-60 mb-5"
           >
             <GoogleIcon />
-            {googleLoading ? 'Redirecionando…' : 'Continuar com Google'}
+            {googleLoading ? 'Redirecionando…' : 'Criar conta com Google'}
           </button>
 
           <div className="flex items-center gap-3 mb-5">
