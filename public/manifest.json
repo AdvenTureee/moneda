@@ -1,0 +1,9 @@
+{
+  "name": "Moneda",
+  "short_name": "Moneda",
+  "description": "Seu dinheiro, finalmente claro.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F8F9FB",
+  "theme_color": "#F8F9FB"
+}
