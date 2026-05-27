@@ -69,7 +69,7 @@ function parseCentsInput(raw: string): number {
 
 export default function OnboardingView({ defaultCategories, firstName }: OnboardingViewProps) {
   const router = useRouter();
-  const { theme, setTheme } = useTheme();
+  const { theme, isDark, setTheme } = useTheme();
   const [stepIdx, setStepIdx] = useState(0);
   const step: Step = STEP_ORDER[stepIdx];
 
@@ -236,10 +236,29 @@ export default function OnboardingView({ defaultCategories, firstName }: Onboard
               Vamos começar com sua renda mensal. Ela é a base de todas as nossas sugestões.
             </p>
             <div
-              className="flex items-center gap-2 border-2 rounded-[12px] px-4 py-4 transition-colors"
+              className="flex items-center gap-2 rounded-[16px] px-5 py-5 transition-all"
               style={{
-                borderColor: incomeCents > 0 ? '#5BBF8E' : '#E5E7EB',
-                background: incomeCents > 0 ? '#EEF9F4' : '#fff',
+                border: `1.5px solid ${
+                  incomeCents > 0
+                    ? 'var(--color-success)'
+                    : isDark
+                      ? 'rgba(255,255,255,0.08)'
+                      : '#E5E7EB'
+                }`,
+                background:
+                  incomeCents > 0
+                    ? isDark
+                      ? 'rgba(111, 212, 162, 0.08)'
+                      : '#EEF9F4'
+                    : isDark
+                      ? 'rgba(255,255,255,0.04)'
+                      : '#fff',
+                boxShadow:
+                  incomeCents > 0
+                    ? 'none'
+                    : isDark
+                      ? '0 1px 0 0 rgba(255,255,255,0.04)'
+                      : '0 1px 2px 0 rgba(0,0,0,0.04)',
               }}
             >
               <span className="text-2xl font-bold text-[#9CA3AF]">R$</span>
