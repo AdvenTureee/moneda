@@ -1,4 +1,4 @@
-export type MoTipKind = 'greeting' | 'finance' | 'app';
+export type MoTipKind = 'greeting' | 'finance' | 'app' | 'personal';
 
 export interface MoTip {
   id: string;

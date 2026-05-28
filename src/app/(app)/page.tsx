@@ -118,7 +118,7 @@ export default async function DashboardPage({
             <TrackedMascot variant="idle" size={124} />
           </div>
           <div className="flex-1 min-w-0">
-            <MoTipBubble />
+            <MoTipBubble period={period} />
           </div>
         </section>
 

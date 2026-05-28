@@ -124,3 +124,115 @@ export async function categorizeWithAI(
   const result = response.choices[0]?.message?.content ?? '';
   return result.trim().toLowerCase().replace(/[^a-z_]/g, '') || 'outros';
 }
+
+export interface MoTipGenerationContext {
+  period: string;
+  firstName?: string;
+  totalSpentCents: number;
+  expenseCount: number;
+  monthlyBudgetCents: number;
+  remainingBudgetCents: number | null;
+  topCategories: Array<{ name: string; amountCents: number; percentage: number }>;
+  recentExpenses: Array<{ description: string; amountCents: number; category: string }>;
+  insightExcerpt?: string;
+  spendingAlerts: string[];
+  budgetAlerts: string[];
+  previousMonthTotalCents: number | null;
+  receiptCount: number;
+}
+
+function formatBrl(cents: number): string {
+  return (cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+
+export async function generatePersonalizedMoTips(
+  ctx: MoTipGenerationContext,
+): Promise<{ tips: string[]; promptTokens: number; completionTokens: number }> {
+  const [year, month] = ctx.period.split('-').map(Number);
+  const monthName = new Date(year, month - 1).toLocaleString('pt-BR', { month: 'long' });
+
+  const categoryLines = ctx.topCategories
+    .slice(0, 5)
+    .map((c) => `- ${c.name}: ${formatBrl(c.amountCents)} (${c.percentage}%)`)
+    .join('\n');
+
+  const expenseLines = ctx.recentExpenses
+    .slice(0, 10)
+    .map((e) => `- ${e.description} (${e.category}): ${formatBrl(e.amountCents)}`)
+    .join('\n');
+
+  const budgetLine =
+    ctx.monthlyBudgetCents > 0
+      ? `Orçamento mensal: ${formatBrl(ctx.monthlyBudgetCents)}. Restante: ${
+          ctx.remainingBudgetCents !== null ? formatBrl(ctx.remainingBudgetCents) : '—'
+        }.`
+      : 'Orçamento mensal: não definido.';
+
+  const prevMonthLine =
+    ctx.previousMonthTotalCents !== null
+      ? `Gasto no mês anterior: ${formatBrl(ctx.previousMonthTotalCents)}.`
+      : '';
+
+  const userContent = [
+    `Período: ${monthName} de ${year}.`,
+    ctx.firstName ? `Nome: ${ctx.firstName}.` : '',
+    `Total gasto: ${formatBrl(ctx.totalSpentCents)} em ${ctx.expenseCount} lançamento(s).`,
+    budgetLine,
+    prevMonthLine,
+    `Comprovantes anexados no mês: ${ctx.receiptCount}.`,
+    '',
+    'Top categorias:',
+    categoryLines || '- (sem categorias)',
+    '',
+    'Últimos lançamentos:',
+    expenseLines || '- (sem lançamentos)',
+    ctx.insightExcerpt ? `\nTrecho do último insight da IA:\n${ctx.insightExcerpt}` : '',
+    ctx.spendingAlerts.length > 0
+      ? `\nAlertas de gasto:\n${ctx.spendingAlerts.map((a) => `- ${a}`).join('\n')}`
+      : '',
+    ctx.budgetAlerts.length > 0
+      ? `\nOrçamento por categoria:\n${ctx.budgetAlerts.map((a) => `- ${a}`).join('\n')}`
+      : '',
+  ]
+    .filter(Boolean)
+    .join('\n');
+
+  const response = await client.chat.completions.create({
+    model: 'llama-3.1-8b-instant',
+    max_tokens: 700,
+    temperature: 0.65,
+    response_format: { type: 'json_object' },
+    messages: [
+      {
+        role: 'system',
+        content:
+          'Você é a Mo, mascote do app Moneda. Gere dicas financeiras curtas e personalizadas em português do Brasil, com base APENAS nos dados reais do usuário. ' +
+          'Cada dica deve ter no máximo 140 caracteres, tom amigável, sem julgamento, sem markdown. ' +
+          'Mencione categorias, valores ou hábitos concretos quando fizer sentido. ' +
+          'Responda somente JSON válido no formato: {"tips":["dica 1","dica 2",...]} com entre 4 e 6 dicas.',
+      },
+      { role: 'user', content: userContent },
+    ],
+  });
+
+  const raw = response.choices[0]?.message?.content ?? '{"tips":[]}';
+  let tips: string[] = [];
+  try {
+    const parsed = JSON.parse(raw) as { tips?: unknown };
+    if (Array.isArray(parsed.tips)) {
+      tips = parsed.tips
+        .filter((t): t is string => typeof t === 'string' && t.trim().length > 0)
+        .map((t) => t.trim().replace(/\s+/g, ' '))
+        .filter((t) => t.length <= 160)
+        .slice(0, 6);
+    }
+  } catch {
+    tips = [];
+  }
+
+  return {
+    tips,
+    promptTokens: response.usage?.prompt_tokens ?? 0,
+    completionTokens: response.usage?.completion_tokens ?? 0,
+  };
+}

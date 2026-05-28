@@ -1,28 +1,64 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import Icon from './Icon';
-import { MO_TIPS, getGreeting } from '@/data/moTips';
+import { MO_TIPS, getGreeting, type MoTip } from '@/data/moTips';
 
 const ROTATION_MS = 14000;
 const FADE_MS = 180;
 
-function pickRandomIndex(exclude: number): number {
-  if (MO_TIPS.length <= 1) return 0;
+function pickRandomIndex(exclude: number, poolSize: number): number {
+  if (poolSize <= 1) return 0;
   let next = exclude;
   while (next === exclude) {
-    next = Math.floor(Math.random() * MO_TIPS.length);
+    next = Math.floor(Math.random() * poolSize);
   }
   return next;
 }
 
-export default function MoTipBubble() {
+interface MoTipBubbleProps {
+  period: string;
+}
+
+export default function MoTipBubble({ period }: MoTipBubbleProps) {
   const greeting = getGreeting();
   const [greetingShown, setGreetingShown] = useState(false);
   const [index, setIndex] = useState(0);
   const [fading, setFading] = useState(false);
+  const [personalTips, setPersonalTips] = useState<MoTip[]>([]);
   const timerRef = useRef<number | null>(null);
   const fadeRef = useRef<number | null>(null);
+
+  const tipPool = useMemo(
+    () => (personalTips.length > 0 ? [...personalTips, ...MO_TIPS] : MO_TIPS),
+    [personalTips],
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    const controller = new AbortController();
+
+    async function loadPersonalTips() {
+      try {
+        const res = await fetch(`/api/ai/mo-tips?period=${encodeURIComponent(period)}`, {
+          signal: controller.signal,
+        });
+        if (!res.ok || cancelled) return;
+        const data = (await res.json()) as { tips?: MoTip[] };
+        if (!cancelled && Array.isArray(data.tips) && data.tips.length > 0) {
+          setPersonalTips(data.tips);
+        }
+      } catch {
+        // mantém apenas dicas padrão
+      }
+    }
+
+    loadPersonalTips();
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [period]);
 
   const advance = useCallback(() => {
     setFading(true);
@@ -31,10 +67,10 @@ export default function MoTipBubble() {
       if (!greetingShown) {
         setGreetingShown(true);
       }
-      setIndex((current) => pickRandomIndex(current));
+      setIndex((current) => pickRandomIndex(current, tipPool.length));
       setFading(false);
     }, FADE_MS);
-  }, [greetingShown]);
+  }, [greetingShown, tipPool.length]);
 
   const scheduleNext = useCallback(() => {
     if (timerRef.current !== null) window.clearTimeout(timerRef.current);
@@ -62,7 +98,7 @@ export default function MoTipBubble() {
     };
   }, [scheduleNext]);
 
-  const tip = greetingShown ? MO_TIPS[index] : greeting;
+  const tip = greetingShown ? tipPool[index] ?? MO_TIPS[0] : greeting;
 
   const handleClick = () => {
     advance();
