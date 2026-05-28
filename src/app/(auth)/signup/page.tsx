@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import TermsModal from '@/components/TermsModal';
 import { TERMS_VERSION } from '@/lib/legal';
 import { createClient } from '@/lib/supabase/client';
 import { isValidEmail } from '@/lib/utils';
+import { useAuthMascot } from '../AuthMascotContext';
 
 function GoogleIcon() {
   return (
@@ -31,6 +32,21 @@ export default function SignupPage() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [termsModalOpen, setTermsModalOpen] = useState(false);
+  const [passwordFocusCount, setPasswordFocusCount] = useState(0);
+  const { setEyesClosed } = useAuthMascot();
+
+  function handlePasswordFocus() {
+    setPasswordFocusCount((count) => count + 1);
+  }
+
+  function handlePasswordBlur() {
+    setPasswordFocusCount((count) => Math.max(0, count - 1));
+  }
+
+  useEffect(() => {
+    setEyesClosed(passwordFocusCount > 0);
+    return () => setEyesClosed(false);
+  }, [passwordFocusCount, setEyesClosed]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -213,6 +229,8 @@ export default function SignupPage() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  onFocus={handlePasswordFocus}
+                  onBlur={handlePasswordBlur}
                   placeholder="Mín. 8 caracteres"
                   className="w-full px-3.5 py-2.5 rounded-[10px] bg-[#F8F9FB] border border-[#E5E7EB] text-sm text-[#1A1D23] placeholder:text-[#9CA3AF] outline-none focus:border-[#A8C5E0] transition-colors"
                 />
@@ -229,6 +247,8 @@ export default function SignupPage() {
                   required
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
+                  onFocus={handlePasswordFocus}
+                  onBlur={handlePasswordBlur}
                   placeholder="Repita a senha"
                   className="w-full px-3.5 py-2.5 rounded-[10px] bg-[#F8F9FB] border border-[#E5E7EB] text-sm text-[#1A1D23] placeholder:text-[#9CA3AF] outline-none focus:border-[#A8C5E0] transition-colors"
                 />

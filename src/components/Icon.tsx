@@ -49,6 +49,8 @@ import {
   FirstAid,
   Tooth,
   HandTap,
+  CaretLeft,
+  ChatText,
   type IconProps,
 } from '@phosphor-icons/react';
 
@@ -101,6 +103,8 @@ const iconMap: Record<string, React.ComponentType<IconProps>> = {
   FirstAid,
   Tooth,
   HandTap,
+  CaretLeft,
+  ChatText,
 };
 
 const emojiToIcon: Record<string, string> = {

@@ -63,8 +63,6 @@ export default function MoTipBubble() {
   }, [scheduleNext]);
 
   const tip = greetingShown ? MO_TIPS[index] : greeting;
-  const iconName = tip.kind === 'finance' ? 'TrendUp' : 'Lightbulb';
-  const iconColor = tip.kind === 'finance' ? 'text-[#5BBF8E]' : 'text-[#E0B040]';
 
   const handleClick = () => {
     advance();
@@ -75,18 +73,12 @@ export default function MoTipBubble() {
     <button
       type="button"
       onClick={handleClick}
-      className="themed-card relative w-full min-h-[92px] overflow-hidden text-left bg-white rounded-[14px] px-4 py-3 mb-5 animate-fade-up delay-1 transition-[background-color,border-color,box-shadow,transform] duration-150 active:scale-[0.995] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#A8C5E0]"
+      className="mo-tip-bubble group w-full text-left transition-transform duration-150 active:scale-[0.995] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#A8C5E0] focus-visible:ring-offset-2"
       aria-label="Toque para a próxima dica da Mo"
     >
-      {/* Cauda do balão — quadrado branco rotacionado, apontando para a Mo no header acima */}
-      <span
-        aria-hidden
-        className="absolute -top-1.5 left-10 w-3 h-3 bg-white rotate-45"
-        style={{ background: 'var(--color-surface)' }}
-      />
       <div
         key={tip.id}
-        className="relative min-h-[44px] pl-8 pr-5"
+        className="mo-tip-bubble__content"
         role="status"
         aria-live="polite"
         style={{
@@ -95,21 +87,13 @@ export default function MoTipBubble() {
           opacity: fading ? 0 : 1,
         }}
       >
-        <Icon
-          name={iconName}
-          size={18}
-          className={`absolute left-0 top-0.5 ${iconColor}`}
-        />
-        <p
-          className="text-sm text-[#1A1D23] leading-snug"
-        >
-          {tip.text}
+        <p className="mo-tip-bubble__text">
+          <span aria-hidden className="mo-tip-bubble__badge">
+            <Icon name="ChatText" size={16} />
+          </span>
+          <span>{tip.text}</span>
         </p>
       </div>
-      {/* Ícone sutil "toque" no canto inferior direito */}
-      <span aria-hidden className="absolute bottom-1 right-2 opacity-30">
-        <Icon name="HandTap" size={16} />
-      </span>
       <style>{`
         @keyframes mo-tip-enter {
           from { opacity: 0; transform: translateY(4px); }

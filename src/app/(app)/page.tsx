@@ -85,31 +85,42 @@ export default async function DashboardPage({
     <>
       <div className="max-w-lg mx-auto px-4">
         {/* Header */}
-        <header className="relative z-40 flex items-center justify-between py-5 animate-fade-up delay-0">
-          <div className="flex items-center gap-3">
-            <TrackedMascot variant="idle" size={100} />
-            <MonthPicker value={period} />
+        <header className="relative z-40 pt-8 pb-3 animate-fade-up delay-0">
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-heading font-bold tracking-tight text-[var(--color-text-primary)]">
+              Moneda
+            </h1>
+            <div className="flex items-center gap-4">
+              <MonthPicker value={period} />
+              <Link
+                href="/perfil"
+                className="h-[60px] w-[60px] shrink-0 overflow-hidden rounded-full bg-[#A8C5E0] flex items-center justify-center text-lg font-bold text-white ring-[3px] ring-[#5BBF8E]/80 ring-offset-[3px] ring-offset-[var(--background)] shadow-[0_10px_24px_rgba(0,0,0,0.14)] transition-[transform,box-shadow,ring-color] duration-200 hover:scale-[1.03] hover:ring-[#5BBF8E] focus:outline-none focus-visible:ring-4"
+                style={{ background: '#A8C5E0' }}
+                aria-label={user.email ?? 'Usuário'}
+              >
+                {avatarUrl ? (
+                  <img
+                    src={avatarUrl}
+                    alt=""
+                    className="h-full w-full object-cover object-center"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  fullName?.[0]?.toUpperCase() ?? user.email?.[0]?.toUpperCase() ?? '?'
+                )}
+              </Link>
+            </div>
           </div>
-          <Link
-            href="/perfil"
-            className="mt-2 h-14 w-14 shrink-0 overflow-hidden rounded-full bg-[#A8C5E0] flex items-center justify-center text-lg font-bold text-white ring-2 ring-[#5BBF8E]/70 ring-offset-2 ring-offset-[var(--background)] transition-[transform,box-shadow,ring-color] duration-200 hover:scale-[1.03] hover:ring-[#5BBF8E] focus:outline-none focus-visible:ring-4"
-            style={{ background: '#A8C5E0' }}
-            aria-label={user.email ?? 'Usuário'}
-          >
-            {avatarUrl ? (
-              <img
-                src={avatarUrl}
-                alt=""
-                className="h-full w-full object-cover object-[center_38%]"
-                referrerPolicy="no-referrer"
-              />
-            ) : (
-              fullName?.[0]?.toUpperCase() ?? user.email?.[0]?.toUpperCase() ?? '?'
-            )}
-          </Link>
         </header>
 
-        <MoTipBubble />
+        <section className="flex items-center gap-5 pb-4 animate-fade-up delay-1">
+          <div className="shrink-0">
+            <TrackedMascot variant="idle" size={124} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <MoTipBubble />
+          </div>
+        </section>
 
         {/* Hero: restante do mês (principal) */}
         <section className="mb-5 animate-fade-up delay-2" aria-label="Restante do mês">
