@@ -95,7 +95,7 @@ html[data-theme="dark"] {
   --chart-point-ring: #161D25;
   --ai-card-from: #1E6B51;
   --ai-card-to: #174B3C;
-  --ai-card-shadow: 0 8px 24px rgba(0, 0, 0, 0.32);
+  --ai-card-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
 }
 
 *,

@@ -344,7 +344,7 @@ export default function InsightsView({
                   key={type}
                   className={`animate-fade-up delay-${Math.min(groupIndex + 4, 8)}`}
                 >
-                  <div className="mb-2 flex items-center justify-between gap-3">
+                  <div className="mb-4 flex items-center justify-between gap-3">
                     <h3 className="text-xs font-bold uppercase tracking-wider text-[#6B7280] flex items-center gap-1.5 min-w-0">
                       <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: meta.color }} />
                       {meta.label}
@@ -373,9 +373,7 @@ export default function InsightsView({
                           id={`insight-${insight.id}`}
                           className="themed-card bg-white rounded-[14px] overflow-hidden transition-[box-shadow,transform] duration-150 animate-fade-up"
                           style={{
-                            boxShadow: expanded
-                              ? 'var(--shadow-card)'
-                              : 'var(--shadow-card-soft)',
+                            boxShadow: 'var(--shadow-card)',
                             animationDelay: `${Math.min(360 + groupIndex * 80 + itemIndex * 60, 760)}ms`,
                           }}
                         >

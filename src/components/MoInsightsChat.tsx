@@ -364,7 +364,7 @@ export default function MoInsightsChat({
         {canChat && showEmpty && (
           <div className="mo-insights-chat__empty">
             <div className="mo-insights-chat__mo-spotlight mo-insights-chat__mo-spotlight--lg">
-              <Mo variant="happy" portrait />
+              <Mo variant="idle" portrait />
             </div>
             <p className="text-sm text-[var(--color-text-secondary)] text-center mb-4">
               Tire dúvidas sobre seus gastos, orçamento e hábitos.
