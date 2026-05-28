@@ -40,11 +40,11 @@ export default function ExpenseCard({
   const hasCardActions = Boolean(onEdit || onDelete);
   const shouldShowMenu = Boolean(expense.receipt || onReceiptChanged || hasCardActions);
   const menuItemClass =
-    'group flex min-h-10 w-full items-center gap-3 rounded-[11px] px-3.5 text-left text-sm font-medium text-[#F5F7FA] transition-[background,color,transform] duration-150 hover:bg-white/[0.075] active:scale-[0.985] disabled:opacity-50';
+    'expense-action-item group flex min-h-10 w-full items-center gap-3 rounded-[11px] px-3.5 text-left text-sm font-medium transition-[background,color,transform] duration-150 active:scale-[0.985] disabled:opacity-50';
   const menuItemDangerClass =
-    'group flex min-h-10 w-full items-center gap-3 rounded-[11px] px-3.5 text-left text-sm font-medium text-[#F28B8B] transition-[background,color,transform] duration-150 hover:bg-[#E07070]/12 active:scale-[0.985] disabled:opacity-50';
-  const menuIconClass = 'shrink-0 text-[#9FB0C4] transition-colors group-hover:text-[#D7E2EF]';
-  const menuDangerIconClass = 'shrink-0 text-[#F28B8B] transition-colors group-hover:text-[#FFB0B0]';
+    'expense-action-item expense-action-item--danger group flex min-h-10 w-full items-center gap-3 rounded-[11px] px-3.5 text-left text-sm font-medium transition-[background,color,transform] duration-150 active:scale-[0.985] disabled:opacity-50';
+  const menuIconClass = 'expense-action-icon shrink-0 transition-colors';
+  const menuDangerIconClass = 'expense-action-danger-icon shrink-0 transition-colors';
 
   function placeMenu() {
     const trigger = menuButtonRef.current;
@@ -244,7 +244,7 @@ export default function ExpenseCard({
           />
           <div
             role="menu"
-            className="fixed z-[81] max-h-[calc(100dvh-16px)] w-[min(264px,calc(100vw-16px))] overflow-y-auto rounded-[18px] border border-white/[0.07] bg-[linear-gradient(180deg,rgba(23,30,39,0.98)_0%,rgba(14,19,26,0.98)_100%)] p-1.5 shadow-[0_16px_34px_rgba(2,6,23,0.32),inset_0_1px_0_rgba(255,255,255,0.04)] backdrop-blur-xl"
+            className="expense-action-menu fixed z-[81] max-h-[calc(100dvh-16px)] w-[min(264px,calc(100vw-16px))] overflow-y-auto rounded-[18px] p-1.5 backdrop-blur-xl"
             style={{ top: menuPosition.top, left: menuPosition.left }}
             onClick={(event) => event.stopPropagation()}
           >
@@ -295,7 +295,7 @@ export default function ExpenseCard({
             )}
 
             {!isCompact && hasCardActions && (
-              <div className="my-1.5 h-px bg-white/[0.075]" />
+              <div className="expense-action-separator my-1.5 h-px" />
             )}
 
             {!isCompact && onEdit && (

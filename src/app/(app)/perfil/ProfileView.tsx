@@ -477,10 +477,16 @@ export default function ProfileView({
             </p>
           </div>
           <span
+            className={`relative inline-flex h-6 w-10 shrink-0 rounded-full transition-colors ${
+              isDark ? 'bg-[#5BBF8E]' : 'bg-[#E5E7EB]'
+            }`}
             aria-hidden
-            className={`theme-toggle ${isDark ? 'theme-toggle--dark' : 'theme-toggle--light'}`}
           >
-            <span className="theme-toggle__thumb" />
+            <span
+              className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                isDark ? 'translate-x-4' : 'translate-x-0'
+              }`}
+            />
           </span>
         </button>
         <Link href="/perfil/notificacoes" className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-[#F8F9FB] transition-colors group">

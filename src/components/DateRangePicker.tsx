@@ -136,16 +136,16 @@ export default function DateRangePicker({ value, onChange }: DateRangePickerProp
         ref={buttonRef}
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="inline-flex items-center gap-2 rounded-[12px] border border-white/[0.07] bg-[linear-gradient(180deg,rgba(23,30,39,0.98)_0%,rgba(14,19,26,0.98)_100%)] px-3 py-2.5 text-sm font-semibold text-[#F5F7FA] shadow-[0_10px_22px_rgba(2,6,23,0.14),inset_0_1px_0_rgba(255,255,255,0.04)] transition-[border-color,box-shadow,transform] hover:border-white/12 hover:shadow-[0_12px_26px_rgba(2,6,23,0.18),inset_0_1px_0_rgba(255,255,255,0.06)] active:scale-[0.985]"
+        className="themed-field inline-flex items-center gap-2 rounded-[10px] border border-[#E5E7EB] bg-[#F4F6FA] px-3 py-2.5 text-sm font-semibold text-[#1A1D23] outline-none transition-[border-color,background-color,box-shadow] hover:bg-[#EEF2F7] focus:border-[#A8C5E0] focus:shadow-[0_0_0_2px_rgba(168,197,224,0.28)] active:bg-[#E8EDF4]"
         aria-label={`Período: ${labelFor(value)}`}
         aria-expanded={open}
       >
-        <CalendarBlank size={16} weight="bold" className="text-[#9FB0C4]" />
+        <CalendarBlank size={16} weight="bold" className="text-[#6B7280]" />
         <span>{labelFor(value)}</span>
         <CaretDown
           size={10}
           weight="bold"
-          className={`text-[#9FB0C4] transition-transform ${open ? 'rotate-180' : ''}`}
+          className={`text-[#6B7280] transition-transform ${open ? 'rotate-180' : ''}`}
         />
       </button>
 
@@ -157,7 +157,7 @@ export default function DateRangePicker({ value, onChange }: DateRangePickerProp
             aria-hidden
           />
           <div
-            className="fixed z-[101] max-h-[calc(100dvh-16px)] w-[min(280px,calc(100vw-16px))] overflow-y-auto rounded-[18px] border border-white/[0.07] bg-[linear-gradient(180deg,rgba(23,30,39,0.98)_0%,rgba(14,19,26,0.98)_100%)] p-1.5 shadow-[0_16px_34px_rgba(2,6,23,0.32),inset_0_1px_0_rgba(255,255,255,0.04)] backdrop-blur-xl"
+            className="date-range-menu fixed z-[101] max-h-[calc(100dvh-16px)] w-[min(280px,calc(100vw-16px))] overflow-y-auto rounded-[18px] p-1.5 backdrop-blur-xl"
             style={{
               top: position.top,
               left: position.left,
@@ -170,41 +170,41 @@ export default function DateRangePicker({ value, onChange }: DateRangePickerProp
                 key={p.id}
                 type="button"
                 onClick={() => pickPreset(p.id)}
-                className={`w-full rounded-[11px] px-3.5 py-2 text-left text-sm transition-colors ${
+                className={`date-range-option w-full rounded-[11px] px-3.5 py-2 text-left text-sm transition-colors ${
                   value.presetId === p.id
-                    ? 'bg-white/[0.09] text-[#F5F7FA] font-semibold'
-                    : 'text-[#C6D0DC] hover:bg-white/[0.075] hover:text-[#F5F7FA]'
+                    ? 'date-range-option--selected font-semibold'
+                    : ''
                 }`}
               >
                 {p.label}
               </button>
             ))}
 
-            <div className="mt-1.5 border-t border-white/[0.075] px-2 pb-2 pt-3">
-              <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-[#8FA0B4]">
+            <div className="date-range-custom mt-1.5 border-t px-2 pb-2 pt-3">
+              <p className="date-range-kicker mb-2 text-[11px] font-semibold uppercase tracking-wider">
                 Personalizado
               </p>
               <div className="space-y-2">
                 <div>
-                  <span className="mb-1 block text-[11px] text-[#9FB0C4]">De</span>
+                  <span className="date-range-label mb-1 block text-[11px]">De</span>
                   <DatePicker
                     value={customFrom}
                     onChange={setCustomFrom}
                     max={customTo || undefined}
                     ariaLabel="Data inicial"
                     placeholder="Início"
-                    className="flex w-full items-center gap-1.5 rounded-[9px] border border-white/[0.08] bg-white/[0.045] px-2.5 py-2 text-left text-xs outline-none transition-colors hover:border-white/12 focus:border-white/18 [&_span]:text-[#F5F7FA] [&_svg]:text-[#9FB0C4]"
+                    className="date-range-input flex w-full items-center gap-1.5 rounded-[9px] border px-2.5 py-2 text-left text-xs outline-none transition-colors"
                   />
                 </div>
                 <div>
-                  <span className="mb-1 block text-[11px] text-[#9FB0C4]">Até</span>
+                  <span className="date-range-label mb-1 block text-[11px]">Até</span>
                   <DatePicker
                     value={customTo}
                     onChange={setCustomTo}
                     min={customFrom || undefined}
                     ariaLabel="Data final"
                     placeholder="Fim"
-                    className="flex w-full items-center gap-1.5 rounded-[9px] border border-white/[0.08] bg-white/[0.045] px-2.5 py-2 text-left text-xs outline-none transition-colors hover:border-white/12 focus:border-white/18 [&_span]:text-[#F5F7FA] [&_svg]:text-[#9FB0C4]"
+                    className="date-range-input flex w-full items-center gap-1.5 rounded-[9px] border px-2.5 py-2 text-left text-xs outline-none transition-colors"
                   />
                 </div>
                 <button

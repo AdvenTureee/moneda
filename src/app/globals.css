@@ -231,80 +231,6 @@ html[data-theme="dark"] textarea::placeholder {
   color: var(--color-text-tertiary);
 }
 
-.theme-switch-thumb {
-  background-color: #FFFFFF !important;
-}
-
-.theme-toggle {
-  position: relative;
-  width: 64px;
-  height: 36px;
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  border-radius: 999px;
-  border: 2px solid var(--color-border);
-  overflow: hidden;
-  transition:
-    background 150ms ease,
-    border-color 180ms ease,
-    box-shadow 180ms ease;
-}
-
-.theme-toggle--light {
-  background: linear-gradient(180deg, #E7EDF4 0%, #D9E2EC 100%);
-  box-shadow:
-    inset 0 1px 2px rgb(15 23 42 / 0.10),
-    inset 0 -1px 1px rgb(255 255 255 / 0.52);
-}
-
-.theme-toggle--dark {
-  border: 3px solid var(--color-success);
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--color-success-bg) 88%, #0E171F 12%) 0%,
-      color-mix(in srgb, var(--color-success-bg) 68%, #0E171F 32%) 100%
-    );
-  box-shadow:
-    0 0 0 1px rgb(111 212 162 / 0.18),
-    0 0 16px rgb(111 212 162 / 0.14),
-    inset 0 1px 2px rgb(255 255 255 / 0.08);
-}
-
-.theme-toggle__thumb {
-  position: absolute;
-  z-index: 2;
-  left: 5px;
-  top: 50%;
-  width: 24px;
-  height: 24px;
-  border-radius: 999px;
-  transform: translateY(-50%);
-  background: #FFFFFF;
-  box-shadow:
-    0 2px 8px rgb(0 0 0 / 0.24),
-    inset 0 1px 1px rgb(255 255 255 / 0.58);
-  transition:
-    left 150ms cubic-bezier(0.4, 0, 0.2, 1),
-    transform 150ms cubic-bezier(0.4, 0, 0.2, 1),
-    box-shadow 180ms ease;
-}
-
-.theme-toggle--dark .theme-toggle__thumb {
-  left: calc(100% - 29px);
-  transform: translateY(-50%);
-  background: #DDF7EA;
-  box-shadow:
-    0 2px 8px rgb(0 0 0 / 0.24),
-    inset 0 1px 1px rgb(255 255 255 / 0.54);
-}
-
-.theme-toggle:focus-visible {
-  outline: 2px solid var(--color-brand-blue);
-  outline-offset: 4px;
-}
-
 .themed-card {
   background: var(--color-surface);
   border: 1px solid color-mix(in srgb, var(--color-border) 68%, transparent);
@@ -320,6 +246,194 @@ html[data-theme="dark"] textarea::placeholder {
 .themed-field-active {
   background: var(--field-active-bg) !important;
   border-color: var(--color-success) !important;
+}
+
+.date-range-menu {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.98));
+  border: 1px solid rgba(213, 219, 229, 0.95);
+  box-shadow:
+    0 18px 42px rgba(26, 29, 35, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.date-range-option {
+  color: var(--color-text-secondary);
+}
+
+.date-range-option:hover {
+  background: rgba(241, 243, 247, 0.92);
+  color: var(--color-text-primary);
+}
+
+.date-range-option--selected {
+  background: #EEF2F7;
+  color: var(--color-text-primary);
+}
+
+.date-range-custom {
+  border-color: rgba(213, 219, 229, 0.86);
+}
+
+.date-range-kicker {
+  color: var(--color-text-secondary);
+}
+
+.date-range-label {
+  color: var(--color-text-tertiary);
+}
+
+.date-range-input {
+  background: var(--field-bg);
+  border-color: rgba(213, 219, 229, 0.95);
+}
+
+.date-range-input:hover,
+.date-range-input:focus {
+  border-color: var(--color-border-focus);
+}
+
+.date-range-input span {
+  color: var(--color-text-primary) !important;
+}
+
+.date-range-input svg {
+  color: var(--color-text-secondary) !important;
+}
+
+html[data-theme="dark"] .date-range-menu {
+  background: linear-gradient(180deg, rgba(23, 30, 39, 0.98), rgba(14, 19, 26, 0.98));
+  border-color: rgba(255, 255, 255, 0.07);
+  box-shadow:
+    0 16px 34px rgba(2, 6, 23, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+html[data-theme="dark"] .date-range-option {
+  color: #C6D0DC;
+}
+
+html[data-theme="dark"] .date-range-option:hover {
+  background: rgba(255, 255, 255, 0.075);
+  color: #F5F7FA;
+}
+
+html[data-theme="dark"] .date-range-option--selected {
+  background: rgba(255, 255, 255, 0.09);
+  color: #F5F7FA;
+}
+
+html[data-theme="dark"] .date-range-custom {
+  border-color: rgba(255, 255, 255, 0.075);
+}
+
+html[data-theme="dark"] .date-range-kicker {
+  color: #8FA0B4;
+}
+
+html[data-theme="dark"] .date-range-label {
+  color: #9FB0C4;
+}
+
+html[data-theme="dark"] .date-range-input {
+  background: rgba(255, 255, 255, 0.045);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+html[data-theme="dark"] .date-range-input:hover,
+html[data-theme="dark"] .date-range-input:focus {
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+html[data-theme="dark"] .date-range-input span {
+  color: #F5F7FA !important;
+}
+
+html[data-theme="dark"] .date-range-input svg {
+  color: #9FB0C4 !important;
+}
+
+.expense-action-menu {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.98));
+  border: 1px solid rgba(213, 219, 229, 0.95);
+  box-shadow:
+    0 18px 42px rgba(26, 29, 35, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.expense-action-item {
+  color: var(--color-text-primary);
+}
+
+.expense-action-item:hover {
+  background: rgba(241, 243, 247, 0.92);
+}
+
+.expense-action-icon {
+  color: var(--color-text-secondary);
+}
+
+.expense-action-item:hover .expense-action-icon {
+  color: var(--color-text-primary);
+}
+
+.expense-action-item--danger {
+  color: var(--color-error);
+}
+
+.expense-action-item--danger:hover {
+  background: rgba(224, 112, 112, 0.1);
+}
+
+.expense-action-danger-icon {
+  color: var(--color-error);
+}
+
+.expense-action-separator {
+  background: rgba(213, 219, 229, 0.86);
+}
+
+html[data-theme="dark"] .expense-action-menu {
+  background: linear-gradient(180deg, rgba(23, 30, 39, 0.98), rgba(14, 19, 26, 0.98));
+  border-color: rgba(255, 255, 255, 0.07);
+  box-shadow:
+    0 16px 34px rgba(2, 6, 23, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+html[data-theme="dark"] .expense-action-item {
+  color: #F5F7FA;
+}
+
+html[data-theme="dark"] .expense-action-item:hover {
+  background: rgba(255, 255, 255, 0.075);
+}
+
+html[data-theme="dark"] .expense-action-icon {
+  color: #9FB0C4;
+}
+
+html[data-theme="dark"] .expense-action-item:hover .expense-action-icon {
+  color: #D7E2EF;
+}
+
+html[data-theme="dark"] .expense-action-item--danger {
+  color: #F28B8B;
+}
+
+html[data-theme="dark"] .expense-action-item--danger:hover {
+  background: rgba(224, 112, 112, 0.12);
+}
+
+html[data-theme="dark"] .expense-action-danger-icon {
+  color: #F28B8B;
+}
+
+html[data-theme="dark"] .expense-action-item--danger:hover .expense-action-danger-icon {
+  color: #FFB0B0;
+}
+
+html[data-theme="dark"] .expense-action-separator {
+  background: rgba(255, 255, 255, 0.075);
 }
 
 .ai-insight-banner {
