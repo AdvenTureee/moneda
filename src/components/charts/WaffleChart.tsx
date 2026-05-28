@@ -45,12 +45,17 @@ export default function WaffleChart({
   onCategoryClick,
 }: WaffleChartProps) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [previewId, setPreviewId] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
     const raf = requestAnimationFrame(() => setReady(true));
     return () => cancelAnimationFrame(raf);
   }, []);
+
+  useEffect(() => {
+    if (hoveredId) setPreviewId(hoveredId);
+  }, [hoveredId]);
 
   const groups = useMemo(() => {
     if (total <= 0) return [];
@@ -124,6 +129,18 @@ export default function WaffleChart({
   }
 
   const hovered = hoveredId ? groups.find((group) => group.categoryId === hoveredId) : null;
+  const preview = (previewId ? groups.find((group) => group.categoryId === previewId) : null) ?? hovered;
+  const showPreview = Boolean(hovered && preview);
+
+  function handleGridPointerMove(event: React.PointerEvent<HTMLDivElement>) {
+    const rect = event.currentTarget.getBoundingClientRect();
+    const x = Math.min(Math.max(event.clientX - rect.left, 0), rect.width - 1);
+    const y = Math.min(Math.max(event.clientY - rect.top, 0), rect.height - 1);
+    const col = Math.min(GRID - 1, Math.max(0, Math.floor((x / rect.width) * GRID)));
+    const row = Math.min(GRID - 1, Math.max(0, Math.floor((y / rect.height) * GRID)));
+    const cell = cells[row * GRID + col];
+    if (cell && cell.categoryId !== hoveredId) setHoveredId(cell.categoryId);
+  }
 
   return (
     <div className="grid grid-cols-[minmax(168px,192px)_minmax(0,1fr)] items-center gap-5 max-[420px]:grid-cols-1 max-[420px]:gap-3">
@@ -132,7 +149,11 @@ export default function WaffleChart({
         role="img"
         aria-label="Gráfico waffle de gastos por categoria"
       >
-        <div className="grid grid-cols-10 gap-1">
+        <div
+          className="grid grid-cols-10 gap-1"
+          onPointerMove={handleGridPointerMove}
+          onPointerLeave={() => setHoveredId(null)}
+        >
           {cells.map((cell) => {
             const isHovered = hoveredId === cell.categoryId;
             const isDimmed = hoveredId !== null && !isHovered;
@@ -149,8 +170,6 @@ export default function WaffleChart({
                     'opacity 160ms ease-out, transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1)',
                   transitionDelay: ready ? '0ms' : `${Math.min(cell.index * 8, 420)}ms`,
                 }}
-                onMouseEnter={() => setHoveredId(cell.categoryId)}
-                onMouseLeave={() => setHoveredId(null)}
                 onFocus={() => setHoveredId(cell.categoryId)}
                 onBlur={() => setHoveredId(null)}
                 onClick={() => onCategoryClick?.(cell.isOthers ? null : cell.categoryId)}
@@ -166,14 +185,21 @@ export default function WaffleChart({
         <p className="mt-1 text-[28px] font-extrabold leading-tight tabular-nums text-[#1A1D23] max-[420px]:text-2xl">
           {formatCurrency(total)}
         </p>
-        {hovered && (
-          <div className="mt-3 w-full max-w-[220px] rounded-[10px] border border-[#E5E7EB] bg-[#F8F9FB] px-3 py-2">
-            <p className="truncate text-sm font-semibold text-[#1A1D23]">{hovered.categoryName}</p>
-            <p className="text-xs text-[#6B7280] tabular-nums mt-0.5">
-              {formatCurrency(hovered.amount)} · {((hovered.amount / total) * 100).toFixed(0)}%
-            </p>
+        <div
+          className={`mt-3 grid w-full max-w-[220px] overflow-hidden transition-[grid-template-rows,opacity,transform] duration-220 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+            showPreview ? 'grid-rows-[1fr] opacity-100 translate-y-0' : 'grid-rows-[0fr] opacity-0 translate-y-1'
+          }`}
+          aria-hidden={!showPreview}
+        >
+          <div className="min-h-0 overflow-hidden">
+            <div className="rounded-[10px] border border-[#E5E7EB] bg-[#F8F9FB] px-3 py-2 transition-[background-color,border-color]">
+              <p className="truncate text-sm font-semibold text-[#1A1D23]">{preview?.categoryName}</p>
+              <p className="text-xs text-[#6B7280] tabular-nums mt-0.5">
+                {preview ? `${formatCurrency(preview.amount)} · ${((preview.amount / total) * 100).toFixed(0)}%` : ''}
+              </p>
+            </div>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );

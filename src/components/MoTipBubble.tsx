@@ -5,7 +5,7 @@ import Icon from './Icon';
 import { MO_TIPS, getGreeting } from '@/data/moTips';
 
 const ROTATION_MS = 14000;
-const FADE_MS = 250;
+const FADE_MS = 180;
 
 function pickRandomIndex(exclude: number): number {
   if (MO_TIPS.length <= 1) return 0;
@@ -75,7 +75,7 @@ export default function MoTipBubble() {
     <button
       type="button"
       onClick={handleClick}
-      className="themed-card relative w-full text-left bg-white rounded-[14px] px-4 py-3 mb-5 animate-fade-up delay-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#A8C5E0]"
+      className="themed-card relative w-full min-h-[92px] overflow-hidden text-left bg-white rounded-[14px] px-4 py-3 mb-5 animate-fade-up delay-1 transition-[background-color,border-color,box-shadow,transform] duration-150 active:scale-[0.995] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#A8C5E0]"
       aria-label="Toque para a próxima dica da Mo"
     >
       {/* Cauda do balão — quadrado branco rotacionado, apontando para a Mo no header acima */}
@@ -85,18 +85,23 @@ export default function MoTipBubble() {
         style={{ background: 'var(--color-surface)' }}
       />
       <div
-        className="relative flex items-start gap-2"
+        key={tip.id}
+        className="relative min-h-[44px] pl-8 pr-5"
         role="status"
         aria-live="polite"
+        style={{
+          animation: fading ? undefined : `mo-tip-enter ${FADE_MS}ms cubic-bezier(0.22, 1, 0.36, 1) both`,
+          transition: `opacity ${FADE_MS}ms ease`,
+          opacity: fading ? 0 : 1,
+        }}
       >
         <Icon
           name={iconName}
           size={18}
-          className={`shrink-0 mt-0.5 ${iconColor}`}
+          className={`absolute left-0 top-0.5 ${iconColor}`}
         />
         <p
           className="text-sm text-[#1A1D23] leading-snug"
-          style={{ transition: `opacity ${FADE_MS}ms ease`, opacity: fading ? 0 : 1 }}
         >
           {tip.text}
         </p>
@@ -105,6 +110,12 @@ export default function MoTipBubble() {
       <span aria-hidden className="absolute bottom-1 right-2 opacity-30">
         <Icon name="HandTap" size={16} />
       </span>
+      <style>{`
+        @keyframes mo-tip-enter {
+          from { opacity: 0; transform: translateY(4px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
     </button>
   );
 }

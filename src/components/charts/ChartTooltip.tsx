@@ -43,13 +43,15 @@ export default function ChartTooltip({
     left,
     top,
     transform: `translate(calc(${translateX} + ${clampX}px), calc(${translateY} + ${offsetY}px))`,
+    maxWidth: 'min(220px, calc(100vw - 24px))',
+    willChange: 'transform, opacity',
   };
 
   return (
     <div
       ref={ref}
       role="tooltip"
-      className="absolute z-10 bg-[#1A1D23] text-white text-xs rounded-lg px-3 py-2 shadow-lg pointer-events-none whitespace-nowrap animate-fade-in-fast"
+      className="absolute z-10 min-w-[132px] bg-[#1A1D23] text-white text-xs rounded-lg px-3 py-2 shadow-lg pointer-events-none whitespace-normal animate-fade-in-fast"
       style={style}
     >
       {children}

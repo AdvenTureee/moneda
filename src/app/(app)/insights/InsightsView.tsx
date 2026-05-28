@@ -406,10 +406,11 @@ export default function InsightsView({
 
                           {/* Card body (expandable) */}
                           <div
-                            className={`transition-[max-height,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] overflow-hidden ${expanded ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'
+                            className={`grid overflow-hidden transition-[grid-template-rows,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${expanded ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
                               }`}
                           >
-                            <div className="px-4 pb-4 pt-3 border-t border-[#F1F3F7]">
+                            <div className="min-h-0 overflow-hidden">
+                              <div className="px-4 pb-4 pt-3 border-t border-[#F1F3F7]">
                               <div className="flex items-start gap-2">
                                 <div className="flex-1 space-y-1">
                                   <ReactMarkdown
@@ -442,6 +443,7 @@ export default function InsightsView({
                                   )}
                                 </div>
                               </div>
+                            </div>
                             </div>
                           </div>
                         </div>

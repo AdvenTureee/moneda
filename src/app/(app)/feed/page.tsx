@@ -318,21 +318,29 @@ function FeedPageInner() {
                 groups.map((group, gi) => {
                   const dayTotal = group.items.reduce((sum, e) => sum + e.amount, 0);
                   return (
-                    <div key={group.dateKey} className={`mb-4 animate-fade-up delay-${Math.min(gi + 2, 8)}`}>
+                    <section
+                      key={group.dateKey}
+                      className={`mb-7 animate-fade-up delay-${Math.min(gi + 2, 8)}`}
+                      aria-labelledby={`feed-date-${group.dateKey}`}
+                    >
                       {/* Date section header */}
                       <div
-                        className="themed-card flex items-center justify-between px-4 py-2.5 mb-2 bg-white rounded-[10px]"
+                        className="mb-3 flex items-center gap-3"
                       >
-                        <span className="text-xs font-semibold text-[#6B7280]">
+                        <div className="h-px flex-1 bg-[color-mix(in_srgb,var(--color-border)_70%,transparent)]" />
+                        <h2
+                          id={`feed-date-${group.dateKey}`}
+                          className="shrink-0 rounded-full border border-[#E5E7EB] bg-white px-3.5 py-1.5 text-xs font-bold text-[#6B7280] shadow-sm"
+                        >
                           {group.label}
-                        </span>
-                        <span className="text-xs font-semibold text-[#E07070] tabular-nums">
+                        </h2>
+                        <span className="shrink-0 rounded-full bg-[#FDF0F0] px-3 py-1.5 text-xs font-bold text-[#E07070] tabular-nums">
                           −{formatCurrency(dayTotal)}
                         </span>
                       </div>
 
                       {/* Expense cards */}
-                      <div className="space-y-2">
+                      <div className="space-y-2.5 border-l-2 border-[color-mix(in_srgb,var(--color-border)_72%,transparent)] pl-3">
                         {group.items.map((expense, ei) => (
                           <div key={expense.id}>
                             <ExpenseCard
@@ -345,7 +353,7 @@ function FeedPageInner() {
                           </div>
                         ))}
                       </div>
-                    </div>
+                    </section>
                   );
                 })
             )}

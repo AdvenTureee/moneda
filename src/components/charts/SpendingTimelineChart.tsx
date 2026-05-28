@@ -25,6 +25,7 @@ interface Point extends SpendingTimelineBucket {
 
 const HEIGHT = 190;
 const PAD = { top: 18, right: 12, bottom: 34, left: 42 };
+const TOOLTIP_W = 168;
 const MODES: Array<{ value: SpendingTimelineMode; label: string }> = [
   { value: 'year', label: 'Ano' },
   { value: 'month', label: 'Mês' },
@@ -140,6 +141,12 @@ export default function SpendingTimelineChart({ data }: SpendingTimelineChartPro
   const spentPath = buildPath(points, 'ySpent');
   const plannedPath = buildPath(points, 'yPlanned');
   const hovered = hoveredIndex !== null ? points[hoveredIndex] : null;
+  const tooltipLeft = hovered
+    ? Math.min(Math.max(hovered.x, TOOLTIP_W / 2 + 4), totalWidth - TOOLTIP_W / 2 - 4)
+    : 0;
+  const tooltipTop = hovered
+    ? Math.max(Math.min(hovered.ySpent, hovered.yPlanned), PAD.top + 26)
+    : 0;
   const hasSpending = points.some((p) => p.spentCumulative > 0);
   const plannedTotal = points.at(-1)?.plannedCumulative ?? 0;
 
@@ -202,9 +209,9 @@ export default function SpendingTimelineChart({ data }: SpendingTimelineChartPro
             <p className="text-sm text-[#6B7280]">Sem gastos ou planejamento para este período.</p>
           </div>
         ) : (
-          <div className="relative">
+          <div className="relative select-none touch-none">
             {hovered && (
-              <ChartTooltip left={hovered.x} top={Math.min(hovered.ySpent, hovered.yPlanned)} anchor="center" direction="up">
+              <ChartTooltip left={`${(tooltipLeft / totalWidth) * 100}%`} top={tooltipTop} anchor="center" direction="up">
                 <p className="font-semibold">
                   {mode === 'month' ? dateLabel(hovered.key) : hovered.label}
                 </p>
@@ -219,9 +226,10 @@ export default function SpendingTimelineChart({ data }: SpendingTimelineChartPro
 
             <svg
               viewBox={`0 0 ${totalWidth} ${HEIGHT}`}
-              className="w-full h-auto"
+              className="w-full h-auto touch-none"
               preserveAspectRatio="none"
               style={{ overflow: 'visible' }}
+              onPointerLeave={() => setHoveredIndex(null)}
               role="img"
               aria-label="Linhas acumuladas de gasto e valor planejado"
             >
@@ -269,21 +277,23 @@ export default function SpendingTimelineChart({ data }: SpendingTimelineChartPro
 
               {points.map((point) => (
                 <g key={point.key}>
-                  <circle cx={point.x} cy={point.yPlanned} r={3} fill="var(--chart-point-ring)" />
-                  <circle cx={point.x} cy={point.yPlanned} r={2.2} fill="var(--chart-success)" />
-                  <circle cx={point.x} cy={point.ySpent} r={3.8} fill="var(--chart-point-ring)" />
-                  <circle cx={point.x} cy={point.ySpent} r={2.8} fill="var(--chart-primary-strong)" />
+                  <circle cx={point.x} cy={point.yPlanned} r={4.2} fill="var(--chart-point-ring)" />
+                  <circle cx={point.x} cy={point.yPlanned} r={3.2} fill="var(--chart-success)" />
+                  <circle cx={point.x} cy={point.ySpent} r={5} fill="var(--chart-point-ring)" />
+                  <circle cx={point.x} cy={point.ySpent} r={3.8} fill="var(--chart-primary-strong)" />
                   <rect
                     x={point.x - chartW / Math.max(points.length, 1) / 2}
                     y={PAD.top}
                     width={chartW / Math.max(points.length, 1)}
                     height={chartH + 16}
                     fill="transparent"
-                    className="cursor-pointer"
-                    onMouseEnter={() => setHoveredIndex(point.index)}
-                    onMouseLeave={() => setHoveredIndex(null)}
-                    onTouchStart={() => setHoveredIndex(point.index)}
-                    onTouchEnd={() => setTimeout(() => setHoveredIndex(null), 1400)}
+                    className="cursor-pointer touch-none"
+                    onPointerEnter={() => setHoveredIndex(point.index)}
+                    onPointerMove={() => setHoveredIndex(point.index)}
+                    onPointerDown={(event) => {
+                      event.preventDefault();
+                      setHoveredIndex(point.index);
+                    }}
                   >
                     <title>{`${point.label}: gasto ${formatCurrency(Math.round(point.spentCumulative))}, planejado ${formatCurrency(Math.round(point.plannedCumulative))}`}</title>
                   </rect>
