@@ -1,6 +1,6 @@
 'use client';
 
-import { type ReactNode, useEffect, useMemo, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { MagnifyingGlass, X } from '@phosphor-icons/react';
 import Icon from '@/components/Icon';
@@ -31,6 +31,8 @@ export default function CategoryDetailModal({
   wafflePreview,
 }: CategoryDetailModalProps) {
   const [mounted, setMounted] = useState(false);
+  const [shouldRender, setShouldRender] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
   const [search, setSearch] = useState('');
 
   useEffect(() => setMounted(true), []);
@@ -40,13 +42,33 @@ export default function CategoryDetailModal({
   }, [isOpen]);
 
   useEffect(() => {
+    if (isOpen) {
+      setShouldRender(true);
+      setIsClosing(false);
+      return;
+    }
+    if (!shouldRender) return;
+    setIsClosing(true);
+    const timer = window.setTimeout(() => {
+      setShouldRender(false);
+      setIsClosing(false);
+    }, 180);
+    return () => window.clearTimeout(timer);
+  }, [isOpen, shouldRender]);
+
+  const requestClose = useCallback(() => {
+    setIsClosing(true);
+    window.setTimeout(onClose, 180);
+  }, [onClose]);
+
+  useEffect(() => {
     if (!isOpen) return;
     function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') requestClose();
     }
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [isOpen, onClose]);
+  }, [isOpen, requestClose]);
 
   const filteredExpenses = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -64,18 +86,18 @@ export default function CategoryDetailModal({
 
   const filteredTotal = filteredExpenses.reduce((sum, expense) => sum + expense.amount, 0);
 
-  if (!isOpen || !mounted) return null;
+  if (!shouldRender || !mounted) return null;
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6"
-      style={{ background: 'rgba(0,0,0,0.32)' }}
+      className="modal-wave-backdrop fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6"
+      data-state={isClosing ? 'closing' : 'open'}
       onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
+        if (e.target === e.currentTarget) requestClose();
       }}
     >
       <div
-        className="flex w-full max-w-sm animate-scale-in flex-col overflow-hidden rounded-[20px] bg-white"
+        className="modal-panel-pop flex w-full max-w-sm flex-col overflow-hidden rounded-[20px] bg-white"
         style={{ maxHeight: '85vh' }}
         role="dialog"
         aria-modal
@@ -107,7 +129,7 @@ export default function CategoryDetailModal({
           </div>
           <button
             type="button"
-            onClick={onClose}
+            onClick={requestClose}
             aria-label="Fechar"
             className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-[#F1F3F7] transition-colors shrink-0"
           >

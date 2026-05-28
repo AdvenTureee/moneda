@@ -29,6 +29,17 @@ export interface DatePickerProps {
 
 const WEEKDAYS = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
 
+function pad2(n: number): string {
+  return String(n).padStart(2, '0');
+}
+
+function parseTime(value?: string): { hour: number; minute: number } {
+  const [rawHour, rawMinute] = (value || '12:00').split(':').map(Number);
+  const hour = Number.isFinite(rawHour) ? Math.max(0, Math.min(23, rawHour)) : 12;
+  const minute = Number.isFinite(rawMinute) ? Math.max(0, Math.min(59, rawMinute)) : 0;
+  return { hour, minute };
+}
+
 function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
@@ -150,6 +161,15 @@ export default function DatePicker({
   const displayText = displayDate
     ? (timeValue ? `${displayDate}  ·  ${timeValue}` : displayDate)
     : '';
+  const selectedTime = parseTime(timeValue);
+
+  function updateTime(part: 'hour' | 'minute', delta: number) {
+    if (!onTimeChange) return;
+    const next = { ...selectedTime };
+    if (part === 'hour') next.hour = (next.hour + delta + 24) % 24;
+    else next.minute = (next.minute + delta + 60) % 60;
+    onTimeChange(`${pad2(next.hour)}:${pad2(next.minute)}`);
+  }
 
   return (
     <>
@@ -266,18 +286,50 @@ export default function DatePicker({
             {/* Seletor de horário */}
             {onTimeChange && (
               <div className="mt-3 pt-2 border-t border-[#F1F3F7] px-1">
-                <div className="flex items-center justify-between gap-3">
+                <div className="mb-2 flex items-center justify-between gap-3">
                   <div className="flex items-center gap-1.5">
                     <Clock size={13} weight="bold" className="text-[#6B7280]" />
                     <span className="text-[11px] font-semibold text-[#6B7280]">Horário</span>
                   </div>
-                  <input
-                    type="time"
-                    value={timeValue ?? ''}
-                    onChange={(e) => onTimeChange(e.target.value)}
-                    className="themed-field text-[13px] font-semibold text-[#1A1D23] border border-[#E5E7EB] rounded-[8px] px-2 py-1 outline-none focus:border-[#A8C5E0] bg-white transition-colors"
-                    onClick={(e) => e.stopPropagation()}
-                  />
+                  <span className="rounded-full bg-[#EEF9F4] px-2.5 py-1 text-[12px] font-bold tabular-nums text-[#3FA876]">
+                    {pad2(selectedTime.hour)}:{pad2(selectedTime.minute)}
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-2" aria-label="Selecionar horário">
+                  {[
+                    { label: 'Hora', value: selectedTime.hour, part: 'hour' as const },
+                    { label: 'Minuto', value: selectedTime.minute, part: 'minute' as const },
+                  ].map((item) => (
+                    <div
+                      key={item.part}
+                      className="themed-field rounded-[10px] border border-[#E5E7EB] bg-white p-2"
+                    >
+                      <p className="mb-1 text-center text-[10px] font-semibold uppercase tracking-wider text-[#9CA3AF]">
+                        {item.label}
+                      </p>
+                      <div className="flex items-center justify-between gap-1">
+                        <button
+                          type="button"
+                          onClick={() => updateTime(item.part, -1)}
+                          className="flex h-8 w-8 items-center justify-center rounded-full bg-[#F1F3F7] text-sm font-bold text-[#6B7280] transition-colors hover:bg-[#E5EAF1] active:scale-95"
+                          aria-label={`Diminuir ${item.label.toLowerCase()}`}
+                        >
+                          −
+                        </button>
+                        <span className="min-w-9 text-center text-lg font-bold tabular-nums text-[#1A1D23]">
+                          {pad2(item.value)}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => updateTime(item.part, 1)}
+                          className="flex h-8 w-8 items-center justify-center rounded-full bg-[#F1F3F7] text-sm font-bold text-[#6B7280] transition-colors hover:bg-[#E5EAF1] active:scale-95"
+                          aria-label={`Aumentar ${item.label.toLowerCase()}`}
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}

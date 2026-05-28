@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { CaretDown } from '@phosphor-icons/react';
 import type { Components } from 'react-markdown';
 import Icon from '@/components/Icon';
 import Mo from '@/components/Mo';
@@ -38,6 +39,23 @@ function formatInsightPeriod(date: Date): string {
     month: 'long',
     year: 'numeric',
   });
+}
+
+function buildInsightPreview(message: string, maxLength = 150): string {
+  const clean = message
+    .replace(/```[\s\S]*?```/g, ' ')
+    .replace(/^#{1,6}\s+/gm, '')
+    .replace(/^\s*[-*+]\s+/gm, '')
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    .replace(/\*([^*]+)\*/g, '$1')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  if (clean.length <= maxLength) return clean;
+  const truncated = clean.slice(0, maxLength).replace(/\s+\S*$/, '').trim();
+  return `${truncated || clean.slice(0, maxLength).trim()}...`;
 }
 
 export default function InsightsView({
@@ -329,11 +347,12 @@ export default function InsightsView({
                     {items.map((insight) => {
                       const expanded = expandedIds.has(insight.id);
                       const alerts = insight.metadata?.alerts as string[] | undefined;
+                      const preview = buildInsightPreview(insight.message);
                       return (
                         <div
                           key={insight.id}
                           id={`insight-${insight.id}`}
-                          className="themed-card bg-white rounded-[12px] overflow-hidden transition-shadow duration-150"
+                          className="themed-card bg-white rounded-[14px] overflow-hidden transition-[box-shadow,transform] duration-150"
                           style={{
                             boxShadow: expanded
                               ? 'var(--shadow-card)'
@@ -344,28 +363,53 @@ export default function InsightsView({
                           <button
                             type="button"
                             onClick={() => toggleExpand(insight.id)}
-                            className="w-full flex items-center gap-2.5 px-4 py-3 text-left hover:bg-[#F8F9FB] transition-colors"
+                            className="w-full min-h-[88px] px-4 py-3.5 text-left hover:bg-[#F8F9FB] active:scale-[0.995] transition-[background-color,transform]"
+                            aria-expanded={expanded}
                           >
-                            <Icon name={meta.icon} size={18} color={meta.color} />
-                            <div className="flex-1 min-w-0">
-                              <span className="text-sm font-semibold text-[#1A1D23] block truncate">
-                                {meta.label}
+                            <div className="flex items-start gap-3">
+                              <span
+                                className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
+                                style={{ background: `${meta.color}18`, color: meta.color }}
+                                aria-hidden
+                              >
+                                <Icon name={meta.icon} size={20} color={meta.color} />
                               </span>
-                              <span className="text-xs text-[#6B7280] block">
-                                {formatInsightPeriod(insight.generatedAt)}
+                              <div className="min-w-0 flex-1">
+                                <div className="mb-1 flex items-center gap-2">
+                                  <span
+                                    className="rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider"
+                                    style={{ background: `${meta.color}16`, color: meta.color }}
+                                  >
+                                    {meta.label}
+                                  </span>
+                                  <span className="text-[11px] text-[#9CA3AF] capitalize">
+                                    {formatInsightPeriod(insight.generatedAt)}
+                                  </span>
+                                </div>
+                                <span className="block truncate text-base font-bold text-[#1A1D23]">
+                                  {meta.label}
+                                </span>
+                                {!expanded && (
+                                  <span className="mt-1 block line-clamp-2 text-xs leading-relaxed text-[#6B7280]">
+                                    {preview}
+                                  </span>
+                                )}
+                              </div>
+                              <span
+                                className={`mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#F1F3F7] text-[#6B7280] transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`}
+                                aria-hidden
+                              >
+                                <CaretDown size={16} weight="bold" />
                               </span>
                             </div>
-                            <span className={`text-[#9CA3AF] transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`}>
-                              ▼
-                            </span>
                           </button>
 
                           {/* Card body (expandable) */}
                           <div
-                            className={`transition-all duration-200 ease-in-out overflow-hidden ${expanded ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'
+                            className={`transition-[max-height,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] overflow-hidden ${expanded ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'
                               }`}
                           >
-                            <div className="px-4 pb-4 pt-1 border-t border-[#F1F3F7]">
+                            <div className="px-4 pb-4 pt-3 border-t border-[#F1F3F7]">
                               <div className="flex items-start gap-2">
                                 <div className="flex-1 space-y-1">
                                   <ReactMarkdown

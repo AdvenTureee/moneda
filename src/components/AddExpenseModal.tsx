@@ -308,15 +308,12 @@ export default function AddExpenseModal({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center transition-opacity duration-200"
-      style={{
-        background: 'rgba(0,0,0,0.32)',
-        opacity: isClosing ? 0 : 1,
-      }}
+      className="modal-wave-backdrop fixed inset-0 z-50 flex items-end justify-center"
+      data-state={isClosing ? 'closing' : 'open'}
       onClick={handleBackdropClick}
     >
       <div
-        className="w-full max-w-lg bg-white rounded-t-[24px] flex max-h-[92dvh] flex-col overflow-hidden"
+        className="modal-sheet w-full max-w-lg bg-white rounded-t-[24px] flex max-h-[84dvh] flex-col overflow-hidden"
         style={{
           boxShadow: 'var(--shadow-overlay)',
           transform: sheetTransform,
@@ -329,7 +326,7 @@ export default function AddExpenseModal({
         {/* Drag handle */}
         <button
           type="button"
-          className="flex w-full touch-none select-none justify-center pt-3 pb-2 cursor-grab active:cursor-grabbing"
+          className="flex w-full touch-none select-none justify-center pt-2.5 pb-1.5 cursor-grab active:cursor-grabbing"
           aria-label="Arraste para baixo para fechar"
           onPointerDown={handleHandlePointerDown}
           onPointerMove={handleHandlePointerMove}
@@ -342,7 +339,7 @@ export default function AddExpenseModal({
         </button>
 
         {/* Header */}
-        <div className="flex shrink-0 items-center justify-between px-5 py-3">
+        <div className="flex shrink-0 items-center justify-between px-5 py-2.5">
           <h2 className="text-lg font-semibold text-[#1A1D23]">{isEditing ? 'Editar Gasto' : 'Adicionar Gasto'}</h2>
           <button
             onClick={finishClose}

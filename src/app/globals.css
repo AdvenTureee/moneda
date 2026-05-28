@@ -1005,6 +1005,97 @@ body, .font-body {
   animation: fade-in-fast 0.2s ease-out both;
 }
 
+.modal-wave-backdrop {
+  background:
+    radial-gradient(ellipse 120% 54% at 50% 110%, rgba(91, 191, 142, 0.24), transparent 58%),
+    radial-gradient(ellipse 90% 46% at 15% 104%, rgba(168, 197, 224, 0.18), transparent 62%),
+    rgba(10, 15, 22, 0.42);
+  backdrop-filter: blur(7px) saturate(1.05);
+  animation: modal-backdrop-in 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.modal-wave-backdrop::before {
+  content: '';
+  position: absolute;
+  inset: auto -18% -18% -18%;
+  height: 42%;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.95;
+  background:
+    radial-gradient(ellipse 62% 78% at 50% 100%, rgba(91, 191, 142, 0.28), transparent 68%),
+    radial-gradient(ellipse 46% 60% at 18% 100%, rgba(168, 197, 224, 0.2), transparent 70%),
+    radial-gradient(ellipse 48% 64% at 82% 100%, rgba(91, 191, 142, 0.16), transparent 72%);
+  filter: blur(10px);
+  transform: translateY(20px) scale(1.04);
+  animation: modal-wave-in 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.modal-wave-backdrop > * {
+  position: relative;
+  z-index: 1;
+}
+
+html[data-theme="dark"] .modal-wave-backdrop {
+  background:
+    radial-gradient(ellipse 120% 54% at 50% 110%, rgba(91, 191, 142, 0.18), transparent 58%),
+    radial-gradient(ellipse 90% 46% at 15% 104%, rgba(122, 174, 207, 0.12), transparent 62%),
+    rgba(2, 6, 12, 0.58);
+}
+
+.modal-wave-backdrop[data-state="closing"] {
+  animation: modal-backdrop-out 180ms cubic-bezier(0.4, 0, 1, 1) both;
+}
+
+.modal-wave-backdrop[data-state="closing"]::before {
+  animation: modal-wave-out 180ms cubic-bezier(0.4, 0, 1, 1) both;
+}
+
+.modal-panel-pop {
+  animation: modal-panel-pop-in 300ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  will-change: transform, opacity;
+}
+
+.modal-wave-backdrop[data-state="closing"] .modal-panel-pop {
+  animation: modal-panel-pop-out 180ms cubic-bezier(0.4, 0, 1, 1) both;
+}
+
+.modal-sheet {
+  will-change: transform;
+}
+
+@keyframes modal-backdrop-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes modal-backdrop-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes modal-wave-in {
+  from { opacity: 0; transform: translateY(52px) scale(1.08); }
+  to { opacity: 0.95; transform: translateY(20px) scale(1.04); }
+}
+
+@keyframes modal-wave-out {
+  from { opacity: 0.95; transform: translateY(20px) scale(1.04); }
+  to { opacity: 0; transform: translateY(44px) scale(1.07); }
+}
+
+@keyframes modal-panel-pop-in {
+  from { opacity: 0; transform: translateY(16px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes modal-panel-pop-out {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to { opacity: 0; transform: translateY(10px) scale(0.98); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ArrowSquareOut, DownloadSimple, FileText, X } from '@phosphor-icons/react';
 
@@ -20,32 +20,55 @@ export default function ReceiptViewerModal({
   mimeType,
 }: ReceiptViewerModalProps) {
   const [mounted, setMounted] = useState(false);
+  const [shouldRender, setShouldRender] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
 
   useEffect(() => setMounted(true), []);
 
   useEffect(() => {
+    if (isOpen && url) {
+      setShouldRender(true);
+      setIsClosing(false);
+      return;
+    }
+    if (!shouldRender) return;
+    setIsClosing(true);
+    const timer = window.setTimeout(() => {
+      setShouldRender(false);
+      setIsClosing(false);
+    }, 180);
+    return () => window.clearTimeout(timer);
+  }, [isOpen, shouldRender, url]);
+
+  const requestClose = useCallback(() => {
+    setIsClosing(true);
+    window.setTimeout(onClose, 180);
+  }, [onClose]);
+
+  useEffect(() => {
     if (!isOpen) return;
     function onKey(event: KeyboardEvent) {
-      if (event.key === 'Escape') onClose();
+      if (event.key === 'Escape') requestClose();
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [isOpen, onClose]);
+  }, [isOpen, requestClose]);
 
-  if (!mounted || !isOpen || !url) return null;
+  if (!mounted || !shouldRender || !url) return null;
 
   const isImage = mimeType.startsWith('image/');
   const isPdf = mimeType === 'application/pdf';
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[70] flex items-center justify-center bg-black/55 p-3 sm:p-6"
+      className="modal-wave-backdrop fixed inset-0 z-[70] flex items-center justify-center p-3 sm:p-6"
+      data-state={isClosing ? 'closing' : 'open'}
       onClick={(event) => {
-        if (event.target === event.currentTarget) onClose();
+        if (event.target === event.currentTarget) requestClose();
       }}
     >
       <section
-        className="flex h-full max-h-[88dvh] w-full max-w-3xl flex-col overflow-hidden rounded-[18px] bg-white shadow-2xl"
+        className="modal-panel-pop flex h-full max-h-[88dvh] w-full max-w-3xl flex-col overflow-hidden rounded-[18px] bg-white shadow-2xl"
         role="dialog"
         aria-modal
         aria-label="Comprovante do gasto"
@@ -77,7 +100,7 @@ export default function ReceiptViewerModal({
           </a>
           <button
             type="button"
-            onClick={onClose}
+            onClick={requestClose}
             className="flex h-9 w-9 items-center justify-center rounded-full hover:bg-[#F1F3F7]"
             aria-label="Fechar"
           >
