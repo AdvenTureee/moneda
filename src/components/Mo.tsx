@@ -6,6 +6,8 @@ export interface MoProps {
   variant?: MoVariant;
   size?: number;
   className?: string;
+  /** Recorte só do rosto (avatar / foto de perfil). */
+  portrait?: boolean;
   pupilX?: number;
   pupilY?: number;
   eyesClosed?: boolean;
@@ -23,14 +25,17 @@ const PALETTE = {
 
 export default function Mo({
   variant = 'idle',
-  size = 80,
+  size,
   className = '',
+  portrait = false,
   pupilX = 0,
   pupilY = 0,
   eyesClosed = false,
   browX = 0,
   browY = 0,
 }: MoProps) {
+  const resolvedSize = size ?? 80;
+
   // Pupil tracking — clamp into [-1, 1] then translate within the eye.
   const px = Math.max(-1, Math.min(1, pupilX)) * 2.2;
   const py = Math.max(-1, Math.min(1, pupilY)) * 3.2;
@@ -46,12 +51,131 @@ export default function Mo({
   const pupilRightCx = rightEyeCx + px;
   // Pupil rests slightly below center for a "looking up" cute expression.
   const pupilCy = eyeCy + 1.6 + py;
+
+  const faceFeatures = (
+    <>
+      <circle
+        cx={50}
+        cy={42}
+        r={32}
+        fill={PALETTE.coinBase}
+        stroke={PALETTE.ink}
+        strokeWidth={2.8}
+      />
+      <ellipse cx={28} cy={48} rx={6} ry={4.5} fill={PALETTE.blush} opacity={0.35} />
+      <ellipse cx={72} cy={48} rx={6} ry={4.5} fill={PALETTE.blush} opacity={0.35} />
+      <path
+        d={`M ${33 - browX},${25 - browY} Q ${38 - browX},${22 - browY} ${43 - browX},${25 - browY}`}
+        stroke={PALETTE.ink}
+        strokeWidth={2}
+        strokeLinecap="round"
+        fill="none"
+      />
+      <path
+        d={`M ${67 + browX},${25 - browY} Q ${62 + browX},${22 - browY} ${57 + browX},${25 - browY}`}
+        stroke={PALETTE.ink}
+        strokeWidth={2}
+        strokeLinecap="round"
+        fill="none"
+      />
+      {eyesClosed ? (
+        <g>
+          <path d="M 33,36 Q 38,39 43,36" stroke={PALETTE.ink} strokeWidth={2} strokeLinecap="round" fill="none" />
+          <path d="M 57,36 Q 62,39 67,36" stroke={PALETTE.ink} strokeWidth={2} strokeLinecap="round" fill="none" />
+        </g>
+      ) : (
+        <>
+          <ellipse
+            cx={leftEyeCx}
+            cy={eyeCy}
+            rx={eyeRx}
+            ry={eyeRy}
+            fill={PALETTE.esclera}
+            stroke={PALETTE.ink}
+            strokeWidth={1.9}
+          />
+          <ellipse
+            cx={rightEyeCx}
+            cy={eyeCy}
+            rx={eyeRx}
+            ry={eyeRy}
+            fill={PALETTE.esclera}
+            stroke={PALETTE.ink}
+            strokeWidth={1.9}
+          />
+          <circle cx={leftEyeCx - 2.2} cy={eyeCy - 2.5} r={1.5} fill="white" />
+          <circle cx={rightEyeCx - 2.2} cy={eyeCy - 2.5} r={1.5} fill="white" />
+          {variant === 'happy' ? (
+            <g fontFamily="ui-sans-serif, system-ui, sans-serif">
+              <text
+                x={leftEyeCx}
+                y={eyeCy + 3.8}
+                textAnchor="middle"
+                fontSize={11}
+                fontWeight={900}
+                fill={PALETTE.ink}
+              >
+                $
+              </text>
+              <text
+                x={rightEyeCx}
+                y={eyeCy + 3.8}
+                textAnchor="middle"
+                fontSize={11}
+                fontWeight={900}
+                fill={PALETTE.ink}
+              >
+                $
+              </text>
+            </g>
+          ) : (
+            <g>
+              <circle cx={pupilLeftCx} cy={pupilCy} r={pupilR} fill={PALETTE.ink} />
+              <circle cx={pupilRightCx} cy={pupilCy} r={pupilR} fill={PALETTE.ink} />
+            </g>
+          )}
+        </>
+      )}
+      <path
+        d="M 40,52 Q 50,61 60,52"
+        stroke={PALETTE.ink}
+        strokeWidth={2}
+        strokeLinecap="round"
+        fill="none"
+      />
+      <path d="M 38,49 Q 42,52 38,54" stroke={PALETTE.ink} strokeWidth={2} strokeLinecap="round" fill="none" />
+      <path d="M 62,49 Q 58,52 62,54" stroke={PALETTE.ink} strokeWidth={2} strokeLinecap="round" fill="none" />
+      {variant === 'thinking' && (
+        <g fontFamily="ui-sans-serif, system-ui, sans-serif">
+          <text x={72} y={16} fontSize={13} fontWeight={900} fill={PALETTE.ink}>
+            ?
+          </text>
+        </g>
+      )}
+    </>
+  );
+
+  if (portrait) {
+    return (
+      <svg
+        {...(size != null ? { width: size, height: size } : {})}
+        viewBox="15 7 70 70"
+        preserveAspectRatio="xMidYMid slice"
+        className={`mo-mascot mo-mascot--portrait ${className}`.trim()}
+        aria-hidden
+        role="img"
+      >
+        {faceFeatures}
+      </svg>
+    );
+  }
+
   return (
     <svg
-      width={size}
-      height={size}
+      width={resolvedSize}
+      height={resolvedSize}
       viewBox="0 0 100 100"
-      className={`mo-mascot ${className}`}
+      className={`mo-mascot ${className}`.trim()}
       aria-hidden
       role="img"
     >
@@ -129,128 +253,7 @@ export default function Mo({
       />
       </g>
 
-      {/* Main coin face — solid flat yellow */}
-      <circle
-        cx={50}
-        cy={42}
-        r={32}
-        fill={PALETTE.coinBase}
-        stroke={PALETTE.ink}
-        strokeWidth={2.8}
-      />
-
-      {/* Cheeks (pastel blush, 30% opacity) */}
-      <ellipse cx={28} cy={48} rx={6} ry={4.5} fill={PALETTE.blush} opacity={0.35} />
-      <ellipse cx={72} cy={48} rx={6} ry={4.5} fill={PALETTE.blush} opacity={0.35} />
-
-      {/* Eyebrows — movable arches via browX/browY (positive browX = apart, positive browY = up) */}
-      <g className="animate-brow-float">
-      <path
-        d={`M ${33 - browX},${25 - browY} Q ${38 - browX},${22 - browY} ${43 - browX},${25 - browY}`}
-        stroke={PALETTE.ink}
-        strokeWidth={2}
-        strokeLinecap="round"
-        fill="none"
-      />
-      <path
-        d={`M ${67 + browX},${25 - browY} Q ${62 + browX},${22 - browY} ${57 + browX},${25 - browY}`}
-        stroke={PALETTE.ink}
-        strokeWidth={2}
-        strokeLinecap="round"
-        fill="none"
-      />
-      </g>
-
-      {/* Eyes — closed slits or open with whites/pupils */}
-      {eyesClosed ? (
-        <g>
-          <path d="M 33,36 Q 38,39 43,36" stroke={PALETTE.ink} strokeWidth={2} strokeLinecap="round" fill="none" />
-          <path d="M 57,36 Q 62,39 67,36" stroke={PALETTE.ink} strokeWidth={2} strokeLinecap="round" fill="none" />
-        </g>
-      ) : (
-        <>
-      {/* Eye whites — tall ovals (Cuphead-style) */}
-      <ellipse
-        cx={leftEyeCx}
-        cy={eyeCy}
-        rx={eyeRx}
-        ry={eyeRy}
-        fill={PALETTE.esclera}
-        stroke={PALETTE.ink}
-        strokeWidth={1.9}
-      />
-      <ellipse
-        cx={rightEyeCx}
-        cy={eyeCy}
-        rx={eyeRx}
-        ry={eyeRy}
-        fill={PALETTE.esclera}
-        stroke={PALETTE.ink}
-        strokeWidth={1.9}
-      />
-      {/* Eye highlights — sparkle dots for a cuter glassy look */}
-      <circle cx={leftEyeCx - 2.2} cy={eyeCy - 2.5} r={1.5} fill="white" />
-      <circle cx={rightEyeCx - 2.2} cy={eyeCy - 2.5} r={1.5} fill="white" />
-
-      {/* Pupils — pie-eye (default) or cifrão for the happy variant */}
-      {variant === 'happy' ? (
-        <g fontFamily="ui-sans-serif, system-ui, sans-serif">
-          <text
-            x={leftEyeCx}
-            y={eyeCy + 3.8}
-            textAnchor="middle"
-            fontSize={11}
-            fontWeight={900}
-            fill={PALETTE.ink}
-          >
-            $
-          </text>
-          <text
-            x={rightEyeCx}
-            y={eyeCy + 3.8}
-            textAnchor="middle"
-            fontSize={11}
-            fontWeight={900}
-            fill={PALETTE.ink}
-          >
-            $
-          </text>
-        </g>
-      ) : (
-        <g>
-          <circle cx={pupilLeftCx} cy={pupilCy} r={pupilR} fill={PALETTE.ink} />
-          <circle cx={pupilRightCx} cy={pupilCy} r={pupilR} fill={PALETTE.ink} />
-        </g>
-      )}
-      </>)}
-
-      {/* Smile — always cheerful, gentle upward curve */}
-      <path
-        d="M 40,52 Q 50,61 60,52"
-        stroke={PALETTE.ink}
-        strokeWidth={2}
-        strokeLinecap="round"
-        fill="none"
-      />
-
-      {/* Dimples — C-shaped curves opening toward the smile */}
-      <path d="M 38,49 Q 42,52 38,54" stroke={PALETTE.ink} strokeWidth={2} strokeLinecap="round" fill="none" />
-      <path d="M 62,49 Q 58,52 62,54" stroke={PALETTE.ink} strokeWidth={2} strokeLinecap="round" fill="none" />
-
-      {/* Floating "?" for thinking variant */}
-      {variant === 'thinking' && (
-        <g fontFamily="ui-sans-serif, system-ui, sans-serif">
-          <text
-            x={84}
-            y={14}
-            fontSize={14}
-            fontWeight={900}
-            fill={PALETTE.ink}
-          >
-            ?
-          </text>
-        </g>
-      )}
+      {faceFeatures}
       </g>
     </svg>
   );

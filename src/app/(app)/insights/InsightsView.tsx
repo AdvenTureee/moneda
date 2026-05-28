@@ -192,28 +192,26 @@ export default function InsightsView({
   };
 
   const hasFilter = activeType !== null || search.trim().length > 0;
+  const hasMonthlySummary = insights.some((i) => i.type === 'monthly_summary');
+
+  const summaryGenerateButton = expenseCount > 0 && (
+    <button
+      type="button"
+      onClick={handleGenerate}
+      disabled={generating}
+      className="shrink-0 min-h-9 px-4 py-2 text-xs font-bold rounded-full bg-[#5BBF8E] text-white active:scale-95 transition-all duration-75 disabled:opacity-40 shadow-sm hover:brightness-105"
+      style={{ boxShadow: '0 4px 14px rgba(91, 191, 142, 0.3)' }}
+    >
+      {generating ? 'Gerando…' : hasMonthlySummary ? 'Regenerar' : 'Gerar'}
+    </button>
+  );
 
   return (
     <div className="max-w-lg mx-auto px-4 pb-24">
       {/* Header */}
       <header className="py-5 animate-fade-up delay-0">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-heading text-[#1A1D23]">Insights</h1>
-            <p className="text-xs text-[#6B7280] mt-1 capitalize">{monthName}</p>
-          </div>
-          {expenseCount > 0 && (
-            <button
-              type="button"
-              onClick={handleGenerate}
-              disabled={generating}
-              className="min-h-11 px-5 py-2.5 text-sm font-bold rounded-full bg-[#5BBF8E] text-white active:scale-95 transition-all duration-75 disabled:opacity-40 shadow-sm hover:brightness-105"
-              style={{ boxShadow: '0 4px 14px rgba(91, 191, 142, 0.3)' }}
-            >
-              {generating ? 'Gerando…' : insights.length > 0 ? 'Regenerar' : 'Gerar'}
-            </button>
-          )}
-        </div>
+        <h1 className="text-xl font-heading text-[#1A1D23]">Insights</h1>
+        <p className="text-xs text-[#6B7280] mt-1 capitalize">{monthName}</p>
       </header>
 
       <MoInsightsChat period={period} expenseCount={expenseCount} />
@@ -280,16 +278,13 @@ export default function InsightsView({
           </div>
         )}
 
-        {/* Error */}
-        {genError && (
+        {/* Error / spinner — só aqui quando o resumo mensal ainda não aparece na lista */}
+        {genError && !groupedByType.has('monthly_summary') && (
           <p className="text-xs text-[#E07070] mb-3 animate-fade-up delay-3">{genError}</p>
         )}
 
-        {/* Generating spinner */}
-        {generating && (
-          <div
-            className="themed-card bg-white rounded-[16px] p-5 mb-4 animate-fade-up delay-4"
-          >
+        {generating && !groupedByType.has('monthly_summary') && (
+          <div className="themed-card bg-white rounded-[16px] p-5 mb-4 animate-fade-up delay-4">
             <div className="flex items-center gap-3">
               <span className="w-4 h-4 border-2 border-[#A8C5E0] border-t-transparent rounded-full animate-spin" />
               <p className="text-sm text-[#6B7280]">Analisando seus gastos…</p>
@@ -349,10 +344,24 @@ export default function InsightsView({
                   key={type}
                   className={`animate-fade-up delay-${Math.min(groupIndex + 4, 8)}`}
                 >
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-[#6B7280] mb-2 flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full" style={{ background: meta.color }} />
-                    {meta.label}
-                  </h3>
+                  <div className="mb-2 flex items-center justify-between gap-3">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-[#6B7280] flex items-center gap-1.5 min-w-0">
+                      <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: meta.color }} />
+                      {meta.label}
+                    </h3>
+                    {type === 'monthly_summary' && summaryGenerateButton}
+                  </div>
+                  {type === 'monthly_summary' && genError && (
+                    <p className="text-xs text-[#E07070] -mt-1 mb-2">{genError}</p>
+                  )}
+                  {type === 'monthly_summary' && generating && (
+                    <div className="themed-card bg-white rounded-[14px] p-4 mb-2">
+                      <div className="flex items-center gap-3">
+                        <span className="w-4 h-4 border-2 border-[#A8C5E0] border-t-transparent rounded-full animate-spin" />
+                        <p className="text-sm text-[#6B7280]">Analisando seus gastos…</p>
+                      </div>
+                    </div>
+                  )}
                   <div className="space-y-2">
                     {items.map((insight, itemIndex) => {
                       const expanded = expandedIds.has(insight.id);

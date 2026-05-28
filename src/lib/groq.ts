@@ -302,11 +302,11 @@ PROIBIDO:
 
 Se a pergunta for genérica (ex.: "como economizar"), personalize com os dados do contexto quando existirem.`;
 
-export async function replyMoChat(
+export function buildMoChatMessages(
   userMessage: string,
   financialContextBlock: string,
   history: ChatHistoryItem[],
-): Promise<{ reply: string; promptTokens: number; completionTokens: number }> {
+): Array<{ role: 'system' | 'user' | 'assistant'; content: string }> {
   const trimmedHistory = history
     .filter((m) => m.content.trim().length > 0)
     .slice(-8)
@@ -315,7 +315,7 @@ export async function replyMoChat(
       content: m.content.trim().slice(0, 1200),
     }));
 
-  const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
+  return [
     {
       role: 'system',
       content: `${MO_CHAT_SYSTEM_PROMPT}\n\n--- DADOS FINANCEIROS DO USUÁRIO (confidencial, só esta conta) ---\n${financialContextBlock}`,
@@ -323,6 +323,31 @@ export async function replyMoChat(
     ...trimmedHistory,
     { role: 'user', content: userMessage.trim().slice(0, 800) },
   ];
+}
+
+export async function* streamMoChatReply(
+  messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>,
+): AsyncGenerator<string> {
+  const stream = await client.chat.completions.create({
+    model: 'llama-3.3-70b-versatile',
+    max_tokens: 500,
+    temperature: 0.45,
+    stream: true,
+    messages,
+  });
+
+  for await (const chunk of stream) {
+    const delta = chunk.choices[0]?.delta?.content;
+    if (delta) yield delta;
+  }
+}
+
+export async function replyMoChat(
+  userMessage: string,
+  financialContextBlock: string,
+  history: ChatHistoryItem[],
+): Promise<{ reply: string; promptTokens: number; completionTokens: number }> {
+  const messages = buildMoChatMessages(userMessage, financialContextBlock, history);
 
   const response = await client.chat.completions.create({
     model: 'llama-3.3-70b-versatile',

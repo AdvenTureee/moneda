@@ -1,3 +1,5 @@
+import { unstable_cache } from 'next/cache';
+import { cacheTags } from '@/lib/cache';
 import { getDashboardMetrics, getExpenses, getMonthlyTotals } from '@/lib/expenses';
 import { getCategories } from '@/lib/categories';
 import { getBudgets } from '@/lib/budgets';
@@ -199,4 +201,29 @@ export function formatFinancialContextForChat(
   }
 
   return lines.filter(Boolean).join('\n');
+}
+
+async function buildFinancialContextBlockImpl(user: User, period: string): Promise<string> {
+  const ctx = await buildMoFinancialContext(user, period);
+  return formatFinancialContextForChat(ctx, period);
+}
+
+/** Contexto resumido para o chat — cache 3 min, invalida com gastos/insights. */
+export async function getCachedFinancialContextBlockForChat(
+  user: User,
+  period: string,
+): Promise<string> {
+  return unstable_cache(
+    () => buildFinancialContextBlockImpl(user, period),
+    ['mo-chat-context-block', user.id, period],
+    {
+      revalidate: 180,
+      tags: [
+        cacheTags.metrics(user.id),
+        cacheTags.insights(user.id),
+        cacheTags.expenses(user.id),
+        cacheTags.budgets(user.id),
+      ],
+    },
+  )();
 }
