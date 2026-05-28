@@ -8,6 +8,7 @@ import { CaretDown } from '@phosphor-icons/react';
 import type { Components } from 'react-markdown';
 import Icon from '@/components/Icon';
 import Mo from '@/components/Mo';
+import MoInsightsChat from '@/components/MoInsightsChat';
 import CategoryChip from '@/components/CategoryChip';
 import { formatCurrency } from '@/lib/utils';
 import type { AIInsight } from '@/types';
@@ -215,11 +216,17 @@ export default function InsightsView({
         </div>
       </header>
 
-      {/* Hero total */}
+      <MoInsightsChat period={period} expenseCount={expenseCount} />
+
+      {/* Gasto total do mês */}
       <section
-        className="ai-insight-banner text-white rounded-[20px] p-5 mb-6 shadow-md animate-fade-up delay-1"
+        className="ai-insight-banner text-white rounded-[20px] p-5 mb-6 shadow-md animate-fade-up delay-2"
+        aria-label={`Gasto total de ${monthName}`}
       >
-        <p className="text-xs font-semibold uppercase tracking-wider opacity-85">Gasto total</p>
+        <p className="text-xs font-semibold uppercase tracking-wider opacity-85">
+          Gasto total do mês
+        </p>
+        <p className="text-[11px] font-medium capitalize opacity-80 mt-0.5">{monthName}</p>
         <p className="text-3xl font-extrabold mt-1.5 tabular-nums">
           {formatCurrency(totalSpent)}
         </p>
@@ -233,8 +240,8 @@ export default function InsightsView({
         </div>
       </section>
 
-      {/* AI Insights Section */}
-      <section className="mb-6 animate-fade-up delay-2">
+      {/* Análise da Mo */}
+      <section className="mb-6 animate-fade-up delay-3">
         <h2 className="text-sm font-heading text-[#1A1D23] mb-3">
           Análise da Mo
         </h2>

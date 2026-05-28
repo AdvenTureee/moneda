@@ -1,4 +1,5 @@
 import Groq from 'groq-sdk';
+import type { ChatHistoryItem } from '@/types/chat';
 import type { Category, Expense } from '@/types';
 
 const client = new Groq({ apiKey: process.env.GROQ_API_KEY });
@@ -276,6 +277,66 @@ export async function generatePersonalizedMoTips(
 
   return {
     tips,
+    promptTokens: response.usage?.prompt_tokens ?? 0,
+    completionTokens: response.usage?.completion_tokens ?? 0,
+  };
+}
+
+const MO_CHAT_SYSTEM_PROMPT = `Você é a Mo, assistente financeira do Moneda (Brasil). O usuário conversa com você na aba Insights.
+
+MISSÃO: responder perguntas sobre a vida financeira do usuário usando APENAS o bloco de contexto fornecido (dados da conta dele). Se faltar dado, diga com clareza e sugira registrar gastos ou gerar análise.
+
+TOM (Moneda):
+- humana, direta, sem jargão bancário;
+- sem culpa, sem alarmismo, sem julgamento;
+- respostas curtas a médias (2–5 frases na maioria dos casos);
+- insights acionáveis quando couber;
+- pode usar valores em R$ e nomes de categorias/lançamentos do contexto;
+- texto corrido simples (sem markdown pesado, sem tabelas, sem listas longas).
+
+PROIBIDO:
+- inventar gastos, categorias ou valores não presentes no contexto;
+- falar de outros usuários ou dados globais do app;
+- recomendar investimentos específicos ou produtos financeiros;
+- ser robótica ("Como assistente de IA...").
+
+Se a pergunta for genérica (ex.: "como economizar"), personalize com os dados do contexto quando existirem.`;
+
+export async function replyMoChat(
+  userMessage: string,
+  financialContextBlock: string,
+  history: ChatHistoryItem[],
+): Promise<{ reply: string; promptTokens: number; completionTokens: number }> {
+  const trimmedHistory = history
+    .filter((m) => m.content.trim().length > 0)
+    .slice(-8)
+    .map((m) => ({
+      role: m.role as 'user' | 'assistant',
+      content: m.content.trim().slice(0, 1200),
+    }));
+
+  const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
+    {
+      role: 'system',
+      content: `${MO_CHAT_SYSTEM_PROMPT}\n\n--- DADOS FINANCEIROS DO USUÁRIO (confidencial, só esta conta) ---\n${financialContextBlock}`,
+    },
+    ...trimmedHistory,
+    { role: 'user', content: userMessage.trim().slice(0, 800) },
+  ];
+
+  const response = await client.chat.completions.create({
+    model: 'llama-3.3-70b-versatile',
+    max_tokens: 500,
+    temperature: 0.45,
+    messages,
+  });
+
+  const reply =
+    response.choices[0]?.message?.content?.trim() ||
+    'Não consegui montar uma resposta agora. Tente reformular a pergunta.';
+
+  return {
+    reply: reply.slice(0, 2000),
     promptTokens: response.usage?.prompt_tokens ?? 0,
     completionTokens: response.usage?.completion_tokens ?? 0,
   };
