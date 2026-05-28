@@ -4,14 +4,25 @@ import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import BottomNav from '@/components/BottomNav';
 import AddExpenseModal from '@/components/AddExpenseModal';
+import TermsModal from '@/components/TermsModal';
 import { ToastProvider, useToast } from '@/components/ToastProvider';
 import ScrollFadeIndicator from '@/components/ScrollFadeIndicator';
 import type { ExpenseInput } from '@/types';
 
-function ShellContent({ children }: { children: React.ReactNode }) {
+function ShellContent({
+  children,
+  requiresTermsAcceptance,
+}: {
+  children: React.ReactNode;
+  requiresTermsAcceptance: boolean;
+}) {
   const [modalOpen, setModalOpen] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(!requiresTermsAcceptance);
+  const [termsLoading, setTermsLoading] = useState(false);
+  const [termsError, setTermsError] = useState('');
   const { showToast } = useToast();
   const router = useRouter();
+  const isTermsBlocking = !termsAccepted;
 
   const handleSave = useCallback(
     async (input: ExpenseInput) => {
@@ -29,6 +40,23 @@ function ShellContent({ children }: { children: React.ReactNode }) {
     [router, showToast]
   );
 
+  const handleAcceptTerms = useCallback(async () => {
+    setTermsError('');
+    setTermsLoading(true);
+    const res = await fetch('/api/terms/accept', { method: 'POST' }).catch(() => null);
+    const data = res ? await res.json().catch(() => null) : null;
+    setTermsLoading(false);
+
+    if (!res?.ok || data?.ok !== true) {
+      setTermsError(data?.error ?? 'Nao foi possivel registrar seu aceite. Tente novamente.');
+      return;
+    }
+
+    setTermsAccepted(true);
+    showToast('success', 'Termos aceitos. Obrigado!');
+    router.refresh();
+  }, [router, showToast]);
+
   return (
     <>
       <main
@@ -38,24 +66,35 @@ function ShellContent({ children }: { children: React.ReactNode }) {
         {children}
       </main>
       <ScrollFadeIndicator />
-      <BottomNav onAddExpense={() => setModalOpen(true)} />
+      <BottomNav onAddExpense={() => { if (!isTermsBlocking) setModalOpen(true); }} />
       <AddExpenseModal
-        isOpen={modalOpen}
+        isOpen={modalOpen && !isTermsBlocking}
         onClose={() => setModalOpen(false)}
         onSave={handleSave}
+      />
+      <TermsModal
+        isOpen={isTermsBlocking}
+        mode="accept"
+        onAccept={handleAcceptTerms}
+        acceptLoading={termsLoading}
+        acceptError={termsError}
       />
     </>
   );
 }
 
-export default function AppShell({ children }: AppShellProps) {
+export default function AppShell({
+  children,
+  requiresTermsAcceptance = false,
+}: AppShellProps) {
   return (
     <ToastProvider>
-      <ShellContent>{children}</ShellContent>
+      <ShellContent requiresTermsAcceptance={requiresTermsAcceptance}>{children}</ShellContent>
     </ToastProvider>
   );
 }
 
 interface AppShellProps {
   children: React.ReactNode;
+  requiresTermsAcceptance?: boolean;
 }

@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import TermsModal from '@/components/TermsModal';
+import { TERMS_VERSION } from '@/lib/legal';
 import { createClient } from '@/lib/supabase/client';
 import { isValidEmail } from '@/lib/utils';
 
@@ -27,6 +29,8 @@ export default function SignupPage() {
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [termsModalOpen, setTermsModalOpen] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -47,13 +51,28 @@ export default function SignupPage() {
       return;
     }
 
+    if (!termsAccepted) {
+      setError('Para criar sua conta, aceite os Termos de Uso e a Política de Proteção de Dados.');
+      return;
+    }
+
     setLoading(true);
     const supabase = createClient();
+    const acceptedAt = new Date().toISOString();
 
     const { data, error: authError } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { name } },
+      options: {
+        data: {
+          name,
+          terms_accepted: true,
+          terms_version: TERMS_VERSION,
+          terms_accepted_at: acceptedAt,
+          privacy_accepted: true,
+          privacy_accepted_at: acceptedAt,
+        },
+      },
     });
 
     if (authError) {
@@ -75,11 +94,18 @@ export default function SignupPage() {
 
   async function handleGoogleSignup() {
     setError('');
+    if (!termsAccepted) {
+      setError('Para criar sua conta com Google, aceite os Termos de Uso e a Política de Proteção de Dados.');
+      return;
+    }
     setGoogleLoading(true);
     const supabase = createClient();
+    const callbackUrl = new URL('/auth/callback', window.location.origin);
+    callbackUrl.searchParams.set('terms_accepted', '1');
+    callbackUrl.searchParams.set('terms_version', TERMS_VERSION);
     const { error: authError } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
+      options: { redirectTo: callbackUrl.toString() },
     });
     if (authError) {
       console.error('[signup:google]', authError);
@@ -121,6 +147,26 @@ export default function SignupPage() {
         <>
           <h1 className="text-xl font-heading text-[#1A1D23] mb-1">Criar conta</h1>
           <p className="text-sm text-[#6B7280] mb-6">Comece a controlar seu dinheiro hoje.</p>
+
+          <label className="mb-4 flex items-start gap-3 rounded-[14px] border border-[#E5E7EB] bg-[#F8F9FB] p-3">
+            <input
+              type="checkbox"
+              checked={termsAccepted}
+              onChange={(e) => setTermsAccepted(e.target.checked)}
+              className="mt-0.5 h-4 w-4 accent-[#5BBF8E]"
+            />
+            <span className="text-xs leading-relaxed text-[#6B7280]">
+              Li e aceito os{' '}
+              <button
+                type="button"
+                onClick={() => setTermsModalOpen(true)}
+                className="font-semibold text-[#5BBF8E] underline-offset-2 hover:underline"
+              >
+                Termos de Uso e a Política de Proteção de Dados
+              </button>
+              .
+            </span>
+          </label>
 
           <button
             type="button"
@@ -226,6 +272,10 @@ export default function SignupPage() {
               Entrar
             </Link>
           </p>
+          <TermsModal
+            isOpen={termsModalOpen}
+            onClose={() => setTermsModalOpen(false)}
+          />
         </>
       )}
     </div>

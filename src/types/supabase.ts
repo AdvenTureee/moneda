@@ -268,7 +268,10 @@ export type Database = {
           name: string
           onboarded: boolean
           phone: string | null
+          privacy_accepted_at: string | null
           salary_day: number | null
+          terms_accepted_at: string | null
+          terms_version: string | null
           timezone: string
           updated_at: string
         }
@@ -284,7 +287,10 @@ export type Database = {
           name: string
           onboarded?: boolean
           phone?: string | null
+          privacy_accepted_at?: string | null
           salary_day?: number | null
+          terms_accepted_at?: string | null
+          terms_version?: string | null
           timezone?: string
           updated_at?: string
         }
@@ -300,7 +306,10 @@ export type Database = {
           name?: string
           onboarded?: boolean
           phone?: string | null
+          privacy_accepted_at?: string | null
           salary_day?: number | null
+          terms_accepted_at?: string | null
+          terms_version?: string | null
           timezone?: string
           updated_at?: string
         }

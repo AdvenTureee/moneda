@@ -1,4 +1,11 @@
+import { redirect } from 'next/navigation';
 import AppShell from '@/components/AppShell';
+import { TERMS_VERSION } from '@/lib/legal';
+import {
+  createServiceClient,
+  createSessionClient,
+  isSupabaseEnabled,
+} from '@/lib/supabase/server';
 
 /**
  * Layout do "shell autenticado". Envolve as 9 rotas com `<AppShell>` (que
@@ -8,6 +15,29 @@ import AppShell from '@/components/AppShell';
  *
  * Login (`(auth)/`) e onboarding (`/onboarding/`) ficam de fora.
  */
-export default function AppLayout({ children }: { children: React.ReactNode }) {
-  return <AppShell>{children}</AppShell>;
+export default async function AppLayout({ children }: { children: React.ReactNode }) {
+  let requiresTermsAcceptance = false;
+
+  if (isSupabaseEnabled()) {
+    const supabase = await createSessionClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) redirect('/login');
+
+    const admin = createServiceClient();
+    const { data: profile } = await admin
+      .from('profiles')
+      .select('terms_accepted_at, terms_version')
+      .eq('id', user.id)
+      .single();
+
+    requiresTermsAcceptance =
+      !profile?.terms_accepted_at ||
+      profile.terms_version !== TERMS_VERSION;
+  }
+
+  return (
+    <AppShell requiresTermsAcceptance={requiresTermsAcceptance}>
+      {children}
+    </AppShell>
+  );
 }
