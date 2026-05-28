@@ -5,6 +5,7 @@ import { getCategories } from '@/lib/categories';
 import { getBudgets } from '@/lib/budgets';
 import { getLatestInsight } from '@/lib/insights';
 import { getMonthlyBudgetCents } from '@/lib/monthlyBudget';
+import { buildAnalyticalSignals } from '@/lib/moTipsAnalysis';
 import { generatePersonalizedMoTips, detectSpendingAlerts, type MoTipGenerationContext } from '@/lib/groq';
 import { cacheTags } from '@/lib/cache';
 import { createServiceClient, isSupabaseEnabled } from '@/lib/supabase/server';
@@ -111,6 +112,16 @@ async function buildMoTipContext(user: User, period: string): Promise<MoTipGener
     ? insightMeta.alerts.map((a) => (typeof a === 'string' ? stripMarkdown(a) : '')).filter(Boolean)
     : [];
 
+  const allSpendingAlerts = [...spendingAlerts, ...insightAlerts].slice(0, 5);
+  const trimmedBudgetAlerts = budgetAlerts.slice(0, 5);
+
+  const analyticalSignals = buildAnalyticalSignals(period, metrics, {
+    monthlyBudgetCents,
+    previousMonthTotalCents,
+    budgetAlerts: trimmedBudgetAlerts,
+    spendingAlerts: allSpendingAlerts,
+  });
+
   return {
     period,
     firstName,
@@ -125,8 +136,7 @@ async function buildMoTipContext(user: User, period: string): Promise<MoTipGener
     })),
     recentExpenses,
     insightExcerpt: insight?.message ? stripMarkdown(insight.message) : undefined,
-    spendingAlerts: [...spendingAlerts, ...insightAlerts].slice(0, 5),
-    budgetAlerts: budgetAlerts.slice(0, 5),
+    analyticalSignals,
     previousMonthTotalCents,
     receiptCount,
   };
@@ -139,7 +149,12 @@ async function generatePersonalMoTipsImpl(user: User, period: string): Promise<M
   if (!ctx) return [];
 
   const { tips } = await generatePersonalizedMoTips(ctx);
-  return tips.map((text, i) => ({
+  const finalTexts =
+    tips.length >= 2
+      ? tips
+      : ctx.analyticalSignals.map((s) => s.slice(0, 140)).filter((s) => s.length >= 45).slice(0, 5);
+
+  return finalTexts.map((text, i) => ({
     id: `personal-${period}-${i}`,
     kind: 'personal' as const,
     text,
@@ -149,7 +164,7 @@ async function generatePersonalMoTipsImpl(user: User, period: string): Promise<M
 export async function getPersonalizedMoTips(user: User, period: string): Promise<MoTip[]> {
   return unstable_cache(
     () => generatePersonalMoTipsImpl(user, period),
-    ['mo-tips-personal', user.id, period],
+    ['mo-tips-personal', 'v2', user.id, period],
     {
       tags: [
         cacheTags.metrics(user.id),

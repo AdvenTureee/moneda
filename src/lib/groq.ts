@@ -135,14 +135,66 @@ export interface MoTipGenerationContext {
   topCategories: Array<{ name: string; amountCents: number; percentage: number }>;
   recentExpenses: Array<{ description: string; amountCents: number; category: string }>;
   insightExcerpt?: string;
-  spendingAlerts: string[];
-  budgetAlerts: string[];
+  analyticalSignals: string[];
   previousMonthTotalCents: number | null;
   receiptCount: number;
 }
 
+const MO_TIP_SYSTEM_PROMPT = `Você é a Mo, mascote do Moneda — app brasileiro de controle de gastos ("Seu dinheiro, finalmente claro.").
+
+Sua missão: transformar dados de gastos em micro-dicas ÚTEIS — que explicam o que fazer, não só o que aconteceu.
+
+TOM (obrigatório):
+- Direta, amigável, sem jargão bancário, sem culpa e sem julgamento.
+- Nunca use tom de advertência punitiva ("você errou", "gastou demais", "cuidado!").
+- Fale como uma amiga que entende de dinheiro e quer ajudar com um próximo passo concreto.
+
+O QUE CADA DICA DEVE TER:
+1. Um fato específico dos dados (categoria, estabelecimento, padrão, ritmo do mês, comparação).
+2. Uma ação ou reflexão prática (revisar, testar, separar, comparar, ajustar hábito, usar recurso do app).
+
+PROIBIDO (nunca gere dicas assim):
+- Só parabenizar por estar "dentro do orçamento" ou "não passar de R$ X".
+- Só repetir o total gasto no mês sem insight ("você gastou R$ …").
+- Frases genéricas que serviriam para qualquer pessoa ("economize mais", "faça um orçamento").
+- Markdown, emojis, listas numeradas.
+
+PRIORIZE sinais analíticos e lançamentos concretos fornecidos. Varie os temas entre as dicas (hábito, categoria, ritmo, assinatura, comparação, app).
+
+Formato de saída: JSON {"tips":["...",...]} com exatamente 5 dicas, cada uma até 140 caracteres, em português do Brasil.`;
+
+const MO_TIP_FEW_SHOT = `
+Exemplos RUINS (não repita):
+- "Parabéns, você ainda está dentro do orçamento de R$ 1.800!"
+- "Você gastou R$ 950 este mês. Continue controlando."
+- "Seu maior gasto é alimentação."
+
+Exemplos BONS (inspire-se):
+- "Delivery somou R$ 280 em 6 pedidos — testar 2 refeições em casa por semana já alivia o mês."
+- "Supermercado subiu 22% vs mês passado — vale comparar lista antes da próxima compra grande."
+- "3 lançamentos no iFood em 10 dias — que tal um teto semanal de R$ 60 pra delivery?"
+- "Faltam 12 dias e R$ 40/dia fecham o orçamento — priorize transporte e lazer até o dia 31."
+- "Assinaturas detectadas (R$ 89) — abra o feed e cancele o que não usou nos últimos 30 dias."`;
+
 function formatBrl(cents: number): string {
   return (cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+
+function isWeakMoTip(text: string): boolean {
+  const t = text.toLowerCase().trim();
+  if (t.length < 45) return true;
+
+  const onlyCongrats =
+    /parabéns|muito bem|ótimo trabalho|continue assim|mandou bem/.test(t) &&
+    !/vale|tente|revise|considere|que tal|priorize|reduza|separe|defina|compare|confira|abrir|ajuste|teste/.test(t);
+  if (onlyCongrats) return true;
+
+  if (/^(você )?gastou\b/.test(t) && !/\b(vale|tente|revise|compare|priorize|que tal)\b/.test(t)) return true;
+  if (/\btotal (gasto|de gastos)\b/.test(t) && t.length < 80) return true;
+  if (/\bdentro do (seu )?orçamento\b/.test(t) && t.length < 90) return true;
+  if (/^seu (gasto|orçamento|saldo)\b/.test(t) && t.length < 70) return true;
+
+  return false;
 }
 
 export async function generatePersonalizedMoTips(
@@ -157,60 +209,51 @@ export async function generatePersonalizedMoTips(
     .join('\n');
 
   const expenseLines = ctx.recentExpenses
-    .slice(0, 10)
+    .slice(0, 12)
     .map((e) => `- ${e.description} (${e.category}): ${formatBrl(e.amountCents)}`)
     .join('\n');
 
-  const budgetLine =
-    ctx.monthlyBudgetCents > 0
-      ? `Orçamento mensal: ${formatBrl(ctx.monthlyBudgetCents)}. Restante: ${
-          ctx.remainingBudgetCents !== null ? formatBrl(ctx.remainingBudgetCents) : '—'
-        }.`
-      : 'Orçamento mensal: não definido.';
-
-  const prevMonthLine =
-    ctx.previousMonthTotalCents !== null
-      ? `Gasto no mês anterior: ${formatBrl(ctx.previousMonthTotalCents)}.`
-      : '';
+  const signalBlock =
+    ctx.analyticalSignals.length > 0
+      ? ctx.analyticalSignals.map((s) => `- ${s}`).join('\n')
+      : '- (sem sinais extras)';
 
   const userContent = [
     `Período: ${monthName} de ${year}.`,
-    ctx.firstName ? `Nome: ${ctx.firstName}.` : '',
-    `Total gasto: ${formatBrl(ctx.totalSpentCents)} em ${ctx.expenseCount} lançamento(s).`,
-    budgetLine,
-    prevMonthLine,
-    `Comprovantes anexados no mês: ${ctx.receiptCount}.`,
+    ctx.firstName ? `Nome (opcional na dica): ${ctx.firstName}.` : '',
     '',
-    'Top categorias:',
-    categoryLines || '- (sem categorias)',
+    '=== SINAIS ANALÍTICOS (base principal das dicas — cada dica deve partir de um destes ou de um lançamento) ===',
+    signalBlock,
     '',
-    'Últimos lançamentos:',
-    expenseLines || '- (sem lançamentos)',
-    ctx.insightExcerpt ? `\nTrecho do último insight da IA:\n${ctx.insightExcerpt}` : '',
-    ctx.spendingAlerts.length > 0
-      ? `\nAlertas de gasto:\n${ctx.spendingAlerts.map((a) => `- ${a}`).join('\n')}`
+    '=== DADOS DE REFERÊNCIA (não transforme em dica só de total/orçamento) ===',
+    `Lançamentos: ${ctx.expenseCount}. Total: ${formatBrl(ctx.totalSpentCents)}.`,
+    ctx.monthlyBudgetCents > 0
+      ? `Orçamento mensal: ${formatBrl(ctx.monthlyBudgetCents)}.`
+      : 'Orçamento mensal: não definido.',
+    ctx.previousMonthTotalCents !== null
+      ? `Mês anterior: ${formatBrl(ctx.previousMonthTotalCents)}.`
       : '',
-    ctx.budgetAlerts.length > 0
-      ? `\nOrçamento por categoria:\n${ctx.budgetAlerts.map((a) => `- ${a}`).join('\n')}`
+    `Comprovantes no mês: ${ctx.receiptCount}.`,
+    '',
+    'Categorias:',
+    categoryLines || '-',
+    '',
+    'Lançamentos (amostra):',
+    expenseLines || '-',
+    ctx.insightExcerpt
+      ? `\nContexto do último insight (use só se ajudar uma dica nova, não copie):\n${ctx.insightExcerpt}`
       : '',
   ]
     .filter(Boolean)
     .join('\n');
 
   const response = await client.chat.completions.create({
-    model: 'llama-3.1-8b-instant',
-    max_tokens: 700,
-    temperature: 0.65,
+    model: 'llama-3.3-70b-versatile',
+    max_tokens: 900,
+    temperature: 0.55,
     response_format: { type: 'json_object' },
     messages: [
-      {
-        role: 'system',
-        content:
-          'Você é a Mo, mascote do app Moneda. Gere dicas financeiras curtas e personalizadas em português do Brasil, com base APENAS nos dados reais do usuário. ' +
-          'Cada dica deve ter no máximo 140 caracteres, tom amigável, sem julgamento, sem markdown. ' +
-          'Mencione categorias, valores ou hábitos concretos quando fizer sentido. ' +
-          'Responda somente JSON válido no formato: {"tips":["dica 1","dica 2",...]} com entre 4 e 6 dicas.',
-      },
+      { role: 'system', content: MO_TIP_SYSTEM_PROMPT + MO_TIP_FEW_SHOT },
       { role: 'user', content: userContent },
     ],
   });
@@ -224,6 +267,7 @@ export async function generatePersonalizedMoTips(
         .filter((t): t is string => typeof t === 'string' && t.trim().length > 0)
         .map((t) => t.trim().replace(/\s+/g, ' '))
         .filter((t) => t.length <= 160)
+        .filter((t) => !isWeakMoTip(t))
         .slice(0, 6);
     }
   } catch {
