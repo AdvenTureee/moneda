@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { createSessionClient, createServiceClient, isSupabaseEnabled } from '@/lib/supabase/server';
+import { decryptProfilePii, getDisplayNameFromUser } from '@/lib/security/profilePii';
 import ProfileView from './ProfileView';
 
 export default async function ProfileLoader() {
@@ -8,21 +9,24 @@ export default async function ProfileLoader() {
   if (!user) redirect('/login');
 
   const metadata = user.user_metadata ?? {};
-  const initialName =
-    (metadata.name as string | undefined) ??
-    (metadata.full_name as string | undefined) ??
-    '';
   const avatarUrl = (metadata.avatar_url as string | undefined) ?? null;
 
   let currency = 'BRL';
+  let initialName = getDisplayNameFromUser(user);
+  let email = user.email ?? '';
   if (isSupabaseEnabled()) {
     const admin = createServiceClient();
     const { data } = await admin
       .from('profiles')
-      .select('currency')
+      .select('currency,name,email,phone,name_ciphertext,name_iv,name_tag,email_ciphertext,email_iv,email_tag,phone_ciphertext,phone_iv,phone_tag')
       .eq('id', user.id)
       .single();
     if (data?.currency) currency = data.currency;
+    if (data) {
+      const pii = decryptProfilePii(data);
+      initialName = pii.name || initialName;
+      email = pii.email || email;
+    }
   }
 
   // Identidades já vinculadas (ex: ['email', 'google']). Usado para mostrar
@@ -33,7 +37,7 @@ export default async function ProfileLoader() {
 
   return (
     <ProfileView
-      email={user.email ?? ''}
+      email={email}
       initialName={initialName}
       avatarUrl={avatarUrl}
       currency={currency}

@@ -4,6 +4,8 @@ import { revalidateTag } from 'next/cache';
 import { cacheTags } from '@/lib/cache';
 import { TERMS_VERSION } from '@/lib/legal';
 import { createServiceClient } from '@/lib/supabase/server';
+import { buildProfilePiiUpdate, getDisplayNameFromUser } from '@/lib/security/profilePii';
+import type { Database } from '@/types/supabase';
 
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
@@ -57,23 +59,46 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(`${origin}/login?error=exchange_failed&reason=${reason}`);
   }
 
-  if (shouldRegisterTerms) {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const acceptedAt = new Date().toISOString();
-      const admin = createServiceClient();
-      const { error: profileError } = await admin
-        .from('profiles')
-        .update({
-          terms_accepted_at: acceptedAt,
-          terms_version: TERMS_VERSION,
-          privacy_accepted_at: acceptedAt,
-        })
-        .eq('id', user.id);
-      if (profileError) {
-        console.error('[auth/callback] terms acceptance update failed', profileError);
-      } else {
-        revalidateTag(cacheTags.profile(user.id), { expire: 0 });
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) {
+    const acceptedAt = new Date().toISOString();
+    const profileUpdate: Database['public']['Tables']['profiles']['Update'] = {};
+
+    if (shouldRegisterTerms) {
+      Object.assign(profileUpdate, {
+        terms_accepted_at: acceptedAt,
+        terms_version: TERMS_VERSION,
+        privacy_accepted_at: acceptedAt,
+      });
+    }
+
+    try {
+      Object.assign(profileUpdate, buildProfilePiiUpdate({
+        name: getDisplayNameFromUser(user),
+        email: user.email ?? null,
+        phone: (user.user_metadata?.phone as string | undefined) ?? null,
+      }));
+    } catch {
+      console.error('[auth/callback] PII sync skipped: crypto env unavailable');
+    }
+
+    if (Object.keys(profileUpdate).length > 0) {
+      try {
+        const admin = createServiceClient();
+        const { error: profileError } = await admin
+          .from('profiles')
+          .update(profileUpdate)
+          .eq('id', user.id);
+        if (profileError) {
+          console.error('[auth/callback] profile sync failed', {
+            message: profileError.message,
+            code: profileError.code,
+          });
+        } else {
+          revalidateTag(cacheTags.profile(user.id), { expire: 0 });
+        }
+      } catch {
+        console.error('[auth/callback] profile sync skipped: service env unavailable');
       }
     }
   }

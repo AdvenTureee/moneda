@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 import { createSessionClient, createServiceClient, isSupabaseEnabled } from '@/lib/supabase/server';
+import { buildProfilePiiUpdate } from '@/lib/security/profilePii';
 import type { NotificationPrefs } from './notification-prefs';
 
 export type ActionResult = { ok: true; message?: string } | { ok: false; error: string };
@@ -25,6 +26,32 @@ export async function updateDisplayName(formData: FormData): Promise<ActionResul
 
   const { error } = await supabase.auth.updateUser({ data: { name } });
   if (error) return { ok: false, error: 'Não foi possível atualizar o nome. Tente novamente.' };
+
+  if (isSupabaseEnabled()) {
+    try {
+      const admin = createServiceClient();
+      const { error: profileError } = await admin
+        .from('profiles')
+        .update({
+          name,
+          ...buildProfilePiiUpdate({
+            name,
+            email: user.email ?? null,
+            phone: (user.user_metadata?.phone as string | undefined) ?? null,
+          }),
+        })
+        .eq('id', user.id);
+      if (profileError) {
+        console.error('[updateDisplayName] profile sync failed', {
+          message: profileError.message,
+          code: profileError.code,
+        });
+        return { ok: false, error: 'Nome atualizado no Auth, mas não foi possível proteger o perfil.' };
+      }
+    } catch {
+      return { ok: false, error: 'Configuração de proteção de dados indisponível.' };
+    }
+  }
 
   revalidatePath('/perfil');
   return { ok: true, message: 'Nome atualizado.' };

@@ -27,6 +27,7 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
 
   const pathname = request.nextUrl.pathname;
+  const isAuthCallback = pathname.startsWith('/auth/callback');
   const isAuthRoute =
     pathname === '/login' ||
     pathname === '/signup' ||
@@ -38,7 +39,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  if (user && isAuthRoute) {
+  if (user && isAuthRoute && !isAuthCallback) {
     const url = request.nextUrl.clone();
     url.pathname = '/';
     return NextResponse.redirect(url);

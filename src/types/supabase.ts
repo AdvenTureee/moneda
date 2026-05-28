@@ -262,12 +262,24 @@ export type Database = {
           created_at: string
           currency: string
           email: string
+          email_ciphertext: string | null
+          email_hash: string | null
+          email_iv: string | null
+          email_tag: string | null
           has_pet: boolean
           id: string
           monthly_income_cents: number | null
           name: string
+          name_ciphertext: string | null
+          name_iv: string | null
+          name_tag: string | null
           onboarded: boolean
           phone: string | null
+          phone_ciphertext: string | null
+          phone_hash: string | null
+          phone_iv: string | null
+          phone_tag: string | null
+          pii_crypto_version: string | null
           privacy_accepted_at: string | null
           salary_day: number | null
           terms_accepted_at: string | null
@@ -281,12 +293,24 @@ export type Database = {
           created_at?: string
           currency?: string
           email: string
+          email_ciphertext?: string | null
+          email_hash?: string | null
+          email_iv?: string | null
+          email_tag?: string | null
           has_pet?: boolean
           id: string
           monthly_income_cents?: number | null
           name: string
+          name_ciphertext?: string | null
+          name_iv?: string | null
+          name_tag?: string | null
           onboarded?: boolean
           phone?: string | null
+          phone_ciphertext?: string | null
+          phone_hash?: string | null
+          phone_iv?: string | null
+          phone_tag?: string | null
+          pii_crypto_version?: string | null
           privacy_accepted_at?: string | null
           salary_day?: number | null
           terms_accepted_at?: string | null
@@ -300,12 +324,24 @@ export type Database = {
           created_at?: string
           currency?: string
           email?: string
+          email_ciphertext?: string | null
+          email_hash?: string | null
+          email_iv?: string | null
+          email_tag?: string | null
           has_pet?: boolean
           id?: string
           monthly_income_cents?: number | null
           name?: string
+          name_ciphertext?: string | null
+          name_iv?: string | null
+          name_tag?: string | null
           onboarded?: boolean
           phone?: string | null
+          phone_ciphertext?: string | null
+          phone_hash?: string | null
+          phone_iv?: string | null
+          phone_tag?: string | null
+          pii_crypto_version?: string | null
           privacy_accepted_at?: string | null
           salary_day?: number | null
           terms_accepted_at?: string | null
@@ -322,6 +358,11 @@ export type Database = {
           parse_error: string | null
           parsed_expense_id: string | null
           phone: string
+          phone_ciphertext: string | null
+          phone_hash: string | null
+          phone_iv: string | null
+          phone_tag: string | null
+          pii_crypto_version: string | null
           provider: string | null
           provider_message_id: string | null
           raw_text: string
@@ -336,6 +377,11 @@ export type Database = {
           parse_error?: string | null
           parsed_expense_id?: string | null
           phone: string
+          phone_ciphertext?: string | null
+          phone_hash?: string | null
+          phone_iv?: string | null
+          phone_tag?: string | null
+          pii_crypto_version?: string | null
           provider?: string | null
           provider_message_id?: string | null
           raw_text: string
@@ -350,6 +396,11 @@ export type Database = {
           parse_error?: string | null
           parsed_expense_id?: string | null
           phone?: string
+          phone_ciphertext?: string | null
+          phone_hash?: string | null
+          phone_iv?: string | null
+          phone_tag?: string | null
+          pii_crypto_version?: string | null
           provider?: string | null
           provider_message_id?: string | null
           raw_text?: string

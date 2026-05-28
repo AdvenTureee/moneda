@@ -88,6 +88,7 @@ export default function SignupPage() {
       return;
     }
 
+    await fetch('/api/pii/sync-profile', { method: 'POST' }).catch(() => null);
     router.push('/');
     router.refresh();
   }
@@ -146,46 +147,27 @@ export default function SignupPage() {
       ) : (
         <>
           <h1 className="text-xl font-heading text-[#1A1D23] mb-1">Criar conta</h1>
-          <p className="text-sm text-[#6B7280] mb-6">Comece a controlar seu dinheiro hoje.</p>
-
-          <label className="mb-4 flex items-start gap-3 rounded-[14px] border border-[#E5E7EB] bg-[#F8F9FB] p-3">
-            <input
-              type="checkbox"
-              checked={termsAccepted}
-              onChange={(e) => setTermsAccepted(e.target.checked)}
-              className="mt-0.5 h-4 w-4 accent-[#5BBF8E]"
-            />
-            <span className="text-xs leading-relaxed text-[#6B7280]">
-              Li e aceito os{' '}
-              <button
-                type="button"
-                onClick={() => setTermsModalOpen(true)}
-                className="font-semibold text-[#5BBF8E] underline-offset-2 hover:underline"
-              >
-                Termos de Uso e a Política de Proteção de Dados
-              </button>
-              .
-            </span>
-          </label>
+          <p className="text-sm text-[#6B7280] mb-4">Comece a controlar seu dinheiro hoje.</p>
 
           <button
             type="button"
             onClick={handleGoogleSignup}
             disabled={googleLoading || loading}
-            className="w-full flex items-center justify-center gap-2.5 py-2.5 rounded-[12px] border border-[#E5E7EB] bg-white text-sm font-medium text-[#1A1D23] hover:bg-[#F8F9FB] transition-colors disabled:opacity-60 mb-5"
+            className="w-full flex items-center justify-center gap-2.5 py-2.5 rounded-[12px] border border-[#E5E7EB] bg-white text-sm font-medium text-[#1A1D23] hover:bg-[#F8F9FB] transition-colors disabled:opacity-60 mb-4"
           >
             <GoogleIcon />
             {googleLoading ? 'Redirecionando…' : 'Criar conta com Google'}
           </button>
 
-          <div className="flex items-center gap-3 mb-5">
+          <div className="flex items-center gap-3 mb-4">
             <div className="flex-1 h-px bg-[#E5E7EB]" />
             <span className="text-xs text-[#9CA3AF]">ou</span>
             <div className="flex-1 h-px bg-[#E5E7EB]" />
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
+          <form onSubmit={handleSubmit} className="space-y-3.5">
+            <div className="grid gap-3.5 sm:grid-cols-2">
+              <div>
               <label htmlFor="name" className="block text-xs font-medium text-[#6B7280] mb-1.5">
                 Nome
               </label>
@@ -199,9 +181,9 @@ export default function SignupPage() {
                 placeholder="Seu nome"
                 className="w-full px-3.5 py-2.5 rounded-[10px] bg-[#F8F9FB] border border-[#E5E7EB] text-sm text-[#1A1D23] placeholder:text-[#9CA3AF] outline-none focus:border-[#A8C5E0] transition-colors"
               />
-            </div>
+              </div>
 
-            <div>
+              <div>
               <label htmlFor="email" className="block text-xs font-medium text-[#6B7280] mb-1.5">
                 Email
               </label>
@@ -216,38 +198,41 @@ export default function SignupPage() {
                 placeholder="seu@email.com"
                 className="w-full px-3.5 py-2.5 rounded-[10px] bg-[#F8F9FB] border border-[#E5E7EB] text-sm text-[#1A1D23] placeholder:text-[#9CA3AF] outline-none focus:border-[#A8C5E0] transition-colors"
               />
+              </div>
             </div>
 
-            <div>
-              <label htmlFor="password" className="block text-xs font-medium text-[#6B7280] mb-1.5">
-                Senha
-              </label>
-              <input
-                id="password"
-                type="password"
-                autoComplete="new-password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Mínimo 8 caracteres"
-                className="w-full px-3.5 py-2.5 rounded-[10px] bg-[#F8F9FB] border border-[#E5E7EB] text-sm text-[#1A1D23] placeholder:text-[#9CA3AF] outline-none focus:border-[#A8C5E0] transition-colors"
-              />
-            </div>
+            <div className="grid gap-3.5 sm:grid-cols-2">
+              <div>
+                <label htmlFor="password" className="block text-xs font-medium text-[#6B7280] mb-1.5">
+                  Senha
+                </label>
+                <input
+                  id="password"
+                  type="password"
+                  autoComplete="new-password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Mín. 8 caracteres"
+                  className="w-full px-3.5 py-2.5 rounded-[10px] bg-[#F8F9FB] border border-[#E5E7EB] text-sm text-[#1A1D23] placeholder:text-[#9CA3AF] outline-none focus:border-[#A8C5E0] transition-colors"
+                />
+              </div>
 
-            <div>
-              <label htmlFor="confirmPassword" className="block text-xs font-medium text-[#6B7280] mb-1.5">
-                Confirmar senha
-              </label>
-              <input
-                id="confirmPassword"
-                type="password"
-                autoComplete="new-password"
-                required
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Repita sua senha"
-                className="w-full px-3.5 py-2.5 rounded-[10px] bg-[#F8F9FB] border border-[#E5E7EB] text-sm text-[#1A1D23] placeholder:text-[#9CA3AF] outline-none focus:border-[#A8C5E0] transition-colors"
-              />
+              <div>
+                <label htmlFor="confirmPassword" className="block text-xs font-medium text-[#6B7280] mb-1.5">
+                  Confirmar senha
+                </label>
+                <input
+                  id="confirmPassword"
+                  type="password"
+                  autoComplete="new-password"
+                  required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Repita a senha"
+                  className="w-full px-3.5 py-2.5 rounded-[10px] bg-[#F8F9FB] border border-[#E5E7EB] text-sm text-[#1A1D23] placeholder:text-[#9CA3AF] outline-none focus:border-[#A8C5E0] transition-colors"
+                />
+              </div>
             </div>
 
             {error && (
@@ -255,6 +240,26 @@ export default function SignupPage() {
                 {error}
               </p>
             )}
+
+            <label className="flex items-start gap-2.5 rounded-[12px] border border-[#E5E7EB] bg-[#F8F9FB] p-3">
+              <input
+                type="checkbox"
+                checked={termsAccepted}
+                onChange={(e) => setTermsAccepted(e.target.checked)}
+                className="mt-0.5 h-4 w-4 shrink-0 accent-[#5BBF8E]"
+              />
+              <span className="text-xs leading-relaxed text-[#6B7280]">
+                Li e aceito os{' '}
+                <button
+                  type="button"
+                  onClick={() => setTermsModalOpen(true)}
+                  className="font-semibold text-[#5BBF8E] underline-offset-2 hover:underline"
+                >
+                  Termos de Uso e a Política de Proteção de Dados
+                </button>
+                .
+              </span>
+            </label>
 
             <button
               type="submit"
@@ -266,7 +271,7 @@ export default function SignupPage() {
             </button>
           </form>
 
-          <p className="mt-5 text-center text-xs text-[#6B7280]">
+          <p className="mt-4 text-center text-xs text-[#6B7280]">
             Já tem conta?{' '}
             <Link href="/login" className="font-semibold text-[#A8C5E0]">
               Entrar

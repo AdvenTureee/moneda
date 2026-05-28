@@ -17,8 +17,9 @@ import { getBudgets } from '@/lib/budgets';
 import { getLatestInsight } from '@/lib/insights';
 import { getMonthlyBudgetCents } from '@/lib/monthlyBudget';
 import { isUserOnboarded } from '@/lib/profiles';
+import { decryptProfilePii, getDisplayNameFromUser } from '@/lib/security/profilePii';
 import { formatCurrency, getCurrentPeriod } from '@/lib/utils';
-import { createSessionClient } from '@/lib/supabase/server';
+import { createServiceClient, createSessionClient, isSupabaseEnabled } from '@/lib/supabase/server';
 
 // A page lê cookies de auth (createSessionClient) → Next a renderiza dinamicamente
 // por padrão. As queries de DB dentro do render usam `unstable_cache` com tags
@@ -63,13 +64,19 @@ export default async function DashboardPage({
   const BUDGET_CENTS = monthlyBudgetCents > 0 ? monthlyBudgetCents : totalBudgetCents;
   const remaining = BUDGET_CENTS - metrics.totalSpent;
 
-  // Custom personalized AI Welcome message if no insight exists yet
-  const metadata = user.user_metadata ?? {};
-  const fullName = (metadata.name as string | undefined) ??
-    (metadata.full_name as string | undefined) ??
-    '';
+  // Custom personalized AI Welcome message if no insight exists yet.
+  let fullName = getDisplayNameFromUser(user);
+  if (isSupabaseEnabled()) {
+    const admin = createServiceClient();
+    const { data: profile } = await admin
+      .from('profiles')
+      .select('name,email,phone,name_ciphertext,name_iv,name_tag,email_ciphertext,email_iv,email_tag,phone_ciphertext,phone_iv,phone_tag')
+      .eq('id', user.id)
+      .single();
+    if (profile) fullName = decryptProfilePii(profile).name || fullName;
+  }
   const firstName = fullName ? fullName.split(' ')[0] : 'Gabriel';
-  const avatarUrl = (metadata.avatar_url as string | undefined) ?? null;
+  const avatarUrl = (user.user_metadata?.avatar_url as string | undefined) ?? null;
   const welcomeMessage = `Olá, ${firstName}! Bem-vindo(a) ao Moneda. Conforme você cadastrar seus gastos ou nos enviar pelo WhatsApp, nossa Inteligência Artificial analisará seus hábitos de consumo para gerar insights financeiros personalizados aqui!`;
 
   const insightMessage = latestInsight ? latestInsight.message : welcomeMessage;

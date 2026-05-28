@@ -5,6 +5,7 @@ import {
   isSupabaseEnabled,
 } from '@/lib/supabase/server';
 import { getCategories } from '@/lib/categories';
+import { decryptProfilePii, getDisplayNameFromUser } from '@/lib/security/profilePii';
 import { MOCK_USER } from '@/data/mock';
 import OnboardingView from './OnboardingView';
 
@@ -24,17 +25,16 @@ export default async function OnboardingPage() {
     const admin = createServiceClient();
     const { data: profile } = await admin
       .from('profiles')
-      .select('onboarded')
+      .select('onboarded,name,email,phone,name_ciphertext,name_iv,name_tag,email_ciphertext,email_iv,email_tag,phone_ciphertext,phone_iv,phone_tag')
       .eq('id', userId)
       .single();
     if (profile?.onboarded === true) {
       redirect('/');
     }
 
-    const fullName =
-      (user.user_metadata?.name as string | undefined) ??
-      (user.user_metadata?.full_name as string | undefined) ??
-      '';
+    const fullName = profile
+      ? decryptProfilePii(profile).name || getDisplayNameFromUser(user)
+      : getDisplayNameFromUser(user);
     if (fullName) firstName = fullName.split(' ')[0];
   }
 
