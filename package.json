@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "backfill:pii": "node --env-file=.env scripts/backfill-pii.mjs"
+    "backfill:pii": "node --env-file=.env scripts/backfill-pii.mjs",
+    "nullify:legacy-pii": "node --env-file=.env scripts/nullify-legacy-pii.mjs"
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.10",

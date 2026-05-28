@@ -261,7 +261,7 @@ export type Database = {
           billing_closing_day: number | null
           created_at: string
           currency: string
-          email: string
+          email: string | null
           email_ciphertext: string | null
           email_hash: string | null
           email_iv: string | null
@@ -269,7 +269,7 @@ export type Database = {
           has_pet: boolean
           id: string
           monthly_income_cents: number | null
-          name: string
+          name: string | null
           name_ciphertext: string | null
           name_iv: string | null
           name_tag: string | null
@@ -292,7 +292,7 @@ export type Database = {
           billing_closing_day?: number | null
           created_at?: string
           currency?: string
-          email: string
+          email?: string | null
           email_ciphertext?: string | null
           email_hash?: string | null
           email_iv?: string | null
@@ -300,7 +300,7 @@ export type Database = {
           has_pet?: boolean
           id: string
           monthly_income_cents?: number | null
-          name: string
+          name?: string | null
           name_ciphertext?: string | null
           name_iv?: string | null
           name_tag?: string | null
@@ -323,7 +323,7 @@ export type Database = {
           billing_closing_day?: number | null
           created_at?: string
           currency?: string
-          email?: string
+          email?: string | null
           email_ciphertext?: string | null
           email_hash?: string | null
           email_iv?: string | null
@@ -331,7 +331,7 @@ export type Database = {
           has_pet?: boolean
           id?: string
           monthly_income_cents?: number | null
-          name?: string
+          name?: string | null
           name_ciphertext?: string | null
           name_iv?: string | null
           name_tag?: string | null
@@ -357,7 +357,7 @@ export type Database = {
           id: string
           parse_error: string | null
           parsed_expense_id: string | null
-          phone: string
+          phone: string | null
           phone_ciphertext: string | null
           phone_hash: string | null
           phone_iv: string | null
@@ -376,7 +376,7 @@ export type Database = {
           id?: string
           parse_error?: string | null
           parsed_expense_id?: string | null
-          phone: string
+          phone?: string | null
           phone_ciphertext?: string | null
           phone_hash?: string | null
           phone_iv?: string | null
@@ -395,7 +395,7 @@ export type Database = {
           id?: string
           parse_error?: string | null
           parsed_expense_id?: string | null
-          phone?: string
+          phone?: string | null
           phone_ciphertext?: string | null
           phone_hash?: string | null
           phone_iv?: string | null

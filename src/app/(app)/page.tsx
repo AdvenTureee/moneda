@@ -70,7 +70,7 @@ export default async function DashboardPage({
     const admin = createServiceClient();
     const { data: profile } = await admin
       .from('profiles')
-      .select('name,email,phone,name_ciphertext,name_iv,name_tag,email_ciphertext,email_iv,email_tag,phone_ciphertext,phone_iv,phone_tag')
+      .select('name_ciphertext,name_iv,name_tag,email_ciphertext,email_iv,email_tag,phone_ciphertext,phone_iv,phone_tag')
       .eq('id', user.id)
       .single();
     if (profile) fullName = decryptProfilePii(profile).name || fullName;

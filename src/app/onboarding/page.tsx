@@ -25,7 +25,7 @@ export default async function OnboardingPage() {
     const admin = createServiceClient();
     const { data: profile } = await admin
       .from('profiles')
-      .select('onboarded,name,email,phone,name_ciphertext,name_iv,name_tag,email_ciphertext,email_iv,email_tag,phone_ciphertext,phone_iv,phone_tag')
+      .select('onboarded,name_ciphertext,name_iv,name_tag,email_ciphertext,email_iv,email_tag,phone_ciphertext,phone_iv,phone_tag')
       .eq('id', userId)
       .single();
     if (profile?.onboarded === true) {

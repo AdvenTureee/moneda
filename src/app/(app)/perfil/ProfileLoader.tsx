@@ -18,7 +18,7 @@ export default async function ProfileLoader() {
     const admin = createServiceClient();
     const { data } = await admin
       .from('profiles')
-      .select('currency,name,email,phone,name_ciphertext,name_iv,name_tag,email_ciphertext,email_iv,email_tag,phone_ciphertext,phone_iv,phone_tag')
+      .select('currency,name_ciphertext,name_iv,name_tag,email_ciphertext,email_iv,email_tag,phone_ciphertext,phone_iv,phone_tag')
       .eq('id', user.id)
       .single();
     if (data?.currency) currency = data.currency;

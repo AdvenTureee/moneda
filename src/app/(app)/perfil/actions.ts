@@ -33,7 +33,6 @@ export async function updateDisplayName(formData: FormData): Promise<ActionResul
       const { error: profileError } = await admin
         .from('profiles')
         .update({
-          name,
           ...buildProfilePiiUpdate({
             name,
             email: user.email ?? null,
