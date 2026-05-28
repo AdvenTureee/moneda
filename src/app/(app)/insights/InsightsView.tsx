@@ -234,14 +234,14 @@ export default function InsightsView({
       </section>
 
       {/* AI Insights Section */}
-      <section className="mb-6">
+      <section className="mb-6 animate-fade-up delay-2">
         <h2 className="text-sm font-heading text-[#1A1D23] mb-3">
           Análise da Mo
         </h2>
 
         {/* Search + Type filter */}
         {insights.length > 0 && (
-          <div className="mb-4">
+          <div className="mb-4 animate-fade-up delay-3">
             <div className="relative mb-3">
               <Icon name="MagnifyingGlass" size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9CA3AF]" />
               <input
@@ -275,13 +275,13 @@ export default function InsightsView({
 
         {/* Error */}
         {genError && (
-          <p className="text-xs text-[#E07070] mb-3">{genError}</p>
+          <p className="text-xs text-[#E07070] mb-3 animate-fade-up delay-3">{genError}</p>
         )}
 
         {/* Generating spinner */}
         {generating && (
           <div
-            className="themed-card bg-white rounded-[16px] p-5 mb-4"
+            className="themed-card bg-white rounded-[16px] p-5 mb-4 animate-fade-up delay-4"
           >
             <div className="flex items-center gap-3">
               <span className="w-4 h-4 border-2 border-[#A8C5E0] border-t-transparent rounded-full animate-spin" />
@@ -293,7 +293,7 @@ export default function InsightsView({
         {/* Empty state — no insights yet */}
         {!generating && insights.length === 0 && expenseCount > 0 && (
           <div
-            className="themed-card bg-white rounded-[16px] p-6 text-center"
+            className="themed-card bg-white rounded-[16px] p-6 text-center animate-fade-up delay-4"
           >
             <Mo variant="thinking" size={112} className="mx-auto mb-2" />
             <p className="text-sm text-[#6B7280]">
@@ -314,7 +314,7 @@ export default function InsightsView({
         {/* Empty filter results */}
         {!generating && insights.length > 0 && filteredInsights.length === 0 && (
           <div
-            className="themed-card bg-white rounded-[16px] p-6 text-center"
+            className="themed-card bg-white rounded-[16px] p-6 text-center animate-fade-up delay-4"
           >
             <Mo variant="thinking" size={104} className="mx-auto mb-2" />
             <p className="text-sm text-[#6B7280]">
@@ -335,16 +335,19 @@ export default function InsightsView({
         {/* Insight groups */}
         {!generating && filteredInsights.length > 0 && (
           <div className="space-y-5">
-            {Array.from(groupedByType.entries()).map(([type, items]) => {
+            {Array.from(groupedByType.entries()).map(([type, items], groupIndex) => {
               const meta = TYPE_META[type];
               return (
-                <div key={type}>
+                <div
+                  key={type}
+                  className={`animate-fade-up delay-${Math.min(groupIndex + 4, 8)}`}
+                >
                   <h3 className="text-xs font-bold uppercase tracking-wider text-[#6B7280] mb-2 flex items-center gap-1.5">
                     <span className="w-1.5 h-1.5 rounded-full" style={{ background: meta.color }} />
                     {meta.label}
                   </h3>
                   <div className="space-y-2">
-                    {items.map((insight) => {
+                    {items.map((insight, itemIndex) => {
                       const expanded = expandedIds.has(insight.id);
                       const alerts = insight.metadata?.alerts as string[] | undefined;
                       const preview = buildInsightPreview(insight.message);
@@ -352,11 +355,12 @@ export default function InsightsView({
                         <div
                           key={insight.id}
                           id={`insight-${insight.id}`}
-                          className="themed-card bg-white rounded-[14px] overflow-hidden transition-[box-shadow,transform] duration-150"
+                          className="themed-card bg-white rounded-[14px] overflow-hidden transition-[box-shadow,transform] duration-150 animate-fade-up"
                           style={{
                             boxShadow: expanded
                               ? 'var(--shadow-card)'
                               : 'var(--shadow-card-soft)',
+                            animationDelay: `${Math.min(360 + groupIndex * 80 + itemIndex * 60, 760)}ms`,
                           }}
                         >
                           {/* Card header */}

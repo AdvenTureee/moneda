@@ -8,6 +8,7 @@ import SpendingTimelineChart from '@/components/charts/SpendingTimelineChart';
 import TrackedMascot from '@/components/TrackedMascot';
 import MoTipBubble from '@/components/MoTipBubble';
 import Mo from '@/components/Mo';
+import Icon from '@/components/Icon';
 import Confetti from '@/components/Confetti';
 import MonthPicker from '@/components/MonthPicker';
 import RegenerateInsightButton from '@/components/RegenerateInsightButton';
@@ -127,7 +128,7 @@ export default async function DashboardPage({
         </section>
 
         {/* Metric cards */}
-        <section className="flex gap-3 mb-6 animate-fade-up delay-3" aria-label="Métricas do mês">
+        <section className="flex gap-3 mb-3 animate-fade-up delay-3" aria-label="Métricas do mês">
           <DashboardMetric
             label="Orçamento"
             value={formatCurrency(BUDGET_CENTS)}
@@ -138,10 +139,32 @@ export default async function DashboardPage({
           />
         </section>
 
+        <section className="mb-4 animate-fade-up delay-4" aria-label="Atalho para ganhos e receitas">
+          <Link
+            href="/perfil/ganhos"
+            className="themed-card group flex min-h-12 items-center gap-2.5 rounded-[14px] bg-white px-3.5 py-2.5 transition-[background-color,box-shadow,transform] duration-150 active:scale-[0.99] hover:shadow-[var(--shadow-card)]"
+          >
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--color-success)_16%,var(--color-surface)_84%)] text-[var(--color-success)]">
+              <Icon name="TrendUp" size={17} weight="bold" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-sm font-bold text-[var(--color-text-primary)]">
+                Histórico de ganhos
+              </span>
+              <span className="block truncate text-[11px] leading-tight text-[var(--color-text-secondary)]">
+                Receitas e entradas
+              </span>
+            </span>
+            <span className="text-base font-bold text-[var(--color-text-tertiary)] transition-transform duration-150 group-hover:translate-x-0.5">
+              ›
+            </span>
+          </Link>
+        </section>
+
         {/* Category breakdown */}
         {metrics.topCategories.length > 0 && (
           <section
-            className="themed-card mb-6 bg-white rounded-[16px] p-5 animate-fade-up delay-4"
+            className="themed-card mb-6 bg-white rounded-[16px] p-5 animate-fade-up delay-5"
             aria-label="Gastos por categoria"
           >
             <div className="flex items-center justify-between mb-2">
@@ -160,12 +183,12 @@ export default async function DashboardPage({
         )}
 
         {/* Spending timeline */}
-        <section className="mb-6 animate-fade-up delay-5">
+        <section className="mb-6 animate-fade-up delay-6">
           <SpendingTimelineChart data={spendingTimeline} />
         </section>
 
         {/* AI Insight banner */}
-        <section className="mb-6 animate-fade-up delay-6" aria-label="Resumo do mês">
+        <section className="mb-6 animate-fade-up delay-7" aria-label="Resumo do mês">
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-base font-heading text-[#1A1D23]">Resumo do mês</h2>
           </div>
@@ -180,7 +203,7 @@ export default async function DashboardPage({
         </section>
 
         {/* Recent expenses */}
-        <section aria-label="Últimos gastos" className="animate-fade-up delay-7">
+        <section aria-label="Últimos gastos" className="animate-fade-up delay-8">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-base font-heading text-[#1A1D23]">Últimos gastos</h2>
             <Link href="/feed" className="text-xs font-medium text-[#A8C5E0]">
@@ -199,7 +222,7 @@ export default async function DashboardPage({
           ) : (
             <div className="space-y-2">
               {metrics.recentExpenses.map((expense, i) => (
-                <div key={expense.id} className={`animate-fade-up delay-${Math.min(i + 7, 9)}`}>
+                <div key={expense.id} className={`animate-fade-up delay-${Math.min(i + 8, 9)}`}>
                   <ExpenseCard
                     expense={expense}
                     variant="compact"
