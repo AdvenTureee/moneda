@@ -75,7 +75,7 @@ export default function MonthPicker({ value, monthsBack = 12 }: MonthPickerProps
                 onClick={() => pick(opt.period)}
                 className={`w-full text-left px-3 py-2 text-sm capitalize transition-colors ${
                   opt.period === value
-                    ? 'bg-[#F1F3F7] text-[#1A1D23] font-semibold'
+                    ? 'text-[#1A1D23] font-semibold'
                     : 'text-[#6B7280] hover:bg-[#F8F9FB]'
                 }`}
                 role="option"
