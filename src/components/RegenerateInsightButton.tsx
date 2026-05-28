@@ -44,8 +44,8 @@ export default function RegenerateInsightButton({
   }
 
   const btnClass = variant === 'card'
-    ? 'inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-full bg-white/90 text-[#2E7D5B] active:scale-95 transition-all duration-75 disabled:opacity-40 hover:bg-white'
-    : 'inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-full bg-[#5BBF8E] text-white active:scale-95 transition-all duration-75 disabled:opacity-40 hover:brightness-105';
+    ? 'inline-flex min-h-10 items-center gap-2 px-4 py-2 text-sm font-bold rounded-full bg-white/90 text-[#2E7D5B] active:scale-95 transition-all duration-75 disabled:opacity-40 hover:bg-white'
+    : 'inline-flex min-h-11 items-center gap-2 px-4 py-2.5 text-sm font-bold rounded-full bg-[#5BBF8E] text-white active:scale-95 transition-all duration-75 disabled:opacity-40 hover:brightness-105';
 
   const btnShadow = variant === 'card'
     ? '0 4px 14px rgba(0,0,0,0.12)'
@@ -67,7 +67,7 @@ export default function RegenerateInsightButton({
         aria-label={hasInsight ? 'Regenerar resumo do mês' : 'Gerar resumo do mês'}
       >
         <ArrowsClockwise
-          size={12}
+          size={16}
           weight="bold"
           className={loading ? 'animate-spin' : ''}
         />

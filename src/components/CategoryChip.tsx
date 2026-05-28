@@ -23,7 +23,7 @@ export default function CategoryChip({
     <button
       onClick={onClick}
       className={`flex items-center gap-1 rounded-full font-medium transition-all duration-75 active:scale-95 whitespace-nowrap ${
-        isSmall ? 'px-2.5 py-1 text-xs' : 'px-3 py-1.5 text-sm'
+        isSmall ? 'min-h-9 px-3.5 py-2 text-sm' : 'min-h-10 px-4 py-2 text-sm'
       } ${
         selected
           ? 'bg-[#5BBF8E] text-white border-transparent'
@@ -36,7 +36,7 @@ export default function CategoryChip({
       }}
       aria-pressed={selected}
     >
-      <Icon name={icon} size={isSmall ? 12 : 14} aria-hidden />
+      <Icon name={icon} size={isSmall ? 14 : 16} aria-hidden />
       <span>{label}</span>
     </button>
   );

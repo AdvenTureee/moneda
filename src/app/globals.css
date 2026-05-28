@@ -129,6 +129,44 @@ body {
   overscroll-behavior-x: none;
 }
 
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 300ms;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  mix-blend-mode: normal;
+}
+
+::view-transition-old(root) {
+  animation-name: theme-view-out;
+}
+
+::view-transition-new(root) {
+  animation-name: theme-view-in;
+}
+
+@keyframes theme-view-out {
+  from { opacity: 1; filter: saturate(1); }
+  to { opacity: 0; filter: saturate(0.96); }
+}
+
+@keyframes theme-view-in {
+  from { opacity: 0; filter: saturate(0.96); }
+  to { opacity: 1; filter: saturate(1); }
+}
+
+html.theme-transitioning body,
+html.theme-transitioning .themed-card,
+html.theme-transitioning .themed-field,
+html.theme-transitioning .profile-icon,
+html.theme-transitioning .date-range-menu,
+html.theme-transitioning .expense-action-menu {
+  transition:
+    background-color 300ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 300ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 300ms cubic-bezier(0.22, 1, 0.36, 1),
+    color 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 html[data-theme="dark"] body::before {
   opacity: 0.08;
 }

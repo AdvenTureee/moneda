@@ -188,7 +188,7 @@ export default function InsightsView({
               type="button"
               onClick={handleGenerate}
               disabled={generating}
-              className="px-4 py-1.5 text-xs font-bold rounded-full bg-[#5BBF8E] text-white active:scale-95 transition-all duration-75 disabled:opacity-40 shadow-sm hover:brightness-105"
+              className="min-h-11 px-5 py-2.5 text-sm font-bold rounded-full bg-[#5BBF8E] text-white active:scale-95 transition-all duration-75 disabled:opacity-40 shadow-sm hover:brightness-105"
               style={{ boxShadow: '0 4px 14px rgba(91, 191, 142, 0.3)' }}
             >
               {generating ? 'Gerando…' : insights.length > 0 ? 'Regenerar' : 'Gerar'}
@@ -285,7 +285,7 @@ export default function InsightsView({
               type="button"
               onClick={handleGenerate}
               disabled={generating}
-              className="mt-3 px-5 py-2.5 text-sm font-semibold text-white bg-[#5BBF8E] hover:bg-[#4AA77C] active:bg-[#3FA876] rounded-[10px] transition-colors duration-150 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+              className="mt-4 min-h-11 px-6 py-3 text-sm font-semibold text-white bg-[#5BBF8E] hover:bg-[#4AA77C] active:bg-[#3FA876] rounded-[12px] transition-colors duration-150 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ boxShadow: '0 4px 14px rgba(91, 191, 142, 0.3)' }}
             >
               Gerar primeira análise

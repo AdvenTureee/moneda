@@ -82,17 +82,23 @@ export default async function DashboardPage({
             <TrackedMascot variant="idle" size={100} />
             <MonthPicker value={period} />
           </div>
-          <div
-            className="w-14 h-14 rounded-full flex items-center justify-center text-lg font-bold text-white shrink-0 overflow-hidden ring-2 ring-[#5BBF8E]/70 ring-offset-0"
+          <Link
+            href="/perfil"
+            className="mt-2 h-14 w-14 shrink-0 overflow-hidden rounded-full bg-[#A8C5E0] flex items-center justify-center text-lg font-bold text-white ring-2 ring-[#5BBF8E]/70 ring-offset-2 ring-offset-[var(--background)] transition-[transform,box-shadow,ring-color] duration-200 hover:scale-[1.03] hover:ring-[#5BBF8E] focus:outline-none focus-visible:ring-4"
             style={{ background: '#A8C5E0' }}
             aria-label={user.email ?? 'Usuário'}
           >
             {avatarUrl ? (
-              <img src={avatarUrl} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+              <img
+                src={avatarUrl}
+                alt=""
+                className="h-full w-full object-cover object-[center_38%]"
+                referrerPolicy="no-referrer"
+              />
             ) : (
               fullName?.[0]?.toUpperCase() ?? user.email?.[0]?.toUpperCase() ?? '?'
             )}
-          </div>
+          </Link>
         </header>
 
         <MoTipBubble />

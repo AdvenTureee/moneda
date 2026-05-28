@@ -477,13 +477,13 @@ export default function ProfileView({
             </p>
           </div>
           <span
-            className={`relative inline-flex h-6 w-10 shrink-0 rounded-full transition-colors ${
+            className={`relative inline-flex h-6 w-10 shrink-0 rounded-full transition-colors duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] ${
               isDark ? 'bg-[#5BBF8E]' : 'bg-[#E5E7EB]'
             }`}
             aria-hidden
           >
             <span
-              className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+              className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] ${
                 isDark ? 'translate-x-4' : 'translate-x-0'
               }`}
             />

@@ -313,21 +313,21 @@ export default function OnboardingView({ defaultCategories, firstName }: Onboard
                     type="button"
                     onClick={() => setTheme(opt.value)}
                     aria-pressed={active}
-                    className={`rounded-[18px] border-2 p-3 text-left transition-all active:scale-[0.98] ${
+                    className={`rounded-[18px] border-2 p-3 text-left transition-[background-color,border-color,box-shadow,transform] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] active:scale-[0.98] ${
                       active
-                        ? 'border-[#5BBF8E] bg-[#EEF9F4]'
+                        ? 'border-[#5BBF8E] bg-[#EEF9F4] shadow-[0_10px_24px_rgba(91,191,142,0.16)]'
                         : 'border-[#E5E7EB] bg-white hover:border-[#A8C5E0]'
                     }`}
                   >
                     <div
-                      className="h-28 rounded-[14px] p-3 border overflow-hidden"
+                      className="h-28 rounded-[14px] p-3 border overflow-hidden transition-[border-color,background-color] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
                       style={{
                         background: opt.previewBg,
                         borderColor: active ? '#5BBF8E' : '#E5E7EB',
                       }}
                     >
                       <div
-                        className="h-full rounded-[10px] p-3 flex flex-col justify-between"
+                        className="h-full rounded-[10px] p-3 flex flex-col justify-between transition-colors duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
                         style={{ background: opt.previewSurface }}
                       >
                         <div className="flex items-center justify-between">
@@ -363,12 +363,12 @@ export default function OnboardingView({ defaultCategories, firstName }: Onboard
                         <p className="text-xs text-[#6B7280]">{opt.description}</p>
                       </div>
                       <span
-                        className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                        className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-[border-color,background-color,transform] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] ${
                           active ? 'border-[#5BBF8E]' : 'border-[#D1D9E6]'
                         }`}
                         aria-hidden
                       >
-                        {active && <span className="w-2.5 h-2.5 rounded-full bg-[#5BBF8E]" />}
+                        {active && <span className="w-2.5 h-2.5 rounded-full bg-[#5BBF8E] animate-scale-in" />}
                       </span>
                     </div>
                   </button>
