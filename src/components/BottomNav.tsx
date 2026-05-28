@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { House, List, PlusCircle, ChartPieSlice, User } from '@phosphor-icons/react';
+import { House, List, PlusCircle, Sparkle, User } from '@phosphor-icons/react';
 
 interface NavItem {
   label: string;
@@ -15,7 +15,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Dashboard', icon: House, href: '/' },
   { label: 'Feed', icon: List, href: '/feed' },
   { label: 'Adicionar', icon: PlusCircle, href: '#add', isAction: true },
-  { label: 'Insights', icon: ChartPieSlice, href: '/insights' },
+  { label: 'Insights', icon: Sparkle, href: '/insights' },
   { label: 'Perfil', icon: User, href: '/perfil' },
 ];
 
