@@ -18,6 +18,11 @@ export function parseCurrencyInput(text: string): number {
   return Math.round(parseFloat(clean) * 100);
 }
 
+export function isValidEmail(email: string): boolean {
+  const normalized = email.trim();
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized);
+}
+
 export function formatDate(date: Date): string {
   const now = new Date();
   const d = new Date(date);

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { isValidEmail } from '@/lib/utils';
 
 function GoogleIcon() {
   return (
@@ -21,6 +22,7 @@ export default function SignupPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -30,8 +32,18 @@ export default function SignupPage() {
     e.preventDefault();
     setError('');
 
+    if (!isValidEmail(email)) {
+      setError('Informe um email válido.');
+      return;
+    }
+
     if (password.length < 8) {
       setError('A senha deve ter pelo menos 8 caracteres.');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError('As senhas não conferem.');
       return;
     }
 
@@ -151,6 +163,7 @@ export default function SignupPage() {
                 id="email"
                 type="email"
                 autoComplete="email"
+                inputMode="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -171,6 +184,22 @@ export default function SignupPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Mínimo 8 caracteres"
+                className="w-full px-3.5 py-2.5 rounded-[10px] bg-[#F8F9FB] border border-[#E5E7EB] text-sm text-[#1A1D23] placeholder:text-[#9CA3AF] outline-none focus:border-[#A8C5E0] transition-colors"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="confirmPassword" className="block text-xs font-medium text-[#6B7280] mb-1.5">
+                Confirmar senha
+              </label>
+              <input
+                id="confirmPassword"
+                type="password"
+                autoComplete="new-password"
+                required
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Repita sua senha"
                 className="w-full px-3.5 py-2.5 rounded-[10px] bg-[#F8F9FB] border border-[#E5E7EB] text-sm text-[#1A1D23] placeholder:text-[#9CA3AF] outline-none focus:border-[#A8C5E0] transition-colors"
               />
             </div>
