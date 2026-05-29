@@ -113,7 +113,7 @@ export default async function DashboardPage({
           </div>
         </header>
 
-        <section className="flex items-center gap-5 pb-4 animate-fade-up delay-1">
+        <section className="dashboard-mo-tip-row flex items-center gap-5 pb-4 animate-fade-up delay-1">
           <div className="shrink-0">
             <TrackedMascot variant="idle" size={124} />
           </div>

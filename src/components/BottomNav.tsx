@@ -58,7 +58,6 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
             return (
               <button
                 key={item.label}
-                onPointerDown={() => setPendingHref(item.href)}
                 onClick={() => {
                   setPendingHref(null);
                   onAddExpense?.();
@@ -83,8 +82,8 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
               href={item.href}
               prefetch
               onMouseEnter={() => prefetchRoute(item.href)}
-              onPointerDown={() => {
-                prefetchRoute(item.href);
+              onTouchStart={() => prefetchRoute(item.href)}
+              onClick={() => {
                 if (!isActive) setPendingHref(item.href);
               }}
               onFocus={() => prefetchRoute(item.href)}
@@ -98,7 +97,7 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
               <item.icon size={20} />
               <span className="text-[10px] font-medium leading-none">{item.label}</span>
               {(isActive || isPending) && (
-                <span className={`bottom-nav-indicator absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-5 h-0.5 rounded-full bg-[#A8C5E0] ${isPending ? 'bottom-nav-indicator--pending' : 'animate-scale-in'}`} />
+                <span className={`bottom-nav-indicator absolute -bottom-0.5 h-0.5 rounded-full ${isPending ? 'bottom-nav-indicator--pending' : ''}`} />
               )}
             </Link>
           );

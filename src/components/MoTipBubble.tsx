@@ -127,7 +127,9 @@ export default function MoTipBubble({ period }: MoTipBubbleProps) {
           <span aria-hidden className="mo-tip-bubble__badge">
             <Icon name="ChatText" size={16} />
           </span>
-          <span>{tip.text}</span>
+          <span className="mo-tip-bubble__message" title={tip.text}>
+            {tip.text}
+          </span>
         </p>
       </div>
       <style>{`

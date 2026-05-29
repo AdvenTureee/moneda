@@ -433,8 +433,8 @@ export default function MoInsightsChat({
       >
         {!canChat && (
           <div className="mo-insights-chat__empty">
-            <div className="mo-insights-chat__mo-spotlight mo-insights-chat__mo-spotlight--lg">
-              <Mo variant="thinking" portrait className="opacity-90" />
+            <div className="mo-insights-chat__empty-mascot">
+              <Mo variant="thinking" size={104} className="opacity-90" />
             </div>
             <p className="text-sm text-[var(--color-text-secondary)] text-center">
               Cadastre gastos neste mês para a Mo analisar e responder suas perguntas.
@@ -444,8 +444,8 @@ export default function MoInsightsChat({
 
         {canChat && showEmpty && (
           <div className="mo-insights-chat__empty">
-            <div className="mo-insights-chat__mo-spotlight mo-insights-chat__mo-spotlight--lg">
-              <Mo variant="idle" portrait />
+            <div className="mo-insights-chat__empty-mascot">
+              <Mo variant="idle" size={104} />
             </div>
             <p className="text-sm text-[var(--color-text-secondary)] text-center mb-4">
               Tire dúvidas sobre seus gastos, orçamento e hábitos.
