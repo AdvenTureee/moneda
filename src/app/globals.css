@@ -727,28 +727,19 @@ html[data-theme="dark"] .expense-action-separator {
   display: grid;
   grid-template-rows: 1fr;
   margin-top: 0.25rem;
-  opacity: 1;
   overflow: hidden;
   transition:
-    grid-template-rows 260ms cubic-bezier(0.22, 1, 0.36, 1),
-    opacity 170ms cubic-bezier(0.22, 1, 0.36, 1),
-    margin-top 260ms cubic-bezier(0.22, 1, 0.36, 1);
+    grid-template-rows 180ms cubic-bezier(0.4, 0, 0.2, 1),
+    margin-top 180ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .insight-card__preview {
   min-height: 0;
-  transform: translateY(0);
-  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .insight-card--expanded .insight-card__preview-wrap {
   grid-template-rows: 0fr;
   margin-top: 0;
-  opacity: 0;
-}
-
-.insight-card--expanded .insight-card__preview {
-  transform: translateY(-2px);
 }
 
 .insight-card__trigger {
@@ -785,20 +776,20 @@ html[data-theme="dark"] .expense-action-separator {
   overflow: hidden;
   transition:
     grid-template-rows 360ms cubic-bezier(0.22, 1, 0.36, 1),
-    opacity 220ms cubic-bezier(0.22, 1, 0.36, 1);
+    opacity 140ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .insight-accordion--open {
   grid-template-rows: 1fr;
   opacity: 1;
-  transition-duration: 420ms, 260ms;
+  transition-duration: 380ms, 140ms;
+  transition-delay: 0ms, 90ms;
 }
 
 .insight-accordion__inner {
-  transform: translateY(-6px);
+  transform: translateY(-3px);
   transition:
-    transform 360ms cubic-bezier(0.22, 1, 0.36, 1),
-    opacity 220ms cubic-bezier(0.22, 1, 0.36, 1);
+    transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .insight-accordion--open .insight-accordion__inner {
