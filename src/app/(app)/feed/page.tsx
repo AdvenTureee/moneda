@@ -132,7 +132,18 @@ function FeedPageInner() {
   }, [fetchExpenses]);
 
   useEffect(() => {
-    const handler = () => fetchExpenses();
+    const handler = (event: Event) => {
+      const expense = (event as CustomEvent<{ expense?: Expense }>).detail?.expense;
+      if (expense) {
+        setAllExpenses((prev) => {
+          const exists = prev.some((item) => item.id === expense.id);
+          return exists
+            ? prev.map((item) => (item.id === expense.id ? expense : item))
+            : [expense, ...prev];
+        });
+      }
+      fetchExpenses();
+    };
     window.addEventListener('expense-mutated', handler);
     return () => window.removeEventListener('expense-mutated', handler);
   }, [fetchExpenses]);

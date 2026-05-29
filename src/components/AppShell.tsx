@@ -30,11 +30,14 @@ function ShellContent({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(input),
-      }).catch(() => {});
-      showToast('success', 'Gasto adicionado com sucesso');
-      router.refresh();
-      window.dispatchEvent(new CustomEvent('expense-mutated'));
+      }).catch(() => null);
       const data = res ? await res.json().catch(() => null) : null;
+      if (!res?.ok) {
+        throw new Error(data?.error ?? 'Nao foi possivel salvar o gasto.');
+      }
+      showToast('success', 'Gasto adicionado com sucesso');
+      window.dispatchEvent(new CustomEvent('expense-mutated', { detail: { expense: data?.data } }));
+      window.setTimeout(() => router.refresh(), 350);
       return data?.data;
     },
     [router, showToast]
@@ -71,6 +74,7 @@ function ShellContent({
         isOpen={modalOpen && !isTermsBlocking}
         onClose={() => setModalOpen(false)}
         onSave={handleSave}
+        optimisticSave
       />
       <TermsModal
         isOpen={isTermsBlocking}

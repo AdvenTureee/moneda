@@ -2,9 +2,9 @@
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { CheckCircle, X, XCircle } from '@phosphor-icons/react';
+import { CheckCircle, CircleNotch, X, XCircle } from '@phosphor-icons/react';
 
-type ToastKind = 'success' | 'error';
+type ToastKind = 'success' | 'error' | 'info';
 
 interface ToastState {
   kind: ToastKind;
@@ -41,7 +41,12 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     return () => clearTimeout(timer);
   }, [toast, hideToast]);
 
-  const IconComponent = toast?.kind === 'success' ? CheckCircle : XCircle;
+  const IconComponent =
+    toast?.kind === 'error'
+      ? XCircle
+      : toast?.kind === 'info'
+        ? CircleNotch
+        : CheckCircle;
 
   return (
     <ToastContext.Provider value={{ showToast }}>
@@ -53,7 +58,11 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
           aria-live="polite"
           className={`toast-body toast-body--${toast.kind}`}
         >
-          <IconComponent size={20} weight="fill" className="shrink-0" />
+          <IconComponent
+            size={20}
+            weight={toast.kind === 'info' ? 'bold' : 'fill'}
+            className={`shrink-0 ${toast.kind === 'info' ? 'toast-spin' : ''}`}
+          />
           <p className="toast-text">{toast.text}</p>
           <button
             type="button"

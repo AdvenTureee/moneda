@@ -17,6 +17,7 @@ interface AddExpenseModalProps {
   onClose: () => void;
   onSave: (input: ExpenseInput) => void | Expense | Promise<void | Expense>;
   editExpense?: Expense;
+  optimisticSave?: boolean;
 }
 
 const CATEGORY_PREVIEW_LIMIT = 8;
@@ -26,6 +27,7 @@ export default function AddExpenseModal({
   onClose,
   onSave,
   editExpense,
+  optimisticSave = false,
 }: AddExpenseModalProps) {
   const [mounted, setMounted] = useState(false);
   const [shouldRender, setShouldRender] = useState(false);
@@ -42,6 +44,7 @@ export default function AddExpenseModal({
   const [categoriesExpanded, setCategoriesExpanded] = useState(false);
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [receiptBusy, setReceiptBusy] = useState(false);
+  const [saveBusy, setSaveBusy] = useState(false);
   const { data: categories } = useCategories();
   const { showToast } = useToast();
   const [confirmDiscard, setConfirmDiscard] = useState(false);
@@ -111,6 +114,7 @@ export default function AddExpenseModal({
       setIsRecurring(false);
       setCategoriesExpanded(false);
       setReceiptFile(null);
+      setSaveBusy(false);
       setTimeout(() => inputRef.current?.focus(), 100);
     } else if (isOpen && editExpense) {
       setAmountCents(editExpense.amount);
@@ -128,6 +132,7 @@ export default function AddExpenseModal({
       setIsRecurring(editExpense.isRecurring ?? false);
       setCategoriesExpanded(false);
       setReceiptFile(null);
+      setSaveBusy(false);
       setTimeout(() => inputRef.current?.focus(), 100);
     }
   }, [isOpen, editExpense]);
@@ -206,28 +211,53 @@ export default function AddExpenseModal({
   }, [editExpense, showToast]);
 
   const handleSave = useCallback(async () => {
-    if (amountCents <= 0 || !selectedCategory) return;
+    if (amountCents <= 0 || !selectedCategory || saveBusy) return;
+    const input: ExpenseInput = {
+      amount: amountCents,
+      category: selectedCategory,
+      description: description.trim() || (categories.find((c) => c.id === selectedCategory)?.name ?? 'Gasto'),
+      source: 'manual',
+      tags: [],
+      occurredAt: localDateTimeToIso(occurredAtInput, timeInput),
+      isRecurring,
+    };
+    const pendingReceiptFile = receiptFile;
+
+    if (optimisticSave && !isEditing) {
+      setSaveBusy(true);
+      showToast('info', 'Salvando gasto...');
+      finishClose();
+      Promise.resolve(onSave(input))
+        .then(async (saved) => {
+          const expenseId = saved?.id;
+          if (pendingReceiptFile && expenseId) {
+            await uploadReceiptForExpense(expenseId, pendingReceiptFile);
+            showToast('success', 'Comprovante anexado');
+            window.dispatchEvent(new CustomEvent('expense-mutated'));
+          }
+        })
+        .catch((error) => {
+          showToast('error', error instanceof Error ? error.message : 'Erro ao salvar gasto');
+        });
+      return;
+    }
+
+    setSaveBusy(true);
     try {
-      const saved = await onSave({
-        amount: amountCents,
-        category: selectedCategory,
-        description: description.trim() || (categories.find((c) => c.id === selectedCategory)?.name ?? 'Gasto'),
-        source: 'manual',
-        tags: [],
-        occurredAt: localDateTimeToIso(occurredAtInput, timeInput),
-        isRecurring,
-      });
+      const saved = await onSave(input);
       const expenseId = editExpense?.id ?? saved?.id;
-      if (receiptFile && expenseId) {
-        await uploadReceiptForExpense(expenseId, receiptFile);
+      if (pendingReceiptFile && expenseId) {
+        await uploadReceiptForExpense(expenseId, pendingReceiptFile);
         showToast('success', 'Comprovante anexado');
         window.dispatchEvent(new CustomEvent('expense-mutated'));
       }
-      onClose();
+      finishClose();
     } catch (error) {
       showToast('error', error instanceof Error ? error.message : 'Erro ao salvar gasto');
+    } finally {
+      setSaveBusy(false);
     }
-  }, [amountCents, description, selectedCategory, occurredAtInput, timeInput, isRecurring, categories, onSave, editExpense, receiptFile, uploadReceiptForExpense, onClose, showToast]);
+  }, [amountCents, selectedCategory, saveBusy, description, categories, occurredAtInput, timeInput, isRecurring, receiptFile, optimisticSave, isEditing, showToast, finishClose, onSave, uploadReceiptForExpense, editExpense]);
 
   const handleBackdropClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
@@ -521,14 +551,16 @@ export default function AddExpenseModal({
         >
           <button
             onClick={handleSave}
-            disabled={amountCents <= 0 || !selectedCategory}
+            disabled={amountCents <= 0 || !selectedCategory || saveBusy}
             className="w-full rounded-full py-4 text-[15px] font-semibold text-white transition-all duration-75 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
             style={{
               background:
                 amountCents > 0 && selectedCategory ? '#5BBF8E' : '#9CA3AF',
             }}
           >
-            {isEditing
+            {saveBusy
+              ? 'Salvando...'
+              : isEditing
               ? 'Atualizar'
               : amountCents > 0
                 ? `Salvar — ${formatCurrency(amountCents)}`
