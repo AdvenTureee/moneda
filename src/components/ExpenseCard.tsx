@@ -10,6 +10,12 @@ import { formatCurrency, formatDate, formatTime } from '@/lib/utils';
 import type { Expense } from '@/types';
 import type { MouseEvent } from 'react';
 
+const PAYMENT_LABELS: Partial<Record<Expense['paymentMethod'], string>> = {
+  pix: 'PIX',
+  debit: 'Débito',
+  credit: 'Crédito',
+};
+
 interface ExpenseCardProps {
   expense: Expense;
   variant?: 'compact' | 'full';
@@ -38,6 +44,7 @@ export default function ExpenseCard({
   const { showToast } = useToast();
 
   const hasCardActions = Boolean(onEdit || onDelete);
+  const paymentLabel = PAYMENT_LABELS[expense.paymentMethod];
   const shouldShowMenu = Boolean(expense.receipt || onReceiptChanged || hasCardActions);
   const menuItemClass =
     'expense-action-item group flex min-h-10 w-full items-center gap-3 rounded-[11px] px-3.5 text-left text-sm font-medium transition-[background,color,transform] duration-150 active:scale-[0.985] disabled:opacity-50';
@@ -197,9 +204,16 @@ export default function ExpenseCard({
           >
             {expense.description}
           </p>
-          <p className="text-xs text-[#6B7280] mt-0.5">
-            {category?.name ?? 'Outros'} · {formatTime(new Date(expense.createdAt))}
-          </p>
+          <div className="mt-0.5 flex min-w-0 items-center gap-1.5">
+            <p className="min-w-0 truncate text-xs text-[#6B7280]">
+              {category?.name ?? 'Outros'} · {formatTime(new Date(expense.createdAt))}
+            </p>
+            {paymentLabel && (
+              <span className="shrink-0 rounded-full bg-[#EEF9F4] px-1.5 py-0.5 text-[10px] font-semibold leading-none text-[#3FA876]">
+                {paymentLabel}
+              </span>
+            )}
+          </div>
         </div>
 
         <div className="flex flex-col items-end shrink-0">

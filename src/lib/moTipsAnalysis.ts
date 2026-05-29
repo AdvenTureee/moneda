@@ -1,10 +1,19 @@
-import type { DashboardMetrics } from '@/types';
+import type { DashboardMetrics, ExpensePaymentMethod } from '@/types';
 import { formatCurrency, getCurrentPeriod } from '@/lib/utils';
 
 const DELIVERY_RE =
   /ifood|i\s*food|rappi|uber\s*eats|99\s*food|aiqfome|zé\s*delivery|delivery|keeta/i;
 const SUBSCRIPTION_RE =
   /netflix|spotify|amazon\s*prime|disney|hbo|max|apple|google\s*one|assinatura|mensalidade|plano/i;
+
+const PAYMENT_LABELS: Record<ExpensePaymentMethod, string> = {
+  pix: 'PIX',
+  debit: 'Débito',
+  credit: 'Crédito',
+  cash: 'Dinheiro',
+  transfer: 'Transferência',
+  other: 'Não informado',
+};
 
 function normalizeMerchant(description: string): string {
   const cleaned = description.trim().toLowerCase();
@@ -78,12 +87,20 @@ export function buildAnalyticalSignals(
   }
 
   const merchantMap = new Map<string, { count: number; total: number; sample: string }>();
+  const paymentMap = new Map<ExpensePaymentMethod, { count: number; total: number }>();
   for (const e of expenses) {
     const key = normalizeMerchant(e.description);
     const cur = merchantMap.get(key) ?? { count: 0, total: 0, sample: e.description };
     cur.count += 1;
     cur.total += e.amount;
     merchantMap.set(key, cur);
+
+    if (e.paymentMethod && e.paymentMethod !== 'other') {
+      const payment = paymentMap.get(e.paymentMethod) ?? { count: 0, total: 0 };
+      payment.count += 1;
+      payment.total += e.amount;
+      paymentMap.set(e.paymentMethod, payment);
+    }
   }
 
   const repeated = [...merchantMap.entries()]
@@ -94,6 +111,25 @@ export function buildAnalyticalSignals(
   for (const [, v] of repeated) {
     signals.push(
       `"${v.sample}" repetiu ${v.count}x (${formatCurrency(v.total)}) — hábito fixo ou dá pra consolidar/cortar uma vez?`,
+    );
+  }
+
+  const paymentRanking = [...paymentMap.entries()].sort(([, a], [, b]) => b.total - a.total);
+  const topPayment = paymentRanking[0];
+  if (topPayment) {
+    const [method, data] = topPayment;
+    const pct = Math.round((data.total / total) * 100);
+    if (pct >= 35 || data.count >= 4) {
+      signals.push(
+        `${PAYMENT_LABELS[method]} concentra ${formatCurrency(data.total)} (${pct}% do mês, ${data.count} lançamentos) — vale acompanhar esse meio no feed.`,
+      );
+    }
+  }
+
+  const credit = paymentMap.get('credit');
+  if (credit && (credit.total >= total * 0.25 || credit.count >= 3)) {
+    signals.push(
+      `Crédito aparece em ${credit.count} lançamento(s), somando ${formatCurrency(credit.total)} — confira se isso cabe na próxima fatura.`,
     );
   }
 

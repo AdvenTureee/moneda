@@ -1,5 +1,5 @@
 import { unstable_cache } from 'next/cache';
-import type { Category, Expense, ExpenseFilters, ExpenseInput, DashboardMetrics, SpendingTimelineBucket, SpendingTimelineData } from '@/types';
+import type { Category, Expense, ExpenseFilters, ExpenseInput, ExpensePaymentMethod, DashboardMetrics, SpendingTimelineBucket, SpendingTimelineData } from '@/types';
 import type { Database } from '@/types/supabase';
 import { createServiceClient, isSupabaseEnabled } from '@/lib/supabase/server';
 import { getCategories, getCategoriesByIds } from '@/lib/categories';
@@ -25,6 +25,21 @@ const FALLBACK_CATEGORY: Pick<Category, 'name' | 'icon' | 'color'> = {
   icon: 'Package',
   color: '#6B7280',
 };
+
+const PAYMENT_METHODS = new Set<ExpensePaymentMethod>([
+  'pix',
+  'debit',
+  'credit',
+  'cash',
+  'transfer',
+  'other',
+]);
+
+function normalizePaymentMethod(value: unknown): ExpensePaymentMethod {
+  return typeof value === 'string' && PAYMENT_METHODS.has(value as ExpensePaymentMethod)
+    ? (value as ExpensePaymentMethod)
+    : 'other';
+}
 
 function attachCategoryData(expense: Expense, categories: Map<string, Category>): Expense {
   const cat = categories.get(expense.category);
@@ -72,6 +87,7 @@ function rowToExpense(row: ExpensesRow): Expense {
     category: row.category_id,
     description: row.description,
     source: row.source as import('@/types').ExpenseSource,
+    paymentMethod: normalizePaymentMethod(row.payment_method),
     tags: row.tags,
     isRecurring: (row as any).is_recurring ?? false,
     receipt: row.receipt_path
@@ -99,12 +115,13 @@ async function getExpensesFromDB(filters: ExpenseFilters): Promise<Expense[]> {
 
   let query = db
     .from('expenses')
-    .select('id,amount_cents,category_id,description,occurred_at,source,tags,is_recurring,receipt_path,receipt_file_name,receipt_mime_type,receipt_size_bytes,receipt_uploaded_at,updated_at,created_at')
+    .select('id,amount_cents,category_id,description,occurred_at,source,payment_method,tags,is_recurring,receipt_path,receipt_file_name,receipt_mime_type,receipt_size_bytes,receipt_uploaded_at,updated_at,created_at')
     .eq('user_id', userId)
     .is('deleted_at', null)
     .order('occurred_at', { ascending: false });
 
   if (filters.category) query = query.eq('category_id', filters.category);
+  if (filters.paymentMethod) query = query.eq('payment_method', filters.paymentMethod);
   if (filters.startDate) query = query.gte('occurred_at', filters.startDate);
   if (filters.endDate) query = query.lte('occurred_at', filters.endDate);
   if (filters.search) {
@@ -131,6 +148,7 @@ async function createExpenseInDB(input: ExpenseInput): Promise<Expense> {
     category_id: input.category,
     description: input.description,
     source: input.source,
+    payment_method: input.paymentMethod ?? 'other',
     tags: input.tags,
     occurred_at: input.occurredAt ?? new Date().toISOString(),
     ...(input.isRecurring !== undefined && { is_recurring: input.isRecurring }),
@@ -186,6 +204,7 @@ async function getDashboardMetricsFromDBViaRPC(
       description: string;
       occurred_at: string;
       source: string;
+      payment_method?: string | null;
       tags: string[];
       is_recurring: boolean;
       receipt_path?: string | null;
@@ -208,6 +227,7 @@ async function getDashboardMetricsFromDBViaRPC(
         category: e.category,
         description: e.description,
         source: e.source as Expense['source'],
+        paymentMethod: normalizePaymentMethod(e.payment_method),
         tags: e.tags ?? [],
         isRecurring: e.is_recurring ?? false,
         receipt: e.receipt_path
@@ -268,7 +288,7 @@ async function getDashboardMetricsFromDBViaQuery(
 
   const { data, error } = await db
     .from('expenses')
-    .select('id,amount_cents,category_id,description,occurred_at,source,tags,is_recurring,receipt_path,receipt_file_name,receipt_mime_type,receipt_size_bytes,receipt_uploaded_at,updated_at,created_at')
+    .select('id,amount_cents,category_id,description,occurred_at,source,payment_method,tags,is_recurring,receipt_path,receipt_file_name,receipt_mime_type,receipt_size_bytes,receipt_uploaded_at,updated_at,created_at')
     .eq('user_id', userId)
     .is('deleted_at', null)
     .gte('occurred_at', start)
@@ -351,6 +371,7 @@ function getExpensesFromMock(filters: ExpenseFilters): Expense[] {
   const userId = filters.userId ?? MOCK_USER.id;
   let expenses = mockGetAll(userId);
   if (filters.category) expenses = expenses.filter((e) => e.category === filters.category);
+  if (filters.paymentMethod) expenses = expenses.filter((e) => e.paymentMethod === filters.paymentMethod);
   if (filters.startDate) {
     const start = new Date(filters.startDate);
     expenses = expenses.filter((e) => new Date(e.createdAt) >= start);
@@ -429,6 +450,7 @@ async function updateExpenseInDB(id: string, input: Partial<ExpenseInput>): Prom
   if (input.description !== undefined) updates.description = input.description;
   if (input.occurredAt !== undefined) updates.occurred_at = input.occurredAt;
   if (input.isRecurring !== undefined) updates.is_recurring = input.isRecurring;
+  if (input.paymentMethod !== undefined) updates.payment_method = input.paymentMethod;
 
   const { data, error } = await db
     .from('expenses')
@@ -471,6 +493,7 @@ function updateExpenseFromMock(id: string, input: Partial<ExpenseInput>): Expens
     ...(input.category !== undefined && { category: input.category }),
     ...(input.description !== undefined && { description: input.description }),
     ...(input.occurredAt !== undefined && { createdAt: new Date(input.occurredAt) }),
+    ...(input.paymentMethod !== undefined && { paymentMethod: input.paymentMethod }),
   };
   updateSessionExpense(id, updated);
   return updated;
@@ -509,6 +532,7 @@ export async function createExpense(input: ExpenseInput): Promise<Expense> {
     category: input.category,
     description: input.description,
     source: input.source,
+    paymentMethod: input.paymentMethod ?? 'other',
     tags: input.tags,
     isRecurring: input.isRecurring ?? false,
     createdAt: input.occurredAt ? new Date(input.occurredAt) : new Date(),

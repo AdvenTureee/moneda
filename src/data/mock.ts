@@ -90,7 +90,7 @@ function mkId() {
   return `exp-${String(expenseIdCounter++).padStart(3, '0')}`;
 }
 
-export const MOCK_EXPENSES: Expense[] = [
+const MOCK_EXPENSE_ROWS: Array<Omit<Expense, 'paymentMethod'>> = [
   {
     id: mkId(), userId: 'user-001', amount: 4500, category: 'alimentacao',
     description: 'Almoço iFood', source: 'whatsapp', tags: ['delivery'],
@@ -212,6 +212,11 @@ export const MOCK_EXPENSES: Expense[] = [
     createdAt: daysAgo(29, 12, 0),
   },
 ];
+
+export const MOCK_EXPENSES: Expense[] = MOCK_EXPENSE_ROWS.map((expense) => ({
+  ...expense,
+  paymentMethod: 'other',
+}));
 
 // ---- helpers ----
 

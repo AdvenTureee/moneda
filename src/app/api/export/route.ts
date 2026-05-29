@@ -1,6 +1,16 @@
 import { NextResponse } from 'next/server';
 import { createSessionClient } from '@/lib/supabase/server';
 import { getExpenses } from '@/lib/expenses';
+import type { ExpensePaymentMethod } from '@/types';
+
+const PAYMENT_LABELS: Record<ExpensePaymentMethod, string> = {
+  pix: 'PIX',
+  debit: 'Débito',
+  credit: 'Crédito',
+  cash: 'Dinheiro',
+  transfer: 'Transferência',
+  other: '',
+};
 
 function csvEscape(value: unknown): string {
   if (value === null || value === undefined) return '';
@@ -30,6 +40,7 @@ export async function GET() {
     'categoria_id',
     'categoria',
     'valor',
+    'metodo_pagamento',
     'fonte',
     'tags',
   ];
@@ -43,6 +54,7 @@ export async function GET() {
         e.category,
         e.categoryData?.name ?? '',
         formatAmount(e.amount),
+        PAYMENT_LABELS[e.paymentMethod],
         e.source,
         e.tags.join(';'),
       ]),

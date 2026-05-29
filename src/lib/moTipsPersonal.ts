@@ -27,7 +27,7 @@ async function generatePersonalMoTipsImpl(user: User, period: string): Promise<M
 export async function getPersonalizedMoTips(user: User, period: string): Promise<MoTip[]> {
   return unstable_cache(
     () => generatePersonalMoTipsImpl(user, period),
-    ['mo-tips-personal', 'v2', user.id, period],
+    ['mo-tips-personal', 'v3', user.id, period],
     {
       tags: [
         cacheTags.metrics(user.id),

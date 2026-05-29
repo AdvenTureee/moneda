@@ -1,6 +1,19 @@
 import Groq from 'groq-sdk';
 import type { ChatHistoryItem } from '@/types/chat';
-import type { Category, Expense } from '@/types';
+import type { Category, Expense, ExpensePaymentMethod } from '@/types';
+
+const PAYMENT_METHOD_LABELS: Record<ExpensePaymentMethod, string> = {
+  pix: 'PIX',
+  debit: 'Débito',
+  credit: 'Crédito',
+  cash: 'Dinheiro',
+  transfer: 'Transferência',
+  other: 'Não informado',
+};
+
+function formatPaymentMethod(method: ExpensePaymentMethod): string {
+  return PAYMENT_METHOD_LABELS[method] ?? 'Não informado';
+}
 
 const client = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
@@ -21,6 +34,27 @@ export async function generateMonthlySummary(
       const cat = categories.find((c) => c.id === id);
       const pct = total > 0 ? ((amount / total) * 100).toFixed(1) : '0.0';
       return `- **${cat?.name ?? id}**: R$ ${(amount / 100).toFixed(2)} (${pct}%)`;
+    })
+    .join('\n');
+
+  const byPaymentMethod = expenses.reduce<Record<string, { amount: number; count: number }>>(
+    (acc, e) => {
+      const method = e.paymentMethod ?? 'other';
+      if (method === 'other') return acc;
+      const cur = acc[method] ?? { amount: 0, count: 0 };
+      cur.amount += e.amount;
+      cur.count += 1;
+      acc[method] = cur;
+      return acc;
+    },
+    {},
+  );
+
+  const paymentBreakdown = Object.entries(byPaymentMethod)
+    .sort(([, a], [, b]) => b.amount - a.amount)
+    .map(([method, data]) => {
+      const pct = total > 0 ? ((data.amount / total) * 100).toFixed(1) : '0.0';
+      return `- **${formatPaymentMethod(method as ExpensePaymentMethod)}**: R$ ${(data.amount / 100).toFixed(2)} (${pct}%, ${data.count} lançamentos)`;
     })
     .join('\n');
 
@@ -50,8 +84,10 @@ export async function generateMonthlySummary(
           `Resuma meus gastos de ${monthName} de ${year}:\n\n` +
           `Total gasto: R$ ${(total / 100).toFixed(2)}\n\n` +
           `Gastos por categoria:\n${breakdown}\n\n` +
+          `Métodos de pagamento relevantes:\n${paymentBreakdown || '- Sem método informado nos lançamentos.'}\n\n` +
           `Maior categoria: ${topCatName ?? '—'} (${topCatPct ?? '—'}% do total).\n` +
-          `Número total de transações: ${expenses.length}.`,
+          `Número total de transações: ${expenses.length}.\n` +
+          `Quando houver sinal relevante, considere o método de pagamento nas dicas sem forçar esse tema.`,
       },
     ],
   });
@@ -134,7 +170,8 @@ export interface MoTipGenerationContext {
   monthlyBudgetCents: number;
   remainingBudgetCents: number | null;
   topCategories: Array<{ name: string; amountCents: number; percentage: number }>;
-  recentExpenses: Array<{ description: string; amountCents: number; category: string }>;
+  topPaymentMethods: Array<{ method: string; amountCents: number; percentage: number; count: number }>;
+  recentExpenses: Array<{ description: string; amountCents: number; category: string; paymentMethod?: string }>;
   insightExcerpt?: string;
   analyticalSignals: string[];
   previousMonthTotalCents: number | null;
@@ -161,6 +198,7 @@ PROIBIDO (nunca gere dicas assim):
 - Markdown, emojis, listas numeradas.
 
 PRIORIZE sinais analíticos e lançamentos concretos fornecidos. Varie os temas entre as dicas (hábito, categoria, ritmo, assinatura, comparação, app).
+Use método de pagamento quando for relevante nos dados (ex.: crédito concentrado, PIX recorrente, débito em gastos pequenos), sem inventar cartão, banco ou parcelamento.
 
 Formato de saída: JSON {"tips":["...",...]} com exatamente 5 dicas, cada uma até 140 caracteres, em português do Brasil.`;
 
@@ -211,7 +249,15 @@ export async function generatePersonalizedMoTips(
 
   const expenseLines = ctx.recentExpenses
     .slice(0, 12)
-    .map((e) => `- ${e.description} (${e.category}): ${formatBrl(e.amountCents)}`)
+    .map((e) => {
+      const payment = e.paymentMethod ? `, ${e.paymentMethod}` : '';
+      return `- ${e.description} (${e.category}${payment}): ${formatBrl(e.amountCents)}`;
+    })
+    .join('\n');
+
+  const paymentLines = ctx.topPaymentMethods
+    .slice(0, 4)
+    .map((p) => `- ${p.method}: ${formatBrl(p.amountCents)} (${p.percentage}%, ${p.count} lançamentos)`)
     .join('\n');
 
   const signalBlock =
@@ -238,6 +284,9 @@ export async function generatePersonalizedMoTips(
     '',
     'Categorias:',
     categoryLines || '-',
+    '',
+    'Métodos de pagamento relevantes:',
+    paymentLines || '-',
     '',
     'Lançamentos (amostra):',
     expenseLines || '-',

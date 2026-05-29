@@ -1,4 +1,5 @@
 export type ExpenseSource = 'whatsapp' | 'manual' | 'import';
+export type ExpensePaymentMethod = 'pix' | 'debit' | 'credit' | 'cash' | 'transfer' | 'other';
 export type AIInsightType = 'monthly_summary' | 'category_alert' | 'spending_pattern';
 export type WhatsAppMessageStatus = 'received' | 'parsed' | 'failed' | 'responded';
 
@@ -28,6 +29,7 @@ export interface Expense {
   categoryData?: { id: string; name: string; icon: string; color: string };
   description: string;
   source: ExpenseSource;
+  paymentMethod: ExpensePaymentMethod;
   tags: string[];
   isRecurring?: boolean;
   receipt?: {
@@ -46,6 +48,7 @@ export interface ExpenseInput {
   category: string;
   description: string;
   source: ExpenseSource;
+  paymentMethod?: ExpensePaymentMethod;
   tags: string[];
   /** ISO timestamp for when the expense happened. Defaults to now on create. */
   occurredAt?: string;
@@ -135,6 +138,7 @@ export interface BudgetInput {
 export interface ExpenseFilters {
   userId?: string;
   category?: string;
+  paymentMethod?: ExpensePaymentMethod;
   startDate?: string;
   endDate?: string;
   limit?: number;

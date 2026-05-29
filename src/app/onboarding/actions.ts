@@ -158,6 +158,7 @@ export async function completeOnboardingAction(
           category: r.categoryId,
           description: r.description.trim(),
           source: 'manual',
+          paymentMethod: 'other',
           tags: [],
           createdAt: new Date(),
         });

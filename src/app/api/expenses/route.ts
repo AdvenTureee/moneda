@@ -1,9 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { revalidateTag } from 'next/cache';
 import { getExpenses, createExpense, updateExpense, deleteExpense } from '@/lib/expenses';
-import type { ExpenseFilters, ExpenseInput } from '@/types';
+import type { ExpenseFilters, ExpenseInput, ExpensePaymentMethod } from '@/types';
 import { createSessionClient } from '@/lib/supabase/server';
 import { cacheTags } from '@/lib/cache';
+
+const PAYMENT_METHODS = new Set<ExpensePaymentMethod>([
+  'pix',
+  'debit',
+  'credit',
+  'cash',
+  'transfer',
+  'other',
+]);
+
+type ExpenseBody = Omit<Partial<ExpenseInput>, 'paymentMethod'> & {
+  paymentMethod?: unknown;
+  payment_method?: unknown;
+};
+
+function readPaymentMethod(body: ExpenseBody): ExpensePaymentMethod | undefined {
+  const raw = body.paymentMethod ?? body.payment_method;
+  if (raw === undefined || raw === null || raw === '') return undefined;
+  return typeof raw === 'string' && PAYMENT_METHODS.has(raw as ExpensePaymentMethod)
+    ? (raw as ExpensePaymentMethod)
+    : undefined;
+}
+
+function hasInvalidPaymentMethod(body: ExpenseBody): boolean {
+  const raw = body.paymentMethod ?? body.payment_method;
+  return raw !== undefined && raw !== null && raw !== '' && readPaymentMethod(body) === undefined;
+}
 
 function invalidateExpenseCaches(userId: string) {
   // Toda mutation de expense mexe em métricas/insights/monthly totals do usuário.
@@ -24,6 +51,9 @@ export async function GET(req: NextRequest) {
   const filters: ExpenseFilters = {
     userId: user.id,
     category: searchParams.get('category') ?? undefined,
+    paymentMethod: readPaymentMethod({
+      paymentMethod: searchParams.get('paymentMethod') ?? searchParams.get('payment_method') ?? undefined,
+    }),
     startDate: searchParams.get('startDate') ?? undefined,
     endDate: searchParams.get('endDate') ?? undefined,
     limit: searchParams.get('limit') ? Number(searchParams.get('limit')) : undefined,
@@ -39,7 +69,7 @@ export async function POST(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  let body: Partial<ExpenseInput>;
+  let body: ExpenseBody;
   try {
     body = await req.json();
   } catch {
@@ -53,12 +83,17 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  if (hasInvalidPaymentMethod(body)) {
+    return NextResponse.json({ error: 'paymentMethod is invalid' }, { status: 422 });
+  }
+
   const input: ExpenseInput = {
     userId: user.id,
     amount: body.amount,
     category: body.category,
     description: body.description ?? 'Gasto',
     source: body.source ?? 'manual',
+    paymentMethod: readPaymentMethod(body) ?? 'other',
     tags: body.tags ?? [],
     occurredAt: body.occurredAt,
     isRecurring: body.isRecurring,
@@ -74,7 +109,7 @@ export async function PATCH(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  let body: { id: string } & Partial<ExpenseInput>;
+  let body: { id: string } & ExpenseBody;
   try {
     body = await req.json();
   } catch {
@@ -85,12 +120,17 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: 'id is required' }, { status: 422 });
   }
 
+  if (hasInvalidPaymentMethod(body)) {
+    return NextResponse.json({ error: 'paymentMethod is invalid' }, { status: 422 });
+  }
+
   const expense = await updateExpense(body.id, {
     amount: body.amount,
     category: body.category,
     description: body.description,
     occurredAt: body.occurredAt,
     isRecurring: body.isRecurring,
+    paymentMethod: readPaymentMethod(body),
   });
   invalidateExpenseCaches(user.id);
   return NextResponse.json({ data: expense });

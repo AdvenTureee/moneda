@@ -1,19 +1,34 @@
 'use client';
 
-import { useState, useMemo, useEffect, useCallback, useRef, Suspense } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef, useLayoutEffect, Suspense, type ComponentType } from 'react';
+import { createPortal } from 'react-dom';
 import { useSearchParams } from 'next/navigation';
-import { MagnifyingGlass } from '@phosphor-icons/react';
+import { CalendarBlank, CaretDown, CreditCard, FunnelSimple, MagnifyingGlass, Tag, Wallet, X } from '@phosphor-icons/react';
 import ExpenseCard from '@/components/ExpenseCard';
 import AddExpenseModal from '@/components/AddExpenseModal';
 import ConfirmDialog from '@/components/ConfirmDialog';
-import CategoryChip from '@/components/CategoryChip';
-import DateRangePicker, { buildPreset, type DateRange } from '@/components/DateRangePicker';
+import { buildPreset, type DateRange } from '@/components/DateRangePicker';
 import Icon from '@/components/Icon';
 import Mo from '@/components/Mo';
 import { useToast } from '@/components/ToastProvider';
 import { groupExpensesByDate, formatCurrency } from '@/lib/utils';
 import { useCategories } from '@/hooks/useCategories';
-import type { Expense, ExpenseInput } from '@/types';
+import type { Expense, ExpenseInput, ExpensePaymentMethod } from '@/types';
+
+type FilterTab = 'date' | 'category' | 'payment';
+
+const PAYMENT_FILTERS: Array<{ value: ExpensePaymentMethod; label: string; icon: string }> = [
+  { value: 'pix', label: 'PIX', icon: 'CurrencyDollar' },
+  { value: 'debit', label: 'Débito', icon: 'Bank' },
+  { value: 'credit', label: 'Crédito', icon: 'CreditCard' },
+];
+
+const DATE_FILTERS = [
+  { id: 'all', label: 'Tudo' },
+  { id: 'this-month', label: 'Este mês' },
+  { id: 'last-month', label: 'Mês passado' },
+  { id: 'last-30', label: 'Últimos 30 dias' },
+];
 
 function parseDateInputToIso(input: string, end: boolean): string | null {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(input)) return null;
@@ -34,12 +49,28 @@ function rangeFromSearchParams(params: URLSearchParams): DateRange | null {
   return { from, to, presetId: 'custom' };
 }
 
+function dateFilterLabel(range: DateRange): string {
+  const preset = DATE_FILTERS.find((item) => item.id === range.presetId);
+  if (preset) return preset.label;
+  return 'Personalizado';
+}
+
+function paymentFilterLabel(method: ExpensePaymentMethod | null): string {
+  return PAYMENT_FILTERS.find((item) => item.value === method)?.label ?? 'Todos';
+}
+
 function FeedPageInner() {
   const searchParams = useSearchParams();
   const { showToast } = useToast();
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [activePaymentMethod, setActivePaymentMethod] = useState<ExpensePaymentMethod | null>(null);
   const [search, setSearch] = useState('');
   const [dateRange, setDateRange] = useState<DateRange>(() => buildPreset('all'));
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [activeFilterTab, setActiveFilterTab] = useState<FilterTab>('date');
+  const [filtersPosition, setFiltersPosition] = useState<{ top: number; left: number; width: number } | null>(null);
+  const [mounted, setMounted] = useState(false);
+  const filtersButtonRef = useRef<HTMLButtonElement | null>(null);
 
   // Read date range from URL after mount to avoid SSR/CSR hydration mismatch.
   useEffect(() => {
@@ -56,45 +87,29 @@ function FeedPageInner() {
   const [deletingExpense, setDeletingExpense] = useState<Expense | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
-  const chipsRef = useRef<HTMLDivElement | null>(null);
-  const [chipsScroll, setChipsScroll] = useState<{ atStart: boolean; atEnd: boolean }>({
-    atStart: true,
-    atEnd: true,
-  });
+  useEffect(() => setMounted(true), []);
 
-  const updateChipsScroll = useCallback(() => {
-    const el = chipsRef.current;
-    if (!el) return;
-    const atStart = el.scrollLeft <= 1;
-    const atEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 1;
-    setChipsScroll((prev) =>
-      prev.atStart === atStart && prev.atEnd === atEnd ? prev : { atStart, atEnd },
-    );
-  }, []);
-
-  useEffect(() => {
-    updateChipsScroll();
-    const el = chipsRef.current;
-    if (!el) return;
-    el.addEventListener('scroll', updateChipsScroll, { passive: true });
-    window.addEventListener('resize', updateChipsScroll);
-    return () => {
-      el.removeEventListener('scroll', updateChipsScroll);
-      window.removeEventListener('resize', updateChipsScroll);
+  useLayoutEffect(() => {
+    if (!filtersOpen) return;
+    const update = () => {
+      const button = filtersButtonRef.current;
+      if (!button) return;
+      const rect = button.getBoundingClientRect();
+      const width = Math.min(420, window.innerWidth - 16);
+      setFiltersPosition({
+        top: rect.bottom + 6,
+        left: Math.max(8, Math.min(rect.right - width, window.innerWidth - width - 8)),
+        width,
+      });
     };
-  }, [updateChipsScroll, categories.length]);
-
-  const chipsMask = useMemo(() => {
-    const { atStart, atEnd } = chipsScroll;
-    if (atStart && atEnd) return undefined;
-    if (atStart) {
-      return 'linear-gradient(to right, black 0, black calc(100% - 40px), transparent 100%)';
-    }
-    if (atEnd) {
-      return 'linear-gradient(to right, transparent 0, black 40px, black 100%)';
-    }
-    return 'linear-gradient(to right, transparent 0, black 40px, black calc(100% - 40px), transparent 100%)';
-  }, [chipsScroll]);
+    update();
+    window.addEventListener('resize', update);
+    window.addEventListener('scroll', update, true);
+    return () => {
+      window.removeEventListener('resize', update);
+      window.removeEventListener('scroll', update, true);
+    };
+  }, [filtersOpen]);
 
   const fetchExpenses = useCallback(async () => {
     abortRef.current?.abort();
@@ -105,6 +120,7 @@ function FeedPageInner() {
     try {
       const params = new URLSearchParams();
       if (activeCategory) params.set('category', activeCategory);
+      if (activePaymentMethod) params.set('paymentMethod', activePaymentMethod);
       if (search.trim()) params.set('search', search.trim());
       if (dateRange.from) params.set('startDate', dateRange.from);
       if (dateRange.to) params.set('endDate', dateRange.to);
@@ -125,7 +141,7 @@ function FeedPageInner() {
     } finally {
       setLoading(false);
     }
-  }, [activeCategory, search, dateRange]);
+  }, [activeCategory, activePaymentMethod, search, dateRange]);
 
   useEffect(() => {
     fetchExpenses();
@@ -155,6 +171,10 @@ function FeedPageInner() {
       result = result.filter((e) => e.category === activeCategory);
     }
 
+    if (activePaymentMethod) {
+      result = result.filter((e) => e.paymentMethod === activePaymentMethod);
+    }
+
     if (search.trim()) {
       const q = search.toLowerCase().trim();
       result = result.filter(
@@ -167,9 +187,49 @@ function FeedPageInner() {
     return result.sort(
       (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
-  }, [allExpenses, activeCategory, search]);
+  }, [allExpenses, activeCategory, activePaymentMethod, search]);
 
   const groups = groupExpensesByDate(filtered);
+  const categoryLabel = activeCategory
+    ? categories.find((category) => category.id === activeCategory)?.name ?? 'Categoria'
+    : 'Todas';
+  const activeFilterCount =
+    (dateRange.presetId !== 'all' ? 1 : 0) + (activeCategory ? 1 : 0) + (activePaymentMethod ? 1 : 0);
+  const filterTabs: Array<{
+    id: FilterTab;
+    label: string;
+    value: string;
+    icon: ComponentType<{ size?: number; weight?: 'regular' | 'bold'; className?: string }>;
+    active: boolean;
+  }> = [
+    {
+      id: 'date',
+      label: 'Data',
+      value: dateFilterLabel(dateRange),
+      icon: CalendarBlank,
+      active: dateRange.presetId !== 'all',
+    },
+    {
+      id: 'category',
+      label: 'Categoria',
+      value: categoryLabel,
+      icon: Tag,
+      active: activeCategory !== null,
+    },
+    {
+      id: 'payment',
+      label: 'Método',
+      value: paymentFilterLabel(activePaymentMethod),
+      icon: CreditCard,
+      active: activePaymentMethod !== null,
+    },
+  ];
+
+  const clearFilters = useCallback(() => {
+    setDateRange(buildPreset('all'));
+    setActiveCategory(null);
+    setActivePaymentMethod(null);
+  }, []);
 
   const handleDelete = useCallback(async (expense: Expense) => {
     setDeletingExpense(expense);
@@ -235,42 +295,215 @@ function FeedPageInner() {
                   aria-label="Buscar gastos"
                 />
               </div>
-              <DateRangePicker value={dateRange} onChange={setDateRange} />
+              <button
+                ref={filtersButtonRef}
+                type="button"
+                onClick={() => setFiltersOpen((open) => !open)}
+                className="themed-field inline-flex min-h-[42px] shrink-0 items-center gap-2 rounded-[10px] border border-[#E5E7EB] bg-[#F4F6FA] px-3 py-2.5 text-sm font-semibold text-[#1A1D23] outline-none transition-[border-color,background-color,box-shadow] hover:bg-[#EEF2F7] focus:border-[#A8C5E0] focus:shadow-[0_0_0_2px_rgba(168,197,224,0.28)] active:bg-[#E8EDF4]"
+                aria-label={`Filtros: data ${dateFilterLabel(dateRange)}, categoria ${categoryLabel}, método ${paymentFilterLabel(activePaymentMethod)}`}
+                aria-expanded={filtersOpen}
+              >
+                <FunnelSimple size={16} weight="bold" className="text-[#6B7280]" />
+                <span>Filtros</span>
+                {activeFilterCount > 0 && (
+                  <span className="grid h-5 min-w-5 place-items-center rounded-full bg-[#5BBF8E] px-1.5 text-[11px] font-bold leading-none text-white">
+                    {activeFilterCount}
+                  </span>
+                )}
+                <CaretDown
+                  size={10}
+                  weight="bold"
+                  className={`text-[#6B7280] transition-transform ${filtersOpen ? 'rotate-180' : ''}`}
+                />
+              </button>
             </div>
 
-            {/* Category filter chips */}
-            <div
-              ref={chipsRef}
-              className="flex gap-2 overflow-x-auto pb-1 -mx-3 px-3"
-              style={{
-                scrollbarWidth: 'none',
-                maskImage: chipsMask,
-                WebkitMaskImage: chipsMask,
-              }}
-              role="group"
-              aria-label="Filtrar por categoria"
-            >
-              <CategoryChip
-                icon="Sparkle"
-                label="Todos"
-                selected={activeCategory === null}
-                onClick={() => setActiveCategory(null)}
-                size="sm"
-              />
-              {categories.filter((c) => c.id !== 'outros').map((cat) => (
-                <CategoryChip
-                  key={cat.id}
-                  icon={cat.icon}
-                  label={cat.name}
-                  selected={activeCategory === cat.id}
-                  onClick={() =>
-                    setActiveCategory((prev) => (prev === cat.id ? null : cat.id))
-                  }
-                  size="sm"
-                />
-              ))}
+          <div className="grid grid-cols-3 gap-1.5 text-[11px] font-semibold text-[#6B7280]">
+            <span className="truncate rounded-[8px] bg-[#F4F6FA] px-2.5 py-1.5">
+              Data: {dateFilterLabel(dateRange)}
+            </span>
+            <span className="truncate rounded-[8px] bg-[#F4F6FA] px-2.5 py-1.5">
+              Categoria: {categoryLabel}
+            </span>
+            <span className="truncate rounded-[8px] bg-[#F4F6FA] px-2.5 py-1.5">
+              Método: {paymentFilterLabel(activePaymentMethod)}
+            </span>
           </div>
         </div>
+
+        {mounted && filtersOpen && filtersPosition && createPortal(
+          <>
+            <button
+              type="button"
+              className="fixed inset-0 z-[100] cursor-default bg-transparent"
+              aria-label="Fechar filtros"
+              onClick={() => setFiltersOpen(false)}
+            />
+            <div
+              className="date-range-menu fixed z-[101] max-h-[calc(100dvh-16px)] overflow-hidden rounded-[18px] p-2 backdrop-blur-xl"
+              style={{
+                top: filtersPosition.top,
+                left: filtersPosition.left,
+                width: filtersPosition.width,
+              }}
+              role="dialog"
+              aria-label="Filtros do feed"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="flex items-center justify-between gap-3 px-2 pb-2 pt-1">
+                <div>
+                  <p className="text-sm font-bold text-[#1A1D23] dark:text-[#F5F7FA]">Filtros</p>
+                  <p className="text-xs font-medium text-[#9CA3AF]">Data, categoria e método</p>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  {activeFilterCount > 0 && (
+                    <button
+                      type="button"
+                      onClick={clearFilters}
+                      className="rounded-[9px] px-2.5 py-2 text-xs font-semibold text-[#5BBF8E] transition-colors hover:bg-[#EEF9F4] dark:hover:bg-white/8"
+                    >
+                      Limpar
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setFiltersOpen(false)}
+                    className="flex h-8 w-8 items-center justify-center rounded-[9px] text-[#6B7280] transition-colors hover:bg-[#F1F3F7] dark:text-[#CBD5E1] dark:hover:bg-white/8"
+                    aria-label="Fechar"
+                  >
+                    <X size={16} weight="bold" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="rounded-[14px] border border-[color-mix(in_srgb,var(--color-border)_76%,transparent)] bg-[color-mix(in_srgb,var(--color-surface)_86%,transparent)] p-1.5">
+                <div className="grid grid-cols-3 gap-1" role="tablist" aria-label="Tipo de filtro">
+                  {filterTabs.map((tab) => {
+                    const TabIcon = tab.icon;
+                    const selected = activeFilterTab === tab.id;
+                    return (
+                      <button
+                        key={tab.id}
+                        type="button"
+                        role="tab"
+                        aria-selected={selected}
+                        onClick={() => setActiveFilterTab(tab.id)}
+                        className={`min-w-0 rounded-[11px] px-2.5 py-2 text-left transition-colors ${
+                          selected
+                            ? 'bg-[#5BBF8E] text-white'
+                            : 'text-[#6B7280] hover:bg-[#F1F3F7] dark:text-[#CBD5E1] dark:hover:bg-white/8'
+                        }`}
+                      >
+                        <span className="flex items-center gap-1.5 text-[12px] font-bold leading-none">
+                          <TabIcon size={13} weight="bold" className="shrink-0" />
+                          <span className="truncate">{tab.label}</span>
+                          {tab.active && (
+                            <span
+                              className={`ml-auto h-1.5 w-1.5 shrink-0 rounded-full ${
+                                selected ? 'bg-white' : 'bg-[#5BBF8E]'
+                              }`}
+                              aria-hidden
+                            />
+                          )}
+                        </span>
+                        <span
+                          className={`mt-1 block truncate text-[10px] font-semibold leading-tight ${
+                            selected ? 'text-white/80' : 'text-[#9CA3AF]'
+                          }`}
+                        >
+                          {tab.value}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="mt-2 max-h-[min(360px,calc(100dvh-180px))] overflow-y-auto rounded-[14px] border border-[color-mix(in_srgb,var(--color-border)_76%,transparent)] bg-[color-mix(in_srgb,var(--color-surface)_86%,transparent)] p-2">
+                {activeFilterTab === 'date' && (
+                  <div className="grid grid-cols-2 gap-1.5" role="tabpanel" aria-label="Filtro de data">
+                    {DATE_FILTERS.map((item) => {
+                      const selected = dateRange.presetId === item.id;
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => setDateRange(buildPreset(item.id))}
+                          className={`date-range-option min-h-11 rounded-[11px] px-3 text-left text-sm font-semibold transition-colors ${
+                            selected ? 'date-range-option--selected' : ''
+                          }`}
+                        >
+                          {item.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {activeFilterTab === 'category' && (
+                  <div className="space-y-1" role="tabpanel" aria-label="Filtro de categoria">
+                    <button
+                      type="button"
+                      onClick={() => setActiveCategory(null)}
+                      className={`date-range-option flex min-h-11 w-full items-center gap-2 rounded-[11px] px-3 text-left text-sm font-semibold transition-colors ${
+                        activeCategory === null ? 'date-range-option--selected' : ''
+                      }`}
+                    >
+                      <Icon name="Sparkle" size={15} aria-hidden />
+                      Todas
+                    </button>
+                    {categories.filter((category) => category.id !== 'outros').map((category) => (
+                      <button
+                        key={category.id}
+                        type="button"
+                        onClick={() =>
+                          setActiveCategory((prev) => (prev === category.id ? null : category.id))
+                        }
+                        className={`date-range-option flex min-h-11 w-full items-center gap-2 rounded-[11px] px-3 text-left text-sm font-semibold transition-colors ${
+                          activeCategory === category.id ? 'date-range-option--selected' : ''
+                        }`}
+                      >
+                        <Icon name={category.icon} size={15} color={category.color} aria-hidden />
+                        <span className="min-w-0 flex-1 truncate">{category.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {activeFilterTab === 'payment' && (
+                  <div className="grid grid-cols-2 gap-1.5" role="tabpanel" aria-label="Filtro de método de pagamento">
+                    <button
+                      type="button"
+                      onClick={() => setActivePaymentMethod(null)}
+                      className={`date-range-option flex min-h-11 items-center gap-2 rounded-[11px] px-3 text-left text-sm font-semibold transition-colors ${
+                        activePaymentMethod === null ? 'date-range-option--selected' : ''
+                      }`}
+                    >
+                      <Wallet size={15} aria-hidden />
+                      Todos
+                    </button>
+                    {PAYMENT_FILTERS.map((method) => (
+                      <button
+                        key={method.value}
+                        type="button"
+                        onClick={() =>
+                          setActivePaymentMethod((prev) => (prev === method.value ? null : method.value))
+                        }
+                        className={`date-range-option flex min-h-11 items-center gap-2 rounded-[11px] px-3 text-left text-sm font-semibold transition-colors ${
+                          activePaymentMethod === method.value ? 'date-range-option--selected' : ''
+                        }`}
+                      >
+                        <Icon name={method.icon} size={15} aria-hidden />
+                        {method.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </>,
+          document.body,
+        )}
 
         {/* Expense list grouped by date */}
         <div className="relative min-h-[500px]">
@@ -309,7 +542,7 @@ function FeedPageInner() {
                 </div>
               ) : groups.length === 0 ? (
                 <div className="flex flex-col items-center py-16 text-center">
-                  {search || activeCategory || dateRange.presetId !== 'all' ? (
+                  {search || activeCategory || activePaymentMethod || dateRange.presetId !== 'all' ? (
                     <>
                       <Mo variant="thinking" size={128} className="mb-4 animate-bounce-in" />
                       <p className="text-base font-semibold text-[#1A1D23]">

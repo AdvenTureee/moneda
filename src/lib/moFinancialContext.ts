@@ -11,6 +11,16 @@ import { createServiceClient, isSupabaseEnabled } from '@/lib/supabase/server';
 import { decryptProfilePii, getDisplayNameFromUser } from '@/lib/security/profilePii';
 import { formatCurrency } from '@/lib/utils';
 import type { User } from '@supabase/supabase-js';
+import type { ExpensePaymentMethod } from '@/types';
+
+const PAYMENT_METHOD_LABELS: Record<ExpensePaymentMethod, string> = {
+  pix: 'PIX',
+  debit: 'Débito',
+  credit: 'Crédito',
+  cash: 'Dinheiro',
+  transfer: 'Transferência',
+  other: 'Não informado',
+};
 
 function stripMarkdown(md: string): string {
   return md
@@ -100,6 +110,27 @@ export async function buildMoFinancialContext(
   const remainingBudgetCents =
     monthlyBudgetCents > 0 ? monthlyBudgetCents - metrics.totalSpent : null;
 
+  const allPeriodExpenses = Object.values(metrics.expensesByCategory).flat();
+  const paymentTotals = new Map<ExpensePaymentMethod, { amountCents: number; count: number }>();
+  for (const expense of allPeriodExpenses) {
+    const method = expense.paymentMethod ?? 'other';
+    if (method === 'other') continue;
+    const current = paymentTotals.get(method) ?? { amountCents: 0, count: 0 };
+    current.amountCents += expense.amount;
+    current.count += 1;
+    paymentTotals.set(method, current);
+  }
+
+  const topPaymentMethods = [...paymentTotals.entries()]
+    .sort(([, a], [, b]) => b.amountCents - a.amountCents)
+    .slice(0, 4)
+    .map(([method, data]) => ({
+      method: PAYMENT_METHOD_LABELS[method],
+      amountCents: data.amountCents,
+      percentage: metrics.totalSpent > 0 ? Math.round((data.amountCents / metrics.totalSpent) * 100) : 0,
+      count: data.count,
+    }));
+
   const recentExpenses = [...metrics.recentExpenses]
     .sort((a, b) => b.amount - a.amount)
     .slice(0, 12)
@@ -107,9 +138,11 @@ export async function buildMoFinancialContext(
       description: e.description,
       amountCents: e.amount,
       category: e.categoryData?.name ?? categoryNames.get(e.category) ?? e.category,
+      paymentMethod:
+        e.paymentMethod && e.paymentMethod !== 'other'
+          ? PAYMENT_METHOD_LABELS[e.paymentMethod]
+          : undefined,
     }));
-
-  const allPeriodExpenses = Object.values(metrics.expensesByCategory).flat();
   const receiptCount = allPeriodExpenses.filter((e) => e.receipt).length;
 
   const insightMeta = insight?.metadata as { alerts?: string[] } | undefined;
@@ -142,6 +175,7 @@ export async function buildMoFinancialContext(
       amountCents: c.amount,
       percentage: c.percentage,
     })),
+    topPaymentMethods,
     recentExpenses,
     insightExcerpt: insight?.message ? stripMarkdown(insight.message).slice(0, 600) : undefined,
     analyticalSignals,
@@ -187,10 +221,18 @@ export function formatFinancialContextForChat(
       (c) => `- ${c.name}: ${formatCurrency(c.amountCents)} (${c.percentage}%)`,
     ),
     '',
+    'Métodos de pagamento relevantes:',
+    ...(ctx.topPaymentMethods.length > 0
+      ? ctx.topPaymentMethods.map(
+          (p) => `- ${p.method}: ${formatCurrency(p.amountCents)} (${p.percentage}%, ${p.count} lançamentos)`,
+        )
+      : ['- Sem método informado nos lançamentos.']),
+    '',
     'Últimos lançamentos:',
-    ...ctx.recentExpenses.map(
-      (e) => `- ${e.description} | ${e.category} | ${formatCurrency(e.amountCents)}`,
-    ),
+    ...ctx.recentExpenses.map((e) => {
+      const payment = e.paymentMethod ? ` | ${e.paymentMethod}` : '';
+      return `- ${e.description} | ${e.category}${payment} | ${formatCurrency(e.amountCents)}`;
+    }),
     '',
     'Sinais analíticos:',
     ...ctx.analyticalSignals.map((s) => `- ${s}`),
@@ -215,7 +257,7 @@ export async function getCachedFinancialContextBlockForChat(
 ): Promise<string> {
   return unstable_cache(
     () => buildFinancialContextBlockImpl(user, period),
-    ['mo-chat-context-block', user.id, period],
+    ['mo-chat-context-block', 'v2', user.id, period],
     {
       revalidate: 180,
       tags: [

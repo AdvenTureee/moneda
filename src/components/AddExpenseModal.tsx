@@ -10,7 +10,7 @@ import { useToast } from '@/components/ToastProvider';
 import { formatCurrency } from '@/lib/utils';
 import { toLocalDateInput, todayLocalDate, currentTimeHHmm, timeHHmmFromDate, localDateTimeToIso } from '@/lib/date';
 import { useCategories } from '@/hooks/useCategories';
-import type { Expense, ExpenseInput } from '@/types';
+import type { Expense, ExpenseInput, ExpensePaymentMethod } from '@/types';
 
 interface AddExpenseModalProps {
   isOpen: boolean;
@@ -21,6 +21,11 @@ interface AddExpenseModalProps {
 }
 
 const CATEGORY_PREVIEW_LIMIT = 8;
+const PAYMENT_OPTIONS: Array<{ value: ExpensePaymentMethod; label: string }> = [
+  { value: 'pix', label: 'PIX' },
+  { value: 'debit', label: 'Débito' },
+  { value: 'credit', label: 'Crédito' },
+];
 
 export default function AddExpenseModal({
   isOpen,
@@ -38,6 +43,7 @@ export default function AddExpenseModal({
   const [amountDisplay, setAmountDisplay] = useState('');
   const [description, setDescription] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<ExpensePaymentMethod>('other');
   const [occurredAtInput, setOccurredAtInput] = useState(todayLocalDate());
   const [timeInput, setTimeInput] = useState(currentTimeHHmm());
   const [isRecurring, setIsRecurring] = useState(false);
@@ -109,6 +115,7 @@ export default function AddExpenseModal({
       setAmountDisplay('');
       setDescription('');
       setSelectedCategory('');
+      setPaymentMethod('other');
       setOccurredAtInput(todayLocalDate());
       setTimeInput(currentTimeHHmm());
       setIsRecurring(false);
@@ -126,6 +133,7 @@ export default function AddExpenseModal({
       );
       setDescription(editExpense.description);
       setSelectedCategory(editExpense.category);
+      setPaymentMethod(editExpense.paymentMethod ?? 'other');
       const editDate = new Date(editExpense.createdAt);
       setOccurredAtInput(toLocalDateInput(editDate));
       setTimeInput(timeHHmmFromDate(editDate));
@@ -217,6 +225,7 @@ export default function AddExpenseModal({
       category: selectedCategory,
       description: description.trim() || (categories.find((c) => c.id === selectedCategory)?.name ?? 'Gasto'),
       source: 'manual',
+      paymentMethod,
       tags: [],
       occurredAt: localDateTimeToIso(occurredAtInput, timeInput),
       isRecurring,
@@ -257,7 +266,7 @@ export default function AddExpenseModal({
     } finally {
       setSaveBusy(false);
     }
-  }, [amountCents, selectedCategory, saveBusy, description, categories, occurredAtInput, timeInput, isRecurring, receiptFile, optimisticSave, isEditing, showToast, finishClose, onSave, uploadReceiptForExpense, editExpense]);
+  }, [amountCents, selectedCategory, saveBusy, description, categories, paymentMethod, occurredAtInput, timeInput, isRecurring, receiptFile, optimisticSave, isEditing, showToast, finishClose, onSave, uploadReceiptForExpense, editExpense]);
 
   const handleBackdropClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
@@ -446,6 +455,34 @@ export default function AddExpenseModal({
             )}
           </div>
 
+          {/* Payment method */}
+          <div className="px-5 mb-4">
+            <p className="text-sm font-semibold text-[#6B7280] mb-2">
+              Pagamento{' '}
+              <span className="font-normal text-[#9CA3AF]">(opcional)</span>
+            </p>
+            <div className="grid grid-cols-3 gap-2" role="group" aria-label="Método de pagamento">
+              {PAYMENT_OPTIONS.map((option) => {
+                const isSelected = paymentMethod === option.value;
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => setPaymentMethod(isSelected ? 'other' : option.value)}
+                    aria-pressed={isSelected}
+                    className={`min-h-10 rounded-[10px] border px-2 text-sm font-semibold transition-all duration-100 active:scale-[0.98] ${
+                      isSelected
+                        ? 'border-[#5BBF8E] bg-[#EEF9F4] text-[#2E8F67] shadow-[0_0_0_1px_rgba(91,191,142,0.18)]'
+                        : 'border-[#E5E7EB] bg-white text-[#6B7280] hover:border-[#A8C5E0] hover:bg-[#F8F9FB]'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           {/* Description */}
           <div className="px-5 mb-4">
             <p className="text-sm font-semibold text-[#6B7280] mb-2">
@@ -464,7 +501,10 @@ export default function AddExpenseModal({
 
           {/* Receipt */}
           <div className="px-5 mb-4">
-            <p className="text-sm font-semibold text-[#6B7280] mb-2">Comprovante</p>
+            <p className="text-sm font-semibold text-[#6B7280] mb-2">
+              Comprovante{' '}
+              <span className="font-normal text-[#9CA3AF]">(opcional)</span>
+            </p>
             <input
               ref={receiptInputRef}
               type="file"
