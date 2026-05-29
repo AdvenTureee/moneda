@@ -35,6 +35,15 @@ const TYPE_META: Record<string, { label: string; icon: string; color: string }> 
   spending_pattern: { label: 'Padrão de Gasto', icon: 'TrendUp', color: '#7AAECF' },
 };
 
+function GenerationStatus({ compact = false }: { compact?: boolean }) {
+  return (
+    <div className={`insight-generation ${compact ? 'insight-generation--compact' : ''}`}>
+      <span className="insight-generation__spinner" aria-hidden />
+      <p className="text-sm text-[#6B7280]">Analisando seus gastos…</p>
+    </div>
+  );
+}
+
 function formatInsightPeriod(date: Date): string {
   return date.toLocaleDateString('pt-BR', {
     month: 'long',
@@ -199,10 +208,10 @@ export default function InsightsView({
       type="button"
       onClick={handleGenerate}
       disabled={generating}
-      className="shrink-0 min-h-9 px-4 py-2 text-xs font-bold rounded-full bg-[#5BBF8E] text-white active:scale-95 transition-all duration-75 disabled:opacity-40 shadow-sm hover:brightness-105"
-      style={{ boxShadow: '0 4px 14px rgba(91, 191, 142, 0.3)' }}
+      className="insight-generate-button"
     >
-      {generating ? 'Gerando…' : hasMonthlySummary ? 'Regenerar' : 'Gerar'}
+      {generating && <span className="insight-generate-button__spinner" aria-hidden />}
+      <span>{generating ? 'Gerando…' : hasMonthlySummary ? 'Regenerar' : 'Gerar'}</span>
     </button>
   );
 
@@ -284,11 +293,8 @@ export default function InsightsView({
         )}
 
         {generating && !groupedByType.has('monthly_summary') && (
-          <div className="themed-card bg-white rounded-[16px] p-5 mb-4 animate-fade-up delay-4">
-            <div className="flex items-center gap-3">
-              <span className="w-4 h-4 border-2 border-[#A8C5E0] border-t-transparent rounded-full animate-spin" />
-              <p className="text-sm text-[#6B7280]">Analisando seus gastos…</p>
-            </div>
+          <div className="themed-card bg-white rounded-[16px] p-5 mb-4 insight-generation-card">
+            <GenerationStatus />
           </div>
         )}
 
@@ -305,8 +311,7 @@ export default function InsightsView({
               type="button"
               onClick={handleGenerate}
               disabled={generating}
-              className="mt-4 min-h-11 px-6 py-3 text-sm font-semibold text-white bg-[#5BBF8E] hover:bg-[#4AA77C] active:bg-[#3FA876] rounded-[12px] transition-colors duration-150 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{ boxShadow: '0 4px 14px rgba(91, 191, 142, 0.3)' }}
+              className="insight-generate-button insight-generate-button--large mt-4"
             >
               Gerar primeira análise
             </button>
@@ -335,7 +340,7 @@ export default function InsightsView({
         )}
 
         {/* Insight groups */}
-        {!generating && filteredInsights.length > 0 && (
+        {filteredInsights.length > 0 && (
           <div className="space-y-5">
             {Array.from(groupedByType.entries()).map(([type, items], groupIndex) => {
               const meta = TYPE_META[type];
@@ -355,11 +360,8 @@ export default function InsightsView({
                     <p className="text-xs text-[#E07070] -mt-1 mb-2">{genError}</p>
                   )}
                   {type === 'monthly_summary' && generating && (
-                    <div className="themed-card bg-white rounded-[14px] p-4 mb-2">
-                      <div className="flex items-center gap-3">
-                        <span className="w-4 h-4 border-2 border-[#A8C5E0] border-t-transparent rounded-full animate-spin" />
-                        <p className="text-sm text-[#6B7280]">Analisando seus gastos…</p>
-                      </div>
+                    <div className="themed-card bg-white rounded-[14px] p-4 mb-2 insight-generation-card insight-generation-card--inline">
+                      <GenerationStatus compact />
                     </div>
                   )}
                   <div className="space-y-2">
@@ -371,17 +373,16 @@ export default function InsightsView({
                         <div
                           key={insight.id}
                           id={`insight-${insight.id}`}
-                          className="themed-card bg-white rounded-[14px] overflow-hidden transition-[box-shadow,transform] duration-150 animate-fade-up"
+                          className={`insight-card themed-card bg-white rounded-[14px] overflow-hidden ${expanded ? 'insight-card--expanded' : ''}`}
                           style={{
                             boxShadow: 'var(--shadow-card)',
-                            animationDelay: `${Math.min(360 + groupIndex * 80 + itemIndex * 60, 760)}ms`,
                           }}
                         >
                           {/* Card header */}
                           <button
                             type="button"
                             onClick={() => toggleExpand(insight.id)}
-                            className="w-full min-h-[88px] px-4 py-3.5 text-left hover:bg-[#F8F9FB] active:scale-[0.995] transition-[background-color,transform]"
+                            className="insight-card__trigger w-full min-h-[88px] px-4 py-3.5 text-left"
                             aria-expanded={expanded}
                           >
                             <div className="flex items-start gap-3">
@@ -407,14 +408,14 @@ export default function InsightsView({
                                 <span className="block truncate text-base font-bold text-[#1A1D23]">
                                   {meta.label}
                                 </span>
-                                {!expanded && (
-                                  <span className="mt-1 block line-clamp-2 text-xs leading-relaxed text-[#6B7280]">
+                                <span className="insight-card__preview-wrap">
+                                  <span className="insight-card__preview block line-clamp-2 text-xs leading-relaxed text-[#6B7280]">
                                     {preview}
                                   </span>
-                                )}
+                                </span>
                               </div>
                               <span
-                                className={`mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#F1F3F7] text-[#6B7280] transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`}
+                                className="insight-card__chevron mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#F1F3F7] text-[#6B7280]"
                                 aria-hidden
                               >
                                 <CaretDown size={16} weight="bold" />
@@ -424,10 +425,9 @@ export default function InsightsView({
 
                           {/* Card body (expandable) */}
                           <div
-                            className={`grid overflow-hidden transition-[grid-template-rows,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${expanded ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
-                              }`}
+                            className={`insight-accordion ${expanded ? 'insight-accordion--open' : ''}`}
                           >
-                            <div className="min-h-0 overflow-hidden">
+                            <div className="insight-accordion__inner min-h-0 overflow-hidden">
                               <div className="px-4 pb-4 pt-3 border-t border-[#F1F3F7]">
                               <div className="flex items-start gap-2">
                                 <div className="flex-1 space-y-1">
