@@ -1,16 +1,72 @@
 {
   "name": "Moneda",
   "short_name": "Moneda",
-  "description": "Seu dinheiro, finalmente claro.",
-  "start_url": "/",
+  "description": "Controle seus gastos de forma simples e sem julgamentos.",
+  "id": "/?source=pwa",
+  "start_url": "/?source=pwa",
+  "scope": "/",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui", "browser"],
+  "orientation": "portrait-primary",
   "background_color": "#F8F9FB",
   "theme_color": "#F8F9FB",
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "categories": ["finance", "productivity", "utilities"],
   "icons": [
+    {
+      "src": "/moico-72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/moico-96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/moico-128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/moico-144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/moico-152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/moico-180.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    },
     {
       "src": "/moico-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/moico-256.png",
+      "sizes": "256x256",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/moico-384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "any"
     },
     {
       "src": "/moico-512.png",
@@ -19,10 +75,44 @@
       "purpose": "any"
     },
     {
-      "src": "/moico-512.png",
+      "src": "/moico-maskable-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
+    },
+    {
+      "src": "/moico-monochrome-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "monochrome"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Adicionar gasto",
+      "short_name": "Novo gasto",
+      "description": "Abra o Moneda para cadastrar uma despesa.",
+      "url": "/?source=pwa-shortcut&action=add-expense",
+      "icons": [
+        {
+          "src": "/moico-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Ver perfil",
+      "short_name": "Perfil",
+      "description": "Acesse suas preferências e configurações.",
+      "url": "/perfil?source=pwa-shortcut",
+      "icons": [
+        {
+          "src": "/moico-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
     }
   ]
 }

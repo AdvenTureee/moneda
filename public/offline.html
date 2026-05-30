@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#F8F9FB" />
+    <title>Moneda offline</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: #f8f9fb;
+        color: #1a1d23;
+      }
+
+      body {
+        min-height: 100svh;
+        margin: 0;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+      }
+
+      main {
+        width: min(100%, 360px);
+      }
+
+      img {
+        display: block;
+        width: 72px;
+        height: 72px;
+        margin-bottom: 24px;
+      }
+
+      h1 {
+        margin: 0 0 10px;
+        font-size: 28px;
+        line-height: 1.05;
+      }
+
+      p {
+        margin: 0 0 24px;
+        color: #6b7280;
+        font-size: 16px;
+        line-height: 1.5;
+      }
+
+      button {
+        min-height: 48px;
+        border: 0;
+        border-radius: 999px;
+        background: #5bbf8e;
+        color: #ffffff;
+        padding: 0 20px;
+        font: inherit;
+        font-weight: 700;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <img src="/moico-192.png" alt="" />
+      <h1>Sem conexao agora</h1>
+      <p>O Moneda esta instalado, mas precisa de internet para carregar dados financeiros atualizados.</p>
+      <button type="button" onclick="window.location.reload()">Tentar novamente</button>
+    </main>
+  </body>
+</html>
