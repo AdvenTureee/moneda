@@ -58,6 +58,8 @@ export default function RootLayout({
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        <link rel="apple-touch-icon" sizes="192x192" href="/moico-192.png" />
+        <link rel="apple-touch-icon" sizes="512x512" href="/moico-512.png" />
       </head>
       <body className="bg-[#F8F9FB] min-h-full antialiased font-body">
         <ThemeProvider>{children}</ThemeProvider>
