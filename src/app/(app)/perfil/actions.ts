@@ -101,6 +101,9 @@ export async function updateWhatsappPhone(rawPhone: string | null): Promise<Acti
   const supabase = await createSessionClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: 'Sessão expirada. Entre novamente.' };
+  if (normalizedPhone && user.phone !== normalizedPhone) {
+    return { ok: false, error: 'Confirme o código enviado por SMS antes de salvar.' };
+  }
 
   try {
     const admin = createServiceClient();

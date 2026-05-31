@@ -102,6 +102,9 @@ export async function completeOnboardingAction(
       const userId = user.id;
       const admin = createServiceClient();
       const normalizedWhatsappPhone = normalizeWhatsappPhone(payload.whatsappPhone);
+      if (normalizedWhatsappPhone && user.phone !== normalizedWhatsappPhone) {
+        return { ok: false, error: 'Confirme o código enviado por SMS antes de continuar.' };
+      }
 
       // 1. Profile fields (incluindo o flag `onboarded` — fica em profiles
       //    porque user_metadata é sobrescrito a cada login OAuth).
