@@ -26,7 +26,6 @@ interface Point extends SpendingTimelineBucket {
 
 const HEIGHT = 190;
 const PAD = { top: 18, right: 12, bottom: 34, left: 42 };
-const MIN_CHART_CEILING_CENTS = 200_000;
 const MODES: Array<{ value: SpendingTimelineMode; label: string }> = [
   { value: 'year', label: 'Ano' },
   { value: 'month', label: 'Mês' },
@@ -37,6 +36,20 @@ function compactCurrency(centavos: number): string {
   const value = centavos / 100;
   if (value >= 1000) return `R$ ${(value / 1000).toFixed(value >= 10000 ? 0 : 1)}k`;
   return `R$ ${value.toFixed(0)}`;
+}
+
+function chartCeiling(centavos: number): number {
+  if (centavos <= 0) return 1;
+  const magnitude = 10 ** Math.floor(Math.log10(centavos));
+  const normalized = centavos / magnitude;
+  const niceNormalized = normalized <= 1
+    ? 1
+    : normalized <= 2
+      ? 2
+      : normalized <= 5
+        ? 5
+        : 10;
+  return niceNormalized * magnitude;
 }
 
 function dateLabel(dateKey: string): string {
@@ -158,11 +171,7 @@ export default function SpendingTimelineChart({ data }: SpendingTimelineChartPro
 
     const spentMax = Math.max(...prepared.map((p) => p.spentCumulative), 0);
     const plannedMax = Math.max(...prepared.map((p) => p.plannedCumulative), 0);
-    const max = Math.max(
-      fixedPlannedCeiling > 0 ? fixedPlannedCeiling : Math.max(spentMax, plannedMax),
-      MIN_CHART_CEILING_CENTS,
-      1,
-    );
+    const max = chartCeiling(Math.max(fixedPlannedCeiling, spentMax, plannedMax));
 
     return prepared.map((point, index) => {
       const x = PAD.left + (prepared.length === 1 ? chartW / 2 : (index / (prepared.length - 1)) * chartW);
@@ -178,12 +187,11 @@ export default function SpendingTimelineChart({ data }: SpendingTimelineChartPro
   }, [buckets, chartH, chartW, data, mode]);
 
   const fixedPlannedCeiling = plannedCeilingForMode(mode, data);
-  const maxValue = Math.max(
-    fixedPlannedCeiling > 0
-      ? fixedPlannedCeiling
-      : Math.max(...points.map((p) => Math.max(p.spentCumulative, p.plannedCumulative)), 0),
-    MIN_CHART_CEILING_CENTS,
-    1,
+  const maxValue = chartCeiling(
+    Math.max(
+      fixedPlannedCeiling,
+      ...points.map((p) => Math.max(p.spentCumulative, p.plannedCumulative)),
+    ),
   );
   const spentPath = buildPath(points, 'ySpent');
   const plannedPath = buildPath(points, 'yPlanned');
