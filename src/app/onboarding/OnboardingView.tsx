@@ -19,7 +19,6 @@ import { useTheme, type ThemePreference } from '@/components/ThemeProvider';
 import { formatCurrency } from '@/lib/utils';
 import { distributeBudgetByPreset } from '@/lib/budgetPresets';
 import { formatWhatsappPhone, normalizeWhatsappPhone } from '@/lib/phone';
-import { createClient } from '@/lib/supabase/client';
 import {
   completeOnboardingAction,
   type OnboardingPayload,
@@ -98,10 +97,6 @@ export default function OnboardingView({ defaultCategories, firstName }: Onboard
 
   // Q4
   const [whatsappPhone, setWhatsappPhone] = useState('');
-  const [whatsappVerifiedPhone, setWhatsappVerifiedPhone] = useState<string | null>(null);
-  const [whatsappOtpSentTo, setWhatsappOtpSentTo] = useState<string | null>(null);
-  const [whatsappOtpCode, setWhatsappOtpCode] = useState('');
-  const [whatsappOtpPending, setWhatsappOtpPending] = useState(false);
 
   // Q5
   // Theme preference is saved locally through ThemeProvider.
@@ -138,10 +133,7 @@ export default function OnboardingView({ defaultCategories, firstName }: Onboard
       case 'balance': return currentBalanceCents > 0;
       case 'budget': return monthlyBudgetCents > 0;
       case 'categoryBudget': return true;
-      case 'whatsapp': {
-        const normalizedPhone = normalizeWhatsappPhone(whatsappPhone);
-        return !whatsappPhone.trim() || whatsappVerifiedPhone === normalizedPhone;
-      }
+      case 'whatsapp': return !whatsappPhone.trim() || normalizeWhatsappPhone(whatsappPhone) !== null;
       case 'theme': return true;
       case 'closing': return closingDay >= 1 && closingDay <= 28;
       case 'pet': return hasPet !== null;
@@ -178,45 +170,6 @@ export default function OnboardingView({ defaultCategories, firstName }: Onboard
     setCategoryBudgetsMap((prev) => ({ ...prev, [categoryId]: cents }));
     setCategoryBudgetTouched(true);
     setCategoryBudgetSkipped(false);
-  }
-
-  async function requestWhatsappOtp() {
-    const normalizedPhone = normalizeWhatsappPhone(whatsappPhone);
-    if (!normalizedPhone || whatsappOtpPending) return;
-    setError(null);
-    setWhatsappOtpPending(true);
-    const supabase = createClient();
-    const { error: otpError } = await supabase.auth.updateUser({ phone: normalizedPhone });
-    setWhatsappOtpPending(false);
-    if (otpError) {
-      console.error('[onboarding:whatsapp-send-otp]', otpError);
-      setError('Não foi possível enviar o código. Verifique se SMS está habilitado no Supabase.');
-      return;
-    }
-    setWhatsappOtpSentTo(normalizedPhone);
-    setWhatsappOtpCode('');
-  }
-
-  async function verifyWhatsappOtp() {
-    const normalizedPhone = normalizeWhatsappPhone(whatsappPhone);
-    if (!normalizedPhone || whatsappOtpSentTo !== normalizedPhone || whatsappOtpCode.trim().length < 4 || whatsappOtpPending) return;
-    setError(null);
-    setWhatsappOtpPending(true);
-    const supabase = createClient();
-    const { error: verifyError } = await supabase.auth.verifyOtp({
-      phone: normalizedPhone,
-      token: whatsappOtpCode.trim(),
-      type: 'phone_change',
-    });
-    if (verifyError) {
-      setWhatsappOtpPending(false);
-      console.error('[onboarding:whatsapp-verify-otp]', verifyError);
-      setError('Código inválido ou expirado.');
-      return;
-    }
-    await supabase.auth.refreshSession();
-    setWhatsappVerifiedPhone(normalizedPhone);
-    setWhatsappOtpPending(false);
   }
 
   function skipCategoryBudget() {
@@ -280,7 +233,7 @@ export default function OnboardingView({ defaultCategories, firstName }: Onboard
         categoryId: r.categoryId,
       })),
       customCategories,
-      whatsappPhone: whatsappVerifiedPhone,
+      whatsappPhone: normalizeWhatsappPhone(whatsappPhone),
       categoryBudgets: categoryBudgetSkipped
         ? []
         : budgetCategories
@@ -307,12 +260,6 @@ export default function OnboardingView({ defaultCategories, firstName }: Onboard
   );
   const categoryBudgetDifference = monthlyBudgetCents - categoryBudgetTotal;
   const whatsappNormalizedPhone = normalizeWhatsappPhone(whatsappPhone);
-  const whatsappOtpReady = Boolean(
-    whatsappNormalizedPhone && whatsappOtpSentTo === whatsappNormalizedPhone,
-  );
-  const whatsappPhoneVerified = Boolean(
-    whatsappNormalizedPhone && whatsappVerifiedPhone === whatsappNormalizedPhone,
-  );
 
   return (
     <main
@@ -560,10 +507,7 @@ export default function OnboardingView({ defaultCategories, firstName }: Onboard
                 type="tel"
                 inputMode="tel"
                 value={whatsappPhone}
-                onChange={(event) => {
-                  setWhatsappPhone(event.target.value);
-                  setWhatsappOtpCode('');
-                }}
+                onChange={(event) => setWhatsappPhone(event.target.value)}
                 placeholder="(11) 99999-9999"
                 className="min-w-0 flex-1 bg-transparent text-lg font-semibold text-[#1A1D23] outline-none placeholder:text-[#9CA3AF]"
                 aria-label="Telefone do WhatsApp"
@@ -580,50 +524,14 @@ export default function OnboardingView({ defaultCategories, firstName }: Onboard
                 Vamos salvar como {formatWhatsappPhone(whatsappPhone)}.
               </p>
             )}
-            {whatsappOtpReady && !whatsappPhoneVerified && (
-              <div className="mt-4">
-                <label className="block text-xs font-bold uppercase tracking-[0.08em] text-[#9CA3AF] mb-2">
-                  Código SMS
-                </label>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  value={whatsappOtpCode}
-                  onChange={(event) => setWhatsappOtpCode(event.target.value.replace(/\D/g, '').slice(0, 8))}
-                  placeholder="000000"
-                  className="themed-card w-full rounded-[16px] border border-[#E5E7EB] bg-white px-4 py-3 text-center text-xl font-extrabold tracking-[0.25em] text-[#1A1D23] outline-none transition-colors focus:border-[#5BBF8E] placeholder:text-[#9CA3AF]"
-                  aria-label="Código recebido por SMS"
-                />
-              </div>
-            )}
-            {whatsappPhoneVerified && (
-              <p className="mt-3 rounded-[12px] bg-[#EEF9F4] px-3 py-2 text-center text-sm font-bold text-[#2E8F67]">
-                Telefone verificado.
-              </p>
-            )}
-
-            {whatsappNormalizedPhone && !whatsappPhoneVerified && (
-              <button
-                type="button"
-                onClick={whatsappOtpReady ? verifyWhatsappOtp : requestWhatsappOtp}
-                disabled={whatsappOtpPending || (whatsappOtpReady && whatsappOtpCode.trim().length < 4)}
-                className="mt-4 w-full rounded-full bg-[#5BBF8E] py-3 text-sm font-bold text-white transition-colors hover:bg-[#4AA77C] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                {whatsappOtpPending
-                  ? 'Aguarde...'
-                  : whatsappOtpReady
-                    ? 'Confirmar código'
-                    : 'Enviar código por SMS'}
-              </button>
-            )}
+            <p className="mt-3 rounded-[12px] bg-[#FFF7E8] px-3 py-2 text-sm leading-relaxed text-[#8A5A12]">
+              O lançamento pelo WhatsApp ainda não está ativo. Quando o WhatsApp Business estiver pronto, o código de confirmação será enviado pelo número do Moneda.
+            </p>
 
             <button
               type="button"
               onClick={() => {
                 setWhatsappPhone('');
-                setWhatsappVerifiedPhone(null);
-                setWhatsappOtpSentTo(null);
-                setWhatsappOtpCode('');
                 setError(null);
                 setStepIdx((i) => Math.min(i + 1, STEP_ORDER.length - 1));
               }}

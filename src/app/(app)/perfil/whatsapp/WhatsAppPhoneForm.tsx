@@ -6,7 +6,6 @@ import { ArrowLeft, Check, Info, Trash, WhatsappLogo } from '@phosphor-icons/rea
 import { useToast } from '@/components/ToastProvider';
 import { formatWhatsappPhone, normalizeWhatsappPhone } from '@/lib/phone';
 import { formatDate } from '@/lib/utils';
-import { createClient } from '@/lib/supabase/client';
 import { updateWhatsappPhone } from '../actions';
 
 interface WhatsAppPhoneFormProps {
@@ -20,54 +19,21 @@ export default function WhatsAppPhoneForm({
 }: WhatsAppPhoneFormProps) {
   const [phone, setPhone] = useState(formatWhatsappPhone(initialPhone));
   const [savedPhone, setSavedPhone] = useState(normalizeWhatsappPhone(initialPhone));
-  const [otpSentTo, setOtpSentTo] = useState<string | null>(null);
-  const [otpCode, setOtpCode] = useState('');
   const [saving, startSaving] = useTransition();
   const { showToast } = useToast();
 
   const normalizedPhone = normalizeWhatsappPhone(phone);
   const hasInvalidPhone = phone.trim().length > 0 && !normalizedPhone;
-  const needsVerification = Boolean(normalizedPhone && normalizedPhone !== savedPhone);
-  const isOtpReady = Boolean(needsVerification && otpSentTo === normalizedPhone);
+  const hasChanges = normalizedPhone !== savedPhone || (!phone.trim() && savedPhone !== null);
 
-  function requestOtp() {
-    if (saving || !normalizedPhone || hasInvalidPhone) return;
+  function handleSave() {
+    if (saving || hasInvalidPhone || !hasChanges) return;
     startSaving(async () => {
-      const supabase = createClient();
-      const { error } = await supabase.auth.updateUser({ phone: normalizedPhone });
-      if (error) {
-        console.error('[whatsapp-phone:send-otp]', error);
-        showToast('error', 'Não foi possível enviar o código. Verifique se SMS está habilitado no Supabase.');
-        return;
-      }
-      setOtpSentTo(normalizedPhone);
-      setOtpCode('');
-      showToast('success', 'Enviamos um código por SMS.');
-    });
-  }
-
-  function verifyAndSave() {
-    if (saving || !normalizedPhone || !isOtpReady || otpCode.trim().length < 4) return;
-    startSaving(async () => {
-      const supabase = createClient();
-      const { error } = await supabase.auth.verifyOtp({
-        phone: normalizedPhone,
-        token: otpCode.trim(),
-        type: 'phone_change',
-      });
-      if (error) {
-        console.error('[whatsapp-phone:verify-otp]', error);
-        showToast('error', 'Código inválido ou expirado.');
-        return;
-      }
-      await supabase.auth.refreshSession();
-
-      const result = await updateWhatsappPhone(normalizedPhone);
+      const result = await updateWhatsappPhone(phone);
       if (result.ok) {
-        setSavedPhone(normalizedPhone);
-        setPhone(formatWhatsappPhone(normalizedPhone));
-        setOtpSentTo(null);
-        setOtpCode('');
+        const nextPhone = normalizeWhatsappPhone(phone);
+        setSavedPhone(nextPhone);
+        setPhone(formatWhatsappPhone(nextPhone));
         showToast('success', result.message ?? 'Telefone atualizado.');
       } else {
         showToast('error', result.error);
@@ -136,10 +102,7 @@ export default function WhatsAppPhoneForm({
             type="tel"
             inputMode="tel"
             value={phone}
-            onChange={(event) => {
-              setPhone(event.target.value);
-              setOtpCode('');
-            }}
+            onChange={(event) => setPhone(event.target.value)}
             placeholder="(11) 99999-9999"
             className="min-w-0 flex-1 bg-transparent text-lg font-semibold text-[#1A1D23] outline-none placeholder:text-[#9CA3AF]"
             aria-label="Telefone do WhatsApp"
@@ -156,27 +119,11 @@ export default function WhatsAppPhoneForm({
             Vamos salvar como {formatWhatsappPhone(normalizedPhone)}.
           </p>
         )}
-        {isOtpReady && (
-          <div className="mt-4">
-            <label className="block text-xs font-bold uppercase tracking-[0.06em] text-[#6B7280] mb-2">
-              Código SMS
-            </label>
-            <input
-              type="text"
-              inputMode="numeric"
-              value={otpCode}
-              onChange={(event) => setOtpCode(event.target.value.replace(/\D/g, '').slice(0, 8))}
-              placeholder="000000"
-              className="w-full rounded-[14px] border-2 border-[#E5E7EB] bg-white px-4 py-3 text-center text-xl font-extrabold tracking-[0.25em] text-[#1A1D23] outline-none transition-colors focus:border-[#5BBF8E] placeholder:text-[#9CA3AF]"
-              aria-label="Código recebido por SMS"
-            />
-          </div>
-        )}
 
         <div className="mt-4 flex items-start gap-2 rounded-[14px] bg-[#F8F9FB] p-3">
           <Info size={17} weight="bold" className="mt-0.5 shrink-0 text-[#7AAECF]" />
           <p className="text-xs leading-relaxed text-[#6B7280]">
-            O telefone é opcional. Sem ele, você continua usando o app, mas não conseguiremos registrar gastos enviados pelo WhatsApp.
+            O telefone é opcional. O lançamento pelo WhatsApp ainda não está ativo; quando o WhatsApp Business estiver pronto, o código de confirmação será enviado pelo número do Moneda.
           </p>
         </div>
       </section>
@@ -184,13 +131,8 @@ export default function WhatsAppPhoneForm({
       <div className="mt-5 grid grid-cols-[1fr_auto] gap-2 animate-fade-up delay-3">
         <button
           type="button"
-          onClick={needsVerification ? (isOtpReady ? verifyAndSave : requestOtp) : undefined}
-          disabled={
-            saving ||
-            hasInvalidPhone ||
-            !needsVerification ||
-            (isOtpReady && otpCode.trim().length < 4)
-          }
+          onClick={handleSave}
+          disabled={saving || hasInvalidPhone || !hasChanges}
           className="flex items-center justify-center gap-2 rounded-full bg-[#5BBF8E] py-4 text-sm font-bold text-white transition-colors duration-150 hover:bg-[#4AA77C] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
           style={{ boxShadow: '0 6px 20px rgba(91, 191, 142, 0.35)' }}
         >
@@ -202,11 +144,7 @@ export default function WhatsAppPhoneForm({
           ) : (
             <>
               <Check size={16} weight="bold" />
-              {needsVerification
-                ? isOtpReady
-                  ? 'Confirmar código'
-                  : 'Enviar código'
-                : 'Telefone salvo'}
+              Salvar telefone
             </>
           )}
         </button>
