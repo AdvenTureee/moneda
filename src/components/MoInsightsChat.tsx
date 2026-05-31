@@ -146,48 +146,10 @@ export default function MoInsightsChat({
   const [pendingRetry, setPendingRetry] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
 
-  const chatRef = useRef<HTMLElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const loadingRef = useRef(false);
-
-  const focusInput = useCallback(() => {
-    const el = inputRef.current;
-    if (!el || el.disabled) return;
-    try {
-      el.focus({ preventScroll: true });
-    } catch {
-      el.focus();
-    }
-  }, []);
-
-  const keepComposerInView = useCallback(() => {
-    const chat = chatRef.current;
-    const input = inputRef.current;
-    if (!chat || !input || document.activeElement !== input) return;
-
-    const vv = window.visualViewport;
-    const viewportTop = vv?.offsetTop ?? 0;
-    const viewportBottom = viewportTop + (vv?.height ?? window.innerHeight);
-    const rect = chat.getBoundingClientRect();
-    const bottomGap = 14;
-
-    if (rect.bottom > viewportBottom - bottomGap) {
-      window.scrollBy({
-        top: rect.bottom - viewportBottom + bottomGap,
-        behavior: 'auto',
-      });
-      return;
-    }
-
-    if (rect.top < viewportTop + bottomGap) {
-      window.scrollBy({
-        top: rect.top - viewportTop - bottomGap,
-        behavior: 'auto',
-      });
-    }
-  }, []);
 
   useEffect(() => {
     setMessages(loadMessages(period));
@@ -212,36 +174,11 @@ export default function MoInsightsChat({
 
   useEffect(() => {
     scrollToBottom();
-    keepComposerInView();
-  }, [messages, loading, followUps, scrollToBottom, keepComposerInView]);
+  }, [messages, loading, followUps, scrollToBottom]);
 
   useEffect(() => {
     return () => abortRef.current?.abort();
   }, []);
-
-  useEffect(() => {
-    const updateViewport = () => {
-      const chat = chatRef.current;
-      if (!chat) return;
-      const vv = window.visualViewport;
-      const keyboardInset = vv
-        ? Math.max(0, window.innerHeight - vv.height - vv.offsetTop)
-        : 0;
-      chat.style.setProperty('--mo-chat-keyboard-inset', `${Math.round(keyboardInset)}px`);
-      requestAnimationFrame(keepComposerInView);
-    };
-
-    updateViewport();
-    window.visualViewport?.addEventListener('resize', updateViewport);
-    window.visualViewport?.addEventListener('scroll', updateViewport);
-    window.addEventListener('resize', updateViewport);
-
-    return () => {
-      window.visualViewport?.removeEventListener('resize', updateViewport);
-      window.visualViewport?.removeEventListener('scroll', updateViewport);
-      window.removeEventListener('resize', updateViewport);
-    };
-  }, [keepComposerInView]);
 
   const resizeInput = useCallback(() => {
     const el = inputRef.current;
@@ -348,10 +285,6 @@ export default function MoInsightsChat({
     } finally {
       loadingRef.current = false;
       setLoading(false);
-      requestAnimationFrame(() => {
-        focusInput();
-        keepComposerInView();
-      });
     }
   }
 
@@ -367,17 +300,6 @@ export default function MoInsightsChat({
     }
   }
 
-  function handleSendButtonPointerDown(e: React.PointerEvent<HTMLButtonElement>) {
-    e.preventDefault();
-    focusInput();
-    sendMessage(input);
-  }
-
-  function handleSendButtonClick() {
-    focusInput();
-    sendMessage(input);
-  }
-
   function handleClearChat() {
     if (loading || messages.length === 0) return;
     abortRef.current?.abort();
@@ -387,7 +309,6 @@ export default function MoInsightsChat({
     setPendingRetry(null);
     setError(null);
     setInput('');
-    focusInput();
   }
 
   function handleRetry() {
@@ -403,7 +324,6 @@ export default function MoInsightsChat({
 
   return (
     <section
-      ref={chatRef}
       className="mo-insights-chat themed-card mb-6 animate-fade-up delay-1"
       aria-label="Chat com a Mo"
     >
@@ -542,7 +462,6 @@ export default function MoInsightsChat({
           ref={inputRef}
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          onFocus={keepComposerInView}
           onKeyDown={handleKeyDown}
           disabled={!canChat}
           rows={1}
@@ -551,10 +470,8 @@ export default function MoInsightsChat({
           aria-label="Sua mensagem para a Mo"
         />
         <button
-          type="button"
+          type="submit"
           disabled={!canChat || loading || !input.trim()}
-          onPointerDown={handleSendButtonPointerDown}
-          onClick={handleSendButtonClick}
           className="mo-insights-chat__send"
           aria-label="Enviar mensagem"
         >
