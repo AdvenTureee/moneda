@@ -54,9 +54,6 @@ export async function updateDisplayName(formData: FormData): Promise<ActionResul
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: 'Sessão expirada. Entre novamente.' };
 
-  const { error } = await supabase.auth.updateUser({ data: { name } });
-  if (error) return { ok: false, error: 'Não foi possível atualizar o nome. Tente novamente.' };
-
   if (isSupabaseEnabled()) {
     try {
       const admin = createServiceClient();
@@ -83,6 +80,7 @@ export async function updateDisplayName(formData: FormData): Promise<ActionResul
   }
 
   revalidatePath('/perfil');
+  revalidateTag(cacheTags.profile(user.id), { expire: 0 });
   return { ok: true, message: 'Nome atualizado.' };
 }
 
@@ -193,6 +191,7 @@ export async function updateNotificationPrefs(formData: FormData): Promise<Actio
  */
 export async function setInitialPassword(formData: FormData): Promise<ActionResult> {
   const password = String(formData.get('password') ?? '');
+  const currentPassword = String(formData.get('currentPassword') ?? '');
   if (password.length < 8) {
     return { ok: false, error: 'A senha precisa ter pelo menos 8 caracteres.' };
   }
@@ -201,14 +200,19 @@ export async function setInitialPassword(formData: FormData): Promise<ActionResu
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: 'Sessão expirada. Entre novamente.' };
 
-  const { error } = await supabase.auth.updateUser({ password });
+  const hasEmailIdentity = (user.identities ?? []).some((identity) => identity.provider === 'email');
+  const updatePayload = hasEmailIdentity && currentPassword
+    ? { password, currentPassword }
+    : { password };
+
+  const { error } = await supabase.auth.updateUser(updatePayload);
   if (error) {
     console.error('[setInitialPassword]', error);
-    return { ok: false, error: 'Não foi possível definir a senha. Tente novamente.' };
+    return { ok: false, error: 'Não foi possível atualizar a senha. Tente novamente.' };
   }
 
   revalidatePath('/perfil');
-  return { ok: true, message: 'Senha definida. Agora você pode entrar com email também.' };
+  return { ok: true, message: hasEmailIdentity ? 'Senha atualizada.' : 'Senha definida. Agora você pode entrar com email também.' };
 }
 
 export async function sendPasswordReset(): Promise<ActionResult> {
@@ -222,7 +226,7 @@ export async function sendPasswordReset(): Promise<ActionResult> {
   const origin = host ? `${proto}://${host}` : '';
 
   const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
-    redirectTo: origin ? `${origin}/auth/callback?next=/perfil` : undefined,
+    redirectTo: origin ? `${origin}/auth/callback?next=/perfil/senha?recovery=1` : undefined,
   });
   if (error) {
     console.error('[resetPassword]', error);
