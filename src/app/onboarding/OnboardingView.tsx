@@ -11,12 +11,14 @@ import {
   Moon,
   Sun,
   Calculator,
+  WhatsappLogo,
 } from '@phosphor-icons/react';
 import Icon, { AVAILABLE_ICONS } from '@/components/Icon';
 import Mo from '@/components/Mo';
 import { useTheme, type ThemePreference } from '@/components/ThemeProvider';
 import { formatCurrency } from '@/lib/utils';
 import { distributeBudgetByPreset } from '@/lib/budgetPresets';
+import { formatWhatsappPhone, normalizeWhatsappPhone } from '@/lib/phone';
 import {
   completeOnboardingAction,
   type OnboardingPayload,
@@ -30,8 +32,8 @@ interface OnboardingViewProps {
   firstName: string;
 }
 
-type Step = 'balance' | 'budget' | 'categoryBudget' | 'theme' | 'closing' | 'pet' | 'expenses' | 'categories';
-const STEP_ORDER: Step[] = ['balance', 'budget', 'categoryBudget', 'theme', 'closing', 'pet', 'expenses', 'categories'];
+type Step = 'balance' | 'budget' | 'categoryBudget' | 'whatsapp' | 'theme' | 'closing' | 'pet' | 'expenses' | 'categories';
+const STEP_ORDER: Step[] = ['balance', 'budget', 'categoryBudget', 'whatsapp', 'theme', 'closing', 'pet', 'expenses', 'categories'];
 
 interface ExpenseRow {
   tempId: string;
@@ -94,15 +96,18 @@ export default function OnboardingView({ defaultCategories, firstName }: Onboard
   const [categoryBudgetManual, setCategoryBudgetManual] = useState(false);
 
   // Q4
-  // Theme preference is saved locally through ThemeProvider.
+  const [whatsappPhone, setWhatsappPhone] = useState('');
 
   // Q5
-  const [closingDay, setClosingDay] = useState(10);
+  // Theme preference is saved locally through ThemeProvider.
 
   // Q6
-  const [hasPet, setHasPet] = useState<boolean | null>(null);
+  const [closingDay, setClosingDay] = useState(10);
 
   // Q7
+  const [hasPet, setHasPet] = useState<boolean | null>(null);
+
+  // Q8
   const visibleCategories = useMemo(
     () => defaultCategories.filter((c) => (hasPet ? true : c.id !== 'pet')),
     [defaultCategories, hasPet],
@@ -110,7 +115,7 @@ export default function OnboardingView({ defaultCategories, firstName }: Onboard
   const firstCategoryId = visibleCategories[0]?.id ?? '';
   const [expenseRows, setExpenseRows] = useState<ExpenseRow[]>([]);
 
-  // Q8
+  // Q9
   const [showCustomForm, setShowCustomForm] = useState(false);
   const [customDraft, setCustomDraft] = useState<OnboardingCustomCategory>({
     name: '',
@@ -128,6 +133,7 @@ export default function OnboardingView({ defaultCategories, firstName }: Onboard
       case 'balance': return currentBalanceCents > 0;
       case 'budget': return monthlyBudgetCents > 0;
       case 'categoryBudget': return true;
+      case 'whatsapp': return !whatsappPhone.trim() || normalizeWhatsappPhone(whatsappPhone) !== null;
       case 'theme': return true;
       case 'closing': return closingDay >= 1 && closingDay <= 28;
       case 'pet': return hasPet !== null;
@@ -227,6 +233,7 @@ export default function OnboardingView({ defaultCategories, firstName }: Onboard
         categoryId: r.categoryId,
       })),
       customCategories,
+      whatsappPhone: normalizeWhatsappPhone(whatsappPhone),
       categoryBudgets: categoryBudgetSkipped
         ? []
         : budgetCategories
@@ -475,6 +482,59 @@ export default function OnboardingView({ defaultCategories, firstName }: Onboard
                 })}
               </div>
             )}
+          </section>
+        )}
+
+        {step === 'whatsapp' && (
+          <section className="flex-1">
+            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-[#EEF9F4] text-[#2E8F67]">
+              <WhatsappLogo size={40} weight="fill" />
+            </div>
+            <h2 className="text-xl font-heading text-center text-[#1A1D23] mt-5">
+              Quer lançar gastos pelo WhatsApp?
+            </h2>
+            <p className="text-sm text-[#6B7280] text-center mt-2 mb-6 max-w-[340px] mx-auto">
+              Seu telefone identifica suas mensagens com segurança. É opcional, mas sem ele não conseguimos associar os gastos enviados pelo WhatsApp à sua conta.
+            </p>
+
+            <label className="block text-xs font-bold uppercase tracking-[0.08em] text-[#9CA3AF] mb-2">
+              Telefone com DDD
+            </label>
+            <div className="themed-card flex items-center gap-2 rounded-[16px] border border-[#E5E7EB] bg-white px-4 py-4 transition-colors focus-within:border-[#5BBF8E]">
+              <WhatsappLogo size={20} weight="fill" className="shrink-0 text-[#2E8F67]" />
+              <input
+                type="tel"
+                inputMode="tel"
+                value={whatsappPhone}
+                onChange={(event) => setWhatsappPhone(event.target.value)}
+                placeholder="(11) 99999-9999"
+                className="min-w-0 flex-1 bg-transparent text-lg font-semibold text-[#1A1D23] outline-none placeholder:text-[#9CA3AF]"
+                aria-label="Telefone do WhatsApp"
+              />
+            </div>
+
+            {whatsappPhone.trim() && !normalizeWhatsappPhone(whatsappPhone) && (
+              <p className="mt-2 text-sm font-medium text-[#B14C4C]">
+                Informe um telefone válido com DDD.
+              </p>
+            )}
+            {normalizeWhatsappPhone(whatsappPhone) && (
+              <p className="mt-2 text-sm font-medium text-[#2E8F67]">
+                Vamos salvar como {formatWhatsappPhone(whatsappPhone)}.
+              </p>
+            )}
+
+            <button
+              type="button"
+              onClick={() => {
+                setWhatsappPhone('');
+                setError(null);
+                setStepIdx((i) => Math.min(i + 1, STEP_ORDER.length - 1));
+              }}
+              className="mt-4 w-full rounded-full bg-[#F1F3F7] py-3 text-sm font-bold text-[#6B7280] transition-colors hover:bg-[#E5E7EB] active:scale-[0.98]"
+            >
+              Pular por enquanto
+            </button>
           </section>
         )}
 

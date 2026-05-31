@@ -18,6 +18,7 @@ import {
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   let requiresTermsAcceptance = false;
   let requiresCurrentBalance = false;
+  let requiresWhatsappPhone = false;
 
   if (isSupabaseEnabled()) {
     const supabase = await createSessionClient();
@@ -27,7 +28,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     const admin = createServiceClient();
     const { data: profile } = await admin
       .from('profiles')
-      .select('terms_accepted_at, terms_version, current_balance_cents')
+      .select('terms_accepted_at, terms_version, current_balance_cents, phone, phone_hash, phone_ciphertext')
       .eq('id', user.id)
       .single();
 
@@ -35,12 +36,17 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       !profile?.terms_accepted_at ||
       profile.terms_version !== TERMS_VERSION;
     requiresCurrentBalance = profile?.current_balance_cents === null;
+    requiresWhatsappPhone =
+      !profile?.phone &&
+      !profile?.phone_hash &&
+      !profile?.phone_ciphertext;
   }
 
   return (
     <AppShell
       requiresTermsAcceptance={requiresTermsAcceptance}
       requiresCurrentBalance={requiresCurrentBalance}
+      requiresWhatsappPhone={requiresWhatsappPhone}
     >
       {children}
     </AppShell>

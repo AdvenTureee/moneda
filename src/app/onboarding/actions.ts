@@ -10,6 +10,8 @@ import { cacheTags } from '@/lib/cache';
 import { MOCK_USER, addUserCategory, addSessionExpense } from '@/data/mock';
 import { upsertBudget } from '@/lib/budgets';
 import { getCurrentPeriod } from '@/lib/utils';
+import { normalizeWhatsappPhone } from '@/lib/phone';
+import { buildProfilePhonePiiUpdate } from '@/lib/security/profilePii';
 
 export type OnboardingResult = { ok: true } | { ok: false; error: string };
 
@@ -38,6 +40,7 @@ export interface OnboardingPayload {
   recurringExpenses: OnboardingRecurringExpense[];
   customCategories: OnboardingCustomCategory[];
   categoryBudgets?: OnboardingCategoryBudget[];
+  whatsappPhone?: string | null;
 }
 
 function slugifyCategoryName(name: string): string {
@@ -74,6 +77,9 @@ function validatePayload(p: OnboardingPayload): string | null {
     if (!b.categoryId) return 'Categoria de orçamento inválida.';
     if (!Number.isFinite(b.amountCents) || b.amountCents < 0) return 'Valor de orçamento inválido.';
   }
+  if (p.whatsappPhone && !normalizeWhatsappPhone(p.whatsappPhone)) {
+    return 'Telefone do WhatsApp inválido.';
+  }
   for (const c of p.customCategories) {
     if (!c.name.trim()) return 'Categoria personalizada precisa de um nome.';
     if (!/^#[0-9A-Fa-f]{6}$/.test(c.color)) return 'Cor de categoria inválida.';
@@ -95,6 +101,7 @@ export async function completeOnboardingAction(
       if (!user) return { ok: false, error: 'Sessão expirada. Entre novamente.' };
       const userId = user.id;
       const admin = createServiceClient();
+      const normalizedWhatsappPhone = normalizeWhatsappPhone(payload.whatsappPhone);
 
       // 1. Profile fields (incluindo o flag `onboarded` — fica em profiles
       //    porque user_metadata é sobrescrito a cada login OAuth).
@@ -106,6 +113,9 @@ export async function completeOnboardingAction(
           billing_closing_day: payload.billingClosingDay,
           has_pet: payload.hasPet,
           onboarded: true,
+          ...(normalizedWhatsappPhone
+            ? buildProfilePhonePiiUpdate(normalizedWhatsappPhone)
+            : {}),
         })
         .eq('id', userId);
       if (profileError) {

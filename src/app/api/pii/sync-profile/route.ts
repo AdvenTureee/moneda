@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server';
 import { revalidateTag } from 'next/cache';
 import { cacheTags } from '@/lib/cache';
-import { buildProfilePiiUpdate, getDisplayNameFromUser } from '@/lib/security/profilePii';
+import {
+  buildProfileIdentityPiiUpdate,
+  buildProfilePhonePiiUpdate,
+  getDisplayNameFromUser,
+} from '@/lib/security/profilePii';
 import {
   createServiceClient,
   createSessionClient,
@@ -19,13 +23,17 @@ export async function POST() {
     return NextResponse.json({ ok: false, error: 'Sessão expirada.' }, { status: 401 });
   }
 
-  let piiUpdate: ReturnType<typeof buildProfilePiiUpdate>;
+  let piiUpdate: ReturnType<typeof buildProfileIdentityPiiUpdate> &
+    Partial<ReturnType<typeof buildProfilePhonePiiUpdate>>;
   try {
-    piiUpdate = buildProfilePiiUpdate({
+    piiUpdate = buildProfileIdentityPiiUpdate({
       name: getDisplayNameFromUser(user),
       email: user.email ?? null,
-      phone: (user.user_metadata?.phone as string | undefined) ?? null,
     });
+    const metadataPhone = user.user_metadata?.phone as string | undefined;
+    if (metadataPhone) {
+      Object.assign(piiUpdate, buildProfilePhonePiiUpdate(metadataPhone));
+    }
   } catch {
     return NextResponse.json(
       { ok: false, error: 'Configuração de proteção de dados indisponível.' },

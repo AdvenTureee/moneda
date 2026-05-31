@@ -4,7 +4,11 @@ import { revalidateTag } from 'next/cache';
 import { cacheTags } from '@/lib/cache';
 import { TERMS_VERSION } from '@/lib/legal';
 import { createServiceClient } from '@/lib/supabase/server';
-import { buildProfilePiiUpdate, getDisplayNameFromUser } from '@/lib/security/profilePii';
+import {
+  buildProfileIdentityPiiUpdate,
+  buildProfilePhonePiiUpdate,
+  getDisplayNameFromUser,
+} from '@/lib/security/profilePii';
 import type { Database } from '@/types/supabase';
 
 export async function GET(request: NextRequest) {
@@ -73,11 +77,14 @@ export async function GET(request: NextRequest) {
     }
 
     try {
-      Object.assign(profileUpdate, buildProfilePiiUpdate({
+      Object.assign(profileUpdate, buildProfileIdentityPiiUpdate({
         name: getDisplayNameFromUser(user),
         email: user.email ?? null,
-        phone: (user.user_metadata?.phone as string | undefined) ?? null,
       }));
+      const metadataPhone = user.user_metadata?.phone as string | undefined;
+      if (metadataPhone) {
+        Object.assign(profileUpdate, buildProfilePhonePiiUpdate(metadataPhone));
+      }
     } catch {
       console.error('[auth/callback] PII sync skipped: crypto env unavailable');
     }

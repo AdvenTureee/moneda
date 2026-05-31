@@ -1,7 +1,15 @@
 import 'server-only';
 
 import type { User } from '@supabase/supabase-js';
-import { buildEncryptedProfilePii, decryptPii } from '@/lib/security/piiCrypto';
+import {
+  PII_CRYPTO_VERSION,
+  buildEncryptedProfilePii,
+  decryptPii,
+  encryptNullablePii,
+  hashPii,
+  normalizeEmailForHash,
+  normalizePhoneForHash,
+} from '@/lib/security/piiCrypto';
 
 export interface EncryptedProfilePiiRow {
   name_ciphertext: string | null;
@@ -64,4 +72,38 @@ export function buildProfilePiiUpdate(input: {
   phone?: string | null;
 }) {
   return buildEncryptedProfilePii(input);
+}
+
+export function buildProfileIdentityPiiUpdate(input: {
+  name?: string | null;
+  email?: string | null;
+}) {
+  const encryptedName = encryptNullablePii(input.name);
+  const normalizedEmail = normalizeEmailForHash(input.email);
+  const encryptedEmail = encryptNullablePii(normalizedEmail);
+
+  return {
+    name_ciphertext: encryptedName.ciphertext,
+    name_iv: encryptedName.iv,
+    name_tag: encryptedName.tag,
+    email_ciphertext: encryptedEmail.ciphertext,
+    email_iv: encryptedEmail.iv,
+    email_tag: encryptedEmail.tag,
+    email_hash: hashPii(normalizedEmail),
+    pii_crypto_version: PII_CRYPTO_VERSION,
+  };
+}
+
+export function buildProfilePhonePiiUpdate(phone: string | null | undefined) {
+  const normalizedPhone = normalizePhoneForHash(phone);
+  const encryptedPhone = encryptNullablePii(normalizedPhone);
+
+  return {
+    phone: normalizedPhone,
+    phone_ciphertext: encryptedPhone.ciphertext,
+    phone_iv: encryptedPhone.iv,
+    phone_tag: encryptedPhone.tag,
+    phone_hash: hashPii(normalizedPhone),
+    pii_crypto_version: PII_CRYPTO_VERSION,
+  };
 }

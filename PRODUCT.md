@@ -134,6 +134,7 @@ Ordenadas por impacto estimado no engajamento e retenção:
 - Banco de dados real (**Supabase** — Postgres gerenciado)
 - Histórico completo e busca
 - Onboarding separa saldo atual disponível de orçamento mensal: saldo atual mostra quanto dinheiro resta; orçamento mensal é o teto que o usuário acha que gastará no mês.
+- Onboarding pede telefone do WhatsApp como passo opcional. Sem telefone vinculado, o usuário usa o app normalmente, mas não consegue lançar gastos pelo WhatsApp porque não há como identificar a conta.
 - Lançamento no crédito registra se a compra foi à vista ou parcelada; em parcelado, o usuário informa parcela atual e total de parcelas.
 - **🎙️ Áudio via WhatsApp** — usuário manda voz, Groq Whisper transcreve e registra o gasto automaticamente (nenhum concorrente tem isso)
 - **📈 Previsor do fim do mês** — alerta automático no dia 20: "no ritmo atual você vai gastar R$ X — R$ Y acima do mês passado"

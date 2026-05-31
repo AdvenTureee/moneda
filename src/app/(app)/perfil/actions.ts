@@ -5,7 +5,11 @@ import { revalidatePath, revalidateTag } from 'next/cache';
 import { headers } from 'next/headers';
 import { createSessionClient, createServiceClient, isSupabaseEnabled } from '@/lib/supabase/server';
 import { cacheTags } from '@/lib/cache';
-import { buildProfilePiiUpdate } from '@/lib/security/profilePii';
+import {
+  buildProfileIdentityPiiUpdate,
+  buildProfilePhonePiiUpdate,
+} from '@/lib/security/profilePii';
+import { normalizeWhatsappPhone } from '@/lib/phone';
 import type { NotificationPrefs } from './notification-prefs';
 
 export type ActionResult = { ok: true; message?: string } | { ok: false; error: string };
@@ -60,10 +64,9 @@ export async function updateDisplayName(formData: FormData): Promise<ActionResul
       const { error: profileError } = await admin
         .from('profiles')
         .update({
-          ...buildProfilePiiUpdate({
+          ...buildProfileIdentityPiiUpdate({
             name,
             email: user.email ?? null,
-            phone: (user.user_metadata?.phone as string | undefined) ?? null,
           }),
         })
         .eq('id', user.id);
@@ -82,6 +85,48 @@ export async function updateDisplayName(formData: FormData): Promise<ActionResul
   revalidatePath('/perfil');
   revalidateTag(cacheTags.profile(user.id), { expire: 0 });
   return { ok: true, message: 'Nome atualizado.' };
+}
+
+export async function updateWhatsappPhone(rawPhone: string | null): Promise<ActionResult> {
+  if (!isSupabaseEnabled()) {
+    return { ok: false, error: 'Configuração indisponível neste ambiente.' };
+  }
+
+  const hasValue = typeof rawPhone === 'string' && rawPhone.trim().length > 0;
+  const normalizedPhone = hasValue ? normalizeWhatsappPhone(rawPhone) : null;
+  if (hasValue && !normalizedPhone) {
+    return { ok: false, error: 'Informe um telefone válido com DDD.' };
+  }
+
+  const supabase = await createSessionClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: 'Sessão expirada. Entre novamente.' };
+
+  try {
+    const admin = createServiceClient();
+    const { error } = await admin
+      .from('profiles')
+      .update(buildProfilePhonePiiUpdate(normalizedPhone))
+      .eq('id', user.id);
+
+    if (error) {
+      console.error('[updateWhatsappPhone]', { message: error.message, code: error.code });
+      if (error.code === '23505') {
+        return { ok: false, error: 'Este telefone já está vinculado a outra conta.' };
+      }
+      return { ok: false, error: 'Não foi possível salvar o telefone.' };
+    }
+  } catch {
+    return { ok: false, error: 'Configuração de proteção de dados indisponível.' };
+  }
+
+  revalidatePath('/perfil');
+  revalidatePath('/perfil/whatsapp');
+  revalidateTag(cacheTags.profile(user.id), { expire: 0 });
+  return {
+    ok: true,
+    message: normalizedPhone ? 'Telefone do WhatsApp atualizado.' : 'Telefone removido.',
+  };
 }
 
 const SUPPORTED_CURRENCIES = ['BRL', 'USD', 'EUR', 'GBP'] as const;

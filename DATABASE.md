@@ -229,7 +229,7 @@ erDiagram
 
 **Criação automática:** Trigger `on_auth_user_created` em `auth.users` insere uma linha em `public.profiles` (com `SECURITY DEFINER` para conseguir escrever no schema `public` a partir do contexto de signup). Detalhes em `00000000000002_init_core_tables.sql`.
 
-**Phone (E.164):** `NULL` na criação (Supabase Auth pode autenticar por email/OAuth sem phone), preenchido no onboarding. `UNIQUE WHERE phone IS NOT NULL` (partial unique index — Postgres permite múltiplos `NULL`s, mas dois usuários nunca podem reivindicar o mesmo número).
+**Phone (E.164):** `NULL` na criação (Supabase Auth pode autenticar por email/OAuth sem phone), preenchido no onboarding ou em Perfil > WhatsApp. É opcional para uso geral do app, mas obrigatório para lançar gastos pelo WhatsApp porque identifica qual conta deve receber a mensagem. `UNIQUE WHERE phone IS NOT NULL` (partial unique index — Postgres permite múltiplos `NULL`s, mas dois usuários nunca podem reivindicar o mesmo número).
 
 **Email duplicado em `profiles`?** Sim. Justificativa: simplifica queries (`SELECT name, email FROM profiles WHERE id = ?` sem join cross-schema com `auth.users`). É denormalização leve; mantemos sincronia via trigger no signup. Não atualizamos `profiles.email` em troca de email (raro) — escrevemos no app na próxima alteração.
 
