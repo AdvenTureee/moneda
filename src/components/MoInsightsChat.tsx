@@ -146,6 +146,7 @@ export default function MoInsightsChat({
   const [pendingRetry, setPendingRetry] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
 
+  const chatRef = useRef<HTMLElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -172,6 +173,13 @@ export default function MoInsightsChat({
     });
   }, []);
 
+  const bringChatIntoView = useCallback(() => {
+    chatRef.current?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    });
+  }, []);
+
   useEffect(() => {
     scrollToBottom();
   }, [messages, loading, followUps, scrollToBottom]);
@@ -195,6 +203,7 @@ export default function MoInsightsChat({
     const trimmed = text.trim();
     if (!trimmed || loadingRef.current) return;
     loadingRef.current = true;
+    inputRef.current?.blur();
 
     const appendUser = options?.appendUser !== false;
     setError(null);
@@ -220,6 +229,7 @@ export default function MoInsightsChat({
     }
 
     setInput('');
+    requestAnimationFrame(bringChatIntoView);
     setLoading(true);
     abortRef.current?.abort();
     abortRef.current = new AbortController();
@@ -324,6 +334,7 @@ export default function MoInsightsChat({
 
   return (
     <section
+      ref={chatRef}
       className="mo-insights-chat themed-card mb-6 animate-fade-up delay-1"
       aria-label="Chat com a Mo"
     >
