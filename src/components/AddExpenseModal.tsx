@@ -44,6 +44,9 @@ export default function AddExpenseModal({
   const [description, setDescription] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<ExpensePaymentMethod>('other');
+  const [creditPurchaseType, setCreditPurchaseType] = useState<'single' | 'installment'>('single');
+  const [installmentCurrent, setInstallmentCurrent] = useState(1);
+  const [installmentTotal, setInstallmentTotal] = useState(2);
   const [occurredAtInput, setOccurredAtInput] = useState(todayLocalDate());
   const [timeInput, setTimeInput] = useState(currentTimeHHmm());
   const [isRecurring, setIsRecurring] = useState(false);
@@ -116,6 +119,9 @@ export default function AddExpenseModal({
       setDescription('');
       setSelectedCategory('');
       setPaymentMethod('other');
+      setCreditPurchaseType('single');
+      setInstallmentCurrent(1);
+      setInstallmentTotal(2);
       setOccurredAtInput(todayLocalDate());
       setTimeInput(currentTimeHHmm());
       setIsRecurring(false);
@@ -134,6 +140,9 @@ export default function AddExpenseModal({
       setDescription(editExpense.description);
       setSelectedCategory(editExpense.category);
       setPaymentMethod(editExpense.paymentMethod ?? 'other');
+      setCreditPurchaseType(editExpense.creditDetails?.purchaseType ?? 'single');
+      setInstallmentCurrent(editExpense.creditDetails?.installmentCurrent ?? 1);
+      setInstallmentTotal(editExpense.creditDetails?.installmentTotal ?? 2);
       const editDate = new Date(editExpense.createdAt);
       setOccurredAtInput(toLocalDateInput(editDate));
       setTimeInput(timeHHmmFromDate(editDate));
@@ -175,6 +184,27 @@ export default function AddExpenseModal({
       }).format(cents / 100)
     );
   }, []);
+
+  const creditDetails = useMemo<ExpenseInput['creditDetails']>(() => {
+    if (paymentMethod !== 'credit') return null;
+    if (creditPurchaseType === 'single') return { purchaseType: 'single' };
+    return {
+      purchaseType: 'installment',
+      installmentCurrent,
+      installmentTotal,
+    };
+  }, [creditPurchaseType, installmentCurrent, installmentTotal, paymentMethod]);
+
+  const hasValidInstallments =
+    paymentMethod !== 'credit' ||
+    creditPurchaseType === 'single' ||
+    (
+      Number.isInteger(installmentCurrent) &&
+      Number.isInteger(installmentTotal) &&
+      installmentCurrent >= 1 &&
+      installmentTotal >= 2 &&
+      installmentCurrent <= installmentTotal
+    );
 
   const uploadReceiptForExpense = useCallback(async (expenseId: string, file: File) => {
     const formData = new FormData();
@@ -219,13 +249,14 @@ export default function AddExpenseModal({
   }, [editExpense, showToast]);
 
   const handleSave = useCallback(async () => {
-    if (amountCents <= 0 || !selectedCategory || saveBusy) return;
+    if (amountCents <= 0 || !selectedCategory || saveBusy || !hasValidInstallments) return;
     const input: ExpenseInput = {
       amount: amountCents,
       category: selectedCategory,
       description: description.trim() || (categories.find((c) => c.id === selectedCategory)?.name ?? 'Gasto'),
       source: 'manual',
       paymentMethod,
+      creditDetails,
       tags: [],
       occurredAt: localDateTimeToIso(occurredAtInput, timeInput),
       isRecurring,
@@ -266,7 +297,7 @@ export default function AddExpenseModal({
     } finally {
       setSaveBusy(false);
     }
-  }, [amountCents, selectedCategory, saveBusy, description, categories, paymentMethod, occurredAtInput, timeInput, isRecurring, receiptFile, optimisticSave, isEditing, showToast, finishClose, onSave, uploadReceiptForExpense, editExpense]);
+  }, [amountCents, selectedCategory, saveBusy, hasValidInstallments, description, categories, paymentMethod, creditDetails, occurredAtInput, timeInput, isRecurring, receiptFile, optimisticSave, isEditing, showToast, finishClose, onSave, uploadReceiptForExpense, editExpense]);
 
   const handleBackdropClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
@@ -483,6 +514,80 @@ export default function AddExpenseModal({
             </div>
           </div>
 
+          {paymentMethod === 'credit' && (
+            <div className="px-5 mb-4">
+              <div className="themed-card rounded-[12px] bg-white p-3">
+                <p className="text-sm font-semibold text-[#6B7280] mb-2">Crédito</p>
+                <div className="grid grid-cols-2 gap-2" role="group" aria-label="Tipo de compra no crédito">
+                  {[
+                    { value: 'single' as const, label: 'À vista' },
+                    { value: 'installment' as const, label: 'Parcelado' },
+                  ].map((option) => {
+                    const isSelected = creditPurchaseType === option.value;
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => setCreditPurchaseType(option.value)}
+                        aria-pressed={isSelected}
+                        className={`min-h-10 rounded-[10px] border px-2 text-sm font-semibold transition-all duration-100 active:scale-[0.98] ${
+                          isSelected
+                            ? 'border-[#5BBF8E] bg-[#EEF9F4] text-[#2E8F67] shadow-[0_0_0_1px_rgba(91,191,142,0.18)]'
+                            : 'border-[#E5E7EB] bg-white text-[#6B7280] hover:border-[#A8C5E0] hover:bg-[#F8F9FB]'
+                        }`}
+                      >
+                        {option.label}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {creditPurchaseType === 'installment' && (
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    <label className="block">
+                      <span className="mb-1.5 block text-xs font-semibold text-[#6B7280]">
+                        Parcela atual
+                      </span>
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        min={1}
+                        max={installmentTotal}
+                        value={installmentCurrent}
+                        onChange={(event) => {
+                          const next = Number(event.target.value);
+                          setInstallmentCurrent(Number.isFinite(next) ? next : 1);
+                        }}
+                        className="themed-field w-full rounded-[10px] border border-[#E5E7EB] px-3 py-2.5 text-sm font-semibold text-[#1A1D23] outline-none focus:border-[#A8C5E0]"
+                      />
+                    </label>
+                    <label className="block">
+                      <span className="mb-1.5 block text-xs font-semibold text-[#6B7280]">
+                        Total de parcelas
+                      </span>
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        min={2}
+                        value={installmentTotal}
+                        onChange={(event) => {
+                          const next = Number(event.target.value);
+                          setInstallmentTotal(Number.isFinite(next) ? next : 2);
+                        }}
+                        className="themed-field w-full rounded-[10px] border border-[#E5E7EB] px-3 py-2.5 text-sm font-semibold text-[#1A1D23] outline-none focus:border-[#A8C5E0]"
+                      />
+                    </label>
+                    {!hasValidInstallments && (
+                      <p className="col-span-2 text-xs font-medium text-[#B14C4C]">
+                        A parcela atual precisa estar entre 1 e o total de parcelas.
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Description */}
           <div className="px-5 mb-4">
             <p className="text-sm font-semibold text-[#6B7280] mb-2">
@@ -591,11 +696,11 @@ export default function AddExpenseModal({
         >
           <button
             onClick={handleSave}
-            disabled={amountCents <= 0 || !selectedCategory || saveBusy}
+            disabled={amountCents <= 0 || !selectedCategory || saveBusy || !hasValidInstallments}
             className="w-full rounded-full py-4 text-[15px] font-semibold text-white transition-all duration-75 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
             style={{
               background:
-                amountCents > 0 && selectedCategory ? '#5BBF8E' : '#9CA3AF',
+                amountCents > 0 && selectedCategory && hasValidInstallments ? '#5BBF8E' : '#9CA3AF',
             }}
           >
             {saveBusy

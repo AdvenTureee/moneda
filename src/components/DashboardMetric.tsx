@@ -15,11 +15,11 @@ export default function DashboardMetric({
 }: DashboardMetricProps) {
   return (
     <div
-      className="themed-card bg-white rounded-[10px] px-4 py-3 flex-1"
+      className="themed-card min-w-[7.5rem] flex-1 bg-white rounded-[10px] px-4 py-3"
     >
       <p className="text-xs text-[#6B7280] font-medium mb-1">{label}</p>
       <p
-        className={`font-bold text-[#1A1D23] tabular-nums ${
+        className={`truncate font-bold text-[#1A1D23] tabular-nums ${
           size === 'lg' ? 'text-2xl' : 'text-lg'
         }`}
       >

@@ -268,6 +268,8 @@ export type Database = {
           email_tag: string | null
           has_pet: boolean
           id: string
+          current_balance_cents: number | null
+          monthly_budget_cents: number | null
           monthly_income_cents: number | null
           name: string | null
           name_ciphertext: string | null
@@ -299,6 +301,8 @@ export type Database = {
           email_tag?: string | null
           has_pet?: boolean
           id: string
+          current_balance_cents?: number | null
+          monthly_budget_cents?: number | null
           monthly_income_cents?: number | null
           name?: string | null
           name_ciphertext?: string | null
@@ -330,6 +334,8 @@ export type Database = {
           email_tag?: string | null
           has_pet?: boolean
           id?: string
+          current_balance_cents?: number | null
+          monthly_budget_cents?: number | null
           monthly_income_cents?: number | null
           name?: string | null
           name_ciphertext?: string | null

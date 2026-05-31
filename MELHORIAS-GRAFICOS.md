@@ -24,22 +24,22 @@ Essa escolha torna a proporcao mais concreta que o donut anterior, especialmente
 
 ## Gasto vs planejado
 
-O grafico temporal compara duas linhas acumuladas:
+O grafico temporal compara gasto real e planejado:
 
-- **Gasto**: soma acumulada do que o usuario ja gastou.
-- **Planejado**: maximo informado pelo usuario, distribuido proporcionalmente ao longo do tempo.
+- **Gasto**: valor gasto no recorte exibido.
+- **Planejado**: maximo informado pelo usuario para aquele recorte.
 
 A linha de gasto pode ultrapassar a linha planejada. Isso nao e erro visual; e justamente o sinal de que o ritmo de gasto passou do ritmo planejado.
 
 Modos:
 
-- **Ano**: meses do ano selecionado. O planejado acumula os orcamentos mensais do ano.
+- **Ano**: meses do ano selecionado. O planejado e o teto de cada mes, sem acumular ao longo do ano.
 - **Mes**: dias do mes selecionado. O planejado mensal e dividido pelos dias do mes.
 - **Dia**: horas do dia selecionado. O planejado diario e derivado do planejado mensal dividido pelos dias do mes e distribuido pelas 24 horas.
 
 ## Dados e fallback
 
-O valor planejado principal vem de `getMonthlyBudgetCents`, que considera renda mensal declarada e ganhos validos no periodo.
+O valor planejado principal vem de `getMonthlyBudgetCents`, que considera o teto mensal declarado no onboarding.
 
 Se esse valor for zero, o app usa como fallback a soma dos orcamentos por categoria cadastrados para o periodo.
 
@@ -52,7 +52,8 @@ Nao ha mudanca de schema: os dados continuam vindo de `expenses`, `budgets`, `pr
 - O clique nas categorias continua abrindo o detalhe correto.
 - O grafico temporal abre em modo Ano por padrao.
 - Ano, Mes e Dia alternam sem nova navegacao.
-- A linha Planejado cresce proporcionalmente no periodo.
+- No modo Ano, a linha Planejado representa o teto mensal de cada mes, sem escalar acumulado.
+- Nos modos Mes e Dia, a linha Planejado cresce proporcionalmente no periodo.
 - A linha Gasto pode ultrapassar a Planejado.
 - Estados sem gasto ou sem planejamento continuam legiveis.
 - Light e dark mode preservam contraste.

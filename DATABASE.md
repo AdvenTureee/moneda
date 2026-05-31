@@ -215,6 +215,8 @@ erDiagram
 - **`onboarded_at` removido** — o campo foi simplificado: `created_at` já registra quando o perfil foi criado (= quando o usuário fez signup). Não há necessidade de um segundo timestamp para "conclusão do onboarding" no V1; se necessário no futuro, adiciona-se como coluna nullable em migration incremental.
 - **`salary_day integer` (1–31, nullable)** — dia do mês em que o usuário recebe salário. Usado para definir o "período financeiro" do dashboard (ex: usuário que recebe dia 5 tem seu mês financeiro de 5/mai a 4/jun). NULL = usuário ainda não informou.
 - **`billing_closing_day integer` (1–28, nullable)** — dia de fechamento da fatura do cartão de crédito principal. Limita a 28 para evitar ambiguidade em fevereiro. Usado para agrupar gastos no crédito no período correto. NULL = usuário não tem ou não informou cartão.
+- **`current_balance_cents bigint`** — saldo atual declarado no onboarding. Usado para mostrar quanto dinheiro resta após os gastos.
+- **`monthly_budget_cents bigint`** — teto de gasto mensal declarado no onboarding. É a fonte principal de orçamento mensal; `monthly_income_cents` permanece como legado.
 - **Por que não uma tabela `credit_cards`?** Em V1, modelamos apenas um cartão principal. Múltiplos cartões com datas diferentes é um caso de V2+ — nessa migration bastam dois inteiros em `profiles`.
 
 ### Identidade: `auth.users` + `profiles`
@@ -489,6 +491,8 @@ A coluna `snake_case` do SQL é convertida para `camelCase` no app via:
 | `User.avatarUrl` | `profiles.avatar_url` | URL Supabase Storage, nullable |
 | `User.salaryDay` | `profiles.salary_day` | 1-31, nullable |
 | `User.billingClosingDay` | `profiles.billing_closing_day` | 1-28, nullable |
+| `User.currentBalance` | `profiles.current_balance_cents` | centavos, nullable |
+| `User.monthlyBudget` | `profiles.monthly_budget_cents` | centavos, nullable |
 | `User.createdAt` | `profiles.created_at` | |
 | `Category.id` | `categories.id` | text slug |
 | `Category.name` | `categories.name` | |
@@ -501,6 +505,7 @@ A coluna `snake_case` do SQL é convertida para `camelCase` no app via:
 | `Expense.category` | `expenses.category_id` | rename para deixar claro que é FK |
 | `Expense.description` | `expenses.description` | |
 | `Expense.paymentMethod` | `expenses.payment_method` | pix\|debit\|credit\|cash\|transfer\|other |
+| `Expense.creditDetails` | `expenses.metadata` | credit_purchase_type, installment_current, installment_total |
 | `Expense.source` | `expenses.source` | |
 | `Expense.tags` | `expenses.tags` | `text[]` |
 | `Expense.createdAt` | `expenses.occurred_at` | **mapeamento crítico:** o `createdAt` do TS hoje é "quando o gasto aconteceu"; no SQL isso é `occurred_at`. `expenses.created_at` é audit-only. |

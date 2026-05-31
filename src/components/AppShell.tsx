@@ -1,28 +1,41 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import BottomNav from '@/components/BottomNav';
 import AddExpenseModal from '@/components/AddExpenseModal';
+import CurrentBalanceModal from '@/components/CurrentBalanceModal';
 import TermsModal from '@/components/TermsModal';
 import { ToastProvider, useToast } from '@/components/ToastProvider';
 import ScrollFadeIndicator from '@/components/ScrollFadeIndicator';
 import type { ExpenseInput } from '@/types';
 
+const BALANCE_PROMPT_DISMISSED_KEY = 'moneda:current-balance-prompt-dismissed';
+
 function ShellContent({
   children,
   requiresTermsAcceptance,
+  requiresCurrentBalance,
 }: {
   children: React.ReactNode;
   requiresTermsAcceptance: boolean;
+  requiresCurrentBalance: boolean;
 }) {
   const [modalOpen, setModalOpen] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(!requiresTermsAcceptance);
+  const [balanceAnswered, setBalanceAnswered] = useState(!requiresCurrentBalance);
+  const [balanceDismissed, setBalanceDismissed] = useState(false);
   const [termsLoading, setTermsLoading] = useState(false);
   const [termsError, setTermsError] = useState('');
   const { showToast } = useToast();
   const router = useRouter();
   const isTermsBlocking = !termsAccepted;
+  const shouldShowCurrentBalance = termsAccepted && !balanceAnswered && !balanceDismissed;
+
+  useEffect(() => {
+    if (!requiresCurrentBalance) return;
+    setBalanceDismissed(window.sessionStorage.getItem(BALANCE_PROMPT_DISMISSED_KEY) === '1');
+  }, [requiresCurrentBalance]);
 
   const handleSave = useCallback(
     async (input: ExpenseInput) => {
@@ -60,6 +73,18 @@ function ShellContent({
     router.refresh();
   }, [router, showToast]);
 
+  const handleBalanceLater = useCallback(() => {
+    window.sessionStorage.setItem(BALANCE_PROMPT_DISMISSED_KEY, '1');
+    setBalanceDismissed(true);
+  }, []);
+
+  const handleBalanceSaved = useCallback(() => {
+    window.sessionStorage.removeItem(BALANCE_PROMPT_DISMISSED_KEY);
+    setBalanceAnswered(true);
+    setBalanceDismissed(false);
+    router.refresh();
+  }, [router]);
+
   return (
     <>
       <main
@@ -83,6 +108,11 @@ function ShellContent({
         acceptLoading={termsLoading}
         acceptError={termsError}
       />
+      <CurrentBalanceModal
+        isOpen={shouldShowCurrentBalance}
+        onLater={handleBalanceLater}
+        onSaved={handleBalanceSaved}
+      />
     </>
   );
 }
@@ -90,10 +120,16 @@ function ShellContent({
 export default function AppShell({
   children,
   requiresTermsAcceptance = false,
+  requiresCurrentBalance = false,
 }: AppShellProps) {
   return (
     <ToastProvider>
-      <ShellContent requiresTermsAcceptance={requiresTermsAcceptance}>{children}</ShellContent>
+      <ShellContent
+        requiresTermsAcceptance={requiresTermsAcceptance}
+        requiresCurrentBalance={requiresCurrentBalance}
+      >
+        {children}
+      </ShellContent>
     </ToastProvider>
   );
 }
@@ -101,4 +137,5 @@ export default function AppShell({
 interface AppShellProps {
   children: React.ReactNode;
   requiresTermsAcceptance?: boolean;
+  requiresCurrentBalance?: boolean;
 }

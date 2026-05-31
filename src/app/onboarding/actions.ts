@@ -8,6 +8,8 @@ import {
 } from '@/lib/supabase/server';
 import { cacheTags } from '@/lib/cache';
 import { MOCK_USER, addUserCategory, addSessionExpense } from '@/data/mock';
+import { upsertBudget } from '@/lib/budgets';
+import { getCurrentPeriod } from '@/lib/utils';
 
 export type OnboardingResult = { ok: true } | { ok: false; error: string };
 
@@ -23,12 +25,19 @@ export interface OnboardingCustomCategory {
   color: string;
 }
 
+export interface OnboardingCategoryBudget {
+  categoryId: string;
+  amountCents: number;
+}
+
 export interface OnboardingPayload {
-  monthlyIncomeCents: number;
+  currentBalanceCents: number;
+  monthlyBudgetCents: number;
   billingClosingDay: number;
   hasPet: boolean;
   recurringExpenses: OnboardingRecurringExpense[];
   customCategories: OnboardingCustomCategory[];
+  categoryBudgets?: OnboardingCategoryBudget[];
 }
 
 function slugifyCategoryName(name: string): string {
@@ -47,8 +56,11 @@ function buildCustomCategoryId(userId: string, name: string, index: number): str
 }
 
 function validatePayload(p: OnboardingPayload): string | null {
-  if (!Number.isFinite(p.monthlyIncomeCents) || p.monthlyIncomeCents < 0) {
-    return 'Renda mensal inválida.';
+  if (!Number.isFinite(p.currentBalanceCents) || p.currentBalanceCents < 0) {
+    return 'Saldo atual inválido.';
+  }
+  if (!Number.isFinite(p.monthlyBudgetCents) || p.monthlyBudgetCents < 0) {
+    return 'Orçamento mensal inválido.';
   }
   if (!Number.isInteger(p.billingClosingDay) || p.billingClosingDay < 1 || p.billingClosingDay > 28) {
     return 'Dia de fechamento deve estar entre 1 e 28.';
@@ -57,6 +69,10 @@ function validatePayload(p: OnboardingPayload): string | null {
     if (!r.description.trim()) return 'Cada gasto recorrente precisa de uma descrição.';
     if (!Number.isFinite(r.amountCents) || r.amountCents <= 0) return 'Valor do gasto inválido.';
     if (!r.categoryId) return 'Selecione uma categoria para cada gasto.';
+  }
+  for (const b of p.categoryBudgets ?? []) {
+    if (!b.categoryId) return 'Categoria de orçamento inválida.';
+    if (!Number.isFinite(b.amountCents) || b.amountCents < 0) return 'Valor de orçamento inválido.';
   }
   for (const c of p.customCategories) {
     if (!c.name.trim()) return 'Categoria personalizada precisa de um nome.';
@@ -85,7 +101,8 @@ export async function completeOnboardingAction(
       const { error: profileError } = await admin
         .from('profiles')
         .update({
-          monthly_income_cents: payload.monthlyIncomeCents || null,
+          current_balance_cents: payload.currentBalanceCents || null,
+          monthly_budget_cents: payload.monthlyBudgetCents || null,
           billing_closing_day: payload.billingClosingDay,
           has_pet: payload.hasPet,
           onboarded: true,
@@ -117,6 +134,19 @@ export async function completeOnboardingAction(
       }
 
       // 3. Recurring expenses
+      if ((payload.categoryBudgets ?? []).length > 0) {
+        const period = getCurrentPeriod();
+        await Promise.all((payload.categoryBudgets ?? []).map((budget) => upsertBudget({
+          userId,
+          categoryId: budget.categoryId,
+          period,
+          amountCents: Math.round(budget.amountCents),
+        })));
+        revalidateTag(cacheTags.budgets(userId), { expire: 0 });
+        revalidateTag(cacheTags.metrics(userId), { expire: 0 });
+      }
+
+      // 4. Recurring expenses
       if (payload.recurringExpenses.length > 0) {
         const nowIso = new Date().toISOString();
         const inserts = payload.recurringExpenses.map((r) => ({
@@ -150,6 +180,15 @@ export async function completeOnboardingAction(
           keywords: [],
         });
       });
+      if ((payload.categoryBudgets ?? []).length > 0) {
+        const period = getCurrentPeriod();
+        await Promise.all((payload.categoryBudgets ?? []).map((budget) => upsertBudget({
+          userId,
+          categoryId: budget.categoryId,
+          period,
+          amountCents: Math.round(budget.amountCents),
+        })));
+      }
       payload.recurringExpenses.forEach((r) => {
         addSessionExpense({
           id: `mock-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,

@@ -124,8 +124,13 @@ export default function SpendingTimelineChart({ data }: SpendingTimelineChartPro
     let plannedCumulative = 0;
     const prepared = buckets.map((bucket, index) => {
       const plannedAmount = plannedForMode(mode, bucket, index, buckets.length, data);
-      spentCumulative += bucket.amount;
-      plannedCumulative += plannedAmount;
+      if (mode === 'year') {
+        spentCumulative = bucket.amount;
+        plannedCumulative = plannedAmount;
+      } else {
+        spentCumulative += bucket.amount;
+        plannedCumulative += plannedAmount;
+      }
       return {
         ...bucket,
         index,
@@ -162,7 +167,9 @@ export default function SpendingTimelineChart({ data }: SpendingTimelineChartPro
   const spentPath = buildPath(points, 'ySpent');
   const plannedPath = buildPath(points, 'yPlanned');
   const hasSpending = points.some((p) => p.spentCumulative > 0);
-  const plannedTotal = points.at(-1)?.plannedCumulative ?? 0;
+  const plannedTotal = mode === 'year'
+    ? points.reduce((sum, point) => sum + point.plannedAmount, 0)
+    : points.at(-1)?.plannedCumulative ?? 0;
 
   const tickIndexes = useMemo(() => {
     if (points.length <= 8) return points.map((p) => p.index);
@@ -188,7 +195,7 @@ export default function SpendingTimelineChart({ data }: SpendingTimelineChartPro
     <div ref={containerRef}>
       <ChartCard
         title={modeTitle(mode)}
-        ariaLabel="Comparativo de gasto acumulado e planejado"
+        ariaLabel={mode === 'year' ? 'Comparativo de gasto mensal e teto planejado' : 'Comparativo de gasto acumulado e planejado'}
         headerRight={
           <span className="text-xs text-[#6B7280]">
             Planejado:{' '}
@@ -243,7 +250,7 @@ export default function SpendingTimelineChart({ data }: SpendingTimelineChartPro
               preserveAspectRatio="none"
               style={{ overflow: 'visible' }}
               role="img"
-              aria-label="Linhas acumuladas de gasto e valor planejado"
+              aria-label={mode === 'year' ? 'Linhas de gasto mensal e teto planejado' : 'Linhas acumuladas de gasto e valor planejado'}
             >
               {[0.25, 0.5, 0.75, 1].map((f) => (
                 <line
@@ -409,8 +416,12 @@ function SpendingTimelineDetailModal({
   const difference = selected.plannedCumulative - selected.spentCumulative;
   const isOverPlan = difference < 0;
   const periodLabel = mode === 'month' ? dateLabel(selected.key) : selected.label;
-  const totalSpent = points.at(-1)?.spentCumulative ?? 0;
-  const totalPlanned = points.at(-1)?.plannedCumulative ?? 0;
+  const totalSpent = mode === 'year'
+    ? points.reduce((sum, point) => sum + point.spent, 0)
+    : points.at(-1)?.spentCumulative ?? 0;
+  const totalPlanned = mode === 'year'
+    ? points.reduce((sum, point) => sum + point.plannedAmount, 0)
+    : points.at(-1)?.plannedCumulative ?? 0;
 
   return createPortal(
     <div

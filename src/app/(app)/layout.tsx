@@ -17,6 +17,7 @@ import {
  */
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   let requiresTermsAcceptance = false;
+  let requiresCurrentBalance = false;
 
   if (isSupabaseEnabled()) {
     const supabase = await createSessionClient();
@@ -26,17 +27,21 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     const admin = createServiceClient();
     const { data: profile } = await admin
       .from('profiles')
-      .select('terms_accepted_at, terms_version')
+      .select('terms_accepted_at, terms_version, current_balance_cents')
       .eq('id', user.id)
       .single();
 
     requiresTermsAcceptance =
       !profile?.terms_accepted_at ||
       profile.terms_version !== TERMS_VERSION;
+    requiresCurrentBalance = profile?.current_balance_cents === null;
   }
 
   return (
-    <AppShell requiresTermsAcceptance={requiresTermsAcceptance}>
+    <AppShell
+      requiresTermsAcceptance={requiresTermsAcceptance}
+      requiresCurrentBalance={requiresCurrentBalance}
+    >
       {children}
     </AppShell>
   );

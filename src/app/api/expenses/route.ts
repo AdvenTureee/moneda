@@ -17,6 +17,7 @@ const PAYMENT_METHODS = new Set<ExpensePaymentMethod>([
 type ExpenseBody = Omit<Partial<ExpenseInput>, 'paymentMethod'> & {
   paymentMethod?: unknown;
   payment_method?: unknown;
+  creditDetails?: ExpenseInput['creditDetails'];
 };
 
 function readPaymentMethod(body: ExpenseBody): ExpensePaymentMethod | undefined {
@@ -94,6 +95,7 @@ export async function POST(req: NextRequest) {
     description: body.description ?? 'Gasto',
     source: body.source ?? 'manual',
     paymentMethod: readPaymentMethod(body) ?? 'other',
+    creditDetails: readPaymentMethod(body) === 'credit' ? body.creditDetails ?? null : null,
     tags: body.tags ?? [],
     occurredAt: body.occurredAt,
     isRecurring: body.isRecurring,
@@ -131,6 +133,7 @@ export async function PATCH(req: NextRequest) {
     occurredAt: body.occurredAt,
     isRecurring: body.isRecurring,
     paymentMethod: readPaymentMethod(body),
+    creditDetails: readPaymentMethod(body) === 'credit' ? body.creditDetails ?? null : null,
   });
   invalidateExpenseCaches(user.id);
   return NextResponse.json({ data: expense });

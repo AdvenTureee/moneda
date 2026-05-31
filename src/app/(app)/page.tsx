@@ -16,7 +16,7 @@ import { getDashboardMetrics, getSpendingTimeline } from '@/lib/expenses';
 import { getBudgets } from '@/lib/budgets';
 import { getLatestInsight } from '@/lib/insights';
 import { getMonthlyBudgetCents } from '@/lib/monthlyBudget';
-import { isUserOnboarded } from '@/lib/profiles';
+import { getCurrentBalanceCents, isUserOnboarded } from '@/lib/profiles';
 import { decryptProfilePii, getDisplayNameFromUser } from '@/lib/security/profilePii';
 import { formatCurrency, getCurrentPeriod } from '@/lib/utils';
 import { createServiceClient, createSessionClient, isSupabaseEnabled } from '@/lib/supabase/server';
@@ -49,20 +49,21 @@ export default async function DashboardPage({
   const period = isValidPeriod(rawPeriod) ? rawPeriod : getCurrentPeriod();
 
   // Parallel DB queries
-  const [metrics, budgets, latestInsight, monthlyBudgetCents, spendingTimeline] = await Promise.all([
+  const [metrics, budgets, latestInsight, monthlyBudgetCents, spendingTimeline, currentBalanceCents] = await Promise.all([
     getDashboardMetrics(user.id, period),
     getBudgets(user.id, period),
     getLatestInsight(user.id, period),
     getMonthlyBudgetCents(user.id, period),
     getSpendingTimeline(user.id, period),
+    getCurrentBalanceCents(user.id),
   ]);
 
-  // Orçamento mensal = renda base (profiles.monthly_income_cents) + incomes
-  // válidos no período. Se nada disso existir, cai nos budgets por categoria
-  // como último recurso para usuários antigos.
+  // Orçamento mensal = teto de gasto declarado. Se não existir, cai nos
+  // budgets por categoria como último recurso para usuários antigos.
   const totalBudgetCents = budgets.reduce((sum, b) => sum + b.amountCents, 0);
   const BUDGET_CENTS = monthlyBudgetCents > 0 ? monthlyBudgetCents : totalBudgetCents;
-  const remaining = BUDGET_CENTS - metrics.totalSpent;
+  const remainingSourceCents = currentBalanceCents > 0 ? currentBalanceCents : BUDGET_CENTS;
+  const remaining = remainingSourceCents - metrics.totalSpent;
 
   // Custom personalized AI Welcome message if no insight exists yet.
   let fullName = getDisplayNameFromUser(user);
@@ -122,10 +123,10 @@ export default async function DashboardPage({
           </div>
         </section>
 
-        {/* Hero: restante do mês (principal) */}
-        <section className="mb-5 animate-fade-up delay-2" aria-label="Restante do mês">
+        {/* Hero: dinheiro restante (principal) */}
+        <section className="mb-5 animate-fade-up delay-2" aria-label="Dinheiro restante">
           <p className="text-xs text-[#6B7280] font-medium mb-1">
-            Restante este mês
+            {currentBalanceCents > 0 ? 'Dinheiro restante' : 'Restante do orçamento'}
           </p>
           <p
             className="text-[40px] font-extrabold tabular-nums leading-none"
@@ -146,7 +147,13 @@ export default async function DashboardPage({
         </section>
 
         {/* Metric cards */}
-        <section className="flex gap-3 mb-3 animate-fade-up delay-3" aria-label="Métricas do mês">
+        <section className="flex flex-wrap gap-3 mb-3 animate-fade-up delay-3" aria-label="Métricas do mês">
+          {currentBalanceCents > 0 && (
+            <DashboardMetric
+              label="Saldo atual"
+              value={formatCurrency(currentBalanceCents)}
+            />
+          )}
           <DashboardMetric
             label="Orçamento"
             value={formatCurrency(BUDGET_CENTS)}

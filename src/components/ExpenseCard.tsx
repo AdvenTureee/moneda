@@ -45,6 +45,10 @@ export default function ExpenseCard({
 
   const hasCardActions = Boolean(onEdit || onDelete);
   const paymentLabel = PAYMENT_LABELS[expense.paymentMethod];
+  const creditLabel =
+    expense.paymentMethod === 'credit' && expense.creditDetails?.purchaseType === 'installment'
+      ? `${paymentLabel} ${expense.creditDetails.installmentCurrent}/${expense.creditDetails.installmentTotal}`
+      : paymentLabel;
   const shouldShowMenu = Boolean(expense.receipt || onReceiptChanged || hasCardActions);
   const menuItemClass =
     'expense-action-item group flex min-h-10 w-full items-center gap-3 rounded-[11px] px-3.5 text-left text-sm font-medium transition-[background,color,transform] duration-150 active:scale-[0.985] disabled:opacity-50';
@@ -208,9 +212,9 @@ export default function ExpenseCard({
             <p className="min-w-0 truncate text-xs text-[#6B7280]">
               {category?.name ?? 'Outros'} · {formatTime(new Date(expense.createdAt))}
             </p>
-            {paymentLabel && (
+            {creditLabel && (
               <span className="shrink-0 rounded-full bg-[#EEF9F4] px-1.5 py-0.5 text-[10px] font-semibold leading-none text-[#3FA876]">
-                {paymentLabel}
+                {creditLabel}
               </span>
             )}
           </div>

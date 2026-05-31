@@ -1,13 +1,43 @@
 'use server';
 
 import { redirect } from 'next/navigation';
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { headers } from 'next/headers';
 import { createSessionClient, createServiceClient, isSupabaseEnabled } from '@/lib/supabase/server';
+import { cacheTags } from '@/lib/cache';
 import { buildProfilePiiUpdate } from '@/lib/security/profilePii';
 import type { NotificationPrefs } from './notification-prefs';
 
 export type ActionResult = { ok: true; message?: string } | { ok: false; error: string };
+
+export async function updateCurrentBalanceCents(balanceCents: number): Promise<ActionResult> {
+  if (!isSupabaseEnabled()) {
+    return { ok: false, error: 'Configuração indisponível neste ambiente.' };
+  }
+
+  if (!Number.isFinite(balanceCents) || balanceCents < 0) {
+    return { ok: false, error: 'Informe um saldo válido.' };
+  }
+
+  const supabase = await createSessionClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: 'Sessão expirada. Entre novamente.' };
+
+  const admin = createServiceClient();
+  const { error } = await admin
+    .from('profiles')
+    .update({ current_balance_cents: Math.round(balanceCents) })
+    .eq('id', user.id);
+
+  if (error) {
+    console.error('[updateCurrentBalanceCents]', error);
+    return { ok: false, error: 'Não foi possível salvar seu saldo.' };
+  }
+
+  revalidateTag(cacheTags.profile(user.id), { expire: 0 });
+  revalidatePath('/');
+  return { ok: true, message: 'Saldo atualizado.' };
+}
 
 export async function updateDisplayName(formData: FormData): Promise<ActionResult> {
   const raw = formData.get('name');

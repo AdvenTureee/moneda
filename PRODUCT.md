@@ -133,6 +133,8 @@ Ordenadas por impacto estimado no engajamento e retenção:
 - Autenticação (Magic Link ou Google OAuth)
 - Banco de dados real (**Supabase** — Postgres gerenciado)
 - Histórico completo e busca
+- Onboarding separa saldo atual disponível de orçamento mensal: saldo atual mostra quanto dinheiro resta; orçamento mensal é o teto que o usuário acha que gastará no mês.
+- Lançamento no crédito registra se a compra foi à vista ou parcelada; em parcelado, o usuário informa parcela atual e total de parcelas.
 - **🎙️ Áudio via WhatsApp** — usuário manda voz, Groq Whisper transcreve e registra o gasto automaticamente (nenhum concorrente tem isso)
 - **📈 Previsor do fim do mês** — alerta automático no dia 20: "no ritmo atual você vai gastar R$ X — R$ Y acima do mês passado"
 - **🤖 CFO conversacional básico** — usuário pode perguntar via WhatsApp: "quanto gastei essa semana?", "qual minha maior categoria?", "estou dentro do orçamento?"
@@ -151,6 +153,7 @@ Ordenadas por impacto estimado no engajamento e retenção:
 - Metas mensais por categoria com acompanhamento em tempo real
 - Categorias customizáveis pelo usuário
 - Dashboard com gráficos de evolução mês a mês
+- Gráfico anual compara cada mês contra seu próprio teto de orçamento, sem acumular o orçamento ao longo do ano.
 - Notificações de alerta de orçamento
 - **💑 Modo Casal / Conta Compartilhada** — dois números WhatsApp vinculados, dashboard consolidado, notificação quando o casal passa de meta (principal vetor de indicação viral)
 - **🔄 Detector de assinaturas e recorrências** — identifica gastos que se repetem, avisa quando o valor muda ("sua Netflix subiu de R$ 44,90 para R$ 55,90 esse mês")

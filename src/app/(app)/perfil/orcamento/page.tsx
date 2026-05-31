@@ -3,6 +3,7 @@ import { createSessionClient, isSupabaseEnabled } from '@/lib/supabase/server';
 import { MOCK_USER } from '@/data/mock';
 import { getBudgets } from '@/lib/budgets';
 import { getCategories } from '@/lib/categories';
+import { getMonthlyBudgetCents } from '@/lib/monthlyBudget';
 import { getCurrentPeriod } from '@/lib/utils';
 import BudgetForm from './BudgetForm';
 
@@ -17,10 +18,18 @@ export default async function OrcamentoPage() {
   }
 
   const period = getCurrentPeriod();
-  const [budgets, categories] = await Promise.all([
+  const [budgets, categories, monthlyBudgetCents] = await Promise.all([
     getBudgets(userId, period),
     getCategories(userId),
+    getMonthlyBudgetCents(userId, period),
   ]);
 
-  return <BudgetForm initialBudgets={budgets} period={period} initialCategories={categories} />;
+  return (
+    <BudgetForm
+      initialBudgets={budgets}
+      period={period}
+      initialCategories={categories}
+      monthlyBudgetCents={monthlyBudgetCents}
+    />
+  );
 }

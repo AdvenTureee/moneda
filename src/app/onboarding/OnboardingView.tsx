@@ -10,11 +10,13 @@ import {
   Minus,
   Moon,
   Sun,
+  Calculator,
 } from '@phosphor-icons/react';
 import Icon, { AVAILABLE_ICONS } from '@/components/Icon';
 import Mo from '@/components/Mo';
 import { useTheme, type ThemePreference } from '@/components/ThemeProvider';
 import { formatCurrency } from '@/lib/utils';
+import { distributeBudgetByPreset } from '@/lib/budgetPresets';
 import {
   completeOnboardingAction,
   type OnboardingPayload,
@@ -28,8 +30,8 @@ interface OnboardingViewProps {
   firstName: string;
 }
 
-type Step = 'income' | 'theme' | 'closing' | 'pet' | 'expenses' | 'categories';
-const STEP_ORDER: Step[] = ['income', 'theme', 'closing', 'pet', 'expenses', 'categories'];
+type Step = 'balance' | 'budget' | 'categoryBudget' | 'theme' | 'closing' | 'pet' | 'expenses' | 'categories';
+const STEP_ORDER: Step[] = ['balance', 'budget', 'categoryBudget', 'theme', 'closing', 'pet', 'expenses', 'categories'];
 
 interface ExpenseRow {
   tempId: string;
@@ -74,19 +76,33 @@ export default function OnboardingView({ defaultCategories, firstName }: Onboard
   const step: Step = STEP_ORDER[stepIdx];
 
   // Q1
-  const [incomeCents, setIncomeCents] = useState(0);
-  const [incomeDisplay, setIncomeDisplay] = useState('');
+  const [currentBalanceCents, setCurrentBalanceCents] = useState(0);
+  const [currentBalanceDisplay, setCurrentBalanceDisplay] = useState('');
 
   // Q2
-  // Theme preference is saved locally through ThemeProvider.
+  const [monthlyBudgetCents, setMonthlyBudgetCents] = useState(0);
+  const [monthlyBudgetDisplay, setMonthlyBudgetDisplay] = useState('');
 
   // Q3
-  const [closingDay, setClosingDay] = useState(10);
+  const budgetCategories = useMemo(
+    () => defaultCategories.filter((c) => c.id !== 'pet'),
+    [defaultCategories],
+  );
+  const [categoryBudgetsMap, setCategoryBudgetsMap] = useState<Record<string, number>>({});
+  const [categoryBudgetTouched, setCategoryBudgetTouched] = useState(false);
+  const [categoryBudgetSkipped, setCategoryBudgetSkipped] = useState(false);
+  const [categoryBudgetManual, setCategoryBudgetManual] = useState(false);
 
   // Q4
-  const [hasPet, setHasPet] = useState<boolean | null>(null);
+  // Theme preference is saved locally through ThemeProvider.
 
   // Q5
+  const [closingDay, setClosingDay] = useState(10);
+
+  // Q6
+  const [hasPet, setHasPet] = useState<boolean | null>(null);
+
+  // Q7
   const visibleCategories = useMemo(
     () => defaultCategories.filter((c) => (hasPet ? true : c.id !== 'pet')),
     [defaultCategories, hasPet],
@@ -94,7 +110,7 @@ export default function OnboardingView({ defaultCategories, firstName }: Onboard
   const firstCategoryId = visibleCategories[0]?.id ?? '';
   const [expenseRows, setExpenseRows] = useState<ExpenseRow[]>([]);
 
-  // Q6
+  // Q8
   const [showCustomForm, setShowCustomForm] = useState(false);
   const [customDraft, setCustomDraft] = useState<OnboardingCustomCategory>({
     name: '',
@@ -109,7 +125,9 @@ export default function OnboardingView({ defaultCategories, firstName }: Onboard
 
   const canNext = (() => {
     switch (step) {
-      case 'income': return incomeCents > 0;
+      case 'balance': return currentBalanceCents > 0;
+      case 'budget': return monthlyBudgetCents > 0;
+      case 'categoryBudget': return true;
       case 'theme': return true;
       case 'closing': return closingDay >= 1 && closingDay <= 28;
       case 'pet': return hasPet !== null;
@@ -120,10 +138,38 @@ export default function OnboardingView({ defaultCategories, firstName }: Onboard
     }
   })();
 
-  function handleIncomeChange(raw: string) {
+  function handleCurrentBalanceChange(raw: string) {
     const cents = parseCentsInput(raw);
-    setIncomeCents(cents);
-    setIncomeDisplay(formatCentsInput(cents));
+    setCurrentBalanceCents(cents);
+    setCurrentBalanceDisplay(formatCentsInput(cents));
+  }
+
+  function handleMonthlyBudgetChange(raw: string) {
+    const cents = parseCentsInput(raw);
+    setMonthlyBudgetCents(cents);
+    setMonthlyBudgetDisplay(formatCentsInput(cents));
+    if (!categoryBudgetTouched) {
+      setCategoryBudgetsMap(distributeBudgetByPreset(budgetCategories, cents, 'balanced'));
+    }
+  }
+
+  function useSuggestedCategoryBudget() {
+    setCategoryBudgetsMap(distributeBudgetByPreset(budgetCategories, monthlyBudgetCents, 'balanced'));
+    setCategoryBudgetTouched(true);
+    setCategoryBudgetSkipped(false);
+  }
+
+  function updateCategoryBudget(categoryId: string, raw: string) {
+    const cents = parseCentsInput(raw);
+    setCategoryBudgetsMap((prev) => ({ ...prev, [categoryId]: cents }));
+    setCategoryBudgetTouched(true);
+    setCategoryBudgetSkipped(false);
+  }
+
+  function skipCategoryBudget() {
+    setCategoryBudgetSkipped(true);
+    setError(null);
+    setStepIdx((i) => Math.min(i + 1, STEP_ORDER.length - 1));
   }
 
   function adjustClosing(delta: number) {
@@ -171,7 +217,8 @@ export default function OnboardingView({ defaultCategories, firstName }: Onboard
   function submit() {
     setError(null);
     const payload: OnboardingPayload = {
-      monthlyIncomeCents: incomeCents,
+      currentBalanceCents,
+      monthlyBudgetCents,
       billingClosingDay: closingDay,
       hasPet: hasPet === true,
       recurringExpenses: expenseRows.map<OnboardingRecurringExpense>((r) => ({
@@ -180,6 +227,14 @@ export default function OnboardingView({ defaultCategories, firstName }: Onboard
         categoryId: r.categoryId,
       })),
       customCategories,
+      categoryBudgets: categoryBudgetSkipped
+        ? []
+        : budgetCategories
+            .map((category) => ({
+              categoryId: category.id,
+              amountCents: categoryBudgetsMap[category.id] ?? 0,
+            }))
+            .filter((entry) => entry.amountCents > 0),
     };
     startTransition(async () => {
       const result = await completeOnboardingAction(payload);
@@ -191,6 +246,12 @@ export default function OnboardingView({ defaultCategories, firstName }: Onboard
       router.refresh();
     });
   }
+
+  const categoryBudgetTotal = budgetCategories.reduce(
+    (sum, category) => sum + (categoryBudgetsMap[category.id] ?? 0),
+    0,
+  );
+  const categoryBudgetDifference = monthlyBudgetCents - categoryBudgetTotal;
 
   return (
     <main
@@ -226,27 +287,27 @@ export default function OnboardingView({ defaultCategories, firstName }: Onboard
           <div className="w-9 h-9" />
         </div>
 
-        {step === 'income' && (
+        {step === 'balance' && (
           <section className="flex-1">
             <Mo variant="happy" size={96} className="mx-auto" />
             <h1 className="text-2xl font-heading text-center text-[#1A1D23] mt-3">
-              Olá, {firstName}! 👋
+              Olá, {firstName}!
             </h1>
             <p className="text-sm text-[#6B7280] text-center mt-2 mb-6 max-w-[320px] mx-auto">
-              Vamos começar com sua renda mensal. Ela é a base de todas as nossas sugestões.
+              Quanto dinheiro você tem disponível hoje? Usamos isso para mostrar quanto sobra depois dos gastos, sem julgamento.
             </p>
             <div
               className="flex items-center gap-2 rounded-[16px] px-5 py-5 transition-all"
               style={{
                 border: `1.5px solid ${
-                  incomeCents > 0
+                  currentBalanceCents > 0
                     ? 'var(--color-success)'
                     : isDark
                       ? 'rgba(255,255,255,0.08)'
                       : '#E5E7EB'
                 }`,
                 background:
-                  incomeCents > 0
+                  currentBalanceCents > 0
                     ? isDark
                       ? 'rgba(111, 212, 162, 0.08)'
                       : '#EEF9F4'
@@ -254,7 +315,7 @@ export default function OnboardingView({ defaultCategories, firstName }: Onboard
                       ? 'rgba(255,255,255,0.04)'
                       : '#fff',
                 boxShadow:
-                  incomeCents > 0
+                  currentBalanceCents > 0
                     ? 'none'
                     : isDark
                       ? '0 1px 0 0 rgba(255,255,255,0.04)'
@@ -265,13 +326,155 @@ export default function OnboardingView({ defaultCategories, firstName }: Onboard
               <input
                 type="tel"
                 inputMode="numeric"
-                value={incomeDisplay}
-                onChange={(e) => handleIncomeChange(e.target.value)}
+                value={currentBalanceDisplay}
+                onChange={(e) => handleCurrentBalanceChange(e.target.value)}
                 placeholder="0,00"
                 className="flex-1 text-4xl font-extrabold bg-transparent outline-none tabular-nums text-[#1A1D23] placeholder:text-[#9CA3AF]"
-                aria-label="Renda mensal em reais"
+                aria-label="Saldo atual disponível em reais"
               />
             </div>
+          </section>
+        )}
+
+        {step === 'budget' && (
+          <section className="flex-1">
+            <Mo variant="happy" size={96} className="mx-auto" />
+            <h2 className="text-xl font-heading text-center text-[#1A1D23] mt-3">
+              Quanto você imagina gastar neste mês?
+            </h2>
+            <p className="text-sm text-[#6B7280] text-center mt-2 mb-6 max-w-[320px] mx-auto">
+              Esse valor vira seu teto mensal para comparar com os gastos reais ao longo do mês.
+            </p>
+            <div
+              className="flex items-center gap-2 rounded-[16px] px-5 py-5 transition-all"
+              style={{
+                border: `1.5px solid ${
+                  monthlyBudgetCents > 0
+                    ? 'var(--color-success)'
+                    : isDark
+                      ? 'rgba(255,255,255,0.08)'
+                      : '#E5E7EB'
+                }`,
+                background:
+                  monthlyBudgetCents > 0
+                    ? isDark
+                      ? 'rgba(111, 212, 162, 0.08)'
+                      : '#EEF9F4'
+                    : isDark
+                      ? 'rgba(255,255,255,0.04)'
+                      : '#fff',
+                boxShadow:
+                  monthlyBudgetCents > 0
+                    ? 'none'
+                    : isDark
+                      ? '0 1px 0 0 rgba(255,255,255,0.04)'
+                      : '0 1px 2px 0 rgba(0,0,0,0.04)',
+              }}
+            >
+              <span className="text-2xl font-bold text-[#9CA3AF]">R$</span>
+              <input
+                type="tel"
+                inputMode="numeric"
+                value={monthlyBudgetDisplay}
+                onChange={(e) => handleMonthlyBudgetChange(e.target.value)}
+                placeholder="0,00"
+                className="flex-1 text-4xl font-extrabold bg-transparent outline-none tabular-nums text-[#1A1D23] placeholder:text-[#9CA3AF]"
+                aria-label="Orçamento mensal em reais"
+              />
+            </div>
+          </section>
+        )}
+
+        {step === 'categoryBudget' && (
+          <section className="flex-1">
+            <Mo variant="happy" size={86} className="mx-auto" />
+            <h2 className="text-xl font-heading text-center text-[#1A1D23] mt-3">
+              Quer dividir por categoria?
+            </h2>
+            <p className="text-sm text-[#6B7280] text-center mt-2 mb-5 max-w-[340px] mx-auto">
+              Eu posso transformar seu orçamento mensal em limites por categoria. É só uma sugestão inicial, você ajusta depois.
+            </p>
+
+            <div className="themed-card rounded-[16px] bg-white p-4 mb-3">
+              <div className="grid grid-cols-3 gap-2 text-center">
+                <div className="rounded-[12px] bg-[#F8F9FB] px-2 py-2">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.06em] text-[#9CA3AF]">Total</p>
+                  <p className="mt-0.5 text-xs font-bold text-[#1A1D23] tabular-nums">{formatCurrency(monthlyBudgetCents)}</p>
+                </div>
+                <div className="rounded-[12px] bg-[#F8F9FB] px-2 py-2">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.06em] text-[#9CA3AF]">Distribuído</p>
+                  <p className="mt-0.5 text-xs font-bold text-[#1A1D23] tabular-nums">{formatCurrency(categoryBudgetTotal)}</p>
+                </div>
+                <div className="rounded-[12px] bg-[#F8F9FB] px-2 py-2">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.06em] text-[#9CA3AF]">
+                    {categoryBudgetDifference < 0 ? 'Acima' : 'Restante'}
+                  </p>
+                  <p
+                    className="mt-0.5 text-xs font-bold tabular-nums"
+                    style={{ color: categoryBudgetDifference < 0 ? '#B14C4C' : '#2E8F67' }}
+                  >
+                    {formatCurrency(Math.abs(categoryBudgetDifference))}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={useSuggestedCategoryBudget}
+                  className="flex items-center justify-center gap-2 rounded-[12px] bg-[#EEF9F4] px-3 py-3 text-sm font-bold text-[#2E8F67] transition-colors hover:bg-[#DDF4EA] active:scale-[0.98]"
+                >
+                  <Calculator size={16} weight="bold" />
+                  Usar sugestão
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    useSuggestedCategoryBudget();
+                    setCategoryBudgetManual(true);
+                  }}
+                  className="rounded-[12px] border border-[#E5E7EB] bg-white px-3 py-3 text-sm font-bold text-[#6B7280] transition-colors hover:border-[#A8C5E0] hover:bg-[#F8F9FB] active:scale-[0.98]"
+                >
+                  Ajustar valores
+                </button>
+              </div>
+            </div>
+
+            {(categoryBudgetManual || categoryBudgetTotal > 0) && (
+              <div className="space-y-2 mb-3">
+                {budgetCategories.map((category) => {
+                  const amount = categoryBudgetsMap[category.id] ?? 0;
+                  return (
+                    <div
+                      key={category.id}
+                      className="themed-card grid grid-cols-[1fr_auto] items-center gap-3 rounded-[12px] bg-white p-3"
+                    >
+                      <div className="flex min-w-0 items-center gap-2">
+                        <span
+                          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
+                          style={{ backgroundColor: `${category.color}18`, color: category.color }}
+                        >
+                          <Icon name={category.icon} size={16} />
+                        </span>
+                        <p className="truncate text-sm font-bold text-[#1A1D23]">{category.name}</p>
+                      </div>
+                      <div className="flex w-28 items-center gap-1 rounded-[10px] border border-[#E5E7EB] bg-[#F8F9FB] px-2.5 py-2">
+                        <span className="text-xs font-bold text-[#9CA3AF]">R$</span>
+                        <input
+                          type="tel"
+                          inputMode="numeric"
+                          value={formatCentsInput(amount)}
+                          onChange={(event) => updateCategoryBudget(category.id, event.target.value)}
+                          placeholder="0,00"
+                          className="min-w-0 flex-1 bg-transparent text-right text-sm font-semibold tabular-nums text-[#1A1D23] outline-none"
+                          aria-label={`Orçamento para ${category.name}`}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </section>
         )}
 
@@ -696,12 +899,26 @@ export default function OnboardingView({ defaultCategories, firstName }: Onboard
               'Concluir'
             ) : step === 'theme' ? (
               theme === 'dark' ? 'Continuar no modo escuro' : 'Continuar no modo claro'
-            ) : step === 'income' && incomeCents > 0 ? (
-              `Continuar — ${formatCurrency(incomeCents)}/mês`
+            ) : step === 'balance' && currentBalanceCents > 0 ? (
+              `Continuar — ${formatCurrency(currentBalanceCents)}`
+            ) : step === 'budget' && monthlyBudgetCents > 0 ? (
+              `Continuar — ${formatCurrency(monthlyBudgetCents)}/mês`
+            ) : step === 'categoryBudget' ? (
+              categoryBudgetTotal > 0 ? 'Continuar com distribuição' : 'Continuar sem distribuir'
             ) : (
               'Continuar'
             )}
           </button>
+          {step === 'categoryBudget' && (
+            <button
+              type="button"
+              onClick={skipCategoryBudget}
+              disabled={pending}
+              className="w-full py-2 text-sm font-medium text-[#6B7280] hover:text-[#1A1D23] transition-colors disabled:opacity-40"
+            >
+              Pular esta etapa
+            </button>
+          )}
           {step === 'expenses' && expenseRows.length === 0 && (
             <button
               type="button"

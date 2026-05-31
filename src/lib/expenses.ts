@@ -1,6 +1,6 @@
 import { unstable_cache } from 'next/cache';
 import type { Category, Expense, ExpenseFilters, ExpenseInput, ExpensePaymentMethod, DashboardMetrics, SpendingTimelineBucket, SpendingTimelineData } from '@/types';
-import type { Database } from '@/types/supabase';
+import type { Database, Json } from '@/types/supabase';
 import { createServiceClient, isSupabaseEnabled } from '@/lib/supabase/server';
 import { getCategories, getCategoriesByIds } from '@/lib/categories';
 import { getBudgets } from '@/lib/budgets';
@@ -39,6 +39,43 @@ function normalizePaymentMethod(value: unknown): ExpensePaymentMethod {
   return typeof value === 'string' && PAYMENT_METHODS.has(value as ExpensePaymentMethod)
     ? (value as ExpensePaymentMethod)
     : 'other';
+}
+
+function readCreditDetails(metadata: Json | null | undefined): Expense['creditDetails'] {
+  if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) return null;
+  const purchaseType = metadata.credit_purchase_type;
+  if (purchaseType === 'single') return { purchaseType: 'single' };
+  if (purchaseType !== 'installment') return null;
+
+  const installmentCurrent = Number(metadata.installment_current);
+  const installmentTotal = Number(metadata.installment_total);
+  if (
+    !Number.isInteger(installmentCurrent) ||
+    !Number.isInteger(installmentTotal) ||
+    installmentCurrent < 1 ||
+    installmentTotal < 2 ||
+    installmentCurrent > installmentTotal
+  ) {
+    return null;
+  }
+
+  return {
+    purchaseType: 'installment',
+    installmentCurrent,
+    installmentTotal,
+  };
+}
+
+function buildExpenseMetadata(input: Pick<ExpenseInput, 'paymentMethod' | 'creditDetails'>): Json | undefined {
+  if (input.paymentMethod !== 'credit' || !input.creditDetails) return undefined;
+  if (input.creditDetails.purchaseType === 'single') {
+    return { credit_purchase_type: 'single' };
+  }
+  return {
+    credit_purchase_type: 'installment',
+    installment_current: input.creditDetails.installmentCurrent ?? 1,
+    installment_total: input.creditDetails.installmentTotal ?? 2,
+  };
 }
 
 function attachCategoryData(expense: Expense, categories: Map<string, Category>): Expense {
@@ -88,6 +125,9 @@ function rowToExpense(row: ExpensesRow): Expense {
     description: row.description,
     source: row.source as import('@/types').ExpenseSource,
     paymentMethod: normalizePaymentMethod(row.payment_method),
+    creditDetails: normalizePaymentMethod(row.payment_method) === 'credit'
+      ? readCreditDetails(row.metadata)
+      : null,
     tags: row.tags,
     isRecurring: (row as any).is_recurring ?? false,
     receipt: row.receipt_path
@@ -115,7 +155,7 @@ async function getExpensesFromDB(filters: ExpenseFilters): Promise<Expense[]> {
 
   let query = db
     .from('expenses')
-    .select('id,amount_cents,category_id,description,occurred_at,source,payment_method,tags,is_recurring,receipt_path,receipt_file_name,receipt_mime_type,receipt_size_bytes,receipt_uploaded_at,updated_at,created_at')
+    .select('id,amount_cents,category_id,description,occurred_at,source,payment_method,metadata,tags,is_recurring,receipt_path,receipt_file_name,receipt_mime_type,receipt_size_bytes,receipt_uploaded_at,updated_at,created_at')
     .eq('user_id', userId)
     .is('deleted_at', null)
     .order('occurred_at', { ascending: false });
@@ -149,6 +189,7 @@ async function createExpenseInDB(input: ExpenseInput): Promise<Expense> {
     description: input.description,
     source: input.source,
     payment_method: input.paymentMethod ?? 'other',
+    ...(buildExpenseMetadata(input) !== undefined && { metadata: buildExpenseMetadata(input) }),
     tags: input.tags,
     occurred_at: input.occurredAt ?? new Date().toISOString(),
     ...(input.isRecurring !== undefined && { is_recurring: input.isRecurring }),
@@ -205,6 +246,7 @@ async function getDashboardMetricsFromDBViaRPC(
       occurred_at: string;
       source: string;
       payment_method?: string | null;
+      metadata?: Json | null;
       tags: string[];
       is_recurring: boolean;
       receipt_path?: string | null;
@@ -228,6 +270,9 @@ async function getDashboardMetricsFromDBViaRPC(
         description: e.description,
         source: e.source as Expense['source'],
         paymentMethod: normalizePaymentMethod(e.payment_method),
+        creditDetails: normalizePaymentMethod(e.payment_method) === 'credit'
+          ? readCreditDetails(e.metadata)
+          : null,
         tags: e.tags ?? [],
         isRecurring: e.is_recurring ?? false,
         receipt: e.receipt_path
@@ -288,7 +333,7 @@ async function getDashboardMetricsFromDBViaQuery(
 
   const { data, error } = await db
     .from('expenses')
-    .select('id,amount_cents,category_id,description,occurred_at,source,payment_method,tags,is_recurring,receipt_path,receipt_file_name,receipt_mime_type,receipt_size_bytes,receipt_uploaded_at,updated_at,created_at')
+    .select('id,amount_cents,category_id,description,occurred_at,source,payment_method,metadata,tags,is_recurring,receipt_path,receipt_file_name,receipt_mime_type,receipt_size_bytes,receipt_uploaded_at,updated_at,created_at')
     .eq('user_id', userId)
     .is('deleted_at', null)
     .gte('occurred_at', start)
@@ -451,6 +496,11 @@ async function updateExpenseInDB(id: string, input: Partial<ExpenseInput>): Prom
   if (input.occurredAt !== undefined) updates.occurred_at = input.occurredAt;
   if (input.isRecurring !== undefined) updates.is_recurring = input.isRecurring;
   if (input.paymentMethod !== undefined) updates.payment_method = input.paymentMethod;
+  if (input.creditDetails !== undefined) {
+    updates.metadata = input.paymentMethod === 'credit' && input.creditDetails
+      ? buildExpenseMetadata(input) ?? {}
+      : {};
+  }
 
   const { data, error } = await db
     .from('expenses')
@@ -494,6 +544,7 @@ function updateExpenseFromMock(id: string, input: Partial<ExpenseInput>): Expens
     ...(input.description !== undefined && { description: input.description }),
     ...(input.occurredAt !== undefined && { createdAt: new Date(input.occurredAt) }),
     ...(input.paymentMethod !== undefined && { paymentMethod: input.paymentMethod }),
+    ...(input.creditDetails !== undefined && { creditDetails: input.creditDetails }),
   };
   updateSessionExpense(id, updated);
   return updated;
@@ -533,6 +584,7 @@ export async function createExpense(input: ExpenseInput): Promise<Expense> {
     description: input.description,
     source: input.source,
     paymentMethod: input.paymentMethod ?? 'other',
+    creditDetails: input.paymentMethod === 'credit' ? input.creditDetails ?? null : null,
     tags: input.tags,
     isRecurring: input.isRecurring ?? false,
     createdAt: input.occurredAt ? new Date(input.occurredAt) : new Date(),
