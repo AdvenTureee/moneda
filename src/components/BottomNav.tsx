@@ -20,6 +20,15 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Perfil', icon: User, href: '/perfil' },
 ];
 
+function scrollPageToTop() {
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  window.scrollTo({
+    top: 0,
+    left: 0,
+    behavior: reduceMotion ? 'auto' : 'smooth',
+  });
+}
+
 interface BottomNavProps {
   onAddExpense?: () => void;
 }
@@ -74,6 +83,7 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
           const isActive = item.href === '/'
             ? pathname === '/'
             : pathname.startsWith(item.href);
+          const isSamePath = pathname === item.href;
           const isPending = pendingHref === item.href && !isActive;
 
           return (
@@ -83,7 +93,13 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
               prefetch
               onMouseEnter={() => prefetchRoute(item.href)}
               onTouchStart={() => prefetchRoute(item.href)}
-              onClick={() => {
+              onClick={(event) => {
+                if (isSamePath) {
+                  event.preventDefault();
+                  setPendingHref(null);
+                  scrollPageToTop();
+                  return;
+                }
                 if (!isActive) setPendingHref(item.href);
               }}
               onFocus={() => prefetchRoute(item.href)}
