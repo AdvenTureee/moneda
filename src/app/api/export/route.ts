@@ -9,7 +9,7 @@ const PAYMENT_LABELS: Record<ExpensePaymentMethod, string> = {
   credit: 'Crédito',
   cash: 'Dinheiro',
   transfer: 'Transferência',
-  other: '',
+  other: 'Outro',
 };
 
 function csvEscape(value: unknown): string {
@@ -35,28 +35,48 @@ export async function GET() {
   const expenses = await getExpenses({ userId: user.id });
 
   const header = [
+    'id',
     'data',
     'descricao',
     'categoria_id',
     'categoria',
     'valor',
     'metodo_pagamento',
+    'tipo_compra_credito',
+    'parcela_atual',
+    'total_parcelas',
+    'recorrente',
     'fonte',
     'tags',
+    'comprovante_nome',
+    'comprovante_tipo',
+    'comprovante_tamanho_bytes',
+    'comprovante_enviado_em',
+    'comprovante_caminho',
   ];
 
   const lines = [toCsvLine(header)];
   for (const e of expenses) {
     lines.push(
       toCsvLine([
+        e.id,
         new Date(e.createdAt).toISOString(),
         e.description,
         e.category,
         e.categoryData?.name ?? '',
         formatAmount(e.amount),
         PAYMENT_LABELS[e.paymentMethod],
+        e.creditDetails?.purchaseType ?? '',
+        e.creditDetails?.installmentCurrent ?? '',
+        e.creditDetails?.installmentTotal ?? '',
+        e.isRecurring ? 'sim' : 'não',
         e.source,
         e.tags.join(';'),
+        e.receipt?.fileName ?? '',
+        e.receipt?.mimeType ?? '',
+        e.receipt?.sizeBytes ?? '',
+        e.receipt?.uploadedAt ? e.receipt.uploadedAt.toISOString() : '',
+        e.receipt?.path ?? '',
       ]),
     );
   }
