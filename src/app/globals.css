@@ -287,21 +287,26 @@ html[data-theme="dark"] textarea::placeholder {
 }
 
 .dashboard-mo-tip-row {
-  min-height: 140px;
+  min-height: 0;
+  gap: 12px;
   overflow-anchor: none;
+}
+
+.dashboard-mo-tip-row .mo-mascot {
+  width: 92px;
+  height: 92px;
 }
 
 .mo-tip-bubble {
   display: flex;
-  min-height: 104px;
-  max-height: 112px;
+  min-height: 96px;
   align-items: center;
-  padding: 12px 14px;
+  padding: 11px 12px;
   border: 1px solid var(--mo-tip-stroke);
-  border-radius: 18px;
+  border-radius: 16px;
   background: var(--mo-tip-fill);
   box-shadow: 0 14px 28px rgba(15, 23, 42, 0.11);
-  overflow: hidden;
+  overflow: visible;
   contain: layout paint;
   -webkit-tap-highlight-color: transparent;
   --mo-tip-fill: #FFFFFF;
@@ -322,20 +327,17 @@ html[data-theme="dark"] textarea::placeholder {
 .mo-tip-bubble__text {
   display: flex;
   align-items: flex-start;
-  gap: 8px;
+  gap: 7px;
   margin: 0;
-  font-size: 0.9375rem;
-  line-height: 1.5;
+  font-size: 0.875rem;
+  line-height: 1.42;
   letter-spacing: 0;
   color: var(--mo-tip-text);
 }
 
 .mo-tip-bubble__message {
   min-width: 0;
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
+  display: block;
   overflow-wrap: anywhere;
 }
 
@@ -349,8 +351,53 @@ html[data-theme="dark"] textarea::placeholder {
 }
 
 @media (min-width: 640px) {
+  .dashboard-mo-tip-row {
+    min-height: 140px;
+    gap: 20px;
+  }
+
+  .dashboard-mo-tip-row .mo-mascot {
+    width: 124px;
+    height: 124px;
+  }
+
+  .mo-tip-bubble {
+    min-height: 104px;
+    padding: 12px 14px;
+    border-radius: 18px;
+  }
+
   .mo-tip-bubble__text {
     font-size: 1rem;
+    line-height: 1.5;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 374px) {
+  .dashboard-mo-tip-row {
+    gap: 8px;
+  }
+
+  .dashboard-mo-tip-row .mo-mascot {
+    width: 78px;
+    height: 78px;
+  }
+
+  .mo-tip-bubble {
+    min-height: 88px;
+    padding: 10px 10px;
+    border-radius: 14px;
+  }
+
+  .mo-tip-bubble__text {
+    gap: 6px;
+    font-size: 0.8125rem;
+    line-height: 1.38;
+  }
+
+  .mo-tip-bubble__badge {
+    margin-top: 2px;
   }
 }
 

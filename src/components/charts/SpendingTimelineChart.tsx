@@ -26,6 +26,7 @@ interface Point extends SpendingTimelineBucket {
 
 const HEIGHT = 190;
 const PAD = { top: 18, right: 12, bottom: 34, left: 42 };
+const MIN_CHART_CEILING_CENTS = 200_000;
 const MODES: Array<{ value: SpendingTimelineMode; label: string }> = [
   { value: 'year', label: 'Ano' },
   { value: 'month', label: 'Mês' },
@@ -159,6 +160,7 @@ export default function SpendingTimelineChart({ data }: SpendingTimelineChartPro
     const plannedMax = Math.max(...prepared.map((p) => p.plannedCumulative), 0);
     const max = Math.max(
       fixedPlannedCeiling > 0 ? fixedPlannedCeiling : Math.max(spentMax, plannedMax),
+      MIN_CHART_CEILING_CENTS,
       1,
     );
 
@@ -180,6 +182,7 @@ export default function SpendingTimelineChart({ data }: SpendingTimelineChartPro
     fixedPlannedCeiling > 0
       ? fixedPlannedCeiling
       : Math.max(...points.map((p) => Math.max(p.spentCumulative, p.plannedCumulative)), 0),
+    MIN_CHART_CEILING_CENTS,
     1,
   );
   const spentPath = buildPath(points, 'ySpent');
