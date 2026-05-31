@@ -18,7 +18,7 @@ import { getLatestInsight } from '@/lib/insights';
 import { getMonthlyBudgetCents } from '@/lib/monthlyBudget';
 import { getCurrentBalanceCents, isUserOnboarded } from '@/lib/profiles';
 import { decryptProfilePii, getDisplayNameFromUser } from '@/lib/security/profilePii';
-import { formatCurrency, getCurrentPeriod } from '@/lib/utils';
+import { formatCurrency, getCurrentPeriod, isClosedMonthlyPeriod } from '@/lib/utils';
 import { createServiceClient, createSessionClient, isSupabaseEnabled } from '@/lib/supabase/server';
 
 // A page lê cookies de auth (createSessionClient) → Next a renderiza dinamicamente
@@ -81,6 +81,7 @@ export default async function DashboardPage({
   const welcomeMessage = `Olá, ${firstName}! Bem-vindo(a) ao Moneda. Conforme você cadastrar seus gastos ou nos enviar pelo WhatsApp, nossa Inteligência Artificial analisará seus hábitos de consumo para gerar insights financeiros personalizados aqui!`;
 
   const insightMessage = latestInsight ? latestInsight.message : welcomeMessage;
+  const isMonthlySummaryClosed = isClosedMonthlyPeriod(period);
 
   return (
     <>
@@ -222,6 +223,7 @@ export default async function DashboardPage({
             preview
             dismissible={false}
             cta={{ label: 'Ver mais', href: `/insights?period=${period}&open=monthly_summary` }}
+            footerNote={!isMonthlySummaryClosed ? 'Disponível quando o mês fechar.' : undefined}
           >
             <RegenerateInsightButton period={period} hasInsight={Boolean(latestInsight)} hideHeading variant="card" />
           </AIInsightBanner>

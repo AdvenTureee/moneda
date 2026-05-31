@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { DotsThree, Eye, Paperclip, PencilSimple, Trash, X } from '@phosphor-icons/react';
 import Icon from '@/components/Icon';
 import ReceiptViewerModal from '@/components/ReceiptViewerModal';
+import { PAYMENT_METHOD_BADGES } from '@/lib/paymentMethods';
 import { useToast } from '@/components/ToastProvider';
 import { formatCurrency, formatDate, formatTime } from '@/lib/utils';
 import type { Expense } from '@/types';
@@ -45,6 +46,8 @@ export default function ExpenseCard({
 
   const hasCardActions = Boolean(onEdit || onDelete);
   const paymentLabel = PAYMENT_LABELS[expense.paymentMethod];
+  const paymentBadge = PAYMENT_METHOD_BADGES[expense.paymentMethod];
+  const PaymentBadgeIcon = paymentBadge?.Icon;
   const creditLabel =
     expense.paymentMethod === 'credit' && expense.creditDetails?.purchaseType === 'installment'
       ? `${paymentLabel} ${expense.creditDetails.installmentCurrent}/${expense.creditDetails.installmentTotal}`
@@ -189,15 +192,27 @@ export default function ExpenseCard({
         className="flex items-center gap-3 flex-1 min-w-0 text-left"
       >
         <div
-          className="flex items-center justify-center shrink-0 rounded-full text-lg"
+          className="relative flex shrink-0 items-center justify-center rounded-full text-lg"
           style={{
             width: isCompact ? 36 : 40,
             height: isCompact ? 36 : 40,
             backgroundColor: category ? `${category.color}22` : '#6B728022',
           }}
-          aria-hidden
         >
-          <Icon name={category?.icon ?? 'Package'} size={20} color={category?.color ?? '#6B7280'} />
+          <Icon
+            name={category?.icon ?? 'Package'}
+            size={PaymentBadgeIcon ? (isCompact ? 18 : 19) : 20}
+            color={category?.color ?? '#6B7280'}
+          />
+          {PaymentBadgeIcon && (
+            <span
+              className="absolute bottom-0 right-0 flex h-4 w-4 items-center justify-center rounded-full shadow-[0_1px_4px_rgba(0,0,0,0.18)] ring-1 ring-white/80"
+              style={{ backgroundColor: paymentBadge.color, color: '#FFFFFF' }}
+              aria-label={`Método: ${creditLabel}`}
+            >
+              <PaymentBadgeIcon size={10} weight="bold" aria-hidden />
+            </span>
+          )}
         </div>
 
         <div className="flex-1 min-w-0">
@@ -208,15 +223,13 @@ export default function ExpenseCard({
           >
             {expense.description}
           </p>
-          <div className="mt-0.5 flex min-w-0 items-center gap-1.5">
-            <p className="min-w-0 truncate text-xs text-[#6B7280]">
-              {category?.name ?? 'Outros'} · {formatTime(new Date(expense.createdAt))}
-            </p>
-            {creditLabel && (
-              <span className="shrink-0 rounded-full bg-[#EEF9F4] px-1.5 py-0.5 text-[10px] font-semibold leading-none text-[#3FA876]">
-                {creditLabel}
-              </span>
-            )}
+          <div className="mt-0.5 flex min-w-0 items-center gap-1.5 text-xs text-[#6B7280]">
+            <span className="min-w-0 flex-1 truncate">
+              {category?.name ?? 'Outros'}
+            </span>
+            <span className="shrink-0 text-[11px] text-[#9CA3AF]">
+              {formatTime(new Date(expense.createdAt))}
+            </span>
           </div>
         </div>
 

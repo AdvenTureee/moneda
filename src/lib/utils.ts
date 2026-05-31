@@ -89,6 +89,14 @@ export function getCurrentPeriod(): string {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 }
 
+export function isValidPeriod(period: unknown): period is string {
+  return typeof period === 'string' && /^\d{4}-(0[1-9]|1[0-2])$/.test(period);
+}
+
+export function isClosedMonthlyPeriod(period: string): boolean {
+  return isValidPeriod(period) && period < getCurrentPeriod();
+}
+
 export function getPreviousPeriod(period: string): string {
   const [year, month] = period.split('-').map(Number);
   const d = new Date(year, month - 2, 1);

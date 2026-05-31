@@ -63,6 +63,15 @@ function plannedForMode(
   return data.monthlyPlanned / Math.max(data.month.length, 1) / 24;
 }
 
+function plannedCeilingForMode(
+  mode: SpendingTimelineMode,
+  data: SpendingTimelineData,
+): number {
+  if (mode === 'year') return 0;
+  if (mode === 'month') return data.monthlyPlanned;
+  return data.monthlyPlanned / Math.max(data.month.length, 1);
+}
+
 function buildPath(points: Point[], key: 'ySpent' | 'yPlanned'): string {
   return points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p[key]}`).join(' ');
 }
@@ -121,15 +130,17 @@ export default function SpendingTimelineChart({ data }: SpendingTimelineChartPro
 
   const points = useMemo<Point[]>(() => {
     let spentCumulative = 0;
-    let plannedCumulative = 0;
+    const fixedPlannedCeiling = plannedCeilingForMode(mode, data);
     const prepared = buckets.map((bucket, index) => {
       const plannedAmount = plannedForMode(mode, bucket, index, buckets.length, data);
+      const plannedCumulative =
+        mode === 'year'
+          ? plannedAmount
+          : fixedPlannedCeiling;
       if (mode === 'year') {
         spentCumulative = bucket.amount;
-        plannedCumulative = plannedAmount;
       } else {
         spentCumulative += bucket.amount;
-        plannedCumulative += plannedAmount;
       }
       return {
         ...bucket,
@@ -144,24 +155,31 @@ export default function SpendingTimelineChart({ data }: SpendingTimelineChartPro
       };
     });
 
+    const spentMax = Math.max(...prepared.map((p) => p.spentCumulative), 0);
+    const plannedMax = Math.max(...prepared.map((p) => p.plannedCumulative), 0);
     const max = Math.max(
-      ...prepared.map((p) => Math.max(p.spentCumulative, p.plannedCumulative)),
+      fixedPlannedCeiling > 0 ? fixedPlannedCeiling : Math.max(spentMax, plannedMax),
       1,
     );
 
     return prepared.map((point, index) => {
       const x = PAD.left + (prepared.length === 1 ? chartW / 2 : (index / (prepared.length - 1)) * chartW);
+      const spentRatio = Math.min(point.spentCumulative / max, 1);
+      const plannedRatio = Math.min(point.plannedCumulative / max, 1);
       return {
         ...point,
         x,
-        ySpent: PAD.top + chartH * (1 - point.spentCumulative / max),
-        yPlanned: PAD.top + chartH * (1 - point.plannedCumulative / max),
+        ySpent: PAD.top + chartH * (1 - spentRatio),
+        yPlanned: PAD.top + chartH * (1 - plannedRatio),
       };
     });
   }, [buckets, chartH, chartW, data, mode]);
 
+  const fixedPlannedCeiling = plannedCeilingForMode(mode, data);
   const maxValue = Math.max(
-    ...points.map((p) => Math.max(p.spentCumulative, p.plannedCumulative)),
+    fixedPlannedCeiling > 0
+      ? fixedPlannedCeiling
+      : Math.max(...points.map((p) => Math.max(p.spentCumulative, p.plannedCumulative)), 0),
     1,
   );
   const spentPath = buildPath(points, 'ySpent');

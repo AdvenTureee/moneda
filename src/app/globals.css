@@ -644,6 +644,14 @@ html[data-theme="dark"] .expense-action-separator {
   cursor: wait;
 }
 
+.insight-generate-button--locked:disabled {
+  cursor: not-allowed;
+  opacity: 0.82;
+  background: color-mix(in srgb, var(--color-brand-green) 32%, var(--color-surface) 68%);
+  color: color-mix(in srgb, var(--color-brand-green) 78%, var(--color-text-primary) 22%);
+  box-shadow: none;
+}
+
 .insight-generate-button--large {
   min-height: 44px;
   padding: 12px 24px;

@@ -3,13 +3,8 @@ import { redirect } from 'next/navigation';
 import InsightsView from './InsightsView';
 import { getDashboardMetrics } from '@/lib/expenses';
 import { getUserInsights } from '@/lib/insights';
-import { getCurrentPeriod, getPreviousPeriod } from '@/lib/utils';
+import { getCurrentPeriod, getPreviousPeriod, isValidPeriod } from '@/lib/utils';
 import { createSessionClient } from '@/lib/supabase/server';
-
-
-function isValidPeriod(s: unknown): s is string {
-  return typeof s === 'string' && /^\d{4}-(0[1-9]|1[0-2])$/.test(s);
-}
 
 export default async function InsightsPage({
   searchParams,

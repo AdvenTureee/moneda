@@ -3,7 +3,9 @@ import { createSessionClient, createServiceClient, isSupabaseEnabled } from '@/l
 import { generateMonthlySummary, detectSpendingAlerts } from '@/lib/groq';
 import { getExpenses } from '@/lib/expenses';
 import { getCategories } from '@/lib/categories';
-import { getCurrentPeriod } from '@/lib/utils';
+import { getCurrentPeriod, isClosedMonthlyPeriod, isValidPeriod } from '@/lib/utils';
+
+const MONTH_NOT_CLOSED_MESSAGE = 'O resumo mensal fica disponível quando o mês fechar.';
 
 export async function POST(req: NextRequest) {
   try {
@@ -15,6 +17,14 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const period: string = body.period ?? getCurrentPeriod();
+
+    if (!isValidPeriod(period)) {
+      return NextResponse.json({ error: 'Período inválido.' }, { status: 400 });
+    }
+
+    if (!isClosedMonthlyPeriod(period)) {
+      return NextResponse.json({ error: MONTH_NOT_CLOSED_MESSAGE }, { status: 403 });
+    }
 
     if (!process.env.GROQ_API_KEY) {
       return NextResponse.json({ error: 'GROQ_API_KEY não configurada.' }, { status: 500 });

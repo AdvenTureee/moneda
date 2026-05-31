@@ -10,7 +10,7 @@ import Icon from '@/components/Icon';
 import Mo from '@/components/Mo';
 import MoInsightsChat from '@/components/MoInsightsChat';
 import CategoryChip from '@/components/CategoryChip';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, isClosedMonthlyPeriod } from '@/lib/utils';
 import type { AIInsight } from '@/types';
 
 interface InsightsViewProps {
@@ -82,6 +82,7 @@ export default function InsightsView({
   const [search, setSearch] = useState('');
   const [activeType, setActiveType] = useState<string | null>(null);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const isClosedPeriod = isClosedMonthlyPeriod(period);
 
   const filteredInsights = useMemo(() => {
     let result = [...insights];
@@ -139,6 +140,10 @@ export default function InsightsView({
   }, [searchParams, insights, period]);
 
   async function handleGenerate() {
+    if (!isClosedPeriod) {
+      setGenError('O resumo mensal fica disponível quando o mês fechar.');
+      return;
+    }
     setGenerating(true);
     setGenError(null);
     try {
@@ -204,15 +209,30 @@ export default function InsightsView({
   const hasMonthlySummary = insights.some((i) => i.type === 'monthly_summary');
 
   const summaryGenerateButton = expenseCount > 0 && (
-    <button
-      type="button"
-      onClick={handleGenerate}
-      disabled={generating}
-      className="insight-generate-button"
-    >
-      {generating && <span className="insight-generate-button__spinner" aria-hidden />}
-      <span>{generating ? 'Gerando…' : hasMonthlySummary ? 'Regenerar' : 'Gerar'}</span>
-    </button>
+    <div className="flex items-center justify-end">
+      <button
+        type="button"
+        onClick={handleGenerate}
+        disabled={generating || !isClosedPeriod}
+        className={`insight-generate-button ${!isClosedPeriod ? 'insight-generate-button--locked' : ''}`}
+        aria-label={
+          isClosedPeriod
+            ? hasMonthlySummary ? 'Regenerar resumo do mês' : 'Gerar resumo do mês'
+            : 'Resumo do mês disponível quando o mês fechar'
+        }
+      >
+        {generating && <span className="insight-generate-button__spinner" aria-hidden />}
+        <span>
+          {generating
+            ? 'Gerando…'
+            : !isClosedPeriod
+              ? 'Mês aberto'
+              : hasMonthlySummary
+                ? 'Regenerar'
+                : 'Gerar'}
+        </span>
+      </button>
+    </div>
   );
 
   return (
@@ -305,13 +325,20 @@ export default function InsightsView({
           >
             <Mo variant="thinking" size={112} className="mx-auto mb-2" />
             <p className="text-sm text-[#6B7280]">
-              Nenhuma análise gerada ainda.
+              {isClosedPeriod
+                ? 'Nenhuma análise gerada ainda.'
+                : 'A Mo fecha esse resumo quando o mês terminar.'}
             </p>
             <button
               type="button"
               onClick={handleGenerate}
-              disabled={generating}
+              disabled={generating || !isClosedPeriod}
               className="insight-generate-button insight-generate-button--large mt-4"
+              aria-label={
+                isClosedPeriod
+                  ? 'Gerar primeira análise'
+                  : 'Resumo do mês disponível quando o mês fechar'
+              }
             >
               Gerar primeira análise
             </button>
@@ -349,12 +376,19 @@ export default function InsightsView({
                   key={type}
                   className={`animate-fade-up delay-${Math.min(groupIndex + 4, 8)}`}
                 >
-                  <div className="mb-4 flex items-center justify-between gap-3">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-[#6B7280] flex items-center gap-1.5 min-w-0">
-                      <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: meta.color }} />
-                      {meta.label}
-                    </h3>
-                    {type === 'monthly_summary' && summaryGenerateButton}
+                  <div className="mb-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <h3 className="text-xs font-bold uppercase tracking-wider text-[#6B7280] flex items-center gap-1.5 min-w-0">
+                        <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: meta.color }} />
+                        {meta.label}
+                      </h3>
+                      {type === 'monthly_summary' && summaryGenerateButton}
+                    </div>
+                    {type === 'monthly_summary' && !isClosedPeriod && (
+                      <div className="mt-3 border-t border-[var(--color-border)]/70 pt-2 text-center text-[11px] font-semibold text-[var(--color-text-secondary)]">
+                        Disponível quando o mês fechar.
+                      </div>
+                    )}
                   </div>
                   {type === 'monthly_summary' && genError && (
                     <p className="text-xs text-[#E07070] -mt-1 mb-2">{genError}</p>

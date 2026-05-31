@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, type ReactNode } from 'react';
-import { X, ArrowRight, Sparkle } from '@phosphor-icons/react';
+import { X, ArrowSquareOut, Sparkle } from '@phosphor-icons/react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import type { Components } from 'react-markdown';
@@ -12,10 +12,11 @@ interface AIInsightBannerProps {
   dismissible?: boolean;
   /** When true, shows only a short preview of the message. */
   preview?: boolean;
+  footerNote?: string;
   children?: ReactNode;
 }
 
-const PREVIEW_CHAR_LIMIT = 240;
+const PREVIEW_CHAR_LIMIT = 145;
 
 function buildPreview(markdown: string): string {
   const firstBlock = markdown.split(/\n\s*\n/)[0]?.trim() ?? '';
@@ -28,7 +29,7 @@ function buildPreview(markdown: string): string {
 
 const markdownComponents: Components = {
   p: ({ children }) => (
-    <p className="text-base font-semibold text-white/90 leading-relaxed mb-2 last:mb-0">{children}</p>
+    <p className="text-sm sm:text-base font-semibold text-white/90 leading-[1.6] sm:leading-relaxed mb-1.5 last:mb-0">{children}</p>
   ),
   strong: ({ children }) => (
     <strong className="font-bold text-white">{children}</strong>
@@ -37,7 +38,7 @@ const markdownComponents: Components = {
   ol: ({ children }) => (
     <ol className="space-y-1 mb-2 last:mb-0 list-decimal ml-4">{children}</ol>
   ),
-  li: ({ children }) => <li className="text-base font-semibold text-white/90 ml-4 list-disc">{children}</li>,
+  li: ({ children }) => <li className="text-sm sm:text-base font-semibold text-white/90 ml-4 list-disc">{children}</li>,
   h1: ({ children }) => (
     <h1 className="text-lg font-extrabold text-white mb-2">{children}</h1>
   ),
@@ -54,6 +55,7 @@ export default function AIInsightBanner({
   cta,
   dismissible = true,
   preview = false,
+  footerNote,
   children,
 }: AIInsightBannerProps) {
   const [dismissed, setDismissed] = useState(false);
@@ -66,14 +68,14 @@ export default function AIInsightBanner({
     <div
       role="complementary"
       aria-label="Insight da Mo"
-      className="ai-insight-banner relative text-white rounded-[20px] p-5 shadow-md"
+      className="ai-insight-banner relative text-white rounded-[18px] p-4 shadow-md sm:rounded-[20px] sm:p-5"
     >
-      <div className="flex items-start gap-3">
-        <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center shrink-0">
-          <Sparkle size={24} weight="fill" className="text-white" />
+      <div className="flex items-start gap-2.5 sm:gap-3">
+        <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center shrink-0 sm:h-10 sm:w-10">
+          <Sparkle size={22} weight="fill" className="text-white" />
         </div>
 
-        <div className="flex-1 min-w-0 pr-6">
+        <div className={`flex-1 min-w-0 ${dismissible ? 'pr-6' : 'pr-0'}`}>
           <div className="text-sm leading-relaxed">
             <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
               {rendered}
@@ -81,20 +83,19 @@ export default function AIInsightBanner({
           </div>
 
           {(cta || children) && (
-            <div className="flex items-center justify-between mt-3">
+            <div className="mt-2.5 flex items-center justify-between gap-3 sm:mt-3">
               {cta && (
                 <a
                   href={cta.href ?? '#'}
                   onClick={cta.onClick}
-                  className="inline-flex items-center gap-1 text-base font-semibold text-white/80 hover:text-white transition-colors"
-                  style={{ minWidth: 44, minHeight: 44 }}
+                  className="inline-flex min-h-8 min-w-[118px] shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-[#BFE1FF]/35 bg-[#173F5F]/70 px-3 py-1.5 text-xs font-extrabold text-[#D9EEFF] shadow-[0_4px_14px_rgba(0,0,0,0.12)] transition-all duration-150 hover:border-[#D9EEFF]/55 hover:bg-[#1F5D86]/80 active:scale-95 sm:min-h-9 sm:min-w-[136px] sm:gap-2 sm:px-3.5 sm:py-2 sm:text-sm"
                 >
+                  <ArrowSquareOut size={15} weight="bold" aria-hidden />
                   {cta.label}
-                  <ArrowRight size={14} aria-hidden />
                 </a>
               )}
               {children && (
-                <div className="flex items-center gap-2">
+                <div className="flex shrink-0 items-center justify-end">
                   {children}
                 </div>
               )}
@@ -102,6 +103,12 @@ export default function AIInsightBanner({
           )}
         </div>
       </div>
+
+      {footerNote && (
+        <div className="mt-3 border-t border-white/15 pt-2 text-center text-[11px] font-semibold leading-snug text-white/80">
+          {footerNote}
+        </div>
+      )}
 
       {dismissible && (
         <button

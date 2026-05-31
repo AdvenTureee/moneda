@@ -3,13 +3,15 @@
 import { useState, useMemo, useEffect, useCallback, useRef, useLayoutEffect, Suspense, type ComponentType } from 'react';
 import { createPortal } from 'react-dom';
 import { useSearchParams } from 'next/navigation';
-import { CalendarBlank, CaretDown, CreditCard, FunnelSimple, MagnifyingGlass, Tag, Wallet, X } from '@phosphor-icons/react';
+import { CalendarBlank, CreditCard, MagnifyingGlass, Tag, Wallet, X } from '@phosphor-icons/react';
 import ExpenseCard from '@/components/ExpenseCard';
 import AddExpenseModal from '@/components/AddExpenseModal';
 import ConfirmDialog from '@/components/ConfirmDialog';
+import DatePicker from '@/components/DatePicker';
 import { buildPreset, type DateRange } from '@/components/DateRangePicker';
 import Icon from '@/components/Icon';
 import Mo from '@/components/Mo';
+import { LEGEND_PAYMENT_METHODS, PAYMENT_METHOD_BADGES } from '@/lib/paymentMethods';
 import { useToast } from '@/components/ToastProvider';
 import { groupExpensesByDate, formatCurrency } from '@/lib/utils';
 import { useCategories } from '@/hooks/useCategories';
@@ -17,11 +19,12 @@ import type { Expense, ExpenseInput, ExpensePaymentMethod } from '@/types';
 
 type FilterTab = 'date' | 'category' | 'payment';
 
-const PAYMENT_FILTERS: Array<{ value: ExpensePaymentMethod; label: string; icon: string }> = [
-  { value: 'pix', label: 'PIX', icon: 'CurrencyDollar' },
-  { value: 'debit', label: 'Débito', icon: 'Bank' },
-  { value: 'credit', label: 'Crédito', icon: 'CreditCard' },
-];
+const PAYMENT_FILTERS: Array<{ value: ExpensePaymentMethod; label: string; icon: string }> =
+  LEGEND_PAYMENT_METHODS.map((method) => ({
+    value: method,
+    label: PAYMENT_METHOD_BADGES[method]?.label ?? method,
+    icon: PAYMENT_METHOD_BADGES[method]?.iconName ?? 'CreditCard',
+  }));
 
 const DATE_FILTERS = [
   { id: 'all', label: 'Tudo' },
@@ -37,6 +40,12 @@ function parseDateInputToIso(input: string, end: boolean): string | null {
   if (end) date.setHours(23, 59, 59, 999);
   else date.setHours(0, 0, 0, 0);
   return date.toISOString();
+}
+
+function isoToDateInput(iso: string | null): string {
+  if (!iso) return '';
+  const date = new Date(iso);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }
 
 function rangeFromSearchParams(params: URLSearchParams): DateRange | null {
@@ -66,11 +75,13 @@ function FeedPageInner() {
   const [activePaymentMethod, setActivePaymentMethod] = useState<ExpensePaymentMethod | null>(null);
   const [search, setSearch] = useState('');
   const [dateRange, setDateRange] = useState<DateRange>(() => buildPreset('all'));
+  const [customFrom, setCustomFrom] = useState('');
+  const [customTo, setCustomTo] = useState('');
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [activeFilterTab, setActiveFilterTab] = useState<FilterTab>('date');
   const [filtersPosition, setFiltersPosition] = useState<{ top: number; left: number; width: number } | null>(null);
   const [mounted, setMounted] = useState(false);
-  const filtersButtonRef = useRef<HTMLButtonElement | null>(null);
+  const filtersAnchorRef = useRef<HTMLDivElement | null>(null);
 
   // Read date range from URL after mount to avoid SSR/CSR hydration mismatch.
   useEffect(() => {
@@ -79,6 +90,13 @@ function FeedPageInner() {
     // Run only on initial mount; further filter changes come from the picker.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (dateRange.presetId !== 'custom') return;
+    setCustomFrom(isoToDateInput(dateRange.from));
+    setCustomTo(isoToDateInput(dateRange.to));
+  }, [dateRange]);
+
   const [allExpenses, setAllExpenses] = useState<Expense[]>([]);
   const { data: categories } = useCategories();
   const [loading, setLoading] = useState(true);
@@ -89,12 +107,30 @@ function FeedPageInner() {
 
   useEffect(() => setMounted(true), []);
 
+  useEffect(() => {
+    if (!filtersOpen) return;
+
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousBodyOverscroll = document.body.style.overscrollBehavior;
+
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden';
+    document.body.style.overscrollBehavior = 'contain';
+
+    return () => {
+      document.documentElement.style.overflow = previousHtmlOverflow;
+      document.body.style.overflow = previousBodyOverflow;
+      document.body.style.overscrollBehavior = previousBodyOverscroll;
+    };
+  }, [filtersOpen]);
+
   useLayoutEffect(() => {
     if (!filtersOpen) return;
     const update = () => {
-      const button = filtersButtonRef.current;
-      if (!button) return;
-      const rect = button.getBoundingClientRect();
+      const anchor = filtersAnchorRef.current;
+      if (!anchor) return;
+      const rect = anchor.getBoundingClientRect();
       const width = Math.min(420, window.innerWidth - 16);
       setFiltersPosition({
         top: rect.bottom + 6,
@@ -227,9 +263,23 @@ function FeedPageInner() {
 
   const clearFilters = useCallback(() => {
     setDateRange(buildPreset('all'));
+    setCustomFrom('');
+    setCustomTo('');
     setActiveCategory(null);
     setActivePaymentMethod(null);
   }, []);
+
+  const openFilterTab = useCallback((tabId: FilterTab) => {
+    setActiveFilterTab(tabId);
+    setFiltersOpen(true);
+  }, []);
+
+  const applyCustomDateRange = useCallback(() => {
+    const from = parseDateInputToIso(customFrom, false);
+    const to = parseDateInputToIso(customTo, true);
+    if (!from || !to) return;
+    setDateRange({ from, to, presetId: 'custom' });
+  }, [customFrom, customTo]);
 
   const handleDelete = useCallback(async (expense: Expense) => {
     setDeletingExpense(expense);
@@ -279,8 +329,7 @@ function FeedPageInner() {
           className="themed-card bg-white rounded-[14px] p-3 space-y-3 mb-4 animate-fade-up delay-1"
         >
             {/* Search bar */}
-            <div className="flex items-center gap-2">
-              <div className="relative flex-1">
+            <div className="relative">
                 <MagnifyingGlass
                   size={16}
                   className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9CA3AF]"
@@ -291,44 +340,82 @@ function FeedPageInner() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Buscar gasto..."
-                  className="themed-field w-full pl-9 pr-4 py-2.5 rounded-[10px] bg-[#F4F6FA] border border-transparent text-sm text-[#1A1D23] placeholder:text-[#9CA3AF] outline-none focus:border-[#A8C5E0] transition-colors"
+                  className="themed-field w-full pl-9 pr-4 py-2.5 rounded-[10px] bg-[#F4F6FA] border border-transparent text-sm text-[#1A1D23] placeholder:text-[#9CA3AF] outline-none transition-colors focus:border-[#A8C5E0]"
                   aria-label="Buscar gastos"
                 />
-              </div>
-              <button
-                ref={filtersButtonRef}
-                type="button"
-                onClick={() => setFiltersOpen((open) => !open)}
-                className="themed-field inline-flex min-h-[42px] shrink-0 items-center gap-2 rounded-[10px] border border-[#E5E7EB] bg-[#F4F6FA] px-3 py-2.5 text-sm font-semibold text-[#1A1D23] outline-none transition-[border-color,background-color,box-shadow] hover:bg-[#EEF2F7] focus:border-[#A8C5E0] focus:shadow-[0_0_0_2px_rgba(168,197,224,0.28)] active:bg-[#E8EDF4]"
-                aria-label={`Filtros: data ${dateFilterLabel(dateRange)}, categoria ${categoryLabel}, método ${paymentFilterLabel(activePaymentMethod)}`}
-                aria-expanded={filtersOpen}
-              >
-                <FunnelSimple size={16} weight="bold" className="text-[#6B7280]" />
-                <span>Filtros</span>
-                {activeFilterCount > 0 && (
-                  <span className="grid h-5 min-w-5 place-items-center rounded-full bg-[#5BBF8E] px-1.5 text-[11px] font-bold leading-none text-white">
-                    {activeFilterCount}
-                  </span>
-                )}
-                <CaretDown
-                  size={10}
-                  weight="bold"
-                  className={`text-[#6B7280] transition-transform ${filtersOpen ? 'rotate-180' : ''}`}
-                />
-              </button>
             </div>
 
-          <div className="grid grid-cols-3 gap-1.5 text-[11px] font-semibold text-[#6B7280]">
-            <span className="truncate rounded-[8px] bg-[#F4F6FA] px-2.5 py-1.5">
-              Data: {dateFilterLabel(dateRange)}
-            </span>
-            <span className="truncate rounded-[8px] bg-[#F4F6FA] px-2.5 py-1.5">
-              Categoria: {categoryLabel}
-            </span>
-            <span className="truncate rounded-[8px] bg-[#F4F6FA] px-2.5 py-1.5">
-              Método: {paymentFilterLabel(activePaymentMethod)}
-            </span>
+          <div ref={filtersAnchorRef} className="grid grid-cols-3 gap-1.5 text-[11px] font-semibold text-[#6B7280]">
+            {filterTabs.map((tab) => {
+              const TabIcon = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => openFilterTab(tab.id)}
+                  aria-label={`Filtro de ${tab.label.toLowerCase()}: ${tab.value}. Clique para alterar.`}
+                  aria-pressed={tab.active}
+                  data-active={tab.active ? 'true' : 'false'}
+                  className={`group flex min-h-9 min-w-0 items-center justify-center gap-1.5 rounded-[8px] border px-2.5 py-1.5 text-center outline-none transition-[background-color,border-color,box-shadow,color,transform] duration-150 ease-out hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-[#A8C5E0] focus-visible:ring-offset-1 ${
+                    tab.active
+                      ? 'border-[#5BBF8E]/45 bg-[#EEF9F4] text-[#2E8F67] hover:border-[#5BBF8E]/70 hover:bg-[#EAF7F0] hover:shadow-[0_4px_10px_rgba(91,191,142,0.10)]'
+                      : 'border-[#E5E7EB] bg-[#F4F6FA] text-[#6B7280] hover:border-[#A8C5E0]/70 hover:bg-[#EEF2F7] hover:shadow-[0_4px_10px_rgba(31,41,55,0.05)]'
+                  }`}
+                >
+                  <TabIcon
+                    size={13}
+                    weight="bold"
+                    className={`shrink-0 ${tab.active ? 'text-[#3FA876]' : 'text-[#7C8898]'}`}
+                    aria-hidden
+                  />
+                  <span className="min-w-0 truncate">{tab.value}</span>
+                  {tab.active && (
+                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#5BBF8E]" aria-hidden />
+                  )}
+                </button>
+              );
+            })}
           </div>
+
+          {activeFilterCount > 0 && (
+            <div className="flex justify-end -mt-1">
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="rounded-[8px] px-2 py-1 text-[11px] font-bold text-[#5BBF8E] outline-none transition-colors hover:bg-[#EEF9F4] focus-visible:ring-2 focus-visible:ring-[#A8C5E0] focus-visible:ring-offset-1 dark:hover:bg-white/8"
+              >
+                Limpar
+              </button>
+            </div>
+          )}
+
+          <section
+            className="flex flex-wrap items-center gap-x-2 gap-y-1 px-0.5 text-[11px] font-semibold text-[#7C8898]"
+            aria-label="Legenda de métodos de pagamento"
+          >
+            <span className="shrink-0 text-[#6B7280]">Métodos:</span>
+            {LEGEND_PAYMENT_METHODS.map((method) => {
+              const meta = PAYMENT_METHOD_BADGES[method];
+              if (!meta) return null;
+              const MethodIcon = meta.Icon;
+              return (
+                <span
+                  key={method}
+                  className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap"
+                  style={{ color: meta.color }}
+                >
+                  <span
+                    className="grid h-4 w-4 place-items-center rounded-full"
+                    style={{ backgroundColor: meta.color, color: '#FFFFFF' }}
+                    aria-hidden
+                  >
+                    <MethodIcon size={9} weight="bold" />
+                  </span>
+                  {meta.label}
+                </span>
+              );
+            })}
+          </section>
         </div>
 
         {mounted && filtersOpen && filtersPosition && createPortal(
@@ -353,7 +440,9 @@ function FeedPageInner() {
               <div className="flex items-center justify-between gap-3 px-2 pb-2 pt-1">
                 <div>
                   <p className="text-sm font-bold text-[#1A1D23] dark:text-[#F5F7FA]">Filtros</p>
-                  <p className="text-xs font-medium text-[#9CA3AF]">Data, categoria e método</p>
+                  <p className="text-xs font-medium text-[#9CA3AF]">
+                    {filterTabs.find((tab) => tab.id === activeFilterTab)?.label}: {filterTabs.find((tab) => tab.id === activeFilterTab)?.value}
+                  </p>
                 </div>
                 <div className="flex items-center gap-1.5">
                   {activeFilterCount > 0 && (
@@ -376,67 +465,64 @@ function FeedPageInner() {
                 </div>
               </div>
 
-              <div className="rounded-[14px] border border-[color-mix(in_srgb,var(--color-border)_76%,transparent)] bg-[color-mix(in_srgb,var(--color-surface)_86%,transparent)] p-1.5">
-                <div className="grid grid-cols-3 gap-1" role="tablist" aria-label="Tipo de filtro">
-                  {filterTabs.map((tab) => {
-                    const TabIcon = tab.icon;
-                    const selected = activeFilterTab === tab.id;
-                    return (
-                      <button
-                        key={tab.id}
-                        type="button"
-                        role="tab"
-                        aria-selected={selected}
-                        onClick={() => setActiveFilterTab(tab.id)}
-                        className={`min-w-0 rounded-[11px] px-2.5 py-2 text-left transition-colors ${
-                          selected
-                            ? 'bg-[#5BBF8E] text-white'
-                            : 'text-[#6B7280] hover:bg-[#F1F3F7] dark:text-[#CBD5E1] dark:hover:bg-white/8'
-                        }`}
-                      >
-                        <span className="flex items-center gap-1.5 text-[12px] font-bold leading-none">
-                          <TabIcon size={13} weight="bold" className="shrink-0" />
-                          <span className="truncate">{tab.label}</span>
-                          {tab.active && (
-                            <span
-                              className={`ml-auto h-1.5 w-1.5 shrink-0 rounded-full ${
-                                selected ? 'bg-white' : 'bg-[#5BBF8E]'
-                              }`}
-                              aria-hidden
-                            />
-                          )}
-                        </span>
-                        <span
-                          className={`mt-1 block truncate text-[10px] font-semibold leading-tight ${
-                            selected ? 'text-white/80' : 'text-[#9CA3AF]'
-                          }`}
-                        >
-                          {tab.value}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="mt-2 max-h-[min(360px,calc(100dvh-180px))] overflow-y-auto rounded-[14px] border border-[color-mix(in_srgb,var(--color-border)_76%,transparent)] bg-[color-mix(in_srgb,var(--color-surface)_86%,transparent)] p-2">
+              <div className="mt-2 max-h-[min(360px,calc(100dvh-140px))] overflow-y-auto overscroll-contain rounded-[14px] border border-[color-mix(in_srgb,var(--color-border)_76%,transparent)] bg-[color-mix(in_srgb,var(--color-surface)_86%,transparent)] p-2">
                 {activeFilterTab === 'date' && (
-                  <div className="grid grid-cols-2 gap-1.5" role="tabpanel" aria-label="Filtro de data">
-                    {DATE_FILTERS.map((item) => {
-                      const selected = dateRange.presetId === item.id;
-                      return (
-                        <button
-                          key={item.id}
-                          type="button"
-                          onClick={() => setDateRange(buildPreset(item.id))}
-                          className={`date-range-option min-h-11 rounded-[11px] px-3 text-left text-sm font-semibold transition-colors ${
-                            selected ? 'date-range-option--selected' : ''
-                          }`}
-                        >
-                          {item.label}
-                        </button>
-                      );
-                    })}
+                  <div className="space-y-2" role="tabpanel" aria-label="Filtro de data">
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {DATE_FILTERS.map((item) => {
+                        const selected = dateRange.presetId === item.id;
+                        return (
+                          <button
+                            key={item.id}
+                            type="button"
+                            onClick={() => setDateRange(buildPreset(item.id))}
+                            className={`date-range-option min-h-11 rounded-[11px] px-3 text-left text-sm font-semibold transition-colors ${
+                              selected ? 'date-range-option--selected' : ''
+                            }`}
+                          >
+                            {item.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <div className="date-range-custom border-t px-1 pb-1 pt-3">
+                      <p className="date-range-kicker mb-2 text-[11px] font-semibold uppercase tracking-wider">
+                        Personalizado
+                      </p>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        <div>
+                          <span className="date-range-label mb-1 block text-[11px]">De</span>
+                          <DatePicker
+                            value={customFrom}
+                            onChange={setCustomFrom}
+                            max={customTo || undefined}
+                            ariaLabel="Data inicial"
+                            placeholder="Início"
+                            className="date-range-input flex w-full items-center gap-1.5 rounded-[9px] border px-2.5 py-2 text-left text-xs outline-none transition-colors"
+                          />
+                        </div>
+                        <div>
+                          <span className="date-range-label mb-1 block text-[11px]">Até</span>
+                          <DatePicker
+                            value={customTo}
+                            onChange={setCustomTo}
+                            min={customFrom || undefined}
+                            ariaLabel="Data final"
+                            placeholder="Fim"
+                            className="date-range-input flex w-full items-center gap-1.5 rounded-[9px] border px-2.5 py-2 text-left text-xs outline-none transition-colors"
+                          />
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={applyCustomDateRange}
+                        disabled={!customFrom || !customTo}
+                        className="mt-2 w-full rounded-[10px] bg-[#5BBF8E] px-3 py-2 text-xs font-semibold text-white transition-colors duration-150 hover:bg-[#4AA77C] active:bg-[#3FA876] disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        Aplicar período
+                      </button>
+                    </div>
                   </div>
                 )}
 

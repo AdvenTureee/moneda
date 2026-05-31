@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowsClockwise } from '@phosphor-icons/react';
+import { isClosedMonthlyPeriod } from '@/lib/utils';
 
 interface RegenerateInsightButtonProps {
   period: string;
@@ -20,8 +21,10 @@ export default function RegenerateInsightButton({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const isClosed = isClosedMonthlyPeriod(period);
 
   async function handleClick() {
+    if (!isClosed) return;
     setLoading(true);
     setError(null);
     try {
@@ -44,34 +47,55 @@ export default function RegenerateInsightButton({
   }
 
   const btnClass = variant === 'card'
-    ? 'inline-flex min-h-10 items-center gap-2 px-4 py-2 text-sm font-bold rounded-full bg-white/90 text-[#2E7D5B] active:scale-95 transition-all duration-75 disabled:opacity-40 hover:bg-white'
+    ? 'inline-flex min-h-8 min-w-[118px] items-center justify-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 text-xs font-extrabold text-[#2E7D5B] transition-all duration-150 hover:bg-white active:scale-95 disabled:cursor-not-allowed disabled:opacity-75 sm:min-h-9 sm:min-w-[136px] sm:gap-2 sm:px-3.5 sm:py-2 sm:text-sm'
     : 'inline-flex min-h-11 items-center gap-2 px-4 py-2.5 text-sm font-bold rounded-full bg-[#5BBF8E] text-white active:scale-95 transition-all duration-75 disabled:opacity-40 hover:brightness-105';
 
   const btnShadow = variant === 'card'
     ? '0 4px 14px rgba(0,0,0,0.12)'
     : '0 4px 14px rgba(91, 191, 142, 0.3)';
 
+  const contentClass = variant === 'card'
+    ? 'flex min-w-0 flex-wrap items-center justify-end gap-x-2 gap-y-1.5'
+    : 'flex flex-wrap items-center justify-end gap-2';
+
+  const buttonLabel = loading
+    ? 'Gerando…'
+    : !isClosed
+      ? 'Mês aberto'
+      : hasInsight
+        ? 'Regenerar'
+        : 'Gerar';
+
   const content = (
-    <div className="flex items-center gap-2">
+    <div className={contentClass}>
       {error && (
         <span className="text-xs text-[#E07070]" role="alert">
           {error}
         </span>
       )}
+      {!isClosed && variant !== 'card' && (
+        <span className="text-xs text-[#6B7280]">
+          Disponível quando o mês fechar.
+        </span>
+      )}
       <button
         type="button"
         onClick={handleClick}
-        disabled={loading}
+        disabled={loading || !isClosed}
         className={btnClass}
         style={{ boxShadow: btnShadow }}
-        aria-label={hasInsight ? 'Regenerar resumo do mês' : 'Gerar resumo do mês'}
+        aria-label={
+          isClosed
+            ? hasInsight ? 'Regenerar resumo do mês' : 'Gerar resumo do mês'
+            : 'Resumo do mês disponível quando o mês fechar'
+        }
       >
         <ArrowsClockwise
           size={16}
           weight="bold"
           className={loading ? 'animate-spin' : ''}
         />
-        {loading ? 'Gerando…' : hasInsight ? 'Regenerar' : 'Gerar'}
+        {buttonLabel}
       </button>
     </div>
   );
