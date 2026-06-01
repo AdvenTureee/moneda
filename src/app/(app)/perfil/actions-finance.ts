@@ -1,9 +1,9 @@
 'use server';
 
-import { updateTag } from 'next/cache';
+import { refresh, updateTag } from 'next/cache';
 import { createSessionClient, isSupabaseEnabled } from '@/lib/supabase/server';
 import { upsertBudget } from '@/lib/budgets';
-import { createIncome, deleteIncome } from '@/lib/incomes';
+import { createIncome, deleteIncome, updateIncome } from '@/lib/incomes';
 import { MOCK_USER } from '@/data/mock';
 import type { IncomeSource } from '@/types';
 import { cacheTags } from '@/lib/cache';
@@ -13,6 +13,11 @@ export type ActionResult = { ok: true; message?: string } | { ok: false; error: 
 export interface CategoryBudgetEntry {
   categoryId: string;
   amountCents: number;
+}
+
+function parseReceivedAt(receivedAtString?: string) {
+  if (!receivedAtString) return new Date();
+  return new Date(`${receivedAtString}T12:00:00`);
 }
 
 /**
@@ -132,7 +137,10 @@ export async function saveIncomeAction(
       userId = user.id;
     }
 
-    const receivedAt = receivedAtString ? new Date(receivedAtString) : new Date();
+    const receivedAt = parseReceivedAt(receivedAtString);
+    if (Number.isNaN(receivedAt.getTime())) {
+      return { ok: false, error: 'Data de recebimento inválida.' };
+    }
 
     await createIncome({
       userId,
@@ -146,9 +154,63 @@ export async function saveIncomeAction(
     // Income afeta o orçamento mensal calculado em getMonthlyBudgetCents().
     updateTag(cacheTags.profile(userId));
     updateTag(cacheTags.budgets(userId));
+    refresh();
     return { ok: true, message: 'Ganho lançado com sucesso!' };
   } catch (err: any) {
     return { ok: false, error: err.message || 'Falha ao salvar ganho.' };
+  }
+}
+
+/**
+ * Atualiza um ganho existente do usuário logado.
+ */
+export async function updateIncomeAction(
+  id: string,
+  description: string,
+  amountCents: number,
+  source: IncomeSource,
+  isRecurring: boolean,
+  receivedAtString?: string
+): Promise<ActionResult> {
+  try {
+    if (!id) {
+      return { ok: false, error: 'Ganho inválido.' };
+    }
+    if (!description.trim()) {
+      return { ok: false, error: 'A descrição é obrigatória.' };
+    }
+    if (amountCents <= 0) {
+      return { ok: false, error: 'O valor deve ser maior que zero.' };
+    }
+
+    let userId = MOCK_USER.id;
+    if (isSupabaseEnabled()) {
+      const supabase = await createSessionClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return { ok: false, error: 'Sessão expirada. Entre novamente.' };
+      userId = user.id;
+    }
+
+    const receivedAt = parseReceivedAt(receivedAtString);
+    if (Number.isNaN(receivedAt.getTime())) {
+      return { ok: false, error: 'Data de recebimento inválida.' };
+    }
+
+    await updateIncome(id, userId, {
+      userId,
+      amount: amountCents,
+      description: description.trim(),
+      source,
+      isRecurring,
+      receivedAt,
+    });
+
+    updateTag(cacheTags.profile(userId));
+    updateTag(cacheTags.budgets(userId));
+    refresh();
+    return { ok: true, message: 'Ganho atualizado com sucesso!' };
+  } catch (err: any) {
+    return { ok: false, error: err.message || 'Falha ao atualizar ganho.' };
   }
 }
 
@@ -169,6 +231,7 @@ export async function deleteIncomeAction(id: string): Promise<ActionResult> {
 
     updateTag(cacheTags.profile(userId));
     updateTag(cacheTags.budgets(userId));
+    refresh();
     return { ok: true, message: 'Ganho removido com sucesso!' };
   } catch (err: any) {
     return { ok: false, error: err.message || 'Falha ao excluir ganho.' };
