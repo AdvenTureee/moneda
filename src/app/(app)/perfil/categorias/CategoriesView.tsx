@@ -230,6 +230,14 @@ export default function CategoriesView() {
         </div>
       )}
 
+      {/* Hint */}
+      {!loading && !error && (
+        <p className="text-[10px] font-medium text-[#9CA3AF] mb-2 flex items-center gap-1 px-1 animate-fade-up delay-2">
+          <Icon name="HandTap" size={12} />
+          Toque para editar
+        </p>
+      )}
+
       {/* Category list */}
       {!loading && !error && (
         <div className="space-y-2 mb-6 animate-fade-up delay-2">

@@ -256,7 +256,7 @@ export default function IncomesView({ initialIncomes }: IncomesViewProps) {
 
       {/* Summary Card */}
       <div
-        className="ai-insight-banner text-white rounded-[20px] p-5 mb-3 shadow-md transition-all animate-fade-up delay-1"
+        className="ai-insight-banner text-white rounded-[20px] p-5 mb-4 shadow-md transition-all animate-fade-up delay-1"
       >
         <p className="text-xs font-semibold uppercase tracking-wider opacity-85">Total de ganhos</p>
         <p className="text-3xl font-extrabold mt-1.5 tabular-nums">
@@ -267,7 +267,7 @@ export default function IncomesView({ initialIncomes }: IncomesViewProps) {
         </p>
       </div>
 
-      <div className="mb-6 animate-fade-up delay-2">
+      <div className="mb-3 animate-fade-up delay-2">
         <button
           type="button"
           onClick={openAddModal}
@@ -295,7 +295,7 @@ export default function IncomesView({ initialIncomes }: IncomesViewProps) {
             </p>
           </div>
         ) : (
-          <div className="bg-white rounded-[20px] border border-[#F1F3F7] overflow-hidden divide-y divide-[#F1F2F4]" style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
+          <div className="space-y-2">
             {initialIncomes.map((item) => {
               const srcMeta = INCOME_SOURCES.find((s) => s.id === item.source) ?? INCOME_SOURCES[5];
               const isItemDeleting = deletingId === item.id;
@@ -303,8 +303,8 @@ export default function IncomesView({ initialIncomes }: IncomesViewProps) {
               return (
                 <div
                   key={item.id}
-                  className={`flex items-start min-[380px]:items-center justify-between p-4 gap-3 transition-all duration-300 ${
-                    isItemDeleting ? 'opacity-45 bg-[#FDF0F0]' : 'hover:bg-[#F8F9FB]'
+                  className={`themed-card flex items-center gap-3 rounded-[10px] px-4 py-3 transition-all duration-75 ${
+                    isItemDeleting ? 'opacity-45 bg-[#FDF0F0]' : ''
                   }`}
                 >
                   <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -319,7 +319,7 @@ export default function IncomesView({ initialIncomes }: IncomesViewProps) {
                     </div>
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5">
-                        <p className="text-sm font-bold text-[#1A1D23] truncate leading-tight">
+                        <p className="text-[15px] font-medium text-[#1A1D23] truncate leading-tight">
                           {item.description}
                         </p>
                         {item.isRecurring && (
@@ -331,14 +331,14 @@ export default function IncomesView({ initialIncomes }: IncomesViewProps) {
                           </span>
                         )}
                       </div>
-                      <p className="text-[11px] text-[#9CA3AF] mt-0.5">
+                      <p className="text-xs text-[#6B7280] mt-0.5">
                         {srcMeta.name} · {formatDate(item.receivedAt)}
                       </p>
                     </div>
                   </div>
 
                   <div className="flex items-center justify-end gap-1.5 shrink-0">
-                    <span className="mr-1 text-right text-sm font-bold text-[#10B981] tabular-nums whitespace-nowrap">
+                    <span className="text-[15px] font-semibold text-[#10B981] whitespace-nowrap tabular-nums">
                       + {formatCurrency(item.amount)}
                     </span>
                     <button
@@ -348,7 +348,7 @@ export default function IncomesView({ initialIncomes }: IncomesViewProps) {
                       type="button"
                       onClick={(event) => openActionMenu(event, item)}
                       disabled={isDeleting || isSaving}
-                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#F1F3F7]/70 text-[#6B7280] transition-colors hover:bg-[#E9EDF3] active:scale-95 disabled:opacity-50 dark:bg-white/8 dark:text-[#CBD5E1] dark:hover:bg-white/12"
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#F1F3F7]/70 text-[#6B7280] transition-colors hover:bg-[#E9EDF3] active:scale-95 disabled:opacity-50"
                       aria-label="Mais opções do ganho"
                       aria-haspopup="menu"
                       aria-expanded={menuIncome?.id === item.id}
