@@ -395,8 +395,8 @@ export default function ProfileView({
             <CurrencyDollar size={18} />
           </ProfileIcon>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-[#1A1D23]">Ganhos e receitas</p>
-            <p className="text-xs text-[#6B7280]">Registre e gerencie suas fontes de renda</p>
+            <p className="text-sm font-semibold text-[#1A1D23]">Ganhos</p>
+            <p className="text-xs text-[#6B7280]">Registre valores para abater estouros</p>
           </div>
           <CaretRight size={18} className="text-[#E5E7EB] group-hover:text-[#9CA3AF] transition-colors" />
         </Link>

@@ -149,7 +149,7 @@ export default async function DashboardPage({
                 href="/perfil/ganhos"
                 className="inline-flex items-center gap-1.5 rounded-full bg-[#FDF0F0] px-3 py-2 text-xs font-bold text-[#B14C4C] transition-colors hover:bg-[#F8E4E4]"
               >
-                Cadastrar ganho para abater
+                Cadastrar ganho para abater o estouro
                 <span aria-hidden>›</span>
               </Link>
             </div>
@@ -174,7 +174,7 @@ export default async function DashboardPage({
           />
         </section>
 
-        <section className="mb-4 animate-fade-up delay-4" aria-label="Atalho para ganhos e receitas">
+        <section className="mb-4 animate-fade-up delay-4" aria-label="Atalho para ganhos">
           <Link
             href="/perfil/ganhos"
             className="themed-card group flex min-h-12 items-center gap-2.5 rounded-[14px] bg-white px-3.5 py-2.5 transition-[background-color,box-shadow,transform] duration-150 active:scale-[0.99] hover:shadow-[var(--shadow-card)]"
@@ -184,10 +184,10 @@ export default async function DashboardPage({
             </span>
             <span className="min-w-0 flex-1">
               <span className="block truncate text-sm font-bold text-[var(--color-text-primary)]">
-                Histórico de ganhos
+                Ganhos do mês
               </span>
               <span className="block truncate text-[11px] leading-tight text-[var(--color-text-secondary)]">
-                Receitas e entradas
+                Registre ganhos para abater estouros
               </span>
             </span>
             <span className="text-base font-bold text-[var(--color-text-tertiary)] transition-transform duration-150 group-hover:translate-x-0.5">
@@ -252,7 +252,7 @@ export default async function DashboardPage({
               <Mo variant="sad" size={128} className="mb-4 animate-bounce-in" />
               <p className="text-base font-heading text-[#1A1D23]">Nenhum gasto ainda</p>
               <p className="text-sm text-[#6B7280] mt-1 max-w-[260px]">
-                E aí, cadê os gastos? 🕵️ Comece adicionando sua primeira despesa.
+                Comece adicionando sua primeira despesa.
               </p>
             </div>
           ) : (

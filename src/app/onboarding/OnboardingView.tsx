@@ -293,7 +293,7 @@ export default function OnboardingView({ defaultCategories, firstName }: Onboard
               Quanto você pode gastar neste mês?
             </h2>
             <p className="text-sm text-[#6B7280] text-center mt-2 mb-6 max-w-[320px] mx-auto">
-              Esse valor vira seu limite mensal. A ideia é esquecer o saldo do banco e acompanhar só o que você decidiu gastar.
+              Esse valor vira seu limite mensal. Acompanhe apenas o que você decidiu gastar.
             </p>
             <div
               className="flex items-center gap-2 rounded-[16px] px-5 py-5 transition-all"

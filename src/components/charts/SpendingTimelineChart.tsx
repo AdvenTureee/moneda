@@ -479,7 +479,7 @@ function SpendingTimelineDetailModal({
               {periodLabel}
             </h3>
             <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
-              Total do gráfico: {formatCurrency(Math.round(totalSpent))} gasto de {formatCurrency(Math.round(totalPlanned))} planejado
+              Total do gráfico: {formatCurrency(Math.round(totalSpent))} em gastos de {formatCurrency(Math.round(totalPlanned))} planejados
             </p>
           </div>
           <button
@@ -497,7 +497,7 @@ function SpendingTimelineDetailModal({
             <MetricPill label="Gasto" value={formatCurrency(Math.round(selected.spentCumulative))} color="var(--chart-primary-strong)" />
             <MetricPill label="Planejado" value={formatCurrency(Math.round(selected.plannedCumulative))} color="var(--chart-success)" />
             <MetricPill
-              label={isOverPlan ? 'Acima' : 'Saldo'}
+              label={isOverPlan ? 'Acima' : 'Restante'}
               value={signedCurrency(difference)}
               color={isOverPlan ? 'var(--color-error)' : 'var(--color-success)'}
             />

@@ -171,6 +171,6 @@ export async function deleteIncomeAction(id: string): Promise<ActionResult> {
     updateTag(cacheTags.budgets(userId));
     return { ok: true, message: 'Ganho removido com sucesso!' };
   } catch (err: any) {
-    return { ok: false, error: err.message || 'Falha ao deletar ganho.' };
+    return { ok: false, error: err.message || 'Falha ao excluir ganho.' };
   }
 }

@@ -71,7 +71,7 @@ export default function IncomesView({ initialIncomes }: IncomesViewProps) {
         );
 
         if (result.ok) {
-          showToast('success', 'Receita lançada com sucesso!');
+          showToast('success', 'Ganho lançado com sucesso!');
           // Reset form fields
           setAmountCents(0);
           setAmountDisplay('');
@@ -89,18 +89,18 @@ export default function IncomesView({ initialIncomes }: IncomesViewProps) {
   };
 
   const handleDeleteIncome = (id: string) => {
-    if (!window.confirm('Tem certeza que deseja excluir esta receita?')) return;
+    if (!window.confirm('Tem certeza que deseja excluir este ganho?')) return;
     setDeletingId(id);
     startDeleting(async () => {
       try {
         const result = await deleteIncomeAction(id);
         if (result.ok) {
-          showToast('success', 'Receita excluída.');
+          showToast('success', 'Ganho excluído.');
         } else {
           showToast('error', result.error);
         }
       } catch (err: any) {
-        showToast('error', err.message || 'Erro ao deletar.');
+        showToast('error', err.message || 'Erro ao excluir.');
       } finally {
         setDeletingId(null);
       }
@@ -121,8 +121,8 @@ export default function IncomesView({ initialIncomes }: IncomesViewProps) {
           <ArrowLeft size={20} className="text-[#1A1D23]" />
         </Link>
         <div>
-          <h1 className="text-xl font-bold text-[#1A1D23]">Ganhos e Receitas</h1>
-          <p className="text-xs text-[#6B7280]">Gerencie suas entradas financeiras</p>
+          <h1 className="text-xl font-bold text-[#1A1D23]">Ganhos</h1>
+          <p className="text-xs text-[#6B7280]">Registre valores que ajudam a abater estouros do orçamento.</p>
         </div>
       </div>
 
@@ -134,7 +134,7 @@ export default function IncomesView({ initialIncomes }: IncomesViewProps) {
           boxShadow: '0 8px 24px rgba(180, 130, 30, 0.25)',
         }}
       >
-        <p className="text-xs font-semibold uppercase tracking-wider opacity-85">Total de Entradas</p>
+        <p className="text-xs font-semibold uppercase tracking-wider opacity-85">Total de ganhos</p>
         <p className="text-3xl font-extrabold mt-1.5 tabular-nums">
           {formatCurrency(totalIncomes)}
         </p>
@@ -147,7 +147,7 @@ export default function IncomesView({ initialIncomes }: IncomesViewProps) {
       <section
         className="themed-card bg-white rounded-[20px] p-5 border border-[#F1F3F7] mb-8 animate-fade-up delay-2"
       >
-        <h2 className="text-sm font-bold text-[#1A1D23] mb-4">Lançar Nova Receita</h2>
+        <h2 className="text-sm font-bold text-[#1A1D23] mb-4">Lançar novo ganho</h2>
         <form onSubmit={handleAddIncome} className="space-y-4">
           
           {/* Amount input */}
@@ -181,7 +181,7 @@ export default function IncomesView({ initialIncomes }: IncomesViewProps) {
               type="text"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Ex: Salário Mensal, Projeto Web..."
+              placeholder="Ex.: salário mensal, projeto web..."
               className="w-full border border-[#E5E7EB] rounded-[12px] px-4 py-3 text-sm text-[#1A1D23] bg-[#F8F9FB] outline-none focus:border-[#A8C5E0] focus:bg-white transition-colors"
               required
               maxLength={80}
@@ -220,7 +220,7 @@ export default function IncomesView({ initialIncomes }: IncomesViewProps) {
 
           {/* Source grid selection */}
           <div>
-            <label className="block text-xs font-bold text-[#6B7280] uppercase mb-2">Origem da Receita</label>
+            <label className="block text-xs font-bold text-[#6B7280] uppercase mb-2">Origem do ganho</label>
             <div className="grid grid-cols-3 gap-2">
               {INCOME_SOURCES.map((src) => {
                 const isSelected = selectedSource === src.id;
@@ -264,7 +264,7 @@ export default function IncomesView({ initialIncomes }: IncomesViewProps) {
             ) : (
               <>
                 <Plus size={16} />
-                <span>Adicionar Receita</span>
+                <span>Adicionar ganho</span>
               </>
             )}
           </button>
@@ -274,7 +274,7 @@ export default function IncomesView({ initialIncomes }: IncomesViewProps) {
       {/* History section */}
       <section className="animate-fade-up delay-3">
         <h2 className="text-xs font-semibold uppercase tracking-wider text-[#9CA3AF] mb-3 px-1">
-          Histórico de Receitas ({initialIncomes.length})
+          Histórico de ganhos ({initialIncomes.length})
         </h2>
 
         {initialIncomes.length === 0 ? (
