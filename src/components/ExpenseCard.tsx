@@ -50,9 +50,13 @@ export default function ExpenseCard({
   const paymentLabel = PAYMENT_LABELS[expense.paymentMethod];
   const paymentBadge = PAYMENT_METHOD_BADGES[expense.paymentMethod];
   const PaymentBadgeIcon = paymentBadge?.Icon;
-  const creditLabel =
+  const installmentLabel =
     expense.paymentMethod === 'credit' && expense.creditDetails?.purchaseType === 'installment'
-      ? `${paymentLabel} ${expense.seriesOccurrenceIndex ?? expense.creditDetails.installmentCurrent}/${expense.seriesTotalOccurrences ?? expense.creditDetails.installmentTotal}`
+      ? `${expense.seriesOccurrenceIndex ?? expense.creditDetails.installmentCurrent}/${expense.seriesTotalOccurrences ?? expense.creditDetails.installmentTotal}`
+      : null;
+  const creditLabel =
+    installmentLabel
+      ? `${paymentLabel} ${installmentLabel}`
       : paymentLabel;
   const shouldShowMenu = Boolean(expense.receipt || onReceiptChanged || hasCardActions);
   const menuItemClass =
@@ -229,6 +233,11 @@ export default function ExpenseCard({
             <span className="min-w-0 flex-1 truncate">
               {category?.name ?? 'Outros'}
             </span>
+            {installmentLabel && (
+              <span className="shrink-0 rounded-full bg-[#FEF1D6] px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-[#B57922] dark:bg-[#B57922]/18 dark:text-[#F0B45F]">
+                {installmentLabel}
+              </span>
+            )}
             <span className="shrink-0 text-[11px] text-[#9CA3AF]">
               {formatTime(new Date(expense.createdAt))}
             </span>
