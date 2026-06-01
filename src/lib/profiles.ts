@@ -23,25 +23,3 @@ export async function isUserOnboarded(userId: string): Promise<boolean> {
     },
   )();
 }
-
-async function getCurrentBalanceCentsImpl(userId: string): Promise<number> {
-  if (!isSupabaseEnabled()) return 0;
-  const admin = createServiceClient();
-  const { data } = await admin
-    .from('profiles')
-    .select('current_balance_cents')
-    .eq('id', userId)
-    .single();
-  return data?.current_balance_cents ?? 0;
-}
-
-export async function getCurrentBalanceCents(userId: string): Promise<number> {
-  return unstable_cache(
-    () => getCurrentBalanceCentsImpl(userId),
-    ['current-balance-cents', userId],
-    {
-      tags: [cacheTags.profile(userId)],
-      revalidate: 300,
-    },
-  )();
-}

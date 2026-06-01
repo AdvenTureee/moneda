@@ -4,31 +4,25 @@ import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import BottomNav from '@/components/BottomNav';
 import AddExpenseModal from '@/components/AddExpenseModal';
-import CurrentBalanceModal from '@/components/CurrentBalanceModal';
 import WhatsAppPhoneModal from '@/components/WhatsAppPhoneModal';
 import TermsModal from '@/components/TermsModal';
 import { ToastProvider, useToast } from '@/components/ToastProvider';
 import ScrollFadeIndicator from '@/components/ScrollFadeIndicator';
 import type { ExpenseInput } from '@/types';
 
-const BALANCE_PROMPT_DISMISSED_KEY = 'moneda:current-balance-prompt-dismissed';
 const WHATSAPP_PROMPT_DISMISSED_KEY = 'moneda:whatsapp-phone-prompt-dismissed';
 
 function ShellContent({
   children,
   requiresTermsAcceptance,
-  requiresCurrentBalance,
   requiresWhatsappPhone,
 }: {
   children: React.ReactNode;
   requiresTermsAcceptance: boolean;
-  requiresCurrentBalance: boolean;
   requiresWhatsappPhone: boolean;
 }) {
   const [modalOpen, setModalOpen] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(!requiresTermsAcceptance);
-  const [balanceAnswered, setBalanceAnswered] = useState(!requiresCurrentBalance);
-  const [balanceDismissed, setBalanceDismissed] = useState(false);
   const [whatsappAnswered, setWhatsappAnswered] = useState(!requiresWhatsappPhone);
   const [whatsappDismissed, setWhatsappDismissed] = useState(false);
   const [termsLoading, setTermsLoading] = useState(false);
@@ -36,17 +30,10 @@ function ShellContent({
   const { showToast } = useToast();
   const router = useRouter();
   const isTermsBlocking = !termsAccepted;
-  const shouldShowCurrentBalance = termsAccepted && !balanceAnswered && !balanceDismissed;
   const shouldShowWhatsappPhone =
     termsAccepted &&
-    !shouldShowCurrentBalance &&
     !whatsappAnswered &&
     !whatsappDismissed;
-
-  useEffect(() => {
-    if (!requiresCurrentBalance) return;
-    setBalanceDismissed(window.sessionStorage.getItem(BALANCE_PROMPT_DISMISSED_KEY) === '1');
-  }, [requiresCurrentBalance]);
 
   useEffect(() => {
     if (!requiresWhatsappPhone) return;
@@ -89,18 +76,6 @@ function ShellContent({
     router.refresh();
   }, [router, showToast]);
 
-  const handleBalanceLater = useCallback(() => {
-    window.sessionStorage.setItem(BALANCE_PROMPT_DISMISSED_KEY, '1');
-    setBalanceDismissed(true);
-  }, []);
-
-  const handleBalanceSaved = useCallback(() => {
-    window.sessionStorage.removeItem(BALANCE_PROMPT_DISMISSED_KEY);
-    setBalanceAnswered(true);
-    setBalanceDismissed(false);
-    router.refresh();
-  }, [router]);
-
   const handleWhatsappLater = useCallback(() => {
     window.sessionStorage.setItem(WHATSAPP_PROMPT_DISMISSED_KEY, '1');
     setWhatsappDismissed(true);
@@ -136,11 +111,6 @@ function ShellContent({
         acceptLoading={termsLoading}
         acceptError={termsError}
       />
-      <CurrentBalanceModal
-        isOpen={shouldShowCurrentBalance}
-        onLater={handleBalanceLater}
-        onSaved={handleBalanceSaved}
-      />
       <WhatsAppPhoneModal
         isOpen={shouldShowWhatsappPhone}
         onLater={handleWhatsappLater}
@@ -153,14 +123,12 @@ function ShellContent({
 export default function AppShell({
   children,
   requiresTermsAcceptance = false,
-  requiresCurrentBalance = false,
   requiresWhatsappPhone = false,
 }: AppShellProps) {
   return (
     <ToastProvider>
       <ShellContent
         requiresTermsAcceptance={requiresTermsAcceptance}
-        requiresCurrentBalance={requiresCurrentBalance}
         requiresWhatsappPhone={requiresWhatsappPhone}
       >
         {children}
@@ -172,6 +140,5 @@ export default function AppShell({
 interface AppShellProps {
   children: React.ReactNode;
   requiresTermsAcceptance?: boolean;
-  requiresCurrentBalance?: boolean;
   requiresWhatsappPhone?: boolean;
 }

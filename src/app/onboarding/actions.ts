@@ -33,7 +33,6 @@ export interface OnboardingCategoryBudget {
 }
 
 export interface OnboardingPayload {
-  currentBalanceCents: number;
   monthlyBudgetCents: number;
   billingClosingDay: number;
   hasPet: boolean;
@@ -59,9 +58,6 @@ function buildCustomCategoryId(userId: string, name: string, index: number): str
 }
 
 function validatePayload(p: OnboardingPayload): string | null {
-  if (!Number.isFinite(p.currentBalanceCents) || p.currentBalanceCents < 0) {
-    return 'Saldo atual inválido.';
-  }
   if (!Number.isFinite(p.monthlyBudgetCents) || p.monthlyBudgetCents < 0) {
     return 'Orçamento mensal inválido.';
   }
@@ -102,13 +98,13 @@ export async function completeOnboardingAction(
       const userId = user.id;
       const admin = createServiceClient();
       const normalizedWhatsappPhone = normalizeWhatsappPhone(payload.whatsappPhone);
+      const nowIso = new Date().toISOString();
 
       // 1. Profile fields (incluindo o flag `onboarded` — fica em profiles
       //    porque user_metadata é sobrescrito a cada login OAuth).
       const { error: profileError } = await admin
         .from('profiles')
         .update({
-          current_balance_cents: payload.currentBalanceCents || null,
           monthly_budget_cents: payload.monthlyBudgetCents || null,
           billing_closing_day: payload.billingClosingDay,
           has_pet: payload.hasPet,
@@ -158,7 +154,6 @@ export async function completeOnboardingAction(
 
       // 4. Recurring expenses
       if (payload.recurringExpenses.length > 0) {
-        const nowIso = new Date().toISOString();
         const inserts = payload.recurringExpenses.map((r) => ({
           user_id: userId,
           amount_cents: r.amountCents,
@@ -174,6 +169,9 @@ export async function completeOnboardingAction(
           console.error('[completeOnboarding] recurring expenses:', expError);
           return { ok: false, error: 'Não foi possível salvar seus gastos recorrentes.' };
         }
+        revalidateTag(cacheTags.expenses(userId), { expire: 0 });
+        revalidateTag(cacheTags.metrics(userId), { expire: 0 });
+        revalidateTag(cacheTags.monthlyTotals(userId), { expire: 0 });
       }
 
       // (onboarded já gravado em profiles no passo 1 — não usamos

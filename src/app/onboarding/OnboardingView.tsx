@@ -32,8 +32,8 @@ interface OnboardingViewProps {
   firstName: string;
 }
 
-type Step = 'balance' | 'budget' | 'categoryBudget' | 'whatsapp' | 'theme' | 'closing' | 'pet' | 'expenses' | 'categories';
-const STEP_ORDER: Step[] = ['balance', 'budget', 'categoryBudget', 'whatsapp', 'theme', 'closing', 'pet', 'expenses', 'categories'];
+type Step = 'budget' | 'categoryBudget' | 'whatsapp' | 'theme' | 'closing' | 'pet' | 'expenses' | 'categories';
+const STEP_ORDER: Step[] = ['budget', 'categoryBudget', 'whatsapp', 'theme', 'closing', 'pet', 'expenses', 'categories'];
 
 interface ExpenseRow {
   tempId: string;
@@ -78,14 +78,10 @@ export default function OnboardingView({ defaultCategories, firstName }: Onboard
   const step: Step = STEP_ORDER[stepIdx];
 
   // Q1
-  const [currentBalanceCents, setCurrentBalanceCents] = useState(0);
-  const [currentBalanceDisplay, setCurrentBalanceDisplay] = useState('');
-
-  // Q2
   const [monthlyBudgetCents, setMonthlyBudgetCents] = useState(0);
   const [monthlyBudgetDisplay, setMonthlyBudgetDisplay] = useState('');
 
-  // Q3
+  // Q2
   const budgetCategories = useMemo(
     () => defaultCategories.filter((c) => c.id !== 'pet'),
     [defaultCategories],
@@ -95,19 +91,19 @@ export default function OnboardingView({ defaultCategories, firstName }: Onboard
   const [categoryBudgetSkipped, setCategoryBudgetSkipped] = useState(false);
   const [categoryBudgetManual, setCategoryBudgetManual] = useState(false);
 
-  // Q4
+  // Q3
   const [whatsappPhone, setWhatsappPhone] = useState('');
 
-  // Q5
+  // Q4
   // Theme preference is saved locally through ThemeProvider.
 
-  // Q6
+  // Q5
   const [closingDay, setClosingDay] = useState(10);
 
-  // Q7
+  // Q6
   const [hasPet, setHasPet] = useState<boolean | null>(null);
 
-  // Q8
+  // Q7
   const visibleCategories = useMemo(
     () => defaultCategories.filter((c) => (hasPet ? true : c.id !== 'pet')),
     [defaultCategories, hasPet],
@@ -115,7 +111,7 @@ export default function OnboardingView({ defaultCategories, firstName }: Onboard
   const firstCategoryId = visibleCategories[0]?.id ?? '';
   const [expenseRows, setExpenseRows] = useState<ExpenseRow[]>([]);
 
-  // Q9
+  // Q8
   const [showCustomForm, setShowCustomForm] = useState(false);
   const [customDraft, setCustomDraft] = useState<OnboardingCustomCategory>({
     name: '',
@@ -130,7 +126,6 @@ export default function OnboardingView({ defaultCategories, firstName }: Onboard
 
   const canNext = (() => {
     switch (step) {
-      case 'balance': return currentBalanceCents > 0;
       case 'budget': return monthlyBudgetCents > 0;
       case 'categoryBudget': return true;
       case 'whatsapp': return !whatsappPhone.trim() || normalizeWhatsappPhone(whatsappPhone) !== null;
@@ -143,12 +138,6 @@ export default function OnboardingView({ defaultCategories, firstName }: Onboard
       case 'categories': return true;
     }
   })();
-
-  function handleCurrentBalanceChange(raw: string) {
-    const cents = parseCentsInput(raw);
-    setCurrentBalanceCents(cents);
-    setCurrentBalanceDisplay(formatCentsInput(cents));
-  }
 
   function handleMonthlyBudgetChange(raw: string) {
     const cents = parseCentsInput(raw);
@@ -223,7 +212,6 @@ export default function OnboardingView({ defaultCategories, firstName }: Onboard
   function submit() {
     setError(null);
     const payload: OnboardingPayload = {
-      currentBalanceCents,
       monthlyBudgetCents,
       billingClosingDay: closingDay,
       hasPet: hasPet === true,
@@ -295,63 +283,17 @@ export default function OnboardingView({ defaultCategories, firstName }: Onboard
           <div className="w-9 h-9" />
         </div>
 
-        {step === 'balance' && (
+        {step === 'budget' && (
           <section className="flex-1">
             <Mo variant="happy" size={96} className="mx-auto" />
             <h1 className="text-2xl font-heading text-center text-[#1A1D23] mt-3">
               Olá, {firstName}!
             </h1>
-            <p className="text-sm text-[#6B7280] text-center mt-2 mb-6 max-w-[320px] mx-auto">
-              Quanto dinheiro você tem disponível hoje? Usamos isso para mostrar quanto sobra depois dos gastos, sem julgamento.
-            </p>
-            <div
-              className="flex items-center gap-2 rounded-[16px] px-5 py-5 transition-all"
-              style={{
-                border: `1.5px solid ${
-                  currentBalanceCents > 0
-                    ? 'var(--color-success)'
-                    : isDark
-                      ? 'rgba(255,255,255,0.08)'
-                      : '#E5E7EB'
-                }`,
-                background:
-                  currentBalanceCents > 0
-                    ? isDark
-                      ? 'rgba(111, 212, 162, 0.08)'
-                      : '#EEF9F4'
-                    : isDark
-                      ? 'rgba(255,255,255,0.04)'
-                      : '#fff',
-                boxShadow:
-                  currentBalanceCents > 0
-                    ? 'none'
-                    : isDark
-                      ? '0 1px 0 0 rgba(255,255,255,0.04)'
-                      : '0 1px 2px 0 rgba(0,0,0,0.04)',
-              }}
-            >
-              <span className="text-2xl font-bold text-[#9CA3AF]">R$</span>
-              <input
-                type="tel"
-                inputMode="numeric"
-                value={currentBalanceDisplay}
-                onChange={(e) => handleCurrentBalanceChange(e.target.value)}
-                placeholder="0,00"
-                className="flex-1 text-4xl font-extrabold bg-transparent outline-none tabular-nums text-[#1A1D23] placeholder:text-[#9CA3AF]"
-                aria-label="Saldo atual disponível em reais"
-              />
-            </div>
-          </section>
-        )}
-
-        {step === 'budget' && (
-          <section className="flex-1">
-            <Mo variant="happy" size={96} className="mx-auto" />
-            <h2 className="text-xl font-heading text-center text-[#1A1D23] mt-3">
-              Quanto você imagina gastar neste mês?
+            <h2 className="text-xl font-heading text-center text-[#1A1D23] mt-5">
+              Quanto você pode gastar neste mês?
             </h2>
             <p className="text-sm text-[#6B7280] text-center mt-2 mb-6 max-w-[320px] mx-auto">
-              Esse valor vira seu teto mensal para comparar com os gastos reais ao longo do mês.
+              Esse valor vira seu limite mensal. A ideia é esquecer o saldo do banco e acompanhar só o que você decidiu gastar.
             </p>
             <div
               className="flex items-center gap-2 rounded-[16px] px-5 py-5 transition-all"
@@ -963,8 +905,6 @@ export default function OnboardingView({ defaultCategories, firstName }: Onboard
               'Concluir'
             ) : step === 'theme' ? (
               theme === 'dark' ? 'Continuar no modo escuro' : 'Continuar no modo claro'
-            ) : step === 'balance' && currentBalanceCents > 0 ? (
-              `Continuar — ${formatCurrency(currentBalanceCents)}`
             ) : step === 'budget' && monthlyBudgetCents > 0 ? (
               `Continuar — ${formatCurrency(monthlyBudgetCents)}/mês`
             ) : step === 'categoryBudget' ? (

@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Trash, Check, Plus, ArrowsClockwise, CaretRight, Wallet } from '@phosphor-icons/react';
+import { ArrowLeft, Trash, Check, Plus, ArrowsClockwise } from '@phosphor-icons/react';
 import { useToast } from '@/components/ToastProvider';
 import Icon from '@/components/Icon';
 import DatePicker from '@/components/DatePicker';
@@ -139,27 +139,13 @@ export default function IncomesView({ initialIncomes }: IncomesViewProps) {
           {formatCurrency(totalIncomes)}
         </p>
         <p className="text-xs opacity-75 mt-2">
-          Soma de todas as suas receitas ativas cadastradas.
+          Ganhos abatem estouros no mês em que foram recebidos.
         </p>
       </div>
 
-      <Link
-        href="/perfil/saldo"
-        className="themed-card mb-6 flex items-center gap-3 rounded-[16px] bg-white px-4 py-3 transition-colors hover:bg-[#F8F9FB] animate-fade-up delay-2"
-      >
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#EEF9F4] text-[#5BBF8E]">
-          <Wallet size={18} weight="bold" />
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="block text-sm font-bold text-[#1A1D23]">Atualizar dinheiro disponível</span>
-          <span className="block truncate text-xs text-[#6B7280]">Saldo atual não é uma nova receita</span>
-        </span>
-        <CaretRight size={18} className="text-[#E5E7EB]" />
-      </Link>
-
       {/* Form Card */}
       <section
-        className="themed-card bg-white rounded-[20px] p-5 border border-[#F1F3F7] mb-8 animate-fade-up delay-3"
+        className="themed-card bg-white rounded-[20px] p-5 border border-[#F1F3F7] mb-8 animate-fade-up delay-2"
       >
         <h2 className="text-sm font-bold text-[#1A1D23] mb-4">Lançar Nova Receita</h2>
         <form onSubmit={handleAddIncome} className="space-y-4">

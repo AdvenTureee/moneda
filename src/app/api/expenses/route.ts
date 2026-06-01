@@ -41,6 +41,7 @@ function invalidateExpenseCaches(userId: string) {
   revalidateTag(cacheTags.metrics(userId), opts);
   revalidateTag(cacheTags.insights(userId), opts);
   revalidateTag(cacheTags.monthlyTotals(userId), opts);
+  revalidateTag(cacheTags.profile(userId), opts);
 }
 
 export async function GET(req: NextRequest) {

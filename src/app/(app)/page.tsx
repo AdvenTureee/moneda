@@ -15,8 +15,9 @@ import RegenerateInsightButton from '@/components/RegenerateInsightButton';
 import { getDashboardMetrics, getSpendingTimeline } from '@/lib/expenses';
 import { getBudgets } from '@/lib/budgets';
 import { getLatestInsight } from '@/lib/insights';
+import { getMonthlyIncomeTotalCents } from '@/lib/incomes';
 import { getMonthlyBudgetCents } from '@/lib/monthlyBudget';
-import { getCurrentBalanceCents, isUserOnboarded } from '@/lib/profiles';
+import { isUserOnboarded } from '@/lib/profiles';
 import { decryptProfilePii, getDisplayNameFromUser } from '@/lib/security/profilePii';
 import { formatCurrency, getCurrentPeriod, isClosedMonthlyPeriod } from '@/lib/utils';
 import { createServiceClient, createSessionClient, isSupabaseEnabled } from '@/lib/supabase/server';
@@ -49,21 +50,20 @@ export default async function DashboardPage({
   const period = isValidPeriod(rawPeriod) ? rawPeriod : getCurrentPeriod();
 
   // Parallel DB queries
-  const [metrics, budgets, latestInsight, monthlyBudgetCents, spendingTimeline, currentBalanceCents] = await Promise.all([
+  const [metrics, budgets, latestInsight, monthlyBudgetCents, spendingTimeline, monthlyIncomeTotalCents] = await Promise.all([
     getDashboardMetrics(user.id, period),
     getBudgets(user.id, period),
     getLatestInsight(user.id, period),
     getMonthlyBudgetCents(user.id, period),
     getSpendingTimeline(user.id, period),
-    getCurrentBalanceCents(user.id),
+    getMonthlyIncomeTotalCents(user.id, period),
   ]);
 
   // Orçamento mensal = teto de gasto declarado. Se não existir, cai nos
   // budgets por categoria como último recurso para usuários antigos.
   const totalBudgetCents = budgets.reduce((sum, b) => sum + b.amountCents, 0);
   const BUDGET_CENTS = monthlyBudgetCents > 0 ? monthlyBudgetCents : totalBudgetCents;
-  const remainingSourceCents = currentBalanceCents > 0 ? currentBalanceCents : BUDGET_CENTS;
-  const remaining = remainingSourceCents - metrics.totalSpent;
+  const remaining = BUDGET_CENTS + monthlyIncomeTotalCents - metrics.totalSpent;
 
   // Custom personalized AI Welcome message if no insight exists yet.
   let fullName = getDisplayNameFromUser(user);
@@ -127,7 +127,7 @@ export default async function DashboardPage({
         {/* Hero: dinheiro restante (principal) */}
         <section className="mb-5 animate-fade-up delay-2" aria-label="Dinheiro restante">
           <p className="text-xs text-[#6B7280] font-medium mb-1">
-            {currentBalanceCents > 0 ? 'Dinheiro restante' : 'Restante do orçamento'}
+            Dinheiro restante
           </p>
           <p
             className="text-[40px] font-extrabold tabular-nums leading-none"
@@ -141,24 +141,33 @@ export default async function DashboardPage({
             {remaining >= 0 ? formatCurrency(remaining) : 'Estourou!'}
           </p>
           {remaining < 0 && (
-            <p className="text-xs mt-1 font-medium text-[#E07070]">
-              −{formatCurrency(Math.abs(remaining))}
-            </p>
+            <div className="mt-2 space-y-2">
+              <p className="text-xs font-medium text-[#E07070]">
+                −{formatCurrency(Math.abs(remaining))}
+              </p>
+              <Link
+                href="/perfil/ganhos"
+                className="inline-flex items-center gap-1.5 rounded-full bg-[#FDF0F0] px-3 py-2 text-xs font-bold text-[#B14C4C] transition-colors hover:bg-[#F8E4E4]"
+              >
+                Cadastrar ganho para abater
+                <span aria-hidden>›</span>
+              </Link>
+            </div>
           )}
         </section>
 
         {/* Metric cards */}
         <section className="flex flex-wrap gap-3 mb-3 animate-fade-up delay-3" aria-label="Métricas do mês">
-          {currentBalanceCents > 0 && (
-            <DashboardMetric
-              label="Saldo atual"
-              value={formatCurrency(currentBalanceCents)}
-            />
-          )}
           <DashboardMetric
             label="Orçamento"
             value={formatCurrency(BUDGET_CENTS)}
           />
+          {monthlyIncomeTotalCents > 0 && (
+            <DashboardMetric
+              label="Ganhos do mês"
+              value={formatCurrency(monthlyIncomeTotalCents)}
+            />
+          )}
           <DashboardMetric
             label="Gasto total"
             value={formatCurrency(metrics.totalSpent)}
