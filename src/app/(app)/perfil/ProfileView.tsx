@@ -400,16 +400,6 @@ export default function ProfileView({
           </div>
           <CaretRight size={18} className="text-[#E5E7EB] group-hover:text-[#9CA3AF] transition-colors" />
         </Link>
-        <Link href="/perfil/whatsapp" className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-[#F8F9FB] transition-colors group">
-          <ProfileIcon tone="green">
-            <WhatsappLogo size={18} weight="fill" />
-          </ProfileIcon>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-[#1A1D23]">WhatsApp</p>
-            <p className="text-xs text-[#6B7280]">Vincule seu telefone para lançar gastos</p>
-          </div>
-          <CaretRight size={18} className="text-[#E5E7EB] group-hover:text-[#9CA3AF] transition-colors" />
-        </Link>
       </div>
       </div>
 
@@ -575,6 +565,17 @@ export default function ProfileView({
           </div>
           {isGoogleLinked && <Check size={16} className="text-[#5BBF8E]" />}
         </button>
+
+        <Link href="/perfil/whatsapp" className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-[#F8F9FB] transition-colors group">
+          <ProfileIcon tone="green">
+            <WhatsappLogo size={18} weight="fill" />
+          </ProfileIcon>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-[#1A1D23]">WhatsApp</p>
+            <p className="text-xs text-[#6B7280]">Vincule seu telefone para lançar gastos</p>
+          </div>
+          <CaretRight size={18} className="text-[#E5E7EB] group-hover:text-[#9CA3AF] transition-colors" />
+        </Link>
 
         <button
           type="button"
