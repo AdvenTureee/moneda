@@ -192,7 +192,9 @@ export default function MoInsightsChat({
     const el = inputRef.current;
     if (!el) return;
     el.style.height = 'auto';
-    el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
+    const nextHeight = Math.min(el.scrollHeight, 120);
+    el.style.height = `${nextHeight}px`;
+    el.style.overflowY = el.scrollHeight > 120 ? 'auto' : 'hidden';
   }, []);
 
   useEffect(() => {

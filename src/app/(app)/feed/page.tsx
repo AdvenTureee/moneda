@@ -113,15 +113,18 @@ function FeedPageInner() {
     if (!filtersOpen) return;
 
     const previousHtmlOverflow = document.documentElement.style.overflow;
+    const previousHtmlScrollbarGutter = document.documentElement.style.scrollbarGutter;
     const previousBodyOverflow = document.body.style.overflow;
     const previousBodyOverscroll = document.body.style.overscrollBehavior;
 
+    document.documentElement.style.scrollbarGutter = 'stable';
     document.documentElement.style.overflow = 'hidden';
     document.body.style.overflow = 'hidden';
     document.body.style.overscrollBehavior = 'contain';
 
     return () => {
       document.documentElement.style.overflow = previousHtmlOverflow;
+      document.documentElement.style.scrollbarGutter = previousHtmlScrollbarGutter;
       document.body.style.overflow = previousBodyOverflow;
       document.body.style.overscrollBehavior = previousBodyOverscroll;
     };
@@ -236,6 +239,7 @@ function FeedPageInner() {
   const categoryLabel = activeCategory
     ? categories.find((category) => category.id === activeCategory)?.name ?? 'Categoria'
     : 'Todas';
+  const paymentMeta = activePaymentMethod ? PAYMENT_METHOD_BADGES[activePaymentMethod] : null;
   const activeFilterCount =
     (dateRange.presetId !== 'all' ? 1 : 0) + (activeCategory ? 1 : 0) + (activePaymentMethod ? 1 : 0);
   const filterTabs: Array<{
@@ -332,10 +336,14 @@ function FeedPageInner() {
           <h1 className="text-2xl font-heading text-[#1A1D23]">Feed de Gastos</h1>
         </header>
 
-        <div
-          className="themed-card bg-white rounded-[14px] p-3 space-y-3 mb-4 animate-fade-up delay-1"
-        >
-          <div className="grid grid-cols-2 gap-1 rounded-[10px] bg-[#F4F6FA] p-1" role="tablist" aria-label="Visão do feed">
+        <div className="themed-card bg-white rounded-[14px] p-2.5 space-y-2.5 mb-4 animate-fade-up delay-1">
+          <div className="relative grid grid-cols-2 overflow-hidden rounded-[12px] bg-[#F4F6FA] p-0.5 dark:bg-white/6" role="tablist" aria-label="Visão do feed">
+            <span
+              className={`absolute bottom-0.5 top-0.5 w-[calc(50%-2px)] rounded-[10px] bg-[#EEF9F4] shadow-sm transition-transform duration-200 ease-out dark:bg-[#5BBF8E]/14 ${
+                activeView === 'scheduled' ? 'translate-x-[calc(100%+4px)]' : 'translate-x-0.5'
+              }`}
+              aria-hidden
+            />
             {[
               { id: 'history' as const, label: 'Histórico' },
               { id: 'scheduled' as const, label: 'Agendados' },
@@ -348,23 +356,23 @@ function FeedPageInner() {
                   role="tab"
                   aria-selected={selected}
                   onClick={() => setActiveView(view.id)}
-                  className={`min-h-9 rounded-[8px] px-3 text-sm font-bold outline-none transition-[background-color,color,box-shadow,transform] duration-150 active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-[#A8C5E0] focus-visible:ring-offset-1 ${
+                  className={`relative z-10 min-h-8 rounded-[10px] px-3 text-[13px] font-bold outline-none transition-[color,transform] duration-150 active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-[#A8C5E0] focus-visible:ring-offset-1 ${
                     selected
-                      ? 'bg-white text-[#1A1D23] shadow-sm'
-                      : 'text-[#6B7280] hover:text-[#1A1D23]'
+                      ? 'text-[#2E8F67] dark:text-[#7EE0AE]'
+                      : 'text-[#6B7280] hover:text-[#1A1D23] dark:text-[#9CA3AF] dark:hover:text-[#F5F7FA]'
                   }`}
                 >
                   {view.label}
                 </button>
               );
             })}
-          </div>
+            </div>
 
             {/* Search bar */}
             <div className="relative">
                 <MagnifyingGlass
                   size={16}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9CA3AF]"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7C8898] dark:text-[#94A3B8]"
                   aria-hidden
                 />
                 <input
@@ -372,14 +380,18 @@ function FeedPageInner() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Buscar gasto..."
-                  className="themed-field w-full pl-9 pr-4 py-2.5 rounded-[10px] bg-[#F4F6FA] border border-transparent text-sm text-[#1A1D23] placeholder:text-[#9CA3AF] outline-none transition-colors focus:border-[#A8C5E0]"
+                  className="themed-field h-9 w-full rounded-[9px] border border-[#E5E7EB] bg-[#F8F9FB] pl-9 pr-3 text-sm text-[#1A1D23] placeholder:text-[#7C8898] outline-none transition-colors focus:border-[#A8C5E0] dark:border-white/10 dark:bg-white/6 dark:text-[#F5F7FA] dark:placeholder:text-[#94A3B8]"
                   aria-label="Buscar gastos"
                 />
             </div>
 
-          <div ref={filtersAnchorRef} className="grid grid-cols-3 gap-1.5 text-[11px] font-semibold text-[#6B7280]">
+          <div
+            ref={filtersAnchorRef}
+            className="-mx-0.5 flex gap-1.5 overflow-x-auto px-0.5 pb-0.5 text-[11px] font-semibold text-[#6B7280] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          >
             {filterTabs.map((tab) => {
               const TabIcon = tab.icon;
+              const PaymentIcon = tab.id === 'payment' ? paymentMeta?.Icon : null;
               return (
                 <button
                   key={tab.id}
@@ -388,18 +400,28 @@ function FeedPageInner() {
                   aria-label={`Filtro de ${tab.label.toLowerCase()}: ${tab.value}. Clique para alterar.`}
                   aria-pressed={tab.active}
                   data-active={tab.active ? 'true' : 'false'}
-                  className={`group flex min-h-9 min-w-0 items-center justify-center gap-1.5 rounded-[8px] border px-2.5 py-1.5 text-center outline-none transition-[background-color,border-color,box-shadow,color,transform] duration-150 ease-out hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-[#A8C5E0] focus-visible:ring-offset-1 ${
+                  className={`group flex h-8 max-w-[180px] shrink-0 items-center justify-center gap-1.5 rounded-full border px-3 text-center outline-none transition-[background-color,border-color,box-shadow,color,transform] duration-150 ease-out active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-[#A8C5E0] focus-visible:ring-offset-1 ${
                     tab.active
-                      ? 'border-[#5BBF8E]/45 bg-[#EEF9F4] text-[#2E8F67] hover:border-[#5BBF8E]/70 hover:bg-[#EAF7F0] hover:shadow-[0_4px_10px_rgba(91,191,142,0.10)]'
-                      : 'border-[#E5E7EB] bg-[#F4F6FA] text-[#6B7280] hover:border-[#A8C5E0]/70 hover:bg-[#EEF2F7] hover:shadow-[0_4px_10px_rgba(31,41,55,0.05)]'
+                      ? 'border-[#5BBF8E]/45 bg-[#EEF9F4] text-[#2E8F67] hover:border-[#5BBF8E]/70 hover:bg-[#EAF7F0] dark:border-[#5BBF8E]/45 dark:bg-[#5BBF8E]/14 dark:text-[#7EE0AE]'
+                      : 'border-[#E5E7EB] bg-[#F8F9FB] text-[#6B7280] hover:border-[#A8C5E0]/70 hover:bg-[#EEF2F7] dark:border-white/10 dark:bg-white/6 dark:text-[#CBD5E1] dark:hover:bg-white/10'
                   }`}
                 >
-                  <TabIcon
-                    size={13}
-                    weight="bold"
-                    className={`shrink-0 ${tab.active ? 'text-[#3FA876]' : 'text-[#7C8898]'}`}
-                    aria-hidden
-                  />
+                  {PaymentIcon && paymentMeta ? (
+                    <span
+                      className="grid h-4 w-4 shrink-0 place-items-center rounded-full text-white"
+                      style={{ backgroundColor: paymentMeta.color }}
+                      aria-hidden
+                    >
+                      <PaymentIcon size={9} weight="bold" />
+                    </span>
+                  ) : (
+                    <TabIcon
+                      size={13}
+                      weight="bold"
+                      className={`shrink-0 ${tab.active ? 'text-[#3FA876] dark:text-[#7EE0AE]' : 'text-[#7C8898] dark:text-[#94A3B8]'}`}
+                      aria-hidden
+                    />
+                  )}
                   <span className="min-w-0 truncate">{tab.value}</span>
                   {tab.active && (
                     <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#5BBF8E]" aria-hidden />
@@ -407,47 +429,16 @@ function FeedPageInner() {
                 </button>
               );
             })}
-          </div>
-
-          {activeFilterCount > 0 && (
-            <div className="flex justify-end -mt-1">
+            {activeFilterCount > 0 && (
               <button
                 type="button"
                 onClick={clearFilters}
-                className="rounded-[8px] px-2 py-1 text-[11px] font-bold text-[#5BBF8E] outline-none transition-colors hover:bg-[#EEF9F4] focus-visible:ring-2 focus-visible:ring-[#A8C5E0] focus-visible:ring-offset-1 dark:hover:bg-white/8"
+                className="h-8 shrink-0 rounded-full px-3 text-[11px] font-bold text-[#5BBF8E] outline-none transition-colors hover:bg-[#EEF9F4] focus-visible:ring-2 focus-visible:ring-[#A8C5E0] focus-visible:ring-offset-1 dark:hover:bg-white/8"
               >
                 Limpar
               </button>
-            </div>
-          )}
-
-          <section
-            className="flex flex-wrap items-center gap-x-2 gap-y-1 px-0.5 text-[11px] font-semibold text-[#7C8898]"
-            aria-label="Legenda de métodos de pagamento"
-          >
-            <span className="shrink-0 text-[#6B7280]">Métodos:</span>
-            {LEGEND_PAYMENT_METHODS.map((method) => {
-              const meta = PAYMENT_METHOD_BADGES[method];
-              if (!meta) return null;
-              const MethodIcon = meta.Icon;
-              return (
-                <span
-                  key={method}
-                  className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap"
-                  style={{ color: meta.color }}
-                >
-                  <span
-                    className="grid h-4 w-4 place-items-center rounded-full"
-                    style={{ backgroundColor: meta.color, color: '#FFFFFF' }}
-                    aria-hidden
-                  >
-                    <MethodIcon size={9} weight="bold" />
-                  </span>
-                  {meta.label}
-                </span>
-              );
-            })}
-          </section>
+            )}
+          </div>
         </div>
 
         {mounted && filtersOpen && filtersPosition && createPortal(
@@ -601,19 +592,24 @@ function FeedPageInner() {
                       Todos
                     </button>
                     {PAYMENT_FILTERS.map((method) => (
-                      <button
-                        key={method.value}
-                        type="button"
-                        onClick={() =>
-                          setActivePaymentMethod((prev) => (prev === method.value ? null : method.value))
-                        }
-                        className={`date-range-option flex min-h-11 items-center gap-2 rounded-[11px] px-3 text-left text-sm font-semibold transition-colors ${
-                          activePaymentMethod === method.value ? 'date-range-option--selected' : ''
-                        }`}
-                      >
-                        <Icon name={method.icon} size={15} aria-hidden />
-                        {method.label}
-                      </button>
+                      (() => {
+                        const meta = PAYMENT_METHOD_BADGES[method.value];
+                        return (
+                          <button
+                            key={method.value}
+                            type="button"
+                            onClick={() =>
+                              setActivePaymentMethod((prev) => (prev === method.value ? null : method.value))
+                            }
+                            className={`date-range-option flex min-h-11 items-center gap-2 rounded-[11px] px-3 text-left text-sm font-semibold transition-colors ${
+                              activePaymentMethod === method.value ? 'date-range-option--selected' : ''
+                            }`}
+                          >
+                            <Icon name={method.icon} size={15} color={meta?.color} aria-hidden />
+                            {method.label}
+                          </button>
+                        );
+                      })()
                     ))}
                   </div>
                 )}
