@@ -686,7 +686,6 @@ export default function AddExpenseModal({
                   onChange={setOccurredAtInput}
                   timeValue={timeInput}
                   onTimeChange={setTimeInput}
-                  max={todayLocalDate()}
                   ariaLabel="Data e horário do gasto"
                 />
               </div>

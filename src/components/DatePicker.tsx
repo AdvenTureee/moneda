@@ -104,7 +104,7 @@ export default function DatePicker({
       const btn = buttonRef.current;
       if (!btn) return;
       const rect = btn.getBoundingClientRect();
-      const popupHeight = onTimeChange ? 376 : 320;
+      const popupHeight = onTimeChange ? 408 : 352;
       const spaceBelow = window.innerHeight - rect.bottom;
       const top = spaceBelow < popupHeight && rect.top > popupHeight
         ? rect.top - popupHeight - 4
@@ -131,6 +131,19 @@ export default function DatePicker({
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onPointerDown = (e: PointerEvent) => {
+      const target = e.target as Node | null;
+      if (!target) return;
+      if (buttonRef.current?.contains(target)) return;
+      if (popupRef.current?.contains(target)) return;
+      setOpen(false);
+    };
+    window.addEventListener('pointerdown', onPointerDown, true);
+    return () => window.removeEventListener('pointerdown', onPointerDown, true);
   }, [open]);
 
   const todayLocal = todayLocalDate();
@@ -161,6 +174,7 @@ export default function DatePicker({
   const displayText = displayDate
     ? (timeValue ? `${displayDate}  ·  ${timeValue}` : displayDate)
     : '';
+  const selectedSummary = displayText || 'Nenhuma data selecionada';
   const selectedTime = parseTime(timeValue);
 
   function updateTime(part: 'hour' | 'minute', delta: number) {
@@ -197,11 +211,6 @@ export default function DatePicker({
       {mounted && open && position && createPortal(
         <>
           <div
-            className="fixed inset-0 z-[100]"
-            onClick={() => setOpen(false)}
-            aria-hidden
-          />
-          <div
             ref={popupRef}
             className="fixed z-[101] bg-white rounded-[12px] p-3"
             style={{
@@ -234,6 +243,13 @@ export default function DatePicker({
               >
                 <CaretRight size={14} weight="bold" className="text-[#6B7280]" />
               </button>
+            </div>
+
+            <div className="mb-2 flex justify-center px-1">
+              <div className="max-w-full rounded-full bg-[#EEF9F4] px-3 py-1.5 text-center text-[12px] font-bold tabular-nums text-[#2E8F67] ring-1 ring-[#5BBF8E]/25">
+                <span className="text-[#6B7280]">Selecionado:</span>{' '}
+                <span>{selectedSummary}</span>
+              </div>
             </div>
 
             {/* Linha de dias da semana */}
