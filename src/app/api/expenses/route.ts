@@ -34,6 +34,10 @@ function hasInvalidPaymentMethod(body: ExpenseBody): boolean {
   return raw !== undefined && raw !== null && raw !== '' && readPaymentMethod(body) === undefined;
 }
 
+function readBooleanParam(value: string | null): boolean {
+  return value === 'true' || value === '1';
+}
+
 function invalidateExpenseCaches(userId: string) {
   // Toda mutation de expense mexe em métricas/insights/monthly totals do usuário.
   // expire: 0 → invalida imediato (read-your-own-writes em Route Handler).
@@ -59,6 +63,8 @@ export async function GET(req: NextRequest) {
     }),
     startDate: searchParams.get('startDate') ?? undefined,
     endDate: searchParams.get('endDate') ?? undefined,
+    includeFuture: readBooleanParam(searchParams.get('includeFuture')),
+    onlyFuture: readBooleanParam(searchParams.get('onlyFuture')),
     limit: searchParams.get('limit') ? Number(searchParams.get('limit')) : undefined,
     search: searchParams.get('search') ?? undefined,
   };

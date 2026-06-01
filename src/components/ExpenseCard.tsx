@@ -52,7 +52,7 @@ export default function ExpenseCard({
   const PaymentBadgeIcon = paymentBadge?.Icon;
   const creditLabel =
     expense.paymentMethod === 'credit' && expense.creditDetails?.purchaseType === 'installment'
-      ? `${paymentLabel} ${expense.creditDetails.installmentCurrent}/${expense.creditDetails.installmentTotal}`
+      ? `${paymentLabel} ${expense.seriesOccurrenceIndex ?? expense.creditDetails.installmentCurrent}/${expense.seriesTotalOccurrences ?? expense.creditDetails.installmentTotal}`
       : paymentLabel;
   const shouldShowMenu = Boolean(expense.receipt || onReceiptChanged || hasCardActions);
   const menuItemClass =

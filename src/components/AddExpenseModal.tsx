@@ -564,6 +564,9 @@ export default function AddExpenseModal({
 
                 {creditPurchaseType === 'installment' && (
                   <div className="mt-3 grid grid-cols-2 gap-2">
+                    <p className="col-span-2 text-xs leading-relaxed text-[#6B7280]">
+                      O valor informado acima é o valor de cada parcela.
+                    </p>
                     <label className="block">
                       <span className="mb-1.5 block text-xs font-semibold text-[#6B7280]">
                         Parcela atual

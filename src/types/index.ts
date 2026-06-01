@@ -1,6 +1,7 @@
 export type ExpenseSource = 'whatsapp' | 'manual' | 'import';
 export type ExpensePaymentMethod = 'pix' | 'debit' | 'credit' | 'cash' | 'boleto' | 'transfer' | 'other';
 export type CreditPurchaseType = 'single' | 'installment';
+export type ExpenseSeriesKind = 'recurring' | 'installment';
 export type AIInsightType = 'monthly_summary' | 'category_alert' | 'spending_pattern';
 export type WhatsAppMessageStatus = 'received' | 'parsed' | 'failed' | 'responded';
 
@@ -38,6 +39,10 @@ export interface Expense {
   } | null;
   tags: string[];
   isRecurring?: boolean;
+  seriesId?: string | null;
+  seriesKind?: ExpenseSeriesKind | null;
+  seriesOccurrenceIndex?: number | null;
+  seriesTotalOccurrences?: number | null;
   receipt?: {
     path: string;
     fileName: string;
@@ -148,6 +153,8 @@ export interface ExpenseFilters {
   paymentMethod?: ExpensePaymentMethod;
   startDate?: string;
   endDate?: string;
+  includeFuture?: boolean;
+  onlyFuture?: boolean;
   limit?: number;
   search?: string;
 }

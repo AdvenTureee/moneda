@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createSessionClient, createServiceClient, isSupabaseEnabled } from '@/lib/supabase/server';
 import { decryptProfilePii, getDisplayNameFromUser } from '@/lib/security/profilePii';
+import { resolveUserHasPassword } from '@/lib/auth/password';
 import ProfileView from './ProfileView';
 
 export default async function ProfileLoader() {
@@ -14,14 +15,16 @@ export default async function ProfileLoader() {
   let currency = 'BRL';
   let initialName = getDisplayNameFromUser(user);
   let email = user.email ?? '';
+  let profileHasPassword: boolean | null = null;
   if (isSupabaseEnabled()) {
     const admin = createServiceClient();
     const { data } = await admin
       .from('profiles')
-      .select('currency,name_ciphertext,name_iv,name_tag,email_ciphertext,email_iv,email_tag,phone_ciphertext,phone_iv,phone_tag')
+      .select('currency,has_password,name_ciphertext,name_iv,name_tag,email_ciphertext,email_iv,email_tag,phone_ciphertext,phone_iv,phone_tag')
       .eq('id', user.id)
       .single();
     if (data?.currency) currency = data.currency;
+    if (typeof data?.has_password === 'boolean') profileHasPassword = data.has_password;
     if (data) {
       const pii = decryptProfilePii(data);
       initialName = pii.name || initialName;
@@ -43,6 +46,7 @@ export default async function ProfileLoader() {
       currency={currency}
       allowDelete={isSupabaseEnabled()}
       linkedProviders={linkedProviders}
+      hasPassword={resolveUserHasPassword(user, profileHasPassword)}
     />
   );
 }

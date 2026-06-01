@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { createSessionClient } from '@/lib/supabase/server';
+import { resolveUserHasPassword } from '@/lib/auth/password';
 import PasswordForm from './PasswordForm';
 
 export default async function SenhaPage({
@@ -11,7 +12,12 @@ export default async function SenhaPage({
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  const hasEmailIdentity = (user.identities ?? []).some((identity) => identity.provider === 'email');
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('has_password')
+    .eq('id', user.id)
+    .maybeSingle();
+  const hasPassword = resolveUserHasPassword(user, profile?.has_password);
   const email = user.email ?? '';
   const sp = await searchParams;
   const recovery = Array.isArray(sp.recovery) ? sp.recovery[0] : sp.recovery;
@@ -19,7 +25,7 @@ export default async function SenhaPage({
   return (
     <PasswordForm
       email={email}
-      hasEmailIdentity={hasEmailIdentity}
+      hasPassword={hasPassword}
       isRecovery={recovery === '1'}
     />
   );

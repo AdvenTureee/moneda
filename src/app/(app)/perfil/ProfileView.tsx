@@ -50,6 +50,7 @@ interface ProfileViewProps {
   currency: string;
   allowDelete: boolean;
   linkedProviders?: string[];
+  hasPassword: boolean;
 }
 
 const CURRENCY_LABELS: Record<string, string> = {
@@ -90,6 +91,7 @@ export default function ProfileView({
   currency,
   allowDelete,
   linkedProviders = [],
+  hasPassword,
 }: ProfileViewProps) {
   const [name, setName] = useState(initialName);
   const [draftName, setDraftName] = useState(initialName);
@@ -110,7 +112,6 @@ export default function ProfileView({
 
   const initial = (name?.[0] ?? email?.[0] ?? '?').toUpperCase();
   const isGoogleLinked = linkedProviders.includes('google');
-  const hasEmailIdentity = linkedProviders.includes('email');
 
   async function handleLinkGoogle() {
     setLinkingGoogle(true);
@@ -529,11 +530,11 @@ export default function ProfileView({
           </ProfileIcon>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-[#1A1D23]">
-              {hasEmailIdentity ? 'Senha e recuperação' : 'Definir senha'}
+              {hasPassword ? 'Alterar senha' : 'Definir senha'}
             </p>
             <p className="text-xs text-[#6B7280]">
-              {hasEmailIdentity
-                ? 'Alterar senha ou enviar link de redefinição'
+              {hasPassword
+                ? 'Enviar link de redefinição para o email'
                 : 'Crie uma senha para entrar também via email'}
             </p>
           </div>

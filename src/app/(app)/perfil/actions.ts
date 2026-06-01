@@ -10,6 +10,7 @@ import {
   buildProfilePhonePiiUpdate,
 } from '@/lib/security/profilePii';
 import { normalizeWhatsappPhone } from '@/lib/phone';
+import { resolveUserHasPassword } from '@/lib/auth/password';
 import type { NotificationPrefs } from './notification-prefs';
 
 export type ActionResult = { ok: true; message?: string } | { ok: false; error: string };
@@ -201,13 +202,10 @@ export async function updateNotificationPrefs(formData: FormData): Promise<Actio
 }
 
 /**
- * Define uma senha para um usuário Google-only (que ainda não tem identidade
- * email/senha). Como já está autenticado, vai direto via updateUser — sem
- * round-trip de email. Pode também ser usado para alterar a senha existente.
+ * Define uma senha inicial ou conclui uma redefinição aberta por email.
  */
 export async function setInitialPassword(formData: FormData): Promise<ActionResult> {
   const password = String(formData.get('password') ?? '');
-  const currentPassword = String(formData.get('currentPassword') ?? '');
   if (password.length < 8) {
     return { ok: false, error: 'A senha precisa ter pelo menos 8 caracteres.' };
   }
@@ -216,19 +214,39 @@ export async function setInitialPassword(formData: FormData): Promise<ActionResu
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: 'Sessão expirada. Entre novamente.' };
 
-  const hasEmailIdentity = (user.identities ?? []).some((identity) => identity.provider === 'email');
-  const updatePayload = hasEmailIdentity && currentPassword
-    ? { password, currentPassword }
-    : { password };
+  let profileHasPassword: boolean | null = null;
+  if (isSupabaseEnabled()) {
+    const admin = createServiceClient();
+    const { data } = await admin
+      .from('profiles')
+      .select('has_password')
+      .eq('id', user.id)
+      .maybeSingle();
+    if (typeof data?.has_password === 'boolean') profileHasPassword = data.has_password;
+  }
+  const hadPassword = resolveUserHasPassword(user, profileHasPassword);
 
-  const { error } = await supabase.auth.updateUser(updatePayload);
+  const { error } = await supabase.auth.updateUser({ password });
   if (error) {
     console.error('[setInitialPassword]', error);
     return { ok: false, error: 'Não foi possível atualizar a senha. Tente novamente.' };
   }
 
+  if (isSupabaseEnabled()) {
+    const admin = createServiceClient();
+    const { error: profileError } = await admin
+      .from('profiles')
+      .update({ has_password: true })
+      .eq('id', user.id);
+    if (profileError) {
+      console.error('[setInitialPassword:profile]', profileError);
+    }
+  }
+
   revalidatePath('/perfil');
-  return { ok: true, message: hasEmailIdentity ? 'Senha atualizada.' : 'Senha definida. Agora você pode entrar com email também.' };
+  revalidatePath('/perfil/senha');
+  revalidateTag(cacheTags.profile(user.id), { expire: 0 });
+  return { ok: true, message: hadPassword ? 'Senha atualizada.' : 'Senha definida. Agora você pode entrar com email também.' };
 }
 
 export async function sendPasswordReset(): Promise<ActionResult> {

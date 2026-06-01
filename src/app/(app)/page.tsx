@@ -1,7 +1,6 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import DashboardMetric from '@/components/DashboardMetric';
-import AIInsightBanner from '@/components/AIInsightBanner';
 import ExpenseCard from '@/components/ExpenseCard';
 import CategoryBreakdown from '@/components/CategoryBreakdown';
 import SpendingTimelineChart from '@/components/charts/SpendingTimelineChart';
@@ -11,15 +10,13 @@ import Mo from '@/components/Mo';
 import Icon from '@/components/Icon';
 import Confetti from '@/components/Confetti';
 import MonthPicker from '@/components/MonthPicker';
-import RegenerateInsightButton from '@/components/RegenerateInsightButton';
 import { getDashboardMetrics, getSpendingTimeline } from '@/lib/expenses';
 import { getBudgets } from '@/lib/budgets';
-import { getLatestInsight } from '@/lib/insights';
 import { getMonthlyIncomeTotalCents } from '@/lib/incomes';
 import { getMonthlyBudgetCents } from '@/lib/monthlyBudget';
 import { isUserOnboarded } from '@/lib/profiles';
 import { decryptProfilePii, getDisplayNameFromUser } from '@/lib/security/profilePii';
-import { formatCurrency, getCurrentPeriod, isClosedMonthlyPeriod } from '@/lib/utils';
+import { formatCurrency, getCurrentPeriod } from '@/lib/utils';
 import { createServiceClient, createSessionClient, isSupabaseEnabled } from '@/lib/supabase/server';
 
 // A page lê cookies de auth (createSessionClient) → Next a renderiza dinamicamente
@@ -50,10 +47,9 @@ export default async function DashboardPage({
   const period = isValidPeriod(rawPeriod) ? rawPeriod : getCurrentPeriod();
 
   // Parallel DB queries
-  const [metrics, budgets, latestInsight, monthlyBudgetCents, spendingTimeline, monthlyIncomeTotalCents] = await Promise.all([
+  const [metrics, budgets, monthlyBudgetCents, spendingTimeline, monthlyIncomeTotalCents] = await Promise.all([
     getDashboardMetrics(user.id, period),
     getBudgets(user.id, period),
-    getLatestInsight(user.id, period),
     getMonthlyBudgetCents(user.id, period),
     getSpendingTimeline(user.id, period),
     getMonthlyIncomeTotalCents(user.id, period),
@@ -76,12 +72,7 @@ export default async function DashboardPage({
       .single();
     if (profile) fullName = decryptProfilePii(profile).name || fullName;
   }
-  const firstName = fullName ? fullName.split(' ')[0] : 'Gabriel';
   const avatarUrl = (user.user_metadata?.avatar_url as string | undefined) ?? null;
-  const welcomeMessage = `Olá, ${firstName}! Bem-vindo(a) ao Moneda. Conforme você cadastrar seus gastos ou nos enviar pelo WhatsApp, nossa Inteligência Artificial analisará seus hábitos de consumo para gerar insights financeiros personalizados aqui!`;
-
-  const insightMessage = latestInsight ? latestInsight.message : welcomeMessage;
-  const isMonthlySummaryClosed = isClosedMonthlyPeriod(period);
 
   return (
     <>
@@ -174,23 +165,37 @@ export default async function DashboardPage({
           />
         </section>
 
-        <section className="mb-4 animate-fade-up delay-4" aria-label="Atalho para ganhos">
+        <section className="mb-4 grid grid-cols-2 gap-2.5 animate-fade-up delay-4" aria-label="Atalhos financeiros">
           <Link
             href="/perfil/ganhos"
-            className="themed-card group flex min-h-12 items-center gap-2.5 rounded-[14px] bg-white px-3.5 py-2.5 transition-[background-color,box-shadow,transform] duration-150 active:scale-[0.99] hover:shadow-[var(--shadow-card)]"
+            className="themed-card group flex min-h-12 min-w-0 items-center gap-2 rounded-[14px] bg-white px-2.5 py-2.5 transition-[background-color,box-shadow,transform] duration-150 active:scale-[0.99] hover:shadow-[var(--shadow-card)] min-[380px]:gap-2.5 min-[380px]:px-3.5"
           >
             <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--color-success)_16%,var(--color-surface)_84%)] text-[var(--color-success)]">
               <Icon name="TrendUp" size={17} weight="bold" />
             </span>
             <span className="min-w-0 flex-1">
-              <span className="block truncate text-sm font-bold text-[var(--color-text-primary)]">
+              <span className="block truncate text-xs font-bold text-[var(--color-text-primary)] min-[380px]:text-sm">
                 Ganhos do mês
               </span>
-              <span className="block truncate text-[11px] leading-tight text-[var(--color-text-secondary)]">
-                Registre ganhos para abater estouros
+            </span>
+            <span className="shrink-0 text-base font-bold text-[var(--color-text-tertiary)] transition-transform duration-150 group-hover:translate-x-0.5">
+              ›
+            </span>
+          </Link>
+
+          <Link
+            href={`/insights?period=${period}&open=monthly_summary`}
+            className="themed-card group flex min-h-12 min-w-0 items-center gap-2 rounded-[14px] bg-white px-2.5 py-2.5 transition-[background-color,box-shadow,transform] duration-150 active:scale-[0.99] hover:shadow-[var(--shadow-card)] min-[380px]:gap-2.5 min-[380px]:px-3.5"
+          >
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--color-success)_16%,var(--color-surface)_84%)] text-[var(--color-success)]">
+              <Icon name="Sparkle" size={17} weight="bold" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-xs font-bold text-[var(--color-text-primary)] min-[380px]:text-sm">
+                Resumo do mês
               </span>
             </span>
-            <span className="text-base font-bold text-[var(--color-text-tertiary)] transition-transform duration-150 group-hover:translate-x-0.5">
+            <span className="shrink-0 text-base font-bold text-[var(--color-text-tertiary)] transition-transform duration-150 group-hover:translate-x-0.5">
               ›
             </span>
           </Link>
@@ -220,22 +225,6 @@ export default async function DashboardPage({
         {/* Spending timeline */}
         <section className="mb-6 animate-fade-up delay-6">
           <SpendingTimelineChart data={spendingTimeline} />
-        </section>
-
-        {/* AI Insight banner */}
-        <section className="mb-6 animate-fade-up delay-7" aria-label="Resumo do mês">
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-base font-heading text-[#1A1D23]">Resumo do mês</h2>
-          </div>
-          <AIInsightBanner
-            message={insightMessage}
-            preview
-            dismissible={false}
-            cta={{ label: 'Ver mais', href: `/insights?period=${period}&open=monthly_summary` }}
-            footerNote={!isMonthlySummaryClosed ? 'Disponível quando o mês fechar.' : undefined}
-          >
-            <RegenerateInsightButton period={period} hasInsight={Boolean(latestInsight)} hideHeading variant="card" />
-          </AIInsightBanner>
         </section>
 
         {/* Recent expenses */}

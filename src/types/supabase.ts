@@ -154,6 +154,8 @@ export type Database = {
           receipt_path: string | null
           receipt_size_bytes: number | null
           receipt_uploaded_at: string | null
+          series_id: string | null
+          series_occurrence_index: number | null
           source: string
           tags: string[]
           updated_at: string
@@ -176,6 +178,8 @@ export type Database = {
           receipt_path?: string | null
           receipt_size_bytes?: number | null
           receipt_uploaded_at?: string | null
+          series_id?: string | null
+          series_occurrence_index?: number | null
           source?: string
           tags?: string[]
           updated_at?: string
@@ -198,6 +202,8 @@ export type Database = {
           receipt_path?: string | null
           receipt_size_bytes?: number | null
           receipt_uploaded_at?: string | null
+          series_id?: string | null
+          series_occurrence_index?: number | null
           source?: string
           tags?: string[]
           updated_at?: string
@@ -206,6 +212,84 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "expenses_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_series_id_fkey"
+            columns: ["series_id"]
+            isOneToOne: false
+            referencedRelation: "expense_series"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      expense_series: {
+        Row: {
+          amount_cents: number
+          category_id: string
+          created_at: string
+          day_of_month: number
+          deleted_at: string | null
+          description: string
+          ended_at: string | null
+          id: string
+          kind: string
+          metadata: Json
+          payment_method: string
+          source: string
+          start_at: string
+          status: string
+          tags: string[]
+          total_occurrences: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount_cents: number
+          category_id: string
+          created_at?: string
+          day_of_month: number
+          deleted_at?: string | null
+          description: string
+          ended_at?: string | null
+          id?: string
+          kind: string
+          metadata?: Json
+          payment_method?: string
+          source?: string
+          start_at: string
+          status?: string
+          tags?: string[]
+          total_occurrences?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount_cents?: number
+          category_id?: string
+          created_at?: string
+          day_of_month?: number
+          deleted_at?: string | null
+          description?: string
+          ended_at?: string | null
+          id?: string
+          kind?: string
+          metadata?: Json
+          payment_method?: string
+          source?: string
+          start_at?: string
+          status?: string
+          tags?: string[]
+          total_occurrences?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expense_series_category_id_fkey"
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
@@ -266,6 +350,7 @@ export type Database = {
           email_hash: string | null
           email_iv: string | null
           email_tag: string | null
+          has_password: boolean
           has_pet: boolean
           id: string
           monthly_budget_cents: number | null
@@ -298,6 +383,7 @@ export type Database = {
           email_hash?: string | null
           email_iv?: string | null
           email_tag?: string | null
+          has_password?: boolean
           has_pet?: boolean
           id: string
           monthly_budget_cents?: number | null
@@ -330,6 +416,7 @@ export type Database = {
           email_hash?: string | null
           email_iv?: string | null
           email_tag?: string | null
+          has_password?: boolean
           has_pet?: boolean
           id?: string
           monthly_budget_cents?: number | null

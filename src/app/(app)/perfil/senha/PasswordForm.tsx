@@ -8,12 +8,12 @@ import { sendPasswordReset, setInitialPassword } from '../actions';
 
 interface PasswordFormProps {
   email: string;
-  hasEmailIdentity: boolean;
+  hasPassword: boolean;
   isRecovery: boolean;
 }
 
-export default function PasswordForm({ email, hasEmailIdentity, isRecovery }: PasswordFormProps) {
-  const [currentPassword, setCurrentPassword] = useState('');
+export default function PasswordForm({ email, hasPassword, isRecovery }: PasswordFormProps) {
+  const [passwordEnabled, setPasswordEnabled] = useState(hasPassword);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [saving, startSaving] = useTransition();
@@ -23,19 +23,18 @@ export default function PasswordForm({ email, hasEmailIdentity, isRecovery }: Pa
   const canSave =
     newPassword.length >= 8 &&
     newPassword === confirmPassword &&
-    (!hasEmailIdentity || isRecovery || currentPassword.length > 0);
+    (!passwordEnabled || isRecovery);
 
   function handleSave() {
     if (!canSave) return;
     const formData = new FormData();
     formData.set('password', newPassword);
-    if (currentPassword) formData.set('currentPassword', currentPassword);
 
     startSaving(async () => {
       const result = await setInitialPassword(formData);
       if (result.ok) {
         showToast('success', result.message ?? 'Senha atualizada.');
-        setCurrentPassword('');
+        setPasswordEnabled(true);
         setNewPassword('');
         setConfirmPassword('');
       } else {
@@ -64,89 +63,116 @@ export default function PasswordForm({ email, hasEmailIdentity, isRecovery }: Pa
         </Link>
         <h1 className="text-2xl font-heading text-[#1A1D23]">Senha</h1>
         <p className="text-sm text-[#6B7280] mt-1">
-          {hasEmailIdentity
+          {passwordEnabled
             ? isRecovery
               ? 'Crie uma nova senha para concluir a redefinição.'
-              : 'Altere sua senha ou envie um link de redefinição para seu email.'
+              : 'Altere sua senha pelo link seguro enviado para seu email.'
             : 'Crie uma senha para entrar também com email.'}
         </p>
       </header>
 
-      <section className="themed-card rounded-[20px] border border-[#F1F3F7] bg-white p-5 animate-fade-up delay-1">
-        <div className="mb-4 flex items-start gap-3 rounded-[14px] bg-[#F8F9FB] p-3">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#EEF9F4] text-[#5BBF8E]">
-            <LockKey size={18} weight="bold" />
-          </span>
-          <div className="min-w-0">
-            <p className="text-sm font-bold text-[#1A1D23]">
-              {hasEmailIdentity ? 'Alterar senha' : 'Definir senha'}
-            </p>
-            <p className="mt-0.5 text-xs leading-relaxed text-[#6B7280]">
-              {hasEmailIdentity
-                ? isRecovery
-                  ? 'Você entrou pelo link de recuperação. Escolha uma nova senha.'
-                  : 'Por segurança, informe a senha atual antes de criar uma nova.'
-                : 'Seu login atual não tem senha cadastrada. Isso adiciona o login por email.'}
-            </p>
+      {passwordEnabled && !isRecovery ? (
+        <section className="themed-card rounded-[20px] border border-[#F1F3F7] bg-white p-5 animate-fade-up delay-1">
+          <div className="mb-4 flex items-start gap-3 rounded-[14px] bg-[#F8F9FB] p-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#EBF3FE] text-[#3B82F6]">
+              <Envelope size={18} weight="bold" />
+            </span>
+            <div className="min-w-0">
+              <p className="text-sm font-bold text-[#1A1D23]">Alterar senha</p>
+              <p className="mt-0.5 text-xs leading-relaxed text-[#6B7280]">
+                Enviaremos um link de redefinição para {email || 'seu email'}.
+              </p>
+            </div>
           </div>
-        </div>
+          <button
+            type="button"
+            onClick={handleSendReset}
+            disabled={sendingReset}
+            className="flex w-full items-center justify-center gap-2 rounded-full bg-[#5BBF8E] py-4 text-sm font-bold text-white transition-colors duration-150 hover:bg-[#4AA77C] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+            style={{ boxShadow: '0 6px 20px rgba(91, 191, 142, 0.35)' }}
+          >
+            {sendingReset ? (
+              <>
+                <span className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                Enviando...
+              </>
+            ) : (
+              <>
+                <Envelope size={16} weight="bold" />
+                Enviar link por email
+              </>
+            )}
+          </button>
+        </section>
+      ) : (
+        <section className="themed-card rounded-[20px] border border-[#F1F3F7] bg-white p-5 animate-fade-up delay-1">
+          <div className="mb-4 flex items-start gap-3 rounded-[14px] bg-[#F8F9FB] p-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#EEF9F4] text-[#5BBF8E]">
+              <LockKey size={18} weight="bold" />
+            </span>
+            <div className="min-w-0">
+              <p className="text-sm font-bold text-[#1A1D23]">
+                {passwordEnabled ? 'Alterar senha' : 'Definir senha'}
+              </p>
+              <p className="mt-0.5 text-xs leading-relaxed text-[#6B7280]">
+                {passwordEnabled
+                  ? isRecovery
+                    ? 'Você entrou pelo link de recuperação. Escolha uma nova senha.'
+                    : 'Use o link de redefinição para escolher uma nova senha.'
+                  : 'Seu login atual não tem senha cadastrada. Isso adiciona o login por email.'}
+              </p>
+            </div>
+          </div>
 
-        <div className="space-y-3">
-          {hasEmailIdentity && !isRecovery && (
+          <div className="space-y-3">
             <PasswordField
-              label="Senha atual"
-              value={currentPassword}
-              onChange={setCurrentPassword}
-              autoComplete="current-password"
+              label="Nova senha"
+              value={newPassword}
+              onChange={setNewPassword}
+              autoComplete="new-password"
             />
+            <PasswordField
+              label="Confirmar nova senha"
+              value={confirmPassword}
+              onChange={setConfirmPassword}
+              autoComplete="new-password"
+            />
+          </div>
+
+          {newPassword.length > 0 && newPassword.length < 8 && (
+            <p className="mt-2 text-xs font-medium text-[#B14C4C]">
+              A senha precisa ter pelo menos 8 caracteres.
+            </p>
           )}
-          <PasswordField
-            label="Nova senha"
-            value={newPassword}
-            onChange={setNewPassword}
-            autoComplete="new-password"
-          />
-          <PasswordField
-            label="Confirmar nova senha"
-            value={confirmPassword}
-            onChange={setConfirmPassword}
-            autoComplete="new-password"
-          />
-        </div>
-
-        {newPassword.length > 0 && newPassword.length < 8 && (
-          <p className="mt-2 text-xs font-medium text-[#B14C4C]">
-            A senha precisa ter pelo menos 8 caracteres.
-          </p>
-        )}
-        {confirmPassword.length > 0 && newPassword !== confirmPassword && (
-          <p className="mt-2 text-xs font-medium text-[#B14C4C]">
-            As senhas não conferem.
-          </p>
-        )}
-
-        <button
-          type="button"
-          onClick={handleSave}
-          disabled={saving || !canSave}
-          className="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-[#5BBF8E] py-4 text-sm font-bold text-white transition-colors duration-150 hover:bg-[#4AA77C] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
-          style={{ boxShadow: '0 6px 20px rgba(91, 191, 142, 0.35)' }}
-        >
-          {saving ? (
-            <>
-              <span className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-              Salvando...
-            </>
-          ) : (
-            <>
-              <Check size={16} weight="bold" />
-              {hasEmailIdentity ? 'Atualizar senha' : 'Salvar senha'}
-            </>
+          {confirmPassword.length > 0 && newPassword !== confirmPassword && (
+            <p className="mt-2 text-xs font-medium text-[#B14C4C]">
+              As senhas não conferem.
+            </p>
           )}
-        </button>
-      </section>
 
-      {hasEmailIdentity && (
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={saving || !canSave}
+            className="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-[#5BBF8E] py-4 text-sm font-bold text-white transition-colors duration-150 hover:bg-[#4AA77C] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+            style={{ boxShadow: '0 6px 20px rgba(91, 191, 142, 0.35)' }}
+          >
+            {saving ? (
+              <>
+                <span className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                Salvando...
+              </>
+            ) : (
+              <>
+                <Check size={16} weight="bold" />
+                {passwordEnabled ? 'Atualizar senha' : 'Salvar senha'}
+              </>
+            )}
+          </button>
+        </section>
+      )}
+
+      {passwordEnabled && isRecovery && (
         <section className="themed-card mt-4 rounded-[18px] bg-white p-4 animate-fade-up delay-2">
           <div className="flex items-start gap-3">
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#EBF3FE] text-[#3B82F6]">

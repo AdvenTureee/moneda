@@ -9,6 +9,10 @@ import { getMonthlyBudgetCents } from '@/lib/monthlyBudget';
 
 type ExpensesRow = Database['public']['Tables']['expenses']['Row'];
 type ExpensesInsert = Database['public']['Tables']['expenses']['Insert'];
+type ExpensesUpdate = Database['public']['Tables']['expenses']['Update'];
+type ExpenseSeriesRow = Database['public']['Tables']['expense_series']['Row'];
+type ExpenseSeriesInsert = Database['public']['Tables']['expense_series']['Insert'];
+type ExpenseSeriesUpdate = Database['public']['Tables']['expense_series']['Update'];
 import {
   getAllExpenses as mockGetAll,
   addSessionExpense,
@@ -35,6 +39,80 @@ const PAYMENT_METHODS = new Set<ExpensePaymentMethod>([
   'transfer',
   'other',
 ]);
+
+const EXPENSE_SELECT =
+  'id,amount_cents,category_id,description,occurred_at,source,payment_method,metadata,tags,is_recurring,series_id,series_occurrence_index,receipt_path,receipt_file_name,receipt_mime_type,receipt_size_bytes,receipt_uploaded_at,updated_at,created_at';
+
+function isJsonObject(value: Json | null | undefined): value is Record<string, Json> {
+  return Boolean(value && typeof value === 'object' && !Array.isArray(value));
+}
+
+function periodFromDate(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+}
+
+function periodFromIso(iso: string): string {
+  return periodFromDate(new Date(iso));
+}
+
+function currentPeriod(): string {
+  return periodFromDate(new Date());
+}
+
+function monthsBetweenPeriods(startPeriod: string, endPeriod: string): number {
+  const [startY, startM] = startPeriod.split('-').map(Number);
+  const [endY, endM] = endPeriod.split('-').map(Number);
+  return (endY - startY) * 12 + (endM - startM);
+}
+
+function daysInMonth(year: number, monthIndex: number): number {
+  return new Date(year, monthIndex + 1, 0).getDate();
+}
+
+function addMonthsClamped(date: Date, months: number, preferredDay = date.getDate()): Date {
+  const year = date.getFullYear();
+  const monthIndex = date.getMonth() + months;
+  const targetYear = year + Math.floor(monthIndex / 12);
+  const targetMonthIndex = ((monthIndex % 12) + 12) % 12;
+  const day = Math.min(preferredDay, daysInMonth(targetYear, targetMonthIndex));
+  return new Date(
+    targetYear,
+    targetMonthIndex,
+    day,
+    date.getHours(),
+    date.getMinutes(),
+    date.getSeconds(),
+    date.getMilliseconds(),
+  );
+}
+
+function occurrenceDate(series: ExpenseSeriesRow, occurrenceIndex: number): Date {
+  return addMonthsClamped(new Date(series.start_at), occurrenceIndex - 1, series.day_of_month);
+}
+
+function seriesKindFromExpense(row: Pick<ExpensesRow, 'series_id' | 'is_recurring' | 'payment_method' | 'metadata'>): Expense['seriesKind'] {
+  if (!row.series_id) return null;
+  const creditDetails = normalizePaymentMethod(row.payment_method) === 'credit'
+    ? readCreditDetails(row.metadata)
+    : null;
+  if (creditDetails?.purchaseType === 'installment') return 'installment';
+  if (row.is_recurring) return 'recurring';
+  return null;
+}
+
+function buildInstallmentMetadata(
+  baseMetadata: Json | null | undefined,
+  occurrenceIndex: number,
+  totalOccurrences: number,
+): Json {
+  const base = isJsonObject(baseMetadata) ? baseMetadata : {};
+  return {
+    ...base,
+    credit_purchase_type: 'installment',
+    installment_current: occurrenceIndex,
+    installment_total: totalOccurrences,
+  };
+}
 
 function normalizePaymentMethod(value: unknown): ExpensePaymentMethod {
   return typeof value === 'string' && PAYMENT_METHODS.has(value as ExpensePaymentMethod)
@@ -92,6 +170,135 @@ function attachCategoryData(expense: Expense, categories: Map<string, Category>)
   };
 }
 
+function isInstallmentInput(input: Pick<ExpenseInput, 'paymentMethod' | 'creditDetails'>): boolean {
+  return input.paymentMethod === 'credit' && input.creditDetails?.purchaseType === 'installment';
+}
+
+function seriesStartForInput(input: ExpenseInput, occurredAt: string): string {
+  if (!isInstallmentInput(input)) return occurredAt;
+  const current = input.creditDetails?.installmentCurrent ?? 1;
+  return addMonthsClamped(new Date(occurredAt), -(current - 1)).toISOString();
+}
+
+function buildSeriesInsert(input: ExpenseInput, occurredAt: string): ExpenseSeriesInsert | null {
+  const installment = isInstallmentInput(input);
+  const recurring = input.isRecurring === true && !installment;
+  if (!installment && !recurring) return null;
+
+  const occurredDate = new Date(occurredAt);
+  return {
+    user_id: input.userId!,
+    kind: installment ? 'installment' : 'recurring',
+    amount_cents: input.amount,
+    category_id: input.category,
+    description: input.description,
+    payment_method: input.paymentMethod ?? 'other',
+    source: input.source,
+    tags: input.tags,
+    metadata: buildExpenseMetadata(input) ?? {},
+    start_at: seriesStartForInput(input, occurredAt),
+    day_of_month: occurredDate.getDate(),
+    total_occurrences: installment ? input.creditDetails?.installmentTotal ?? 2 : null,
+  };
+}
+
+function buildOccurrenceInsert(
+  series: ExpenseSeriesRow,
+  occurrenceIndex: number,
+): ExpensesInsert {
+  const installmentTotal = series.kind === 'installment' ? series.total_occurrences ?? 2 : null;
+  const metadata = installmentTotal
+    ? buildInstallmentMetadata(series.metadata, occurrenceIndex, installmentTotal)
+    : series.metadata;
+
+  return {
+    user_id: series.user_id,
+    amount_cents: series.amount_cents,
+    category_id: series.category_id,
+    description: series.description,
+    source: series.source,
+    payment_method: series.payment_method,
+    metadata,
+    tags: series.tags,
+    occurred_at: occurrenceDate(series, occurrenceIndex).toISOString(),
+    is_recurring: series.kind === 'recurring',
+    series_id: series.id,
+    series_occurrence_index: occurrenceIndex,
+  };
+}
+
+function buildExpenseUpdateFromSeries(
+  series: ExpenseSeriesRow,
+  occurrenceIndex: number,
+): ExpensesUpdate {
+  const insert = buildOccurrenceInsert(series, occurrenceIndex);
+  return {
+    amount_cents: insert.amount_cents,
+    category_id: insert.category_id,
+    description: insert.description,
+    source: insert.source,
+    payment_method: insert.payment_method,
+    metadata: insert.metadata,
+    tags: insert.tags,
+    occurred_at: insert.occurred_at,
+    is_recurring: insert.is_recurring,
+  };
+}
+
+function periodFromExpenseFilters(filters: ExpenseFilters): string {
+  const iso = filters.endDate ?? filters.startDate;
+  return iso ? periodFromIso(iso) : currentPeriod();
+}
+
+async function ensureExpenseSeriesMaterialized(userId: string, throughPeriod: string): Promise<void> {
+  const db = createServiceClient();
+  const [throughY, throughM] = throughPeriod.split('-').map(Number);
+  const throughEnd = new Date(throughY, throughM, 0, 23, 59, 59).toISOString();
+
+  const { data, error } = await db
+    .from('expense_series')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('status', 'active')
+    .is('deleted_at', null)
+    .lte('start_at', throughEnd);
+
+  if (error) throw new Error(`ensureExpenseSeriesMaterialized: ${error.message}`);
+
+  const inserts: ExpensesInsert[] = [];
+  for (const series of (data ?? []) as ExpenseSeriesRow[]) {
+    const startPeriod = periodFromIso(series.start_at);
+    const months = monthsBetweenPeriods(startPeriod, throughPeriod);
+    if (months < 0) continue;
+
+    let maxOccurrence = months + 1;
+    if (series.kind === 'installment') {
+      maxOccurrence = Math.min(maxOccurrence, series.total_occurrences ?? 0);
+    }
+    if (series.ended_at) {
+      const endedMonths = monthsBetweenPeriods(startPeriod, periodFromIso(series.ended_at));
+      maxOccurrence = Math.min(maxOccurrence, endedMonths + 1);
+    }
+
+    for (let index = 1; index <= maxOccurrence; index += 1) {
+      inserts.push(buildOccurrenceInsert(series, index));
+    }
+  }
+
+  if (inserts.length === 0) return;
+
+  const { error: insertError } = await db
+    .from('expenses')
+    .upsert(inserts, {
+      onConflict: 'series_id,series_occurrence_index',
+      ignoreDuplicates: true,
+    });
+
+  if (insertError) {
+    throw new Error(`materializeExpenseSeries: ${insertError.message}`);
+  }
+}
+
 async function enrichWithCategoriesFromDB(
   userId: string,
   expenses: Expense[],
@@ -131,6 +338,10 @@ function rowToExpense(row: ExpensesRow): Expense {
       : null,
     tags: row.tags,
     isRecurring: (row as any).is_recurring ?? false,
+    seriesId: row.series_id,
+    seriesKind: seriesKindFromExpense(row),
+    seriesOccurrenceIndex: row.series_occurrence_index,
+    seriesTotalOccurrences: readCreditDetails(row.metadata)?.installmentTotal ?? null,
     receipt: row.receipt_path
       ? {
           path: row.receipt_path,
@@ -153,10 +364,17 @@ async function getExpensesFromDB(filters: ExpenseFilters): Promise<Expense[]> {
     throw new Error('userId é obrigatório para buscar despesas do banco');
   }
   const userId = filters.userId;
+  if (!filters.onlyFuture) {
+    await ensureExpenseSeriesMaterialized(
+      userId,
+      filters.includeFuture ? periodFromExpenseFilters(filters) : currentPeriod(),
+    );
+  }
+  const nowIso = new Date().toISOString();
 
   let query = db
     .from('expenses')
-    .select('id,amount_cents,category_id,description,occurred_at,source,payment_method,metadata,tags,is_recurring,receipt_path,receipt_file_name,receipt_mime_type,receipt_size_bytes,receipt_uploaded_at,updated_at,created_at')
+    .select(EXPENSE_SELECT)
     .eq('user_id', userId)
     .is('deleted_at', null)
     .order('occurred_at', { ascending: false });
@@ -165,6 +383,11 @@ async function getExpensesFromDB(filters: ExpenseFilters): Promise<Expense[]> {
   if (filters.paymentMethod) query = query.eq('payment_method', filters.paymentMethod);
   if (filters.startDate) query = query.gte('occurred_at', filters.startDate);
   if (filters.endDate) query = query.lte('occurred_at', filters.endDate);
+  if (filters.onlyFuture) {
+    query = query.gt('occurred_at', nowIso);
+  } else if (!filters.includeFuture) {
+    query = query.lte('occurred_at', nowIso);
+  }
   if (filters.search) {
     query = query.ilike('description', `%${filters.search}%`);
   }
@@ -183,6 +406,36 @@ async function createExpenseInDB(input: ExpenseInput): Promise<Expense> {
     throw new Error('userId é obrigatório para cadastrar despesa');
   }
 
+  const occurredAt = input.occurredAt ?? new Date().toISOString();
+  const seriesInsert = buildSeriesInsert(input, occurredAt);
+  if (seriesInsert) {
+    const { data: seriesData, error: seriesError } = await db
+      .from('expense_series')
+      .insert(seriesInsert)
+      .select()
+      .single();
+
+    if (seriesError) throw new Error(`createExpenseSeries: ${seriesError.message}`);
+
+    const series = seriesData as ExpenseSeriesRow;
+    const occurrenceIndex = series.kind === 'installment'
+      ? input.creditDetails?.installmentCurrent ?? 1
+      : 1;
+    const insert = {
+      ...buildOccurrenceInsert(series, occurrenceIndex),
+      occurred_at: occurredAt,
+    };
+
+    const { data, error } = await db
+      .from('expenses')
+      .insert(insert)
+      .select()
+      .single();
+
+    if (error) throw new Error(`createExpense: ${error.message}`);
+    return rowToExpense(data as ExpensesRow);
+  }
+
   const insert: ExpensesInsert = {
     user_id: input.userId,
     amount_cents: input.amount,
@@ -192,7 +445,7 @@ async function createExpenseInDB(input: ExpenseInput): Promise<Expense> {
     payment_method: input.paymentMethod ?? 'other',
     ...(buildExpenseMetadata(input) !== undefined && { metadata: buildExpenseMetadata(input) }),
     tags: input.tags,
-    occurred_at: input.occurredAt ?? new Date().toISOString(),
+    occurred_at: occurredAt,
     ...(input.isRecurring !== undefined && { is_recurring: input.isRecurring }),
   };
 
@@ -224,6 +477,7 @@ async function getDashboardMetricsFromDBViaRPC(
   period: string,
 ): Promise<DashboardMetrics | null> {
   const db = createServiceClient();
+  await ensureExpenseSeriesMaterialized(userId, period);
 
   const { data: raw, error } = await (db as any).rpc('get_dashboard_page', {
     p_user_id: userId,
@@ -276,6 +530,10 @@ async function getDashboardMetricsFromDBViaRPC(
           : null,
         tags: e.tags ?? [],
         isRecurring: e.is_recurring ?? false,
+        seriesId: null,
+        seriesKind: e.is_recurring ? 'recurring' : readCreditDetails(e.metadata)?.purchaseType === 'installment' ? 'installment' : null,
+        seriesOccurrenceIndex: readCreditDetails(e.metadata)?.installmentCurrent ?? null,
+        seriesTotalOccurrences: readCreditDetails(e.metadata)?.installmentTotal ?? null,
         receipt: e.receipt_path
           ? {
               path: e.receipt_path,
@@ -328,13 +586,14 @@ async function getDashboardMetricsFromDBViaQuery(
   period: string,
 ): Promise<DashboardMetrics> {
   const db = createServiceClient();
+  await ensureExpenseSeriesMaterialized(userId, period);
   const [year, month] = period.split('-').map(Number);
   const start = new Date(year, month - 1, 1).toISOString();
   const end = new Date(year, month, 0, 23, 59, 59).toISOString();
 
   const { data, error } = await db
     .from('expenses')
-    .select('id,amount_cents,category_id,description,occurred_at,source,payment_method,metadata,tags,is_recurring,receipt_path,receipt_file_name,receipt_mime_type,receipt_size_bytes,receipt_uploaded_at,updated_at,created_at')
+    .select(EXPENSE_SELECT)
     .eq('user_id', userId)
     .is('deleted_at', null)
     .gte('occurred_at', start)
@@ -426,6 +685,12 @@ function getExpensesFromMock(filters: ExpenseFilters): Expense[] {
     const end = new Date(filters.endDate);
     expenses = expenses.filter((e) => new Date(e.createdAt) <= end);
   }
+  const now = new Date();
+  if (filters.onlyFuture) {
+    expenses = expenses.filter((e) => new Date(e.createdAt) > now);
+  } else if (!filters.includeFuture) {
+    expenses = expenses.filter((e) => new Date(e.createdAt) <= now);
+  }
   if (filters.search) {
     const q = filters.search.toLowerCase();
     expenses = expenses.filter(
@@ -488,9 +753,8 @@ function getDashboardMetricsFromMock(userId: string, period: string): DashboardM
 // ---------------------------------------------------------------------------
 // Update & Delete
 // ---------------------------------------------------------------------------
-async function updateExpenseInDB(id: string, input: Partial<ExpenseInput>): Promise<Expense> {
-  const db = createServiceClient();
-  const updates: Partial<ExpensesRow> & { is_recurring?: boolean } = {};
+function buildDirectExpenseUpdates(input: Partial<ExpenseInput>): ExpensesUpdate {
+  const updates: ExpensesUpdate = {};
   if (input.amount !== undefined) updates.amount_cents = input.amount;
   if (input.category !== undefined) updates.category_id = input.category;
   if (input.description !== undefined) updates.description = input.description;
@@ -499,13 +763,206 @@ async function updateExpenseInDB(id: string, input: Partial<ExpenseInput>): Prom
   if (input.paymentMethod !== undefined) updates.payment_method = input.paymentMethod;
   if (input.creditDetails !== undefined) {
     updates.metadata = input.paymentMethod === 'credit' && input.creditDetails
-      ? buildExpenseMetadata(input) ?? {}
+      ? buildExpenseMetadata(input as Pick<ExpenseInput, 'paymentMethod' | 'creditDetails'>) ?? {}
       : {};
+  }
+  return updates;
+}
+
+async function convertExistingExpenseToSeries(
+  existing: ExpensesRow,
+  input: Partial<ExpenseInput>,
+): Promise<Expense | null> {
+  const db = createServiceClient();
+  const next: ExpenseInput = {
+    userId: existing.user_id,
+    amount: input.amount ?? existing.amount_cents,
+    category: input.category ?? existing.category_id,
+    description: input.description ?? existing.description,
+    source: input.source ?? (existing.source as Expense['source']),
+    paymentMethod: input.paymentMethod ?? normalizePaymentMethod(existing.payment_method),
+    creditDetails: input.creditDetails !== undefined
+      ? input.creditDetails
+      : normalizePaymentMethod(existing.payment_method) === 'credit'
+        ? readCreditDetails(existing.metadata)
+        : null,
+    tags: input.tags ?? existing.tags,
+    occurredAt: input.occurredAt ?? existing.occurred_at,
+    isRecurring: input.isRecurring ?? existing.is_recurring,
+  };
+  const seriesInsert = buildSeriesInsert(next, next.occurredAt ?? existing.occurred_at);
+  if (!seriesInsert) return null;
+
+  const { data: seriesData, error: seriesError } = await db
+    .from('expense_series')
+    .insert(seriesInsert)
+    .select()
+    .single();
+
+  if (seriesError) throw new Error(`createExpenseSeries: ${seriesError.message}`);
+
+  const series = seriesData as ExpenseSeriesRow;
+  const occurrenceIndex = series.kind === 'installment'
+    ? next.creditDetails?.installmentCurrent ?? 1
+    : 1;
+  const occurrenceUpdates = {
+    ...buildExpenseUpdateFromSeries(series, occurrenceIndex),
+    occurred_at: next.occurredAt ?? existing.occurred_at,
+    series_id: series.id,
+    series_occurrence_index: occurrenceIndex,
+  };
+
+  const { data, error } = await db
+    .from('expenses')
+    .update(occurrenceUpdates)
+    .eq('id', existing.id)
+    .select()
+    .single();
+
+  if (error) throw new Error(`updateExpense: ${error.message}`);
+  return rowToExpense(data as ExpensesRow);
+}
+
+async function updateExpenseSeriesFromOccurrence(
+  existing: ExpensesRow,
+  input: Partial<ExpenseInput>,
+): Promise<Expense> {
+  const db = createServiceClient();
+  const occurrenceIndex = existing.series_occurrence_index ?? 1;
+  const seriesId = existing.series_id;
+  if (!seriesId) throw new Error('Série não encontrada para o gasto.');
+
+  const { data: seriesData, error: seriesError } = await db
+    .from('expense_series')
+    .select('*')
+    .eq('id', seriesId)
+    .single();
+
+  if (seriesError || !seriesData) {
+    throw new Error(`getExpenseSeries: ${seriesError?.message ?? 'Série não encontrada'}`);
+  }
+
+  const series = seriesData as ExpenseSeriesRow;
+  const occurrenceDateForEdit = input.occurredAt
+    ? new Date(input.occurredAt)
+    : occurrenceDate(series, occurrenceIndex);
+
+  if (series.kind === 'recurring' && input.isRecurring === false) {
+    const nowIso = new Date().toISOString();
+    const currentUpdates = {
+      ...buildDirectExpenseUpdates(input),
+      is_recurring: false,
+      series_id: null,
+      series_occurrence_index: null,
+    };
+
+    await db
+      .from('expense_series')
+      .update({ status: 'ended', ended_at: occurrenceDateForEdit.toISOString() })
+      .eq('id', series.id);
+
+    await db
+      .from('expenses')
+      .update({ deleted_at: nowIso })
+      .eq('series_id', series.id)
+      .gte('series_occurrence_index', occurrenceIndex + 1)
+      .is('deleted_at', null);
+
+    const { data, error } = await db
+      .from('expenses')
+      .update(currentUpdates)
+      .eq('id', existing.id)
+      .select()
+      .single();
+
+    if (error) throw new Error(`updateExpense: ${error.message}`);
+    return rowToExpense(data as ExpensesRow);
+  }
+
+  const seriesUpdates: ExpenseSeriesUpdate = {};
+  if (input.amount !== undefined) seriesUpdates.amount_cents = input.amount;
+  if (input.category !== undefined) seriesUpdates.category_id = input.category;
+  if (input.description !== undefined) seriesUpdates.description = input.description;
+  if (input.paymentMethod !== undefined) seriesUpdates.payment_method = input.paymentMethod;
+  if (input.source !== undefined) seriesUpdates.source = input.source;
+  if (input.tags !== undefined) seriesUpdates.tags = input.tags;
+  if (input.creditDetails !== undefined) {
+    seriesUpdates.metadata = input.paymentMethod === 'credit' && input.creditDetails
+      ? buildExpenseMetadata(input as Pick<ExpenseInput, 'paymentMethod' | 'creditDetails'>) ?? {}
+      : {};
+    if (series.kind === 'installment' && input.creditDetails?.purchaseType === 'installment') {
+      seriesUpdates.total_occurrences = input.creditDetails.installmentTotal ?? series.total_occurrences;
+    }
+  }
+  if (input.occurredAt !== undefined) {
+    seriesUpdates.start_at = addMonthsClamped(occurrenceDateForEdit, -(occurrenceIndex - 1)).toISOString();
+    seriesUpdates.day_of_month = occurrenceDateForEdit.getDate();
+  }
+
+  let nextSeries: ExpenseSeriesRow = { ...series, ...seriesUpdates } as ExpenseSeriesRow;
+  if (Object.keys(seriesUpdates).length > 0) {
+    const { data: updatedSeries, error: updateSeriesError } = await db
+      .from('expense_series')
+      .update(seriesUpdates)
+      .eq('id', series.id)
+      .select()
+      .single();
+
+    if (updateSeriesError) throw new Error(`updateExpenseSeries: ${updateSeriesError.message}`);
+    nextSeries = updatedSeries as ExpenseSeriesRow;
+  }
+
+  const { data: futureRows, error: futureError } = await db
+    .from('expenses')
+    .select('id,series_occurrence_index')
+    .eq('series_id', series.id)
+    .gte('series_occurrence_index', occurrenceIndex)
+    .is('deleted_at', null);
+
+  if (futureError) throw new Error(`updateExpenseSeriesOccurrences: ${futureError.message}`);
+
+  await Promise.all((futureRows ?? []).map((row) => {
+    const index = row.series_occurrence_index ?? occurrenceIndex;
+    return db
+      .from('expenses')
+      .update(buildExpenseUpdateFromSeries(nextSeries, index))
+      .eq('id', row.id);
+  }));
+
+  const { data, error } = await db
+    .from('expenses')
+    .select('*')
+    .eq('id', existing.id)
+    .single();
+
+  if (error) throw new Error(`updateExpense: ${error.message}`);
+  return rowToExpense(data as ExpensesRow);
+}
+
+async function updateExpenseInDB(id: string, input: Partial<ExpenseInput>): Promise<Expense> {
+  const db = createServiceClient();
+  const { data: existingData, error: existingError } = await db
+    .from('expenses')
+    .select('*')
+    .eq('id', id)
+    .is('deleted_at', null)
+    .single();
+
+  if (existingError) throw new Error(`getExpense: ${existingError.message}`);
+  const existing = existingData as ExpensesRow;
+
+  if (existing.series_id) {
+    return updateExpenseSeriesFromOccurrence(existing, input);
+  }
+
+  if (input.isRecurring === true || isInstallmentInput(input as ExpenseInput)) {
+    const converted = await convertExistingExpenseToSeries(existing, input);
+    if (converted) return converted;
   }
 
   const { data, error } = await db
     .from('expenses')
-    .update(updates)
+    .update(buildDirectExpenseUpdates(input))
     .eq('id', id)
     .select()
     .single();
@@ -518,9 +975,46 @@ async function deleteExpenseFromDB(id: string): Promise<void> {
   const db = createServiceClient();
   const { data: existing } = await db
     .from('expenses')
-    .select('receipt_path')
+    .select('id,receipt_path,series_id,series_occurrence_index,occurred_at')
     .eq('id', id)
     .single();
+
+  if (existing?.series_id) {
+    const occurrenceIndex = existing.series_occurrence_index ?? 1;
+    const nowIso = new Date().toISOString();
+
+    const { data: futureRows } = await db
+      .from('expenses')
+      .select('receipt_path')
+      .eq('series_id', existing.series_id)
+      .gte('series_occurrence_index', occurrenceIndex)
+      .is('deleted_at', null);
+
+    await db
+      .from('expense_series')
+      .update({
+        status: 'ended',
+        ended_at: new Date(new Date(existing.occurred_at).getTime() - 1).toISOString(),
+      })
+      .eq('id', existing.series_id);
+
+    const { error: seriesDeleteError } = await db
+      .from('expenses')
+      .update({ deleted_at: nowIso })
+      .eq('series_id', existing.series_id)
+      .gte('series_occurrence_index', occurrenceIndex)
+      .is('deleted_at', null);
+
+    if (seriesDeleteError) throw new Error(`deleteExpense: ${seriesDeleteError.message}`);
+
+    const receiptPaths = (futureRows ?? [])
+      .map((row) => row.receipt_path)
+      .filter((path): path is string => Boolean(path));
+    if (receiptPaths.length > 0) {
+      await db.storage.from('expense_receipts').remove(receiptPaths);
+    }
+    return;
+  }
 
   const { error } = await db
     .from('expenses')
@@ -546,6 +1040,7 @@ function updateExpenseFromMock(id: string, input: Partial<ExpenseInput>): Expens
     ...(input.occurredAt !== undefined && { createdAt: new Date(input.occurredAt) }),
     ...(input.paymentMethod !== undefined && { paymentMethod: input.paymentMethod }),
     ...(input.creditDetails !== undefined && { creditDetails: input.creditDetails }),
+    ...(input.isRecurring !== undefined && { isRecurring: input.isRecurring }),
   };
   updateSessionExpense(id, updated);
   return updated;
@@ -588,6 +1083,10 @@ export async function createExpense(input: ExpenseInput): Promise<Expense> {
     creditDetails: input.paymentMethod === 'credit' ? input.creditDetails ?? null : null,
     tags: input.tags,
     isRecurring: input.isRecurring ?? false,
+    seriesId: input.isRecurring || isInstallmentInput(input) ? generateId() : null,
+    seriesKind: isInstallmentInput(input) ? 'installment' : input.isRecurring ? 'recurring' : null,
+    seriesOccurrenceIndex: isInstallmentInput(input) ? input.creditDetails?.installmentCurrent ?? 1 : input.isRecurring ? 1 : null,
+    seriesTotalOccurrences: isInstallmentInput(input) ? input.creditDetails?.installmentTotal ?? null : null,
     createdAt: input.occurredAt ? new Date(input.occurredAt) : new Date(),
   };
   addSessionExpense(expense);
@@ -662,6 +1161,7 @@ async function getMonthlyTotalsFromDB(
   months: number,
 ): Promise<MonthlyTotal[]> {
   const db = createServiceClient();
+  await ensureExpenseSeriesMaterialized(userId, endPeriod);
   const startPeriod = shiftPeriod(endPeriod, months - 1);
   const [startY, startM] = startPeriod.split('-').map(Number);
   const [endY, endM] = endPeriod.split('-').map(Number);
@@ -778,6 +1278,7 @@ async function getSpendingTimelineFromDB(
 ): Promise<SpendingTimelineData> {
   const db = createServiceClient();
   const [year, month] = period.split('-').map(Number);
+  await ensureExpenseSeriesMaterialized(userId, `${year}-12`);
   const yearStart = new Date(year, 0, 1);
   const yearEnd = new Date(year + 1, 0, 1);
 

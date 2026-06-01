@@ -18,6 +18,7 @@ import { useCategories } from '@/hooks/useCategories';
 import type { Expense, ExpenseInput, ExpensePaymentMethod } from '@/types';
 
 type FilterTab = 'date' | 'category' | 'payment';
+type FeedView = 'history' | 'scheduled';
 
 const PAYMENT_FILTERS: Array<{ value: ExpensePaymentMethod; label: string; icon: string }> =
   LEGEND_PAYMENT_METHODS.map((method) => ({
@@ -75,6 +76,7 @@ function FeedPageInner() {
   const [activePaymentMethod, setActivePaymentMethod] = useState<ExpensePaymentMethod | null>(null);
   const [search, setSearch] = useState('');
   const [dateRange, setDateRange] = useState<DateRange>(() => buildPreset('all'));
+  const [activeView, setActiveView] = useState<FeedView>('history');
   const [customFrom, setCustomFrom] = useState('');
   const [customTo, setCustomTo] = useState('');
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -160,6 +162,7 @@ function FeedPageInner() {
       if (search.trim()) params.set('search', search.trim());
       if (dateRange.from) params.set('startDate', dateRange.from);
       if (dateRange.to) params.set('endDate', dateRange.to);
+      if (activeView === 'scheduled') params.set('onlyFuture', 'true');
       const url = `/api/expenses${params.size ? '?' + params.toString() : ''}`;
       const res = await fetch(url, { signal: controller.signal });
       if (!res.ok) {
@@ -177,7 +180,7 @@ function FeedPageInner() {
     } finally {
       setLoading(false);
     }
-  }, [activeCategory, activePaymentMethod, search, dateRange]);
+  }, [activeCategory, activePaymentMethod, search, dateRange, activeView]);
 
   useEffect(() => {
     fetchExpenses();
@@ -220,12 +223,16 @@ function FeedPageInner() {
       );
     }
 
-    return result.sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
-  }, [allExpenses, activeCategory, activePaymentMethod, search]);
+    return result.sort((a, b) => {
+      const aTime = new Date(a.createdAt).getTime();
+      const bTime = new Date(b.createdAt).getTime();
+      return activeView === 'scheduled' ? aTime - bTime : bTime - aTime;
+    });
+  }, [allExpenses, activeCategory, activePaymentMethod, search, activeView]);
 
-  const groups = groupExpensesByDate(filtered);
+  const groups = activeView === 'scheduled'
+    ? [...groupExpensesByDate(filtered)].reverse()
+    : groupExpensesByDate(filtered);
   const categoryLabel = activeCategory
     ? categories.find((category) => category.id === activeCategory)?.name ?? 'Categoria'
     : 'Todas';
@@ -328,6 +335,31 @@ function FeedPageInner() {
         <div
           className="themed-card bg-white rounded-[14px] p-3 space-y-3 mb-4 animate-fade-up delay-1"
         >
+          <div className="grid grid-cols-2 gap-1 rounded-[10px] bg-[#F4F6FA] p-1" role="tablist" aria-label="Visão do feed">
+            {[
+              { id: 'history' as const, label: 'Histórico' },
+              { id: 'scheduled' as const, label: 'Agendados' },
+            ].map((view) => {
+              const selected = activeView === view.id;
+              return (
+                <button
+                  key={view.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={selected}
+                  onClick={() => setActiveView(view.id)}
+                  className={`min-h-9 rounded-[8px] px-3 text-sm font-bold outline-none transition-[background-color,color,box-shadow,transform] duration-150 active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-[#A8C5E0] focus-visible:ring-offset-1 ${
+                    selected
+                      ? 'bg-white text-[#1A1D23] shadow-sm'
+                      : 'text-[#6B7280] hover:text-[#1A1D23]'
+                  }`}
+                >
+                  {view.label}
+                </button>
+              );
+            })}
+          </div>
+
             {/* Search bar */}
             <div className="relative">
                 <MagnifyingGlass
@@ -638,6 +670,16 @@ function FeedPageInner() {
                         Tente ajustar os filtros.
                       </p>
                     </>
+                  ) : activeView === 'scheduled' ? (
+                    <>
+                      <Mo variant="thinking" size={128} className="mb-4 animate-bounce-in" />
+                      <p className="text-base font-semibold text-[#1A1D23]">
+                        Nenhum gasto agendado
+                      </p>
+                      <p className="text-sm text-[#6B7280] mt-1">
+                        Sem próximos lançamentos por enquanto.
+                      </p>
+                    </>
                   ) : (
                     <p className="text-sm text-[#6B7280] mt-1">
                       Comece adicionando sua primeira despesa tocando em <strong>+</strong>.
@@ -699,7 +741,11 @@ function FeedPageInner() {
       <ConfirmDialog
         isOpen={!!deletingExpense}
         title="Excluir gasto"
-        message={`Tem certeza que deseja excluir "${deletingExpense?.description}"?`}
+        message={
+          deletingExpense?.seriesId
+            ? `Tem certeza que deseja excluir "${deletingExpense.description}" e os lançamentos futuros desta série?`
+            : `Tem certeza que deseja excluir "${deletingExpense?.description}"?`
+        }
         confirmLabel="Excluir"
         cancelLabel="Cancelar"
         variant="danger"

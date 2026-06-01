@@ -9,6 +9,7 @@ import {
 import { cacheTags } from '@/lib/cache';
 import { MOCK_USER, addUserCategory, addSessionExpense } from '@/data/mock';
 import { upsertBudget } from '@/lib/budgets';
+import { createExpense } from '@/lib/expenses';
 import { getCurrentPeriod } from '@/lib/utils';
 import { normalizeWhatsappPhone } from '@/lib/phone';
 import { buildProfilePhonePiiUpdate } from '@/lib/security/profilePii';
@@ -154,18 +155,19 @@ export async function completeOnboardingAction(
 
       // 4. Recurring expenses
       if (payload.recurringExpenses.length > 0) {
-        const inserts = payload.recurringExpenses.map((r) => ({
-          user_id: userId,
-          amount_cents: r.amountCents,
-          category_id: r.categoryId,
-          description: r.description.trim(),
-          payment_method: 'other',
-          source: 'manual',
-          occurred_at: nowIso,
-          is_recurring: true,
-        }));
-        const { error: expError } = await admin.from('expenses').insert(inserts);
-        if (expError) {
+        try {
+          await Promise.all(payload.recurringExpenses.map((r) => createExpense({
+            userId,
+            amount: r.amountCents,
+            category: r.categoryId,
+            description: r.description.trim(),
+            paymentMethod: 'other',
+            source: 'manual',
+            tags: [],
+            occurredAt: nowIso,
+            isRecurring: true,
+          })));
+        } catch (expError) {
           console.error('[completeOnboarding] recurring expenses:', expError);
           return { ok: false, error: 'Não foi possível salvar seus gastos recorrentes.' };
         }
@@ -207,6 +209,7 @@ export async function completeOnboardingAction(
           source: 'manual',
           paymentMethod: 'other',
           tags: [],
+          isRecurring: true,
           createdAt: new Date(),
         });
       });
