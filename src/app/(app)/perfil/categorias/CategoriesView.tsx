@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { CaretLeft, Check, X, Trash, Plus, MagnifyingGlass } from '@phosphor-icons/react';
 import Icon, { AVAILABLE_ICONS } from '@/components/Icon';
@@ -36,6 +37,10 @@ export default function CategoriesView() {
 
   // Delete state
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  // Modal mount
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
 
   // Toast
   const { showToast } = useToast();
@@ -211,6 +216,20 @@ export default function CategoriesView() {
         </div>
       )}
 
+      {/* Add button */}
+      {!creating && !loading && !error && (
+        <div className="mb-3 animate-fade-up delay-2">
+          <button
+            type="button"
+            onClick={startCreate}
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-[12px] text-sm font-semibold text-[#A8C5E0] border border-dashed border-[#D1D9E6] hover:border-[#A8C5E0] hover:bg-[#F8F9FB] transition-colors"
+          >
+            <Plus size={18} />
+            Nova categoria
+          </button>
+        </div>
+      )}
+
       {/* Category list */}
       {!loading && !error && (
         <div className="space-y-2 mb-6 animate-fade-up delay-2">
@@ -256,25 +275,12 @@ export default function CategoriesView() {
               );
             }
 
-            if (isEditing) {
-              return (
-                <div
-                  key={cat.id}
-                  className="bg-white rounded-[12px] p-4"
-                  style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}
-                >
-                  {renderForm()}
-                </div>
-              );
-            }
-
             return (
               <button
                 key={cat.id}
                 type="button"
                 onClick={() => startEdit(cat)}
-                className="w-full bg-white rounded-[12px] p-3.5 flex items-center gap-3 text-left hover:bg-[#F8F9FB] transition-colors group"
-                style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}
+                className="themed-card group flex w-full items-center gap-3 rounded-[12px] p-3.5 text-left transition-[background-color,box-shadow,transform] duration-150 active:scale-[0.99] hover:shadow-[var(--shadow-card)]"
               >
                 <div
                   className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
@@ -322,33 +328,87 @@ export default function CategoriesView() {
         </div>
       )}
 
-      {/* Create form */}
-      {creating && (
+      {/* Category modal */}
+      {mounted && (creating || editingId) && createPortal(
         <div
-          className="bg-white rounded-[12px] p-4 mb-6"
-          style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}
+          className="modal-wave-backdrop fixed inset-0 z-[70] flex items-end justify-center sm:items-center p-0 sm:p-4"
+          onClick={cancelEdit}
         >
-          {renderForm()}
-        </div>
+          <div
+            role="dialog"
+            aria-modal
+            aria-label={creating ? 'Nova categoria' : 'Editar categoria'}
+            className="w-full max-w-lg max-h-[88dvh] flex flex-col overflow-hidden rounded-t-[24px] sm:rounded-[24px] bg-white shadow-[var(--shadow-overlay)]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="sticky top-0 z-10 bg-white border-b border-[#F1F3F7] px-5 py-4 flex items-center justify-between rounded-t-[24px] sm:rounded-t-[24px]">
+              <div>
+                <h2 className="text-lg font-bold text-[#1A1D23]">
+                  {creating ? 'Nova categoria' : 'Editar categoria'}
+                </h2>
+                <p className="text-xs text-[#6B7280] mt-0.5">
+                  {creating
+                    ? 'Crie uma categoria personalizada para organizar seus gastos.'
+                    : 'Altere o nome, ícone, cor ou palavras-chave da categoria.'}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={cancelEdit}
+                disabled={saving}
+                aria-label="Fechar"
+                className="flex items-center justify-center w-9 h-9 rounded-full hover:bg-[#F1F3F7] transition-colors disabled:opacity-40"
+              >
+                <X size={18} className="text-[#6B7280]" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-5">
+              {renderFormBody()}
+            </div>
+
+            <div className="sticky bottom-0 z-10 bg-white border-t border-[#F1F3F7] p-5">
+              <div className="flex gap-2 pt-1">
+                {!readOnly && (
+                  <button
+                    type="button"
+                    onClick={handleSave}
+                    disabled={!isFormValid || saving}
+                    className="flex-1 py-2.5 rounded-[10px] text-sm font-bold text-white bg-[#5BBF8E] disabled:opacity-40 transition-opacity"
+                  >
+                    {saving ? 'Salvando…' : creating ? 'Criar categoria' : 'Salvar'}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={cancelEdit}
+                  disabled={saving}
+                  className={`${readOnly ? 'flex-1' : 'px-5'} py-2.5 rounded-[10px] text-sm font-bold text-[#6B7280] border border-[#E5E7EB] disabled:opacity-60`}
+                >
+                  {readOnly ? 'Fechar' : 'Cancelar'}
+                </button>
+                {editingId && !readOnly && !categories.find((c) => c.id === editingId)?.is_default && (
+                  <button
+                    type="button"
+                    onClick={() => { setDeletingId(editingId); setEditingId(null); }}
+                    disabled={saving}
+                    className="px-3 py-2.5 rounded-[10px] text-sm font-bold text-[#E07070] border border-[#F4D7D7] hover:bg-[#FDF0F0] transition-colors disabled:opacity-60"
+                    aria-label="Excluir categoria"
+                  >
+                    <Trash size={16} />
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
 
-      {/* Add button */}
-      {!creating && !loading && !error && (
-        <button
-          type="button"
-          onClick={startCreate}
-          className="w-full flex items-center justify-center gap-2 py-3 rounded-[12px] text-sm font-semibold text-[#A8C5E0] border border-dashed border-[#D1D9E6] hover:border-[#A8C5E0] hover:bg-[#F8F9FB] transition-colors"
-        >
-          <Plus size={18} />
-          Nova categoria
-        </button>
-      )}
-
-      
     </div>
   );
 
-  function renderForm() {
+  function renderFormBody() {
     const inputBase =
       'w-full px-3 py-2.5 rounded-[10px] border border-[#E5E7EB] text-sm text-[#1A1D23] placeholder:text-[#9CA3AF] outline-none transition-colors';
     const inputEnabled = 'bg-[#F8F9FB] focus:border-[#A8C5E0]';
@@ -480,39 +540,6 @@ export default function CategoriesView() {
                 </span>
               ))}
             </div>
-          )}
-        </div>
-
-        {/* Actions */}
-        <div className="flex gap-2 pt-1">
-          {!readOnly && (
-            <button
-              type="button"
-              onClick={handleSave}
-              disabled={!isFormValid || saving}
-              className="flex-1 py-2.5 rounded-[10px] text-sm font-bold text-white bg-[#5BBF8E] disabled:opacity-40 transition-opacity"
-            >
-              {saving ? 'Salvando…' : creating ? 'Criar categoria' : 'Salvar'}
-            </button>
-          )}
-          <button
-            type="button"
-            onClick={cancelEdit}
-            disabled={saving}
-            className={`${readOnly ? 'flex-1' : 'px-5'} py-2.5 rounded-[10px] text-sm font-bold text-[#6B7280] border border-[#E5E7EB] disabled:opacity-60`}
-          >
-            {readOnly ? 'Fechar' : 'Cancelar'}
-          </button>
-          {editingId && !readOnly && !categories.find((c) => c.id === editingId)?.is_default && (
-            <button
-              type="button"
-              onClick={() => { setDeletingId(editingId); setEditingId(null); }}
-              disabled={saving}
-              className="px-3 py-2.5 rounded-[10px] text-sm font-bold text-[#E07070] border border-[#F4D7D7] hover:bg-[#FDF0F0] transition-colors disabled:opacity-60"
-              aria-label="Excluir categoria"
-            >
-              <Trash size={16} />
-            </button>
           )}
         </div>
       </div>

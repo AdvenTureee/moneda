@@ -267,14 +267,16 @@ export default function IncomesView({ initialIncomes }: IncomesViewProps) {
         </p>
       </div>
 
-      <button
-        type="button"
-        onClick={openAddModal}
-        className="mb-6 flex w-full items-center justify-center gap-2 rounded-full bg-[#5BBF8E] px-5 py-4 text-sm font-bold text-white shadow-[0_6px_20px_rgba(91,191,142,0.28)] transition-colors duration-150 active:scale-[0.98] hover:bg-[#4AA77C] animate-fade-up delay-2"
-      >
-        <Plus size={17} weight="bold" />
-        <span>Adicionar ganho</span>
-      </button>
+      <div className="mb-6 animate-fade-up delay-2">
+        <button
+          type="button"
+          onClick={openAddModal}
+          className="w-full flex items-center justify-center gap-2 py-3 rounded-[12px] text-sm font-semibold text-[#A8C5E0] border border-dashed border-[#D1D9E6] hover:border-[#A8C5E0] hover:bg-[#F8F9FB] transition-colors"
+        >
+          <Plus size={18} />
+          Adicionar ganho
+        </button>
+      </div>
 
       {/* History section */}
       <section className="animate-fade-up delay-3">
