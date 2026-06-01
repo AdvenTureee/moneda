@@ -100,6 +100,7 @@ export default function ProfileView({
   const [draftEmail, setDraftEmail] = useState(email);
   const { showToast } = useToast();
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [savingName, startSaveName] = useTransition();
   const [savingEmail, startSaveEmail] = useTransition();
   const [signingOut, startSignOut] = useTransition();
@@ -112,6 +113,8 @@ export default function ProfileView({
 
   const initial = (name?.[0] ?? email?.[0] ?? '?').toUpperCase();
   const isGoogleLinked = linkedProviders.includes('google');
+  const deleteConfirmationName = name.trim() || email;
+  const canConfirmDelete = deleteConfirmText.trim() === deleteConfirmationName;
 
   async function handleLinkGoogle() {
     setLinkingGoogle(true);
@@ -205,10 +208,15 @@ export default function ProfileView({
       setConfirmingDelete(true);
       return;
     }
+    if (!canConfirmDelete) {
+      showToast('error', 'Digite o nome da conta exatamente como indicado.');
+      return;
+    }
     startDelete(async () => {
       const result = await deleteAccount();
       applyResult(result);
       setConfirmingDelete(false);
+      setDeleteConfirmText('');
     });
   }
 
@@ -386,7 +394,7 @@ export default function ProfileView({
             <Wallet size={18} />
           </ProfileIcon>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-[#1A1D23]">Configurar orçamento</p>
+            <p className="text-sm font-semibold text-[#1A1D23]">Orçamento</p>
             <p className="text-xs text-[#6B7280]">Defina quanto pretende gastar no mês</p>
           </div>
             <CaretRight size={18} className="text-[#E5E7EB] group-hover:text-[#9CA3AF] transition-colors" />
@@ -396,22 +404,11 @@ export default function ProfileView({
             <CurrencyDollar size={18} />
           </ProfileIcon>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-[#1A1D23]">Ganhos</p>
+            <p className="text-sm font-semibold text-[#1A1D23]">Ganhos e receitas</p>
             <p className="text-xs text-[#6B7280]">Registre valores para abater estouros</p>
           </div>
           <CaretRight size={18} className="text-[#E5E7EB] group-hover:text-[#9CA3AF] transition-colors" />
         </Link>
-      </div>
-      </div>
-
-      {/* Categorias section */}
-      <div className="animate-fade-up delay-3">
-      <h2 className="text-xs font-heading uppercase tracking-wider text-[#9CA3AF] mb-2 px-1">
-        Categorias
-      </h2>
-      <div
-        className="themed-card bg-white rounded-[16px] overflow-hidden mb-6"
-      >
         <Link
           href="/perfil/categorias"
           className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-[#F8F9FB] transition-colors group"
@@ -425,11 +422,21 @@ export default function ProfileView({
           </div>
           <CaretRight size={18} className="text-[#E5E7EB] group-hover:text-[#9CA3AF] transition-colors" />
         </Link>
+        <Link href="/perfil/moeda" className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-[#F8F9FB] transition-colors group">
+          <ProfileIcon tone="neutral">
+            <CurrencyDollar size={18} />
+          </ProfileIcon>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-[#1A1D23]">Moeda</p>
+            <p className="text-xs text-[#6B7280]">{CURRENCY_LABELS[currency] ?? currency}</p>
+          </div>
+          <CaretRight size={18} className="text-[#E5E7EB] group-hover:text-[#9CA3AF] transition-colors" />
+        </Link>
       </div>
       </div>
 
       {/* Preferências section */}
-      <div className="animate-fade-up delay-4">
+      <div className="animate-fade-up delay-3">
       <h2 className="text-xs font-heading uppercase tracking-wider text-[#9CA3AF] mb-2 px-1">
         Preferências
       </h2>
@@ -447,7 +454,7 @@ export default function ProfileView({
             {isDark ? <Moon size={18} weight="bold" /> : <Sun size={18} weight="bold" />}
           </ProfileIcon>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-[#1A1D23]">Modo escuro</p>
+            <p className="text-sm font-semibold text-[#1A1D23]">Aparência</p>
             <p className="text-xs text-[#6B7280]">
               {isDark ? 'Interface em tons escuros' : 'Interface clara padrão'}
             </p>
@@ -475,68 +482,24 @@ export default function ProfileView({
           </div>
           <CaretRight size={18} className="text-[#E5E7EB] group-hover:text-[#9CA3AF] transition-colors" />
         </Link>
-        <Link href="/perfil/moeda" className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-[#F8F9FB] transition-colors group">
-          <ProfileIcon tone="neutral">
-            <CurrencyDollar size={18} />
-          </ProfileIcon>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-[#1A1D23]">Moeda</p>
-            <p className="text-xs text-[#6B7280]">{CURRENCY_LABELS[currency] ?? currency}</p>
-          </div>
-          <CaretRight size={18} className="text-[#E5E7EB] group-hover:text-[#9CA3AF] transition-colors" />
-        </Link>
       </div>
       </div>
 
-      {/* Dados section */}
-      <div className="animate-fade-up delay-5">
+      {/* Conexões section */}
+      <div className="animate-fade-up delay-4">
       <h2 className="text-xs font-heading uppercase tracking-wider text-[#9CA3AF] mb-2 px-1">
-        Dados
+        Conexões
       </h2>
       <div
-        className="themed-card bg-white rounded-[16px] overflow-hidden mb-6"
+        className="themed-card bg-white rounded-[16px] overflow-hidden divide-y divide-[#F1F2F4] mb-6"
       >
-        <a
-          href="/api/export"
-          download
-          className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-[#F8F9FB] transition-colors group"
-        >
-          <ProfileIcon tone="purple">
-            <DownloadSimple size={18} />
+        <Link href="/perfil/whatsapp" className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-[#F8F9FB] transition-colors group">
+          <ProfileIcon tone="green">
+            <WhatsappLogo size={18} weight="fill" />
           </ProfileIcon>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-[#1A1D23]">Exportar dados</p>
-            <p className="text-xs text-[#6B7280]">Baixar todos os seus gastos em CSV</p>
-          </div>
-          <CaretRight size={18} className="text-[#E5E7EB] group-hover:text-[#9CA3AF] transition-colors" />
-        </a>
-      </div>
-      </div>
-
-      {/* Account actions */}
-      <div className="animate-fade-up delay-6">
-      <h2 className="text-xs font-heading uppercase tracking-wider text-[#9CA3AF] mb-2 px-1">
-        Conta
-      </h2>
-      <div
-        className="themed-card bg-white rounded-[16px] overflow-hidden divide-y divide-[#F1F2F4] mb-8"
-      >
-        <Link
-          href="/perfil/senha"
-          className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-[#F8F9FB] transition-colors group"
-        >
-          <ProfileIcon tone="brand">
-            <LockKey size={16} />
-          </ProfileIcon>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-[#1A1D23]">
-              {hasPassword ? 'Alterar senha' : 'Definir senha'}
-            </p>
-            <p className="text-xs text-[#6B7280]">
-              {hasPassword
-                ? 'Enviar link de redefinição para o email'
-                : 'Crie uma senha para entrar também via email'}
-            </p>
+            <p className="text-sm font-semibold text-[#1A1D23]">WhatsApp para lançamentos</p>
+            <p className="text-xs text-[#6B7280]">Vincule seu telefone para lançar gastos</p>
           </div>
           <CaretRight size={18} className="text-[#E5E7EB] group-hover:text-[#9CA3AF] transition-colors" />
         </Link>
@@ -566,17 +529,51 @@ export default function ProfileView({
           </div>
           {isGoogleLinked && <Check size={16} className="text-[#5BBF8E]" />}
         </button>
+      </div>
+      </div>
 
-        <Link href="/perfil/whatsapp" className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-[#F8F9FB] transition-colors group">
-          <ProfileIcon tone="green">
-            <WhatsappLogo size={18} weight="fill" />
+      {/* Account actions */}
+      <div className="animate-fade-up delay-5">
+      <h2 className="text-xs font-heading uppercase tracking-wider text-[#9CA3AF] mb-2 px-1">
+        Conta e segurança
+      </h2>
+      <div
+        className="themed-card bg-white rounded-[16px] overflow-hidden divide-y divide-[#F1F2F4] mb-8"
+      >
+        <Link
+          href="/perfil/senha"
+          className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-[#F8F9FB] transition-colors group"
+        >
+          <ProfileIcon tone="brand">
+            <LockKey size={16} />
           </ProfileIcon>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-[#1A1D23]">WhatsApp</p>
-            <p className="text-xs text-[#6B7280]">Vincule seu telefone para lançar gastos</p>
+            <p className="text-sm font-semibold text-[#1A1D23]">
+              {hasPassword ? 'Alterar senha' : 'Definir senha'}
+            </p>
+            <p className="text-xs text-[#6B7280]">
+              {hasPassword
+                ? 'Enviar link de redefinição para o email'
+                : 'Crie uma senha para entrar também via email'}
+            </p>
           </div>
           <CaretRight size={18} className="text-[#E5E7EB] group-hover:text-[#9CA3AF] transition-colors" />
         </Link>
+
+        <a
+          href="/api/export"
+          download
+          className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-[#F8F9FB] transition-colors group"
+        >
+          <ProfileIcon tone="purple">
+            <DownloadSimple size={18} />
+          </ProfileIcon>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-[#1A1D23]">Exportar dados</p>
+            <p className="text-xs text-[#6B7280]">Baixar todos os seus gastos em CSV</p>
+          </div>
+          <CaretRight size={18} className="text-[#E5E7EB] group-hover:text-[#9CA3AF] transition-colors" />
+        </a>
 
         <button
           type="button"
@@ -599,47 +596,68 @@ export default function ProfileView({
 
       {/* Delete account */}
       {allowDelete && (
-        <section className="mb-8 animate-fade-up delay-7">
-          <div
-            className="themed-card bg-white rounded-[16px] p-5 border border-[#F4D7D7]"
-          >
-            <p className="text-xs font-bold uppercase tracking-widest text-[#E07070] mb-2">
-              Zona de Perigo
-            </p>
-            <p className="text-sm text-[#6B7280] mb-4">
-              Excluir sua conta remove permanentemente todos os seus dados. Esta ação não pode
-              ser desfeita.
-            </p>
-
-            {confirmingDelete ? (
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={handleDelete}
-                  disabled={deleting}
-                  className="flex-1 py-3 rounded-[12px] text-sm font-bold text-white bg-[#E07070] disabled:opacity-60"
-                >
-                  {deleting ? 'Excluindo…' : 'Confirmar exclusão'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setConfirmingDelete(false)}
-                  disabled={deleting}
-                  className="px-6 py-3 rounded-[12px] text-sm font-bold text-[#6B7280] border border-[#E5E7EB] disabled:opacity-60"
-                >
-                  Cancelar
-                </button>
+        <section className="mb-8 animate-fade-up delay-6">
+          <h2 className="text-xs font-heading uppercase tracking-wider text-[#D85C5C] mb-2 px-1 dark:text-[#FF8A8A]">
+            Zona de perigo
+          </h2>
+          <div className="themed-card bg-white rounded-[16px] overflow-hidden border border-[#F2CACA] dark:border-[#7A3A3A]/55">
+            <div className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center">
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-[#1A1D23]">Excluir conta</p>
+                <p className="text-xs text-[#6B7280]">
+                  Remove permanentemente seus dados. Esta ação não pode ser desfeita.
+                </p>
               </div>
-            ) : (
               <button
                 type="button"
-                onClick={() => setConfirmingDelete(true)}
-                disabled={anyBusy}
-                className="danger-button disabled:opacity-60"
+                onClick={() => {
+                  setConfirmingDelete(true);
+                  setDeleteConfirmText('');
+                }}
+                disabled={anyBusy || confirmingDelete}
+                className="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-[12px] bg-[#C94F4F] px-4 text-sm font-bold text-white transition-colors hover:bg-[#B94545] disabled:opacity-60 dark:bg-[#A84E4E] dark:hover:bg-[#B95B5B]"
               >
-                <Trash size={18} weight="bold" />
+                <Trash size={16} weight="bold" />
                 Excluir conta
               </button>
+            </div>
+
+            {confirmingDelete && (
+              <div className="border-t border-[#F2CACA] px-5 py-4 dark:border-[#7A3A3A]/55">
+                <p className="text-xs leading-relaxed text-[#6B7280]">
+                  Para confirmar, digite <strong className="font-bold text-[#1A1D23]">{deleteConfirmationName}</strong>.
+                </p>
+                <input
+                  type="text"
+                  value={deleteConfirmText}
+                  onChange={(e) => setDeleteConfirmText(e.target.value)}
+                  autoComplete="off"
+                  disabled={deleting}
+                  className="themed-field mt-3 w-full rounded-[12px] border border-[#E6B8B8] bg-[#FDF0F0] px-4 py-3 text-sm font-semibold text-[#1A1D23] outline-none transition-colors placeholder:text-[#A97979] focus:border-[#C94F4F] focus:bg-white dark:border-[#7A3A3A]/65 dark:bg-[#3A1C22] dark:text-[#F5F7FA] dark:placeholder:text-[#B98A8A] dark:focus:border-[#D86A6A] dark:focus:bg-[#20151A]"
+                  placeholder={deleteConfirmationName}
+                />
+                <div className="mt-3 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={handleDelete}
+                    disabled={deleting || !canConfirmDelete}
+                    className="flex-1 rounded-[12px] bg-[#C94F4F] py-3 text-sm font-bold text-white hover:bg-[#B94545] disabled:cursor-not-allowed disabled:opacity-40 dark:bg-[#A84E4E] dark:hover:bg-[#B95B5B]"
+                  >
+                    {deleting ? 'Excluindo…' : 'Confirmar exclusão'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setConfirmingDelete(false);
+                      setDeleteConfirmText('');
+                    }}
+                    disabled={deleting}
+                    className="px-5 py-3 rounded-[12px] text-sm font-bold text-[#6B7280] border border-[#E5E7EB] disabled:opacity-60"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
             )}
           </div>
         </section>
