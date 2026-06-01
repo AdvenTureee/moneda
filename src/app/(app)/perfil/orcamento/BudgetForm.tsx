@@ -346,7 +346,9 @@ function BudgetStat({
   tone?: 'default' | 'success' | 'danger';
 }) {
   const color =
-    tone === 'success' ? '#2E8F67' : tone === 'danger' ? '#B14C4C' : '#1A1D23';
+    tone === 'success' ? 'var(--color-success)'
+    : tone === 'danger' ? 'var(--color-error)'
+    : 'var(--color-text-primary)';
   return (
     <div className="rounded-[12px] bg-[#F8F9FB] px-3 py-2">
       <p className="text-[10px] font-semibold uppercase tracking-[0.06em] text-[#9CA3AF]">
