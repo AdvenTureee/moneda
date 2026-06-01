@@ -10,6 +10,7 @@ import { useToast } from '@/components/ToastProvider';
 import { formatCurrency } from '@/lib/utils';
 import { toLocalDateInput, todayLocalDate, currentTimeHHmm, timeHHmmFromDate, localDateTimeToIso } from '@/lib/date';
 import { useCategories } from '@/hooks/useCategories';
+import { PAYMENT_METHOD_BADGES } from '@/lib/paymentMethods';
 import type { Expense, ExpenseInput, ExpensePaymentMethod } from '@/types';
 
 interface AddExpenseModalProps {
@@ -25,6 +26,8 @@ const PAYMENT_OPTIONS: Array<{ value: ExpensePaymentMethod; label: string }> = [
   { value: 'pix', label: 'PIX' },
   { value: 'debit', label: 'Débito' },
   { value: 'credit', label: 'Crédito' },
+  { value: 'boleto', label: 'Boleto' },
+  { value: 'cash', label: 'Dinheiro' },
 ];
 
 export default function AddExpenseModal({
@@ -492,22 +495,39 @@ export default function AddExpenseModal({
               Pagamento{' '}
               <span className="font-normal text-[#9CA3AF]">(opcional)</span>
             </p>
-            <div className="grid grid-cols-3 gap-2" role="group" aria-label="Método de pagamento">
+            <div className="grid grid-cols-2 gap-2 min-[380px]:grid-cols-3" role="group" aria-label="Método de pagamento">
               {PAYMENT_OPTIONS.map((option) => {
                 const isSelected = paymentMethod === option.value;
+                const badge = PAYMENT_METHOD_BADGES[option.value];
+                const PaymentIcon = badge?.Icon;
+                const methodColor = badge?.color ?? '#5BBF8E';
                 return (
                   <button
                     key={option.value}
                     type="button"
                     onClick={() => setPaymentMethod(isSelected ? 'other' : option.value)}
                     aria-pressed={isSelected}
-                    className={`min-h-10 rounded-[10px] border px-2 text-sm font-semibold transition-all duration-100 active:scale-[0.98] ${
+                    className={`flex min-h-11 items-center justify-center gap-1.5 rounded-[10px] border px-2 text-xs font-semibold transition-all duration-100 active:scale-[0.98] min-[380px]:text-sm ${
                       isSelected
-                        ? 'border-[#5BBF8E] bg-[#EEF9F4] text-[#2E8F67] shadow-[0_0_0_1px_rgba(91,191,142,0.18)]'
+                        ? 'shadow-[0_0_0_1px_rgba(91,191,142,0.18)]'
                         : 'border-[#E5E7EB] bg-white text-[#6B7280] hover:border-[#A8C5E0] hover:bg-[#F8F9FB]'
                     }`}
+                    style={isSelected ? {
+                      borderColor: methodColor,
+                      color: methodColor,
+                      background: `color-mix(in srgb, ${methodColor} 18%, var(--color-surface) 82%)`,
+                    } : undefined}
                   >
-                    {option.label}
+                    {PaymentIcon && (
+                      <PaymentIcon
+                        size={15}
+                        weight="bold"
+                        className="shrink-0"
+                        style={{ color: methodColor }}
+                        aria-hidden
+                      />
+                    )}
+                    <span className="min-w-0 truncate">{option.label}</span>
                   </button>
                 );
               })}

@@ -8,6 +8,7 @@ const PAYMENT_LABELS: Record<ExpensePaymentMethod, string> = {
   debit: 'Débito',
   credit: 'Crédito',
   cash: 'Dinheiro',
+  boleto: 'Boleto',
   transfer: 'Transferência',
   other: 'Outro',
 };

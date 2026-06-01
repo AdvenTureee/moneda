@@ -15,6 +15,8 @@ const PAYMENT_LABELS: Partial<Record<Expense['paymentMethod'], string>> = {
   pix: 'PIX',
   debit: 'Débito',
   credit: 'Crédito',
+  boleto: 'Boleto',
+  cash: 'Dinheiro',
 };
 
 interface ExpenseCardProps {

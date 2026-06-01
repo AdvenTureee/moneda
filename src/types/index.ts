@@ -1,5 +1,5 @@
 export type ExpenseSource = 'whatsapp' | 'manual' | 'import';
-export type ExpensePaymentMethod = 'pix' | 'debit' | 'credit' | 'cash' | 'transfer' | 'other';
+export type ExpensePaymentMethod = 'pix' | 'debit' | 'credit' | 'cash' | 'boleto' | 'transfer' | 'other';
 export type CreditPurchaseType = 'single' | 'installment';
 export type AIInsightType = 'monthly_summary' | 'category_alert' | 'spending_pattern';
 export type WhatsAppMessageStatus = 'received' | 'parsed' | 'failed' | 'responded';

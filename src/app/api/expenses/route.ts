@@ -10,6 +10,7 @@ const PAYMENT_METHODS = new Set<ExpensePaymentMethod>([
   'debit',
   'credit',
   'cash',
+  'boleto',
   'transfer',
   'other',
 ]);
