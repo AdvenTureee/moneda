@@ -85,7 +85,7 @@ Ordenadas por impacto estimado no engajamento e retenção:
 - Histórico completo multi-mês com busca
 - **🎙️ Áudio via WhatsApp** — transcrição automática com Groq Whisper
 - **📈 Previsor do fim do mês** — alerta proativo no dia 20
-- **🤖 CFO conversacional básico** — responde perguntas simples via WhatsApp
+- **🤖 CFO conversacional básico** — responde perguntas simples via App
 
 ### V2
 - Insights proativos semanais via WhatsApp
