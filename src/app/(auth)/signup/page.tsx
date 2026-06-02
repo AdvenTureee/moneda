@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { Eye, EyeSlash } from '@phosphor-icons/react';
 import TermsModal from '@/components/TermsModal';
 import { TERMS_VERSION } from '@/lib/legal';
 import { PASSWORD_REQUIREMENTS_LABEL, isStrongPassword } from '@/lib/password';
@@ -27,6 +28,8 @@ export default function SignupPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -224,36 +227,56 @@ export default function SignupPage() {
                 <label htmlFor="password" className="block text-xs font-medium text-[#6B7280] mb-1.5">
                   Senha
                 </label>
-                <input
-                  id="password"
-                  type="password"
-                  autoComplete="new-password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  onFocus={handlePasswordFocus}
-                  onBlur={handlePasswordBlur}
-                  placeholder="Mín. 8 caracteres"
-                  className="w-full px-3.5 py-2.5 rounded-[10px] bg-[#F8F9FB] border border-[#E5E7EB] text-sm text-[#1A1D23] placeholder:text-[#9CA3AF] outline-none focus:border-[#A8C5E0] transition-colors"
-                />
+                <div className="relative">
+                  <input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    autoComplete="new-password"
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    onFocus={handlePasswordFocus}
+                    onBlur={handlePasswordBlur}
+                    placeholder="Mín. 8 caracteres"
+                    className="w-full px-3.5 py-2.5 pr-10 rounded-[10px] bg-[#F8F9FB] border border-[#E5E7EB] text-sm text-[#1A1D23] placeholder:text-[#9CA3AF] outline-none focus:border-[#A8C5E0] transition-colors"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((show) => !show)}
+                    className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-[#6B7280] transition-colors hover:bg-[#EEF2F7] hover:text-[#1A1D23] dark:text-[#CBD5E1] dark:hover:bg-white/10 dark:hover:text-[#F5F7FA]"
+                    aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+                  >
+                    {showPassword ? <EyeSlash size={17} weight="bold" /> : <Eye size={17} weight="bold" />}
+                  </button>
+                </div>
               </div>
 
               <div>
                 <label htmlFor="confirmPassword" className="block text-xs font-medium text-[#6B7280] mb-1.5">
                   Confirmar senha
                 </label>
-                <input
-                  id="confirmPassword"
-                  type="password"
-                  autoComplete="new-password"
-                  required
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  onFocus={handlePasswordFocus}
-                  onBlur={handlePasswordBlur}
-                  placeholder="Repita a senha"
-                  className="w-full px-3.5 py-2.5 rounded-[10px] bg-[#F8F9FB] border border-[#E5E7EB] text-sm text-[#1A1D23] placeholder:text-[#9CA3AF] outline-none focus:border-[#A8C5E0] transition-colors"
-                />
+                <div className="relative">
+                  <input
+                    id="confirmPassword"
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    autoComplete="new-password"
+                    required
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    onFocus={handlePasswordFocus}
+                    onBlur={handlePasswordBlur}
+                    placeholder="Repita a senha"
+                    className="w-full px-3.5 py-2.5 pr-10 rounded-[10px] bg-[#F8F9FB] border border-[#E5E7EB] text-sm text-[#1A1D23] placeholder:text-[#9CA3AF] outline-none focus:border-[#A8C5E0] transition-colors"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword((show) => !show)}
+                    className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-[#6B7280] transition-colors hover:bg-[#EEF2F7] hover:text-[#1A1D23] dark:text-[#CBD5E1] dark:hover:bg-white/10 dark:hover:text-[#F5F7FA]"
+                    aria-label={showConfirmPassword ? 'Ocultar confirmação de senha' : 'Mostrar confirmação de senha'}
+                  >
+                    {showConfirmPassword ? <EyeSlash size={17} weight="bold" /> : <Eye size={17} weight="bold" />}
+                  </button>
+                </div>
               </div>
             </div>
 

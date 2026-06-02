@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useState, useTransition } from 'react';
-import { ArrowLeft, Check, Envelope, LockKey } from '@phosphor-icons/react';
+import { ArrowLeft, Check, Envelope, Eye, EyeSlash, LockKey } from '@phosphor-icons/react';
 import { useToast } from '@/components/ToastProvider';
 import { PASSWORD_REQUIREMENTS_LABEL, isStrongPassword } from '@/lib/password';
 import { sendPasswordReset, setInitialPassword } from '../actions';
@@ -17,6 +17,8 @@ export default function PasswordForm({ email, hasPassword, isRecovery }: Passwor
   const [passwordEnabled, setPasswordEnabled] = useState(hasPassword);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [saving, startSaving] = useTransition();
   const [sendingReset, startSendingReset] = useTransition();
   const { showToast } = useToast();
@@ -132,12 +134,16 @@ export default function PasswordForm({ email, hasPassword, isRecovery }: Passwor
               value={newPassword}
               onChange={setNewPassword}
               autoComplete="new-password"
+              visible={showNewPassword}
+              onToggleVisibility={() => setShowNewPassword((show) => !show)}
             />
             <PasswordField
               label="Confirmar nova senha"
               value={confirmPassword}
               onChange={setConfirmPassword}
               autoComplete="new-password"
+              visible={showConfirmPassword}
+              onToggleVisibility={() => setShowConfirmPassword((show) => !show)}
             />
           </div>
 
@@ -204,24 +210,41 @@ function PasswordField({
   value,
   onChange,
   autoComplete,
+  visible,
+  onToggleVisibility,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   autoComplete: string;
+  visible: boolean;
+  onToggleVisibility: () => void;
 }) {
+  const inputId = `password-${autoComplete}-${label.replace(/\s+/g, '-').toLowerCase()}`;
+
   return (
-    <label className="block">
-      <span className="mb-1.5 block text-xs font-bold uppercase tracking-[0.06em] text-[#6B7280]">
+    <div className="block">
+      <label htmlFor={inputId} className="mb-1.5 block text-xs font-bold uppercase tracking-[0.06em] text-[#6B7280]">
         {label}
+      </label>
+      <span className="relative block">
+        <input
+          id={inputId}
+          type={visible ? 'text' : 'password'}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          autoComplete={autoComplete}
+          className="themed-field w-full rounded-[12px] border border-[#E5E7EB] bg-[#F8F9FB] px-4 py-3 pr-11 text-sm text-[#1A1D23] outline-none transition-colors placeholder:text-[#9CA3AF] focus:border-[#A8C5E0] focus:bg-white"
+        />
+        <button
+          type="button"
+          onClick={onToggleVisibility}
+          className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-[#6B7280] transition-colors hover:bg-[#EEF2F7] hover:text-[#1A1D23] dark:text-[#CBD5E1] dark:hover:bg-white/10 dark:hover:text-[#F5F7FA]"
+          aria-label={visible ? `Ocultar ${label.toLowerCase()}` : `Mostrar ${label.toLowerCase()}`}
+        >
+          {visible ? <EyeSlash size={17} weight="bold" /> : <Eye size={17} weight="bold" />}
+        </button>
       </span>
-      <input
-        type="password"
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        autoComplete={autoComplete}
-        className="themed-field w-full rounded-[12px] border border-[#E5E7EB] bg-[#F8F9FB] px-4 py-3 text-sm text-[#1A1D23] outline-none transition-colors placeholder:text-[#9CA3AF] focus:border-[#A8C5E0] focus:bg-white"
-      />
-    </label>
+    </div>
   );
 }
