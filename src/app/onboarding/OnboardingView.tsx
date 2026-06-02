@@ -122,6 +122,7 @@ export default function OnboardingView({ defaultCategories, firstName }: Onboard
 
   // Q6
   const [closingDay, setClosingDay] = useState(10);
+  const [closingDayInput, setClosingDayInput] = useState('10');
 
   // Q7
   const visibleCategories = allCategories;
@@ -159,6 +160,7 @@ export default function OnboardingView({ defaultCategories, firstName }: Onboard
     setCategoryBudgetsMap(distributeBudgetByPreset(budgetCategories, monthlyBudgetCents, 'balanced'));
     setCategoryBudgetTouched(true);
     setCategoryBudgetSkipped(false);
+    setCategoryBudgetManual(false);
   }
 
   function updateCategoryBudget(categoryId: string, raw: string) {
@@ -166,6 +168,18 @@ export default function OnboardingView({ defaultCategories, firstName }: Onboard
     setCategoryBudgetsMap((prev) => ({ ...prev, [categoryId]: cents }));
     setCategoryBudgetTouched(true);
     setCategoryBudgetSkipped(false);
+    setCategoryBudgetManual(true);
+  }
+
+  function startManualCategoryBudget() {
+    setCategoryBudgetTouched(true);
+    setCategoryBudgetSkipped(false);
+    setCategoryBudgetManual(true);
+    setCategoryBudgetsMap((prev) => (
+      categoryBudgetTotal > 0
+        ? prev
+        : distributeBudgetByPreset(budgetCategories, monthlyBudgetCents, 'balanced')
+    ));
   }
 
   function skipCategoryBudget() {
@@ -175,7 +189,32 @@ export default function OnboardingView({ defaultCategories, firstName }: Onboard
   }
 
   function adjustClosing(delta: number) {
-    setClosingDay((d) => Math.max(1, Math.min(28, d + delta)));
+    setClosingDay((day) => {
+      const next = Math.max(1, Math.min(28, day + delta));
+      setClosingDayInput(String(next));
+      return next;
+    });
+  }
+
+  function handleClosingDayInput(raw: string) {
+    const digits = raw.replace(/\D/g, '').slice(0, 2);
+    setClosingDayInput(digits);
+    if (!digits) {
+      setClosingDay(0);
+      return;
+    }
+    const next = Math.max(1, Math.min(28, Number(digits)));
+    setClosingDay(next);
+    if (Number(digits) > 28) setClosingDayInput('28');
+  }
+
+  function normalizeClosingDayInput() {
+    if (closingDay >= 1 && closingDay <= 28) {
+      setClosingDayInput(String(closingDay));
+      return;
+    }
+    setClosingDay(10);
+    setClosingDayInput('10');
   }
 
   function addExpenseRow() {
@@ -273,6 +312,7 @@ export default function OnboardingView({ defaultCategories, firstName }: Onboard
   );
   const categoryBudgetDifference = monthlyBudgetCents - categoryBudgetTotal;
   const whatsappNormalizedPhone = normalizeWhatsappPhone(whatsappPhone);
+  const categoryBudgetSuggestionActive = !categoryBudgetManual && !categoryBudgetSkipped;
 
   return (
     <main
@@ -397,25 +437,44 @@ export default function OnboardingView({ defaultCategories, firstName }: Onboard
                 <button
                   type="button"
                   onClick={useSuggestedCategoryBudget}
-                  className="flex items-center justify-center gap-2 rounded-[12px] bg-[#EEF9F4] px-3 py-3 text-sm font-bold text-[#2E8F67] transition-colors hover:bg-[#DDF4EA] active:scale-[0.98]"
+                  aria-pressed={categoryBudgetSuggestionActive}
+                  className={`flex min-h-12 items-center justify-center gap-2 rounded-[12px] px-3 py-3 text-sm font-bold transition-[background-color,border-color,color,transform] active:scale-[0.98] ${
+                    categoryBudgetSuggestionActive
+                      ? 'border border-[#5BBF8E] bg-[#EEF9F4] text-[#2E8F67]'
+                      : 'border border-[#E5E7EB] bg-white text-[#6B7280] hover:border-[#A8C5E0] hover:bg-[#F8F9FB]'
+                  }`}
                 >
-                  <Calculator size={16} weight="bold" />
+                  <span
+                    className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-[6px] border ${
+                      categoryBudgetSuggestionActive
+                        ? 'border-[#5BBF8E] bg-[#5BBF8E] text-white'
+                        : 'border-[#D1D5DB] bg-white text-transparent'
+                    }`}
+                    aria-hidden
+                  >
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                      <path d="M2.5 6.2 4.7 8.4 9.5 3.6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </span>
                   Usar sugestão
                 </button>
                 <button
                   type="button"
-                  onClick={() => {
-                    useSuggestedCategoryBudget();
-                    setCategoryBudgetManual(true);
-                  }}
-                  className="rounded-[12px] border border-[#E5E7EB] bg-white px-3 py-3 text-sm font-bold text-[#6B7280] transition-colors hover:border-[#A8C5E0] hover:bg-[#F8F9FB] active:scale-[0.98]"
+                  onClick={startManualCategoryBudget}
+                  aria-pressed={categoryBudgetManual}
+                  className={`flex min-h-12 items-center justify-center gap-2 rounded-[12px] border px-3 py-3 text-sm font-bold transition-[background-color,border-color,color,transform] active:scale-[0.98] ${
+                    categoryBudgetManual
+                      ? 'border-[#A8C5E0] bg-[#EEF3F8] text-[#3F6E91]'
+                      : 'border-[#E5E7EB] bg-white text-[#6B7280] hover:border-[#A8C5E0] hover:bg-[#F8F9FB]'
+                  }`}
                 >
+                  <Calculator size={16} weight="bold" />
                   Ajustar valores
                 </button>
               </div>
             </div>
 
-            {(categoryBudgetManual || categoryBudgetTotal > 0) && (
+            {categoryBudgetTotal > 0 && (
               <div className="space-y-2 mb-3">
                 {budgetCategories.map((category) => {
                   const amount = categoryBudgetsMap[category.id] ?? 0;
@@ -440,8 +499,11 @@ export default function OnboardingView({ defaultCategories, firstName }: Onboard
                           inputMode="numeric"
                           value={formatCentsInput(amount)}
                           onChange={(event) => updateCategoryBudget(category.id, event.target.value)}
+                          readOnly={!categoryBudgetManual}
                           placeholder="0,00"
-                          className="min-w-0 flex-1 bg-transparent text-right text-sm font-semibold tabular-nums text-[#1A1D23] outline-none"
+                          className={`min-w-0 flex-1 bg-transparent text-right text-sm font-semibold tabular-nums outline-none ${
+                            categoryBudgetManual ? 'text-[#1A1D23]' : 'text-[#6B7280]'
+                          }`}
                           aria-label={`Orçamento para ${category.name}`}
                         />
                       </div>
@@ -634,9 +696,16 @@ export default function OnboardingView({ defaultCategories, firstName }: Onboard
                 >
                   <Minus size={20} weight="bold" className="text-[#6B7280]" />
                 </button>
-                <div className="text-5xl font-extrabold text-[#1A1D23] tabular-nums w-20 text-center">
-                  {closingDay}
-                </div>
+                <input
+                  type="tel"
+                  inputMode="numeric"
+                  value={closingDayInput}
+                  onChange={(event) => handleClosingDayInput(event.target.value)}
+                  onBlur={normalizeClosingDayInput}
+                  onFocus={(event) => event.currentTarget.select()}
+                  aria-label="Dia de fechamento do cartão"
+                  className="h-16 w-20 rounded-[14px] border border-transparent bg-transparent text-center text-5xl font-extrabold tabular-nums text-[#1A1D23] outline-none transition-colors focus:border-[#A8C5E0] focus:bg-[#F8F9FB]"
+                />
                 <button
                   type="button"
                   onClick={() => adjustClosing(1)}

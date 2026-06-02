@@ -194,6 +194,7 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
   const [allExpenses, setAllExpenses] = useState<Expense[]>([]);
   const { data: categories } = useCategories();
   const [loading, setLoading] = useState(true);
+  const [hasLoadedExpenses, setHasLoadedExpenses] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [deletingExpense, setDeletingExpense] = useState<Expense | null>(null);
@@ -273,6 +274,7 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
       if ((e as Error)?.name === 'AbortError') return;
       setError(e instanceof Error ? e.message : 'Erro desconhecido');
     } finally {
+      setHasLoadedExpenses(true);
       setLoading(false);
     }
   }, [activeCategory, activePaymentMethod, search, dateRange, activeView]);
@@ -384,6 +386,12 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
     setDateRange({ from, to, presetId: 'custom' });
   }, [customFrom, customTo]);
 
+  const handleViewChange = useCallback((nextView: FeedView) => {
+    if (nextView === activeView) return;
+    setAllExpenses([]);
+    setActiveView(nextView);
+  }, [activeView]);
+
   const handleDelete = useCallback(async (expense: Expense) => {
     setDeletingExpense(expense);
   }, []);
@@ -420,6 +428,8 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
     }
   }, [editingExpense, fetchExpenses, showToast]);
 
+  const showInitialSkeleton = loading && !hasLoadedExpenses;
+
   return (
     <>
       <div className="max-w-lg mx-auto px-4 pb-24 [scrollbar-gutter:stable]">
@@ -447,7 +457,7 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
                   type="button"
                   role="tab"
                   aria-selected={selected}
-                  onClick={() => setActiveView(view.id)}
+                  onClick={() => handleViewChange(view.id)}
                   className={`relative z-10 min-h-8 rounded-[10px] px-3 text-[13px] font-bold outline-none transition-[color,transform] duration-150 active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-[#A8C5E0] focus-visible:ring-offset-1 ${
                     selected
                       ? 'text-[#2E8F67] dark:text-[#7EE0AE]'
@@ -769,8 +779,8 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
           {/* Skeleton layer */}
           <div
             className="absolute inset-0 space-y-4 transition-opacity duration-200"
-            style={{ opacity: loading ? 1 : 0 }}
-            aria-hidden={!loading}
+            style={{ opacity: showInitialSkeleton ? 1 : 0 }}
+            aria-hidden={!showInitialSkeleton}
           >
             {[0, 1, 2].map((i) => (
               <div key={i}>
@@ -786,7 +796,7 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
           {/* Content layer */}
           <div
             className="transition-opacity duration-200"
-            style={{ opacity: loading ? 0 : 1 }}
+            style={{ opacity: showInitialSkeleton ? 0 : 1 }}
           >
             {error ? (
                 <div className="flex flex-col items-center py-16 text-center">
