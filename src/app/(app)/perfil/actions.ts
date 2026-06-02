@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { headers } from 'next/headers';
 import { createSessionClient, createServiceClient, isSupabaseEnabled } from '@/lib/supabase/server';
-import { cacheTags } from '@/lib/cache';
+import { allUserTags, cacheTags } from '@/lib/cache';
 import { PASSWORD_REQUIREMENTS_LABEL, isStrongPassword } from '@/lib/password';
 import {
   buildProfileIdentityPiiUpdate,
@@ -12,6 +12,7 @@ import {
 } from '@/lib/security/profilePii';
 import { normalizeWhatsappPhone } from '@/lib/phone';
 import { resolveUserHasPassword } from '@/lib/auth/password';
+import { normalizeBillingClosingDay } from '@/lib/billingCycle';
 import type { NotificationPrefs } from './notification-prefs';
 
 export type ActionResult = { ok: true; message?: string } | { ok: false; error: string };
@@ -147,6 +148,37 @@ export async function updateCurrency(formData: FormData): Promise<ActionResult> 
   revalidatePath('/perfil');
   revalidatePath('/perfil/moeda');
   return { ok: true, message: `Moeda atualizada para ${raw}.` };
+}
+
+export async function updateBillingClosingDay(formData: FormData): Promise<ActionResult> {
+  if (!isSupabaseEnabled()) {
+    return { ok: false, error: 'Configuração indisponível neste ambiente.' };
+  }
+
+  const raw = Number(formData.get('billingClosingDay'));
+  if (!Number.isInteger(raw) || raw < 1 || raw > 28) {
+    return { ok: false, error: 'Dia de fechamento deve estar entre 1 e 28.' };
+  }
+
+  const supabase = await createSessionClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: 'Sessão expirada. Entre novamente.' };
+
+  const admin = createServiceClient();
+  const { error } = await admin
+    .from('profiles')
+    .update({ billing_closing_day: normalizeBillingClosingDay(raw) })
+    .eq('id', user.id);
+  if (error) {
+    console.error('[updateBillingClosingDay]', error);
+    return { ok: false, error: 'Não foi possível salvar o fechamento.' };
+  }
+
+  revalidatePath('/');
+  revalidatePath('/perfil');
+  revalidatePath('/perfil/fechamento');
+  for (const tag of allUserTags(user.id)) revalidateTag(tag, { expire: 0 });
+  return { ok: true, message: `Fechamento atualizado para dia ${raw}.` };
 }
 
 export async function updateEmail(formData: FormData): Promise<ActionResult> {

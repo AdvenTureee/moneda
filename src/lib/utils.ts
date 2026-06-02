@@ -85,24 +85,27 @@ export function groupExpensesByDate<T extends { createdAt: Date }>(
 }
 
 export function getCurrentPeriod(): string {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  return getCurrentBillingPeriod(DEFAULT_BILLING_CLOSING_DAY);
 }
 
 export function isValidPeriod(period: unknown): period is string {
   return typeof period === 'string' && /^\d{4}-(0[1-9]|1[0-2])$/.test(period);
 }
 
-export function isClosedMonthlyPeriod(period: string): boolean {
-  return isValidPeriod(period) && period < getCurrentPeriod();
+export function isClosedMonthlyPeriod(period: string, closingDay: unknown = DEFAULT_BILLING_CLOSING_DAY): boolean {
+  return isValidPeriod(period) && isClosedBillingPeriod(period, closingDay);
 }
 
 export function getPreviousPeriod(period: string): string {
-  const [year, month] = period.split('-').map(Number);
-  const d = new Date(year, month - 2, 1);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  return shiftPeriod(period, -1);
 }
 
 export function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
+import {
+  DEFAULT_BILLING_CLOSING_DAY,
+  getCurrentBillingPeriod,
+  isClosedBillingPeriod,
+  shiftPeriod,
+} from '@/lib/billingCycle';

@@ -6,6 +6,10 @@ import { getCategories, getCategoriesByIds } from '@/lib/categories';
 import { getBudgets } from '@/lib/budgets';
 import { cacheTags } from '@/lib/cache';
 import { getMonthlyBudgetCents } from '@/lib/monthlyBudget';
+import {
+  getBillingCycleForPeriod,
+  getBillingPeriodForDate,
+} from '@/lib/billingCycle';
 
 type ExpensesRow = Database['public']['Tables']['expenses']['Row'];
 type ExpensesInsert = Database['public']['Tables']['expenses']['Insert'];
@@ -584,20 +588,19 @@ async function getDashboardMetricsFromDBViaRPC(
 async function getDashboardMetricsFromDBViaQuery(
   userId: string,
   period: string,
+  closingDay: number,
 ): Promise<DashboardMetrics> {
   const db = createServiceClient();
   await ensureExpenseSeriesMaterialized(userId, period);
-  const [year, month] = period.split('-').map(Number);
-  const start = new Date(year, month - 1, 1).toISOString();
-  const end = new Date(year, month, 0, 23, 59, 59).toISOString();
+  const cycle = getBillingCycleForPeriod(period, closingDay);
 
   const { data, error } = await db
     .from('expenses')
     .select(EXPENSE_SELECT)
     .eq('user_id', userId)
     .is('deleted_at', null)
-    .gte('occurred_at', start)
-    .lte('occurred_at', end);
+    .gte('occurred_at', cycle.start.toISOString())
+    .lte('occurred_at', cycle.end.toISOString());
 
   if (error) throw new Error(`getDashboardMetrics: ${error.message}`);
 
@@ -662,11 +665,10 @@ async function getDashboardMetricsFromDBViaQuery(
 
 async function getDashboardMetricsFromDB(
   userId: string,
-  period: string
+  period: string,
+  closingDay: number,
 ): Promise<DashboardMetrics> {
-  const viaRpc = await getDashboardMetricsFromDBViaRPC(userId, period);
-  if (viaRpc) return viaRpc;
-  return getDashboardMetricsFromDBViaQuery(userId, period);
+  return getDashboardMetricsFromDBViaQuery(userId, period, closingDay);
 }
 
 // ---------------------------------------------------------------------------
@@ -706,13 +708,16 @@ function getExpensesFromMock(filters: ExpenseFilters): Expense[] {
   return enrichWithCategoriesFromMock(expenses).expenses;
 }
 
-function getDashboardMetricsFromMock(userId: string, period: string): DashboardMetrics {
-  const expenses = getExpensesByPeriod(userId, period);
+function getDashboardMetricsFromMock(userId: string, period: string, closingDay: number): DashboardMetrics {
+  const cycle = getBillingCycleForPeriod(period, closingDay);
+  const expenses = getExpensesByPeriod(userId, period).filter((e) => {
+    const d = new Date(e.createdAt);
+    return d >= cycle.start && d <= cycle.end;
+  });
   const sessionAll = mockGetAll(userId);
-  const [year, month] = period.split('-').map(Number);
   const periodExpenses = sessionAll.filter((e) => {
     const d = new Date(e.createdAt);
-    return d.getFullYear() === year && d.getMonth() + 1 === month;
+    return d >= cycle.start && d <= cycle.end;
   });
   const seen = new Set<string>();
   const allPeriod = periodExpenses.filter((e) => {
@@ -1101,9 +1106,10 @@ export async function getExpenseById(id: string): Promise<Expense | null> {
 async function getDashboardMetricsImpl(
   userId: string,
   period: string,
+  closingDay: number = 10,
 ): Promise<DashboardMetrics> {
-  if (isSupabaseEnabled()) return getDashboardMetricsFromDB(userId, period);
-  return getDashboardMetricsFromMock(userId, period);
+  if (isSupabaseEnabled()) return getDashboardMetricsFromDB(userId, period, closingDay);
+  return getDashboardMetricsFromMock(userId, period, closingDay);
 }
 
 function rehydrateExpense(raw: Expense): Expense {
@@ -1119,10 +1125,11 @@ function rehydrateExpense(raw: Expense): Expense {
 export async function getDashboardMetrics(
   userId: string,
   period: string,
+  closingDay: number = 10,
 ): Promise<DashboardMetrics> {
   const raw = await unstable_cache(
-    () => getDashboardMetricsImpl(userId, period),
-    ['dashboard-metrics', userId, period],
+    () => getDashboardMetricsImpl(userId, period, closingDay),
+    ['dashboard-metrics', userId, period, String(closingDay)],
     {
       tags: [cacheTags.metrics(userId), cacheTags.expenses(userId)],
       revalidate: 300,
@@ -1159,22 +1166,21 @@ async function getMonthlyTotalsFromDB(
   userId: string,
   endPeriod: string,
   months: number,
+  closingDay: number,
 ): Promise<MonthlyTotal[]> {
   const db = createServiceClient();
   await ensureExpenseSeriesMaterialized(userId, endPeriod);
   const startPeriod = shiftPeriod(endPeriod, months - 1);
-  const [startY, startM] = startPeriod.split('-').map(Number);
-  const [endY, endM] = endPeriod.split('-').map(Number);
-  const startIso = new Date(startY, startM - 1, 1).toISOString();
-  const endIso = new Date(endY, endM, 0, 23, 59, 59).toISOString();
+  const startCycle = getBillingCycleForPeriod(startPeriod, closingDay);
+  const endCycle = getBillingCycleForPeriod(endPeriod, closingDay);
 
   const { data, error } = await db
     .from('expenses')
     .select('amount_cents, occurred_at')
     .eq('user_id', userId)
     .is('deleted_at', null)
-    .gte('occurred_at', startIso)
-    .lte('occurred_at', endIso);
+    .gte('occurred_at', startCycle.start.toISOString())
+    .lte('occurred_at', endCycle.end.toISOString());
 
   if (error) throw new Error(`getMonthlyTotals: ${error.message}`);
 
@@ -1185,7 +1191,7 @@ async function getMonthlyTotalsFromDB(
 
   for (const row of data ?? []) {
     const d = new Date(row.occurred_at as string);
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    const key = getBillingPeriodForDate(d, closingDay);
     if (totalsByPeriod.has(key)) {
       totalsByPeriod.set(key, (totalsByPeriod.get(key) ?? 0) + (row.amount_cents as number));
     }
@@ -1198,11 +1204,12 @@ function getMonthlyTotalsFromMock(
   userId: string,
   endPeriod: string,
   months: number,
+  closingDay: number,
 ): MonthlyTotal[] {
   const result: MonthlyTotal[] = [];
   for (let i = months - 1; i >= 0; i--) {
     const period = shiftPeriod(endPeriod, i);
-    const metrics = getDashboardMetricsFromMock(userId, period);
+    const metrics = getDashboardMetricsFromMock(userId, period, closingDay);
     result.push({ period, total: metrics.totalSpent });
   }
   return result;
@@ -1212,19 +1219,21 @@ async function getMonthlyTotalsImpl(
   userId: string,
   endPeriod: string,
   months: number,
+  closingDay: number = 10,
 ): Promise<MonthlyTotal[]> {
-  if (isSupabaseEnabled()) return getMonthlyTotalsFromDB(userId, endPeriod, months);
-  return getMonthlyTotalsFromMock(userId, endPeriod, months);
+  if (isSupabaseEnabled()) return getMonthlyTotalsFromDB(userId, endPeriod, months, closingDay);
+  return getMonthlyTotalsFromMock(userId, endPeriod, months, closingDay);
 }
 
 export async function getMonthlyTotals(
   userId: string,
   endPeriod: string,
   months: number = 6,
+  closingDay: number = 10,
 ): Promise<MonthlyTotal[]> {
   return unstable_cache(
-    () => getMonthlyTotalsImpl(userId, endPeriod, months),
-    ['monthly-totals', userId, endPeriod, String(months)],
+    () => getMonthlyTotalsImpl(userId, endPeriod, months, closingDay),
+    ['monthly-totals', userId, endPeriod, String(months), String(closingDay)],
     {
       // Meses fechados quase nunca mudam. TTL maior; invalidação explícita
       // ocorre via revalidateTag nas mutations de expense.
@@ -1255,13 +1264,19 @@ async function getPlannedMonthlyBudget(userId: string, period: string): Promise<
   return budgets.reduce((sum, budget) => sum + budget.amountCents, 0);
 }
 
-function buildMonthBuckets(year: number, month: number): SpendingTimelineBucket[] {
-  const daysInMonth = new Date(year, month, 0).getDate();
-  return Array.from({ length: daysInMonth }, (_, i) => {
-    const day = i + 1;
-    const key = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    return { key, label: String(day), amount: 0 };
-  });
+function buildCycleDayBuckets(period: string, closingDay: number): SpendingTimelineBucket[] {
+  const cycle = getBillingCycleForPeriod(period, closingDay);
+  const buckets: SpendingTimelineBucket[] = [];
+  const cursor = new Date(cycle.start);
+  while (cursor <= cycle.end) {
+    buckets.push({
+      key: localDateKey(cursor),
+      label: String(cursor.getDate()),
+      amount: 0,
+    });
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return buckets;
 }
 
 function buildHourlyBuckets(): SpendingTimelineBucket[] {
@@ -1275,12 +1290,13 @@ function buildHourlyBuckets(): SpendingTimelineBucket[] {
 async function getSpendingTimelineFromDB(
   userId: string,
   period: string,
+  closingDay: number,
 ): Promise<SpendingTimelineData> {
   const db = createServiceClient();
   const [year, month] = period.split('-').map(Number);
   await ensureExpenseSeriesMaterialized(userId, `${year}-12`);
-  const yearStart = new Date(year, 0, 1);
-  const yearEnd = new Date(year + 1, 0, 1);
+  const yearStart = getBillingCycleForPeriod(`${year}-01`, closingDay).start;
+  const yearEnd = getBillingCycleForPeriod(`${year}-12`, closingDay).end;
 
   const { data, error } = await db
     .from('expenses')
@@ -1288,7 +1304,7 @@ async function getSpendingTimelineFromDB(
     .eq('user_id', userId)
     .is('deleted_at', null)
     .gte('occurred_at', yearStart.toISOString())
-    .lt('occurred_at', yearEnd.toISOString());
+    .lte('occurred_at', yearEnd.toISOString());
 
   if (error) throw new Error(`getSpendingTimeline: ${error.message}`);
 
@@ -1297,21 +1313,24 @@ async function getSpendingTimelineFromDB(
     label: shortMonthLabel(year, i + 1),
     amount: 0,
   }));
-  const monthBuckets = buildMonthBuckets(year, month);
+  const monthBuckets = buildCycleDayBuckets(period, closingDay);
+  const monthBucketMap = new Map(monthBuckets.map((bucket) => [bucket.key, bucket]));
   const hourlyByDate: Record<string, SpendingTimelineBucket[]> = {};
   for (const bucket of monthBuckets) hourlyByDate[bucket.key] = buildHourlyBuckets();
 
   for (const row of data ?? []) {
     const d = new Date(row.occurred_at as string);
     const amount = row.amount_cents as number;
-    if (d.getFullYear() !== year) continue;
+    const bucketPeriod = getBillingPeriodForDate(d, closingDay);
+    const bucketIndex = yearBuckets.findIndex((bucket) => bucket.key === bucketPeriod);
+    if (bucketIndex === -1) continue;
 
-    yearBuckets[d.getMonth()].amount += amount;
+    yearBuckets[bucketIndex].amount += amount;
 
-    if (d.getMonth() + 1 === month) {
+    if (bucketPeriod === period) {
       const dateKey = localDateKey(d);
-      const dayIndex = d.getDate() - 1;
-      if (monthBuckets[dayIndex]) monthBuckets[dayIndex].amount += amount;
+      const dayBucket = monthBucketMap.get(dateKey);
+      if (dayBucket) dayBucket.amount += amount;
       const hourBucket = hourlyByDate[dateKey]?.[d.getHours()];
       if (hourBucket) hourBucket.amount += amount;
     }
@@ -1328,7 +1347,7 @@ async function getSpendingTimelineFromDB(
 
   return {
     period,
-    selectedDay: `${period}-01`,
+    selectedDay: localDateKey(getBillingCycleForPeriod(period, closingDay).start),
     monthlyPlanned,
     annualPlanned,
     year: yearBuckets,
@@ -1340,19 +1359,20 @@ async function getSpendingTimelineFromDB(
 function getSpendingTimelineFromMock(
   userId: string,
   period: string,
+  closingDay: number,
 ): SpendingTimelineData {
   const [year, month] = period.split('-').map(Number);
   const yearBuckets: SpendingTimelineBucket[] = Array.from({ length: 12 }, (_, i) => {
     const bucketPeriod = periodFromParts(year, i + 1);
-    const metrics = getDashboardMetricsFromMock(userId, bucketPeriod);
+    const metrics = getDashboardMetricsFromMock(userId, bucketPeriod, closingDay);
     return { key: bucketPeriod, label: shortMonthLabel(year, i + 1), amount: metrics.totalSpent };
   });
-  const currentMetrics = getDashboardMetricsFromMock(userId, period);
-  const monthBuckets = buildMonthBuckets(year, month);
+  const currentMetrics = getDashboardMetricsFromMock(userId, period, closingDay);
+  const monthBuckets = buildCycleDayBuckets(period, closingDay);
+  const monthBucketMap = new Map(monthBuckets.map((bucket) => [bucket.key, bucket]));
   for (const day of currentMetrics.dailySpending) {
-    const [, , dayStr] = day.date.split('-');
-    const index = Number(dayStr) - 1;
-    if (monthBuckets[index]) monthBuckets[index].amount = day.amount;
+    const bucket = monthBucketMap.get(day.date);
+    if (bucket) bucket.amount = day.amount;
   }
 
   const hourlyByDate: Record<string, SpendingTimelineBucket[]> = {};
@@ -1365,7 +1385,7 @@ function getSpendingTimelineFromMock(
 
   return {
     period,
-    selectedDay: `${period}-01`,
+    selectedDay: localDateKey(getBillingCycleForPeriod(period, closingDay).start),
     monthlyPlanned: 0,
     annualPlanned: 0,
     year: yearBuckets,
@@ -1377,18 +1397,20 @@ function getSpendingTimelineFromMock(
 async function getSpendingTimelineImpl(
   userId: string,
   period: string,
+  closingDay: number = 10,
 ): Promise<SpendingTimelineData> {
-  if (isSupabaseEnabled()) return getSpendingTimelineFromDB(userId, period);
-  return getSpendingTimelineFromMock(userId, period);
+  if (isSupabaseEnabled()) return getSpendingTimelineFromDB(userId, period, closingDay);
+  return getSpendingTimelineFromMock(userId, period, closingDay);
 }
 
 export async function getSpendingTimeline(
   userId: string,
   period: string,
+  closingDay: number = 10,
 ): Promise<SpendingTimelineData> {
   return unstable_cache(
-    () => getSpendingTimelineImpl(userId, period),
-    ['spending-timeline', userId, period],
+    () => getSpendingTimelineImpl(userId, period, closingDay),
+    ['spending-timeline', userId, period, String(closingDay)],
     {
       tags: [
         cacheTags.expenses(userId),

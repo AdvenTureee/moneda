@@ -13,6 +13,7 @@ import {
 import { useToast } from '@/components/ToastProvider';
 import Icon from '@/components/Icon';
 import { formatCurrency } from '@/lib/utils';
+import { formatBillingCycleLabel } from '@/lib/billingCycle';
 import {
   BUDGET_PRESETS,
   distributeBudgetByPreset,
@@ -25,6 +26,7 @@ import type { Budget, Category } from '@/types';
 interface BudgetFormProps {
   initialBudgets: Budget[];
   period: string;
+  billingClosingDay: number;
   initialCategories: Category[];
   monthlyBudgetCents: number;
 }
@@ -42,16 +44,10 @@ function parseCentsInput(raw: string): number {
   return digits ? parseInt(digits, 10) : 0;
 }
 
-function formatPeriod(p: string) {
-  const [year, month] = p.split('-').map(Number);
-  const date = new Date(year, month - 1, 1);
-  const formatted = date.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
-  return formatted.charAt(0).toUpperCase() + formatted.slice(1);
-}
-
 export default function BudgetForm({
   initialBudgets,
   period,
+  billingClosingDay,
   initialCategories,
   monthlyBudgetCents,
 }: BudgetFormProps) {
@@ -146,7 +142,7 @@ export default function BudgetForm({
         </Link>
         <div>
           <h1 className="text-xl font-bold text-[#1A1D23]">Orçamento guiado</h1>
-          <p className="text-xs text-[#6B7280]">Período de {formatPeriod(period)}</p>
+          <p className="text-xs text-[#6B7280]">Ciclo de {formatBillingCycleLabel(period, billingClosingDay)}</p>
         </div>
       </div>
 

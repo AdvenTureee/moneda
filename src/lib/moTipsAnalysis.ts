@@ -1,5 +1,6 @@
 import type { DashboardMetrics, ExpensePaymentMethod } from '@/types';
-import { formatCurrency, getCurrentPeriod } from '@/lib/utils';
+import { formatCurrency } from '@/lib/utils';
+import { getBillingCycleForPeriod, getCurrentBillingPeriod } from '@/lib/billingCycle';
 
 const DELIVERY_RE =
   /ifood|i\s*food|rappi|uber\s*eats|99\s*food|aiqfome|zé\s*delivery|delivery|keeta/i;
@@ -30,6 +31,7 @@ export function buildAnalyticalSignals(
     previousMonthTotalCents: number | null;
     budgetAlerts: string[];
     spendingAlerts: string[];
+    billingClosingDay?: number;
   },
 ): string[] {
   const signals: string[] = [];
@@ -57,18 +59,25 @@ export function buildAnalyticalSignals(
     }
   }
 
-  if (period === getCurrentPeriod()) {
+  const closingDay = options.billingClosingDay ?? 10;
+  if (period === getCurrentBillingPeriod(closingDay)) {
     const now = new Date();
-    const [year, month] = period.split('-').map(Number);
-    const dayOfMonth = now.getDate();
-    const daysInMonth = new Date(year, month, 0).getDate();
-    const daysRemaining = Math.max(0, daysInMonth - dayOfMonth);
-    const dailyAvg = total / dayOfMonth;
-    const projected = Math.round(dailyAvg * daysInMonth);
+    const cycle = getBillingCycleForPeriod(period, closingDay);
+    const elapsedDays = Math.max(
+      1,
+      Math.floor((now.getTime() - cycle.start.getTime()) / 86_400_000) + 1,
+    );
+    const totalDays = Math.max(
+      1,
+      Math.floor((cycle.end.getTime() - cycle.start.getTime()) / 86_400_000) + 1,
+    );
+    const daysRemaining = Math.max(0, totalDays - elapsedDays);
+    const dailyAvg = total / elapsedDays;
+    const projected = Math.round(dailyAvg * totalDays);
 
-    if (dayOfMonth >= 5) {
+    if (elapsedDays >= 5) {
       signals.push(
-        `Ritmo do mês (dia ${dayOfMonth}/${daysInMonth}): média diária ${formatCurrency(Math.round(dailyAvg))}; projeção até o fim ~${formatCurrency(projected)}.`,
+        `Ritmo do ciclo (dia ${elapsedDays}/${totalDays}): média diária ${formatCurrency(Math.round(dailyAvg))}; projeção até o fim ~${formatCurrency(projected)}.`,
       );
     }
 

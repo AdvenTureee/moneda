@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSessionClient } from '@/lib/supabase/server';
 import { getPersonalizedMoTips } from '@/lib/moTipsPersonal';
-import { getCurrentPeriod } from '@/lib/utils';
+import { getBillingClosingDay } from '@/lib/profiles';
+import { getCurrentBillingPeriod } from '@/lib/billingCycle';
 
 const PERIOD_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
 
@@ -16,7 +17,8 @@ export async function GET(req: NextRequest) {
     }
 
     const rawPeriod = req.nextUrl.searchParams.get('period');
-    const period = rawPeriod && PERIOD_RE.test(rawPeriod) ? rawPeriod : getCurrentPeriod();
+    const closingDay = await getBillingClosingDay(user.id);
+    const period = rawPeriod && PERIOD_RE.test(rawPeriod) ? rawPeriod : getCurrentBillingPeriod(closingDay);
 
     if (!process.env.GROQ_API_KEY) {
       return NextResponse.json({ tips: [], period, personalized: false });

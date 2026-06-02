@@ -10,7 +10,7 @@ import { cacheTags } from '@/lib/cache';
 import { MOCK_USER, addUserCategory, addSessionExpense } from '@/data/mock';
 import { upsertBudget } from '@/lib/budgets';
 import { createExpense } from '@/lib/expenses';
-import { getCurrentPeriod } from '@/lib/utils';
+import { getCurrentBillingPeriod } from '@/lib/billingCycle';
 import { normalizeWhatsappPhone } from '@/lib/phone';
 import { buildProfilePhonePiiUpdate } from '@/lib/security/profilePii';
 
@@ -148,7 +148,7 @@ export async function completeOnboardingAction(
 
       // 3. Category budgets
       if ((payload.categoryBudgets ?? []).length > 0) {
-        const period = getCurrentPeriod();
+        const period = getCurrentBillingPeriod(payload.billingClosingDay);
         await Promise.all((payload.categoryBudgets ?? []).map((budget) => upsertBudget({
           userId,
           categoryId: resolveCategoryId(budget.categoryId),
@@ -201,7 +201,7 @@ export async function completeOnboardingAction(
       });
       const resolveCategoryId = (categoryId: string) => customCategoryIdMap.get(categoryId) ?? categoryId;
       if ((payload.categoryBudgets ?? []).length > 0) {
-        const period = getCurrentPeriod();
+        const period = getCurrentBillingPeriod(payload.billingClosingDay);
         await Promise.all((payload.categoryBudgets ?? []).map((budget) => upsertBudget({
           userId,
           categoryId: resolveCategoryId(budget.categoryId),

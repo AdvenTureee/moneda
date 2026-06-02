@@ -3,7 +3,9 @@ import { createSessionClient, createServiceClient, isSupabaseEnabled } from '@/l
 import { generateMonthlySummary, detectSpendingAlerts } from '@/lib/groq';
 import { getExpenses } from '@/lib/expenses';
 import { getCategories } from '@/lib/categories';
-import { getCurrentPeriod, isClosedMonthlyPeriod, isValidPeriod } from '@/lib/utils';
+import { isClosedMonthlyPeriod, isValidPeriod } from '@/lib/utils';
+import { getBillingClosingDay } from '@/lib/profiles';
+import { getBillingCycleForPeriod, getCurrentBillingPeriod, shiftPeriod } from '@/lib/billingCycle';
 
 const MONTH_NOT_CLOSED_MESSAGE = 'O resumo mensal fica disponível quando o mês fechar.';
 
@@ -16,13 +18,14 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const period: string = body.period ?? getCurrentPeriod();
+    const closingDay = await getBillingClosingDay(user.id);
+    const period: string = body.period ?? getCurrentBillingPeriod(closingDay);
 
     if (!isValidPeriod(period)) {
       return NextResponse.json({ error: 'Período inválido.' }, { status: 400 });
     }
 
-    if (!isClosedMonthlyPeriod(period)) {
+    if (!isClosedMonthlyPeriod(period, closingDay)) {
       return NextResponse.json({ error: MONTH_NOT_CLOSED_MESSAGE }, { status: 403 });
     }
 
@@ -30,25 +33,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'GROQ_API_KEY não configurada.' }, { status: 500 });
     }
 
-    const [year, month] = period.split('-').map(Number);
+    const cycle = getBillingCycleForPeriod(period, closingDay);
 
     // Fetch current month expenses
     const currentExpenses = await getExpenses({
       userId: user.id,
-      startDate: new Date(year, month - 1, 1).toISOString(),
-      endDate: new Date(year, month, 0, 23, 59, 59).toISOString(),
+      startDate: cycle.start.toISOString(),
+      endDate: cycle.end.toISOString(),
     });
 
     // Fetch previous months for alert comparison (up to 3 months back)
     const previousMonths: import('@/types').Expense[][] = [];
     for (let i = 1; i <= 3; i++) {
-      const prevDate = new Date(year, month - 1 - i, 1);
-      const pYear = prevDate.getFullYear();
-      const pMonth = prevDate.getMonth() + 1;
+      const prevCycle = getBillingCycleForPeriod(shiftPeriod(period, -i), closingDay);
       const prev = await getExpenses({
         userId: user.id,
-        startDate: new Date(pYear, pMonth - 1, 1).toISOString(),
-        endDate: new Date(pYear, pMonth, 0, 23, 59, 59).toISOString(),
+        startDate: prevCycle.start.toISOString(),
+        endDate: prevCycle.end.toISOString(),
       });
       if (prev.length > 0) previousMonths.push(prev);
     }

@@ -10,6 +10,8 @@ import { detectSpendingAlerts, type MoTipGenerationContext } from '@/lib/groq';
 import { createServiceClient, isSupabaseEnabled } from '@/lib/supabase/server';
 import { decryptProfilePii, getDisplayNameFromUser } from '@/lib/security/profilePii';
 import { formatCurrency } from '@/lib/utils';
+import { getBillingClosingDay } from '@/lib/profiles';
+import { getBillingCycleForPeriod } from '@/lib/billingCycle';
 import type { User } from '@supabase/supabase-js';
 import type { ExpensePaymentMethod } from '@/types';
 
@@ -57,13 +59,14 @@ export async function buildMoFinancialContext(
   user: User,
   period: string,
 ): Promise<MoTipGenerationContext | null> {
-  const metrics = await getDashboardMetrics(user.id, period);
+  const closingDay = await getBillingClosingDay(user.id);
+  const metrics = await getDashboardMetrics(user.id, period, closingDay);
 
   const [insight, monthlyBudgetCents, monthlyTotals, categories, budgets, firstName] =
     await Promise.all([
       getLatestInsight(user.id, period),
       getMonthlyBudgetCents(user.id, period),
-      getMonthlyTotals(user.id, period, 2),
+      getMonthlyTotals(user.id, period, 2, closingDay),
       getCategories(user.id),
       getBudgets(user.id, period),
       resolveFirstName(user),
@@ -72,11 +75,11 @@ export async function buildMoFinancialContext(
   const previousMonths: import('@/types').Expense[][] = [];
   for (let i = 1; i <= 3; i++) {
     const prevPeriod = shiftPeriod(period, i);
-    const [pYear, pMonth] = prevPeriod.split('-').map(Number);
+    const cycle = getBillingCycleForPeriod(prevPeriod, closingDay);
     const prev = await getExpenses({
       userId: user.id,
-      startDate: new Date(pYear, pMonth - 1, 1).toISOString(),
-      endDate: new Date(pYear, pMonth, 0, 23, 59, 59).toISOString(),
+      startDate: cycle.start.toISOString(),
+      endDate: cycle.end.toISOString(),
     });
     if (prev.length > 0) previousMonths.push(prev);
   }
@@ -161,6 +164,7 @@ export async function buildMoFinancialContext(
           previousMonthTotalCents,
           budgetAlerts: trimmedBudgetAlerts,
           spendingAlerts: allSpendingAlerts,
+          billingClosingDay: closingDay,
         })
       : [];
 
@@ -266,6 +270,7 @@ export async function getCachedFinancialContextBlockForChat(
         cacheTags.insights(user.id),
         cacheTags.expenses(user.id),
         cacheTags.budgets(user.id),
+        cacheTags.profile(user.id),
       ],
     },
   )();

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDashboardMetrics } from '@/lib/expenses';
-import { getCurrentPeriod } from '@/lib/utils';
 import { createSessionClient } from '@/lib/supabase/server';
+import { getBillingClosingDay } from '@/lib/profiles';
+import { getCurrentBillingPeriod } from '@/lib/billingCycle';
 
 export async function GET(req: NextRequest) {
   const supabase = await createSessionClient();
@@ -9,8 +10,9 @@ export async function GET(req: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { searchParams } = new URL(req.url);
-  const period = searchParams.get('period') ?? getCurrentPeriod();
+  const closingDay = await getBillingClosingDay(user.id);
+  const period = searchParams.get('period') ?? getCurrentBillingPeriod(closingDay);
 
-  const metrics = await getDashboardMetrics(user.id, period);
+  const metrics = await getDashboardMetrics(user.id, period, closingDay);
   return NextResponse.json({ data: metrics });
 }

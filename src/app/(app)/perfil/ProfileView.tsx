@@ -20,6 +20,7 @@ import {
   Sun,
   LockKey,
   WhatsappLogo,
+  CalendarBlank,
 } from '@phosphor-icons/react';
 import { useToast } from '@/components/ToastProvider';
 import {
@@ -47,6 +48,7 @@ interface ProfileViewProps {
   initialName: string;
   avatarUrl: string | null;
   currency: string;
+  billingClosingDay: number | null;
   allowDelete: boolean;
   linkedProviders?: string[];
   hasPassword: boolean;
@@ -88,6 +90,7 @@ export default function ProfileView({
   initialName,
   avatarUrl,
   currency,
+  billingClosingDay,
   allowDelete,
   linkedProviders = [],
   hasPassword,
@@ -406,6 +409,18 @@ export default function ProfileView({
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-[#1A1D23]">Moeda</p>
             <p className="text-xs text-[#6B7280]">{CURRENCY_LABELS[currency] ?? currency}</p>
+          </div>
+          <CaretRight size={18} className="text-[#E5E7EB] group-hover:text-[#9CA3AF] transition-colors" />
+        </Link>
+        <Link href="/perfil/fechamento" className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-[#F8F9FB] transition-colors group">
+          <ProfileIcon tone="neutral">
+            <CalendarBlank size={18} />
+          </ProfileIcon>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-[#1A1D23]">Fechamento do cartão</p>
+            <p className="text-xs text-[#6B7280]">
+              {billingClosingDay ? `Fecha dia ${billingClosingDay}` : 'Informe o dia de fechamento'}
+            </p>
           </div>
           <CaretRight size={18} className="text-[#E5E7EB] group-hover:text-[#9CA3AF] transition-colors" />
         </Link>

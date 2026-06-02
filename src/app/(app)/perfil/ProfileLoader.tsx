@@ -13,6 +13,7 @@ export default async function ProfileLoader() {
   const avatarUrl = (metadata.avatar_url as string | undefined) ?? null;
 
   let currency = 'BRL';
+  let billingClosingDay: number | null = null;
   let initialName = getDisplayNameFromUser(user);
   let email = user.email ?? '';
   let profileHasPassword: boolean | null = null;
@@ -20,10 +21,11 @@ export default async function ProfileLoader() {
     const admin = createServiceClient();
     const { data } = await admin
       .from('profiles')
-      .select('currency,has_password,name_ciphertext,name_iv,name_tag,email_ciphertext,email_iv,email_tag,phone_ciphertext,phone_iv,phone_tag')
+      .select('currency,billing_closing_day,has_password,name_ciphertext,name_iv,name_tag,email_ciphertext,email_iv,email_tag,phone_ciphertext,phone_iv,phone_tag')
       .eq('id', user.id)
       .single();
     if (data?.currency) currency = data.currency;
+    billingClosingDay = typeof data?.billing_closing_day === 'number' ? data.billing_closing_day : null;
     if (typeof data?.has_password === 'boolean') profileHasPassword = data.has_password;
     if (data) {
       const pii = decryptProfilePii(data);
@@ -44,6 +46,7 @@ export default async function ProfileLoader() {
       initialName={initialName}
       avatarUrl={avatarUrl}
       currency={currency}
+      billingClosingDay={billingClosingDay}
       allowDelete={isSupabaseEnabled()}
       linkedProviders={linkedProviders}
       hasPassword={resolveUserHasPassword(user, profileHasPassword)}

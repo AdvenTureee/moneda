@@ -4,25 +4,26 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { CaretDown } from '@phosphor-icons/react';
+import { formatBillingCycleLabel, getCurrentBillingPeriod, shiftPeriod } from '@/lib/billingCycle';
 
 interface MonthPickerProps {
   value: string;
   monthsBack?: number;
+  closingDay?: number;
 }
 
-function buildOptions(monthsBack: number): { period: string; label: string }[] {
-  const today = new Date();
+function buildOptions(monthsBack: number, closingDay: number): { period: string; label: string }[] {
+  const currentPeriod = getCurrentBillingPeriod(closingDay);
   const opts: { period: string; label: string }[] = [];
   for (let i = 0; i < monthsBack; i++) {
-    const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
-    const period = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-    const label = d.toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
+    const period = shiftPeriod(currentPeriod, -i);
+    const label = formatBillingCycleLabel(period, closingDay);
     opts.push({ period, label });
   }
   return opts;
 }
 
-export default function MonthPicker({ value, monthsBack = 12 }: MonthPickerProps) {
+export default function MonthPicker({ value, monthsBack = 12, closingDay = 10 }: MonthPickerProps) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
@@ -30,13 +31,9 @@ export default function MonthPicker({ value, monthsBack = 12 }: MonthPickerProps
   const router = useRouter();
   const menuWidth = 224;
 
-  const [year, month] = value.split('-').map(Number);
-  const currentLabel = new Date(year, month - 1).toLocaleString('pt-BR', {
-    month: 'long',
-    year: 'numeric',
-  });
+  const currentLabel = formatBillingCycleLabel(value, closingDay);
 
-  const options = buildOptions(monthsBack);
+  const options = buildOptions(monthsBack, closingDay);
 
   useEffect(() => setMounted(true), []);
 
@@ -74,7 +71,7 @@ export default function MonthPicker({ value, monthsBack = 12 }: MonthPickerProps
         type="button"
         onClick={() => setOpen((o) => !o)}
         className="flex items-center gap-1 capitalize text-sm font-semibold text-[#6B7280] hover:text-[#1A1D23] transition-colors"
-        aria-label={`Mês: ${currentLabel}. Clique para trocar.`}
+        aria-label={`Ciclo: ${currentLabel}. Clique para trocar.`}
         aria-expanded={open}
       >
         {currentLabel}

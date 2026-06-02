@@ -4,7 +4,8 @@ import { getCachedFinancialContextBlockForChat } from '@/lib/moFinancialContext'
 import { suggestMoChatFollowUps } from '@/lib/moChatFollowUps';
 import { buildMoChatMessages, streamMoChatReply } from '@/lib/groq';
 import { checkRateLimit, pruneRateLimitBuckets } from '@/lib/rateLimit';
-import { getCurrentPeriod } from '@/lib/utils';
+import { getBillingClosingDay } from '@/lib/profiles';
+import { getCurrentBillingPeriod } from '@/lib/billingCycle';
 import type { ChatHistoryItem } from '@/types/chat';
 
 const PERIOD_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
@@ -80,10 +81,11 @@ export async function POST(req: NextRequest) {
     }
 
     const rawPeriod = body.period;
+    const closingDay = await getBillingClosingDay(user.id);
     const period =
       typeof rawPeriod === 'string' && PERIOD_RE.test(rawPeriod)
         ? rawPeriod
-        : getCurrentPeriod();
+        : getCurrentBillingPeriod(closingDay);
 
     const history = sanitizeHistory(body.history);
     const contextBlock = await getCachedFinancialContextBlockForChat(user, period);

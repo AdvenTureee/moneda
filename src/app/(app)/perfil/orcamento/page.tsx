@@ -4,7 +4,8 @@ import { MOCK_USER } from '@/data/mock';
 import { getBudgets } from '@/lib/budgets';
 import { getCategories } from '@/lib/categories';
 import { getMonthlyBudgetCents } from '@/lib/monthlyBudget';
-import { getCurrentPeriod } from '@/lib/utils';
+import { getBillingClosingDay } from '@/lib/profiles';
+import { getCurrentBillingPeriod } from '@/lib/billingCycle';
 import BudgetForm from './BudgetForm';
 
 export default async function OrcamentoPage() {
@@ -17,7 +18,8 @@ export default async function OrcamentoPage() {
     userId = user.id;
   }
 
-  const period = getCurrentPeriod();
+  const closingDay = isSupabaseEnabled() ? await getBillingClosingDay(userId) : 10;
+  const period = getCurrentBillingPeriod(closingDay);
   const [budgets, categories, monthlyBudgetCents] = await Promise.all([
     getBudgets(userId, period),
     getCategories(userId),
@@ -28,6 +30,7 @@ export default async function OrcamentoPage() {
     <BudgetForm
       initialBudgets={budgets}
       period={period}
+      billingClosingDay={closingDay}
       initialCategories={categories}
       monthlyBudgetCents={monthlyBudgetCents}
     />

@@ -14,10 +14,12 @@ import { getDashboardMetrics, getSpendingTimeline } from '@/lib/expenses';
 import { getBudgets } from '@/lib/budgets';
 import { getMonthlyIncomeTotalCents } from '@/lib/incomes';
 import { getMonthlyBudgetCents } from '@/lib/monthlyBudget';
-import { isUserOnboarded } from '@/lib/profiles';
+import { getNullableBillingClosingDay, isUserOnboarded } from '@/lib/profiles';
 import { decryptProfilePii, getDisplayNameFromUser } from '@/lib/security/profilePii';
-import { formatCurrency, getCurrentPeriod } from '@/lib/utils';
+import { formatCurrency } from '@/lib/utils';
+import { getCurrentBillingPeriod, normalizeBillingClosingDay } from '@/lib/billingCycle';
 import { createServiceClient, createSessionClient, isSupabaseEnabled } from '@/lib/supabase/server';
+import BillingClosingDayPrompt from '@/components/BillingClosingDayPrompt';
 
 // A page lê cookies de auth (createSessionClient) → Next a renderiza dinamicamente
 // por padrão. As queries de DB dentro do render usam `unstable_cache` com tags
@@ -43,16 +45,18 @@ export default async function DashboardPage({
   }
 
   const sp = await searchParams;
+  const nullableClosingDay = await getNullableBillingClosingDay(user.id);
+  const billingClosingDay = normalizeBillingClosingDay(nullableClosingDay);
   const rawPeriod = Array.isArray(sp.period) ? sp.period[0] : sp.period;
-  const period = isValidPeriod(rawPeriod) ? rawPeriod : getCurrentPeriod();
+  const period = isValidPeriod(rawPeriod) ? rawPeriod : getCurrentBillingPeriod(billingClosingDay);
 
   // Parallel DB queries
   const [metrics, budgets, monthlyBudgetCents, spendingTimeline, monthlyIncomeTotalCents] = await Promise.all([
-    getDashboardMetrics(user.id, period),
+    getDashboardMetrics(user.id, period, billingClosingDay),
     getBudgets(user.id, period),
     getMonthlyBudgetCents(user.id, period),
-    getSpendingTimeline(user.id, period),
-    getMonthlyIncomeTotalCents(user.id, period),
+    getSpendingTimeline(user.id, period, billingClosingDay),
+    getMonthlyIncomeTotalCents(user.id, period, billingClosingDay),
   ]);
 
   // Orçamento mensal = teto de gasto declarado. Se não existir, cai nos
@@ -84,7 +88,7 @@ export default async function DashboardPage({
               Moneda
             </h1>
             <div className="flex items-center gap-4">
-              <MonthPicker value={period} />
+              <MonthPicker value={period} closingDay={billingClosingDay} />
               <Link
                 href="/perfil"
                 className="h-[60px] w-[60px] shrink-0 overflow-hidden rounded-full bg-[#A8C5E0] flex items-center justify-center text-lg font-bold text-white ring-[3px] ring-[#5BBF8E]/80 ring-offset-[3px] ring-offset-[var(--background)] shadow-[0_10px_24px_rgba(0,0,0,0.14)] transition-[transform,box-shadow,ring-color] duration-200 hover:scale-[1.03] hover:ring-[#5BBF8E] focus:outline-none focus-visible:ring-4"
@@ -260,6 +264,7 @@ export default async function DashboardPage({
 
         <div className="h-6" />
       </div>
+      <BillingClosingDayPrompt open={isSupabaseEnabled() && nullableClosingDay === null} initialDay={billingClosingDay} />
       {remaining > 0 && <Confetti trigger sessionKey="dashboard-confetti" />}
     </>
   );

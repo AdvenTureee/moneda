@@ -4,6 +4,7 @@ import { createServiceClient, isSupabaseEnabled } from '@/lib/supabase/server';
 import { generateId } from '@/lib/utils';
 import { unstable_cache } from 'next/cache';
 import { cacheTags } from '@/lib/cache';
+import { getBillingCycleForPeriod } from '@/lib/billingCycle';
 
 type IncomesRow = Database['public']['Tables']['incomes']['Row'];
 type IncomesInsert = Database['public']['Tables']['incomes']['Insert'];
@@ -45,10 +46,12 @@ export async function getIncomes(userId: string): Promise<Income[]> {
   return sessionIncomes.filter((i) => i.userId === userId);
 }
 
-async function getMonthlyIncomeTotalCentsImpl(userId: string, period: string): Promise<number> {
-  const [year, month] = period.split('-').map(Number);
-  const start = new Date(year, month - 1, 1).toISOString();
-  const end = new Date(year, month, 0, 23, 59, 59).toISOString();
+async function getMonthlyIncomeTotalCentsImpl(
+  userId: string,
+  period: string,
+  closingDay: number = 10,
+): Promise<number> {
+  const cycle = getBillingCycleForPeriod(period, closingDay);
 
   if (isSupabaseEnabled()) {
     const db = createServiceClient();
@@ -57,8 +60,8 @@ async function getMonthlyIncomeTotalCentsImpl(userId: string, period: string): P
       .select('amount_cents')
       .eq('user_id', userId)
       .is('deleted_at', null)
-      .gte('received_at', start)
-      .lte('received_at', end);
+      .gte('received_at', cycle.start.toISOString())
+      .lte('received_at', cycle.end.toISOString());
 
     if (error) throw new Error(`getMonthlyIncomeTotalCents: ${error.message}`);
     return (data ?? []).reduce((sum, row) => sum + (row.amount_cents ?? 0), 0);
@@ -67,15 +70,19 @@ async function getMonthlyIncomeTotalCentsImpl(userId: string, period: string): P
   return sessionIncomes
     .filter((income) => {
       const d = new Date(income.receivedAt);
-      return income.userId === userId && d.getFullYear() === year && d.getMonth() + 1 === month;
+      return income.userId === userId && d >= cycle.start && d <= cycle.end;
     })
     .reduce((sum, income) => sum + income.amount, 0);
 }
 
-export async function getMonthlyIncomeTotalCents(userId: string, period: string): Promise<number> {
+export async function getMonthlyIncomeTotalCents(
+  userId: string,
+  period: string,
+  closingDay: number = 10,
+): Promise<number> {
   return unstable_cache(
-    () => getMonthlyIncomeTotalCentsImpl(userId, period),
-    ['monthly-income-total-cents', userId, period],
+    () => getMonthlyIncomeTotalCentsImpl(userId, period, closingDay),
+    ['monthly-income-total-cents', userId, period, String(closingDay)],
     {
       tags: [cacheTags.profile(userId)],
       revalidate: 300,

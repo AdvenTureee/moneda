@@ -20,6 +20,7 @@ interface InsightsViewProps {
   expenseCount: number;
   changePct: number | null;
   insights: AIInsight[];
+  billingClosingDay: number;
 }
 
 const TYPE_FILTERS = [
@@ -75,6 +76,7 @@ export default function InsightsView({
   expenseCount,
   changePct,
   insights: initialInsights,
+  billingClosingDay,
 }: InsightsViewProps) {
   const [generating, setGenerating] = useState(false);
   const [insights, setInsights] = useState<AIInsight[]>(initialInsights);
@@ -82,7 +84,7 @@ export default function InsightsView({
   const [search, setSearch] = useState('');
   const [activeType, setActiveType] = useState<string | null>(null);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
-  const isClosedPeriod = isClosedMonthlyPeriod(period);
+  const isClosedPeriod = isClosedMonthlyPeriod(period, billingClosingDay);
 
   const filteredInsights = useMemo(() => {
     let result = [...insights];
