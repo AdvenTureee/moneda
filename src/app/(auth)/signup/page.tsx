@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import TermsModal from '@/components/TermsModal';
 import { TERMS_VERSION } from '@/lib/legal';
+import { PASSWORD_REQUIREMENTS_LABEL, isStrongPassword } from '@/lib/password';
 import { createClient } from '@/lib/supabase/client';
 import { isValidEmail } from '@/lib/utils';
 import { useAuthMascot } from '../AuthMascotContext';
@@ -34,6 +35,7 @@ export default function SignupPage() {
   const [termsModalOpen, setTermsModalOpen] = useState(false);
   const [passwordFocusCount, setPasswordFocusCount] = useState(0);
   const { setEyesClosed } = useAuthMascot();
+  const passwordIsStrong = isStrongPassword(password);
 
   function handlePasswordFocus() {
     setPasswordFocusCount((count) => count + 1);
@@ -57,8 +59,8 @@ export default function SignupPage() {
       return;
     }
 
-    if (password.length < 8) {
-      setError('A senha deve ter pelo menos 8 caracteres.');
+    if (!passwordIsStrong) {
+      setError(PASSWORD_REQUIREMENTS_LABEL);
       return;
     }
 
@@ -255,6 +257,10 @@ export default function SignupPage() {
               </div>
             </div>
 
+            <p className={`text-xs font-medium ${password.length > 0 && !passwordIsStrong ? 'text-[#E07070]' : 'text-[#6B7280]'}`}>
+              {PASSWORD_REQUIREMENTS_LABEL}
+            </p>
+
             {error && (
               <p className="text-xs font-medium text-[#E07070]" role="alert">
                 {error}
@@ -283,7 +289,7 @@ export default function SignupPage() {
 
             <button
               type="submit"
-              disabled={loading || googleLoading}
+              disabled={loading || googleLoading || !passwordIsStrong}
               className="w-full py-3 rounded-[12px] text-sm font-semibold text-white bg-[#5BBF8E] hover:bg-[#4AA77C] active:bg-[#3FA876] transition-colors duration-150 active:scale-[0.99] disabled:opacity-60 disabled:cursor-not-allowed"
               style={{ boxShadow: '0 4px 14px rgba(91, 191, 142, 0.3)' }}
             >

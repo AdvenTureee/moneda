@@ -434,10 +434,10 @@ export default function OnboardingView({ defaultCategories, firstName }: Onboard
               <WhatsappLogo size={40} weight="fill" />
             </div>
             <h2 className="text-xl font-heading text-center text-[#1A1D23] mt-5">
-              Quer lançar gastos pelo WhatsApp?
+              Cadastre seu WhatsApp para lançar gastos
             </h2>
             <p className="text-sm text-[#6B7280] text-center mt-2 mb-6 max-w-[340px] mx-auto">
-              Seu telefone identifica suas mensagens com segurança. É opcional, mas sem ele não conseguimos associar os gastos enviados pelo WhatsApp à sua conta.
+              Seu telefone identifica suas mensagens com segurança e associa os gastos enviados pelo WhatsApp à sua conta.
             </p>
 
             <label className="block text-xs font-bold uppercase tracking-[0.08em] text-[#9CA3AF] mb-2">

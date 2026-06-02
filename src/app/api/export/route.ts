@@ -13,6 +13,22 @@ const PAYMENT_LABELS: Record<ExpensePaymentMethod, string> = {
   other: 'Outro',
 };
 
+const CREDIT_PURCHASE_LABELS = {
+  single: 'À vista',
+  installment: 'Parcelado',
+} as const;
+
+const SERIES_KIND_LABELS = {
+  recurring: 'Recorrente',
+  installment: 'Parcelamento',
+} as const;
+
+const SOURCE_LABELS = {
+  whatsapp: 'WhatsApp',
+  manual: 'Manual',
+  import: 'Importação',
+} as const;
+
 function csvEscape(value: unknown): string {
   if (value === null || value === undefined) return '';
   const s = String(value);
@@ -36,56 +52,48 @@ export async function GET() {
   const expenses = await getExpenses({ userId: user.id });
 
   const header = [
-    'id',
-    'data',
-    'descricao',
-    'categoria_id',
-    'categoria',
-    'valor',
-    'metodo_pagamento',
-    'tipo_compra_credito',
-    'parcela_atual',
-    'total_parcelas',
-    'recorrente',
-    'serie_id',
-    'serie_tipo',
-    'serie_ocorrencia',
-    'serie_total',
-    'fonte',
-    'tags',
-    'comprovante_nome',
-    'comprovante_tipo',
-    'comprovante_tamanho_bytes',
-    'comprovante_enviado_em',
-    'comprovante_caminho',
+    'Data',
+    'Descrição',
+    'Categoria',
+    'Valor',
+    'Forma de pagamento',
+    'Tipo de compra no crédito',
+    'Parcela atual',
+    'Total de parcelas',
+    'Recorrente',
+    'Tipo da série',
+    'Ocorrência da série',
+    'Total da série',
+    'Fonte',
+    'Tags',
+    'Nome do comprovante',
+    'Tipo do comprovante',
+    'Tamanho do comprovante (bytes)',
+    'Comprovante enviado em',
   ];
 
   const lines = [toCsvLine(header)];
   for (const e of expenses) {
     lines.push(
       toCsvLine([
-        e.id,
         new Date(e.createdAt).toISOString(),
         e.description,
-        e.category,
         e.categoryData?.name ?? '',
         formatAmount(e.amount),
         PAYMENT_LABELS[e.paymentMethod],
-        e.creditDetails?.purchaseType ?? '',
+        e.creditDetails?.purchaseType ? CREDIT_PURCHASE_LABELS[e.creditDetails.purchaseType] : '',
         e.creditDetails?.installmentCurrent ?? '',
         e.creditDetails?.installmentTotal ?? '',
         e.isRecurring ? 'sim' : 'não',
-        e.seriesId ?? '',
-        e.seriesKind ?? '',
+        e.seriesKind ? SERIES_KIND_LABELS[e.seriesKind] : '',
         e.seriesOccurrenceIndex ?? '',
         e.seriesTotalOccurrences ?? '',
-        e.source,
+        SOURCE_LABELS[e.source],
         e.tags.join(';'),
         e.receipt?.fileName ?? '',
         e.receipt?.mimeType ?? '',
         e.receipt?.sizeBytes ?? '',
         e.receipt?.uploadedAt ? e.receipt.uploadedAt.toISOString() : '',
-        e.receipt?.path ?? '',
       ]),
     );
   }

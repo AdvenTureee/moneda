@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useState, useTransition } from 'react';
 import { ArrowLeft, Check, Envelope, LockKey } from '@phosphor-icons/react';
 import { useToast } from '@/components/ToastProvider';
+import { PASSWORD_REQUIREMENTS_LABEL, isStrongPassword } from '@/lib/password';
 import { sendPasswordReset, setInitialPassword } from '../actions';
 
 interface PasswordFormProps {
@@ -19,9 +20,10 @@ export default function PasswordForm({ email, hasPassword, isRecovery }: Passwor
   const [saving, startSaving] = useTransition();
   const [sendingReset, startSendingReset] = useTransition();
   const { showToast } = useToast();
+  const passwordIsStrong = isStrongPassword(newPassword);
 
   const canSave =
-    newPassword.length >= 8 &&
+    passwordIsStrong &&
     newPassword === confirmPassword &&
     (!passwordEnabled || isRecovery);
 
@@ -139,11 +141,9 @@ export default function PasswordForm({ email, hasPassword, isRecovery }: Passwor
             />
           </div>
 
-          {newPassword.length > 0 && newPassword.length < 8 && (
-            <p className="mt-2 text-xs font-medium text-[#B14C4C]">
-              A senha precisa ter pelo menos 8 caracteres.
-            </p>
-          )}
+          <p className={`mt-2 text-xs font-medium ${newPassword.length > 0 && !passwordIsStrong ? 'text-[#B14C4C]' : 'text-[#6B7280]'}`}>
+            {PASSWORD_REQUIREMENTS_LABEL}
+          </p>
           {confirmPassword.length > 0 && newPassword !== confirmPassword && (
             <p className="mt-2 text-xs font-medium text-[#B14C4C]">
               As senhas não conferem.

@@ -120,10 +120,6 @@ export default function NotificationsForm({ initial }: NotificationsFormProps) {
         {saving ? 'Salvando…' : 'Salvar'}
       </button>
 
-      <p className="text-xs text-[#9CA3AF] mt-4 text-center">
-        O envio de emails depende de SMTP configurado no Supabase. Push notifications ainda não estão habilitadas.
-      </p>
-
     </div>
   );
 }

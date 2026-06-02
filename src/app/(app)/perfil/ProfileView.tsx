@@ -26,7 +26,6 @@ import {
   updateDisplayName,
   updateEmail,
   signOut,
-  deleteAccount,
   type ActionResult,
 } from './actions';
 import { createClient } from '@/lib/supabase/client';
@@ -99,12 +98,9 @@ export default function ProfileView({
   const [editingEmail, setEditingEmail] = useState(false);
   const [draftEmail, setDraftEmail] = useState(email);
   const { showToast } = useToast();
-  const [confirmingDelete, setConfirmingDelete] = useState(false);
-  const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [savingName, startSaveName] = useTransition();
   const [savingEmail, startSaveEmail] = useTransition();
   const [signingOut, startSignOut] = useTransition();
-  const [deleting, startDelete] = useTransition();
   const [uploading, setUploading] = useState(false);
   const [linkingGoogle, setLinkingGoogle] = useState(false);
   const [currentAvatarUrl, setCurrentAvatarUrl] = useState<string | null>(avatarUrl);
@@ -113,8 +109,6 @@ export default function ProfileView({
 
   const initial = (name?.[0] ?? email?.[0] ?? '?').toUpperCase();
   const isGoogleLinked = linkedProviders.includes('google');
-  const deleteConfirmationName = name.trim() || email;
-  const canConfirmDelete = deleteConfirmText.trim() === deleteConfirmationName;
 
   async function handleLinkGoogle() {
     setLinkingGoogle(true);
@@ -203,24 +197,7 @@ export default function ProfileView({
     });
   }
 
-  function handleDelete() {
-    if (!confirmingDelete) {
-      setConfirmingDelete(true);
-      return;
-    }
-    if (!canConfirmDelete) {
-      showToast('error', 'Digite o nome da conta exatamente como indicado.');
-      return;
-    }
-    startDelete(async () => {
-      const result = await deleteAccount();
-      applyResult(result);
-      setConfirmingDelete(false);
-      setDeleteConfirmText('');
-    });
-  }
-
-  const anyBusy = savingName || savingEmail || signingOut || deleting || uploading;
+  const anyBusy = savingName || savingEmail || signingOut || uploading;
 
   return (
     <div className="max-w-lg mx-auto px-4 pb-24">
@@ -608,57 +585,15 @@ export default function ProfileView({
                   Remove permanentemente seus dados. Esta ação não pode ser desfeita.
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setConfirmingDelete(true);
-                  setDeleteConfirmText('');
-                }}
-                disabled={anyBusy || confirmingDelete}
-                className="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-[12px] bg-[#C94F4F] px-4 text-sm font-bold text-white transition-colors hover:bg-[#B94545] disabled:opacity-60 dark:bg-[#A84E4E] dark:hover:bg-[#B95B5B]"
+              <Link
+                href={anyBusy ? '/perfil' : '/perfil/excluir-conta'}
+                aria-disabled={anyBusy}
+                className="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-[12px] bg-[#C94F4F] px-4 text-sm font-bold text-white transition-colors hover:bg-[#B94545] aria-disabled:pointer-events-none aria-disabled:opacity-60 dark:bg-[#A84E4E] dark:hover:bg-[#B95B5B]"
               >
                 <Trash size={16} weight="bold" />
                 Excluir conta
-              </button>
+              </Link>
             </div>
-
-            {confirmingDelete && (
-              <div className="border-t border-[#F2CACA] px-5 py-4 dark:border-[#7A3A3A]/55">
-                <p className="text-xs leading-relaxed text-[#6B7280]">
-                  Para confirmar, digite <strong className="font-bold text-[#1A1D23]">{deleteConfirmationName}</strong>.
-                </p>
-                <input
-                  type="text"
-                  value={deleteConfirmText}
-                  onChange={(e) => setDeleteConfirmText(e.target.value)}
-                  autoComplete="off"
-                  disabled={deleting}
-                  className="themed-field mt-3 w-full rounded-[12px] border border-[#E6B8B8] bg-[#FDF0F0] px-4 py-3 text-sm font-semibold text-[#1A1D23] outline-none transition-colors placeholder:text-[#A97979] focus:border-[#C94F4F] focus:bg-white dark:border-[#7A3A3A]/65 dark:bg-[#3A1C22] dark:text-[#F5F7FA] dark:placeholder:text-[#B98A8A] dark:focus:border-[#D86A6A] dark:focus:bg-[#20151A]"
-                  placeholder={deleteConfirmationName}
-                />
-                <div className="mt-3 flex gap-2">
-                  <button
-                    type="button"
-                    onClick={handleDelete}
-                    disabled={deleting || !canConfirmDelete}
-                    className="flex-1 rounded-[12px] bg-[#C94F4F] py-3 text-sm font-bold text-white hover:bg-[#B94545] disabled:cursor-not-allowed disabled:opacity-40 dark:bg-[#A84E4E] dark:hover:bg-[#B95B5B]"
-                  >
-                    {deleting ? 'Excluindo…' : 'Confirmar exclusão'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setConfirmingDelete(false);
-                      setDeleteConfirmText('');
-                    }}
-                    disabled={deleting}
-                    className="px-5 py-3 rounded-[12px] text-sm font-bold text-[#6B7280] border border-[#E5E7EB] disabled:opacity-60"
-                  >
-                    Cancelar
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
         </section>
       )}

@@ -263,7 +263,7 @@ export default function IncomesView({ initialIncomes }: IncomesViewProps) {
           {formatCurrency(totalIncomes)}
         </p>
         <p className="text-xs opacity-75 mt-2">
-          Ganhos abatem estouros no mês em que foram recebidos.
+          Ganhos entram no saldo do mês em que foram recebidos.
         </p>
       </div>
 

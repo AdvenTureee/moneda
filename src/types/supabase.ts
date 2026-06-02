@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_deletion_feedback: {
+        Row: {
+          created_at: string
+          id: string
+          other_reason: string | null
+          reason_codes: string[]
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          other_reason?: string | null
+          reason_codes?: string[]
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          other_reason?: string | null
+          reason_codes?: string[]
+        }
+        Relationships: []
+      }
       ai_insights: {
         Row: {
           completion_tokens: number | null

@@ -5,6 +5,7 @@ import { revalidatePath, revalidateTag } from 'next/cache';
 import { headers } from 'next/headers';
 import { createSessionClient, createServiceClient, isSupabaseEnabled } from '@/lib/supabase/server';
 import { cacheTags } from '@/lib/cache';
+import { PASSWORD_REQUIREMENTS_LABEL, isStrongPassword } from '@/lib/password';
 import {
   buildProfileIdentityPiiUpdate,
   buildProfilePhonePiiUpdate,
@@ -14,6 +15,17 @@ import { resolveUserHasPassword } from '@/lib/auth/password';
 import type { NotificationPrefs } from './notification-prefs';
 
 export type ActionResult = { ok: true; message?: string } | { ok: false; error: string };
+
+const DELETE_REASON_CODES = [
+  'not_using',
+  'hard_to_use',
+  'missing_feature',
+  'technical_issue',
+  'privacy_concern',
+  'other',
+] as const;
+
+const DELETE_REASON_CODE_SET = new Set<string>(DELETE_REASON_CODES);
 
 export async function updateDisplayName(formData: FormData): Promise<ActionResult> {
   const raw = formData.get('name');
@@ -206,8 +218,8 @@ export async function updateNotificationPrefs(formData: FormData): Promise<Actio
  */
 export async function setInitialPassword(formData: FormData): Promise<ActionResult> {
   const password = String(formData.get('password') ?? '');
-  if (password.length < 8) {
-    return { ok: false, error: 'A senha precisa ter pelo menos 8 caracteres.' };
+  if (!isStrongPassword(password)) {
+    return { ok: false, error: PASSWORD_REQUIREMENTS_LABEL };
   }
 
   const supabase = await createSessionClient();
@@ -276,7 +288,7 @@ export async function signOut(): Promise<void> {
   redirect('/login');
 }
 
-export async function deleteAccount(): Promise<ActionResult> {
+export async function deleteAccount(formData?: FormData): Promise<ActionResult> {
   if (!isSupabaseEnabled()) {
     return { ok: false, error: 'Exclusão indisponível neste ambiente.' };
   }
@@ -286,6 +298,24 @@ export async function deleteAccount(): Promise<ActionResult> {
   if (!user) return { ok: false, error: 'Sessão expirada. Entre novamente.' };
 
   const admin = createServiceClient();
+  const reasonCodes = formData
+    ?.getAll('reasonCodes')
+    .filter((value): value is string => typeof value === 'string' && DELETE_REASON_CODE_SET.has(value)) ?? [];
+  const otherReason = String(formData?.get('otherReason') ?? '').trim().slice(0, 500);
+
+  if (reasonCodes.length > 0 || otherReason) {
+    const { error: feedbackError } = await admin
+      .from('account_deletion_feedback')
+      .insert({
+        reason_codes: Array.from(new Set(reasonCodes)),
+        other_reason: otherReason || null,
+      });
+    if (feedbackError) {
+      console.error('[deleteAccount:feedback]', feedbackError);
+      return { ok: false, error: 'Não foi possível registrar o motivo. Tente novamente.' };
+    }
+  }
+
   const { error } = await admin.auth.admin.deleteUser(user.id);
   if (error) return { ok: false, error: 'Não foi possível excluir a conta. Tente novamente.' };
 
