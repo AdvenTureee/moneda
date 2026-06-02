@@ -215,22 +215,21 @@ export default function ProfileView({
       >
         <div className="flex items-center gap-4">
           <div className="relative shrink-0">
-            {currentAvatarUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={currentAvatarUrl}
-                alt=""
-                className="w-16 h-16 rounded-full object-cover"
-                referrerPolicy="no-referrer"
-              />
-            ) : (
-              <div
-                className="w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold text-white"
-                style={{ background: '#A8C5E0' }}
-              >
-                {initial}
-              </div>
-            )}
+            <div className="profile-avatar-frame">
+              {currentAvatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={currentAvatarUrl}
+                  alt=""
+                  className="h-full w-full rounded-full object-cover"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center rounded-full text-2xl font-bold text-white">
+                  {initial}
+                </div>
+              )}
+            </div>
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}

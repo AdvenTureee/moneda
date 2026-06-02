@@ -142,7 +142,7 @@ export default async function DashboardPage({
             </h1>
             <Link
               href="/perfil"
-              className="grid h-[72px] w-[72px] shrink-0 place-items-center rounded-full border-[3px] border-[#5BBF8E]/80 bg-[var(--background)] p-[3px] text-lg font-bold text-white shadow-[0_10px_24px_rgba(0,0,0,0.14)] transition-[transform,box-shadow,border-color] duration-200 hover:scale-[1.03] hover:border-[#5BBF8E] focus:outline-none focus-visible:ring-4 focus-visible:ring-[#5BBF8E]"
+              className="dashboard-avatar-frame text-lg font-bold text-white"
               aria-label={user.email ?? 'Usuário'}
             >
               <span className="flex h-full w-full items-center justify-center overflow-hidden rounded-full bg-[#A8C5E0]">

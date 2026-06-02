@@ -298,19 +298,26 @@ html[data-theme="dark"] textarea::placeholder {
 }
 
 .mo-tip-bubble {
+  position: relative;
   display: flex;
   min-height: 96px;
   align-items: center;
   padding: 11px 12px;
-  border: 1px solid var(--mo-tip-stroke);
+  border: 1px solid color-mix(in srgb, var(--mo-tip-stroke) 72%, transparent);
   border-radius: 16px;
-  background: var(--mo-tip-fill);
-  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.11);
-  overflow: visible;
-  contain: layout paint;
+  background: color-mix(in srgb, var(--mo-tip-fill) 78%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--color-brand-green) 6%, transparent),
+    0 14px 30px color-mix(in srgb, var(--color-brand-green) 12%, transparent),
+    0 10px 24px rgba(15, 23, 42, 0.08);
+  overflow: hidden;
+  isolation: isolate;
+  backdrop-filter: blur(14px) saturate(1.08);
+  -webkit-backdrop-filter: blur(14px) saturate(1.08);
+  contain: layout;
   -webkit-tap-highlight-color: transparent;
   --mo-tip-fill: #FFFFFF;
-  --mo-tip-stroke: rgba(203, 213, 225, 0.9);
+  --mo-tip-stroke: rgba(91, 191, 142, 0.42);
   --mo-tip-text: var(--color-text-primary);
   --mo-tip-muted: var(--color-text-tertiary);
   --mo-tip-icon-bg: rgba(91, 191, 142, 0.12);
@@ -318,7 +325,25 @@ html[data-theme="dark"] textarea::placeholder {
   --mo-tip-icon-idea: #D99A2B;
 }
 
+.mo-tip-bubble::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  background:
+    radial-gradient(
+      ellipse at 45% 50%,
+      color-mix(in srgb, var(--color-brand-green) 18%, var(--color-surface) 82%) 0%,
+      color-mix(in srgb, var(--color-brand-green) 9%, var(--color-surface) 91%) 58%,
+      color-mix(in srgb, var(--color-surface) 34%, transparent) 100%
+    );
+  pointer-events: none;
+}
+
 .mo-tip-bubble__content {
+  position: relative;
+  z-index: 1;
   width: 100%;
   min-width: 0;
   color: var(--mo-tip-text);
@@ -422,8 +447,11 @@ html[data-theme="dark"] textarea::placeholder {
 
 html[data-theme="dark"] .mo-tip-bubble {
   --mo-tip-fill: #131B24;
-  --mo-tip-stroke: rgba(91, 112, 135, 0.48);
-  box-shadow: 0 18px 34px rgba(0, 0, 0, 0.34);
+  --mo-tip-stroke: rgba(111, 212, 162, 0.32);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--color-brand-green) 8%, transparent),
+    0 16px 34px color-mix(in srgb, var(--color-brand-green) 8%, transparent),
+    0 18px 34px rgba(0, 0, 0, 0.28);
   --mo-tip-text: #F3F7FB;
   --mo-tip-muted: #98A6B7;
   --mo-tip-icon-bg: rgba(111, 212, 162, 0.12);
@@ -431,9 +459,19 @@ html[data-theme="dark"] .mo-tip-bubble {
   --mo-tip-icon-idea: #F2C46D;
 }
 
+html[data-theme="dark"] .mo-tip-bubble::before {
+  background:
+    radial-gradient(
+      ellipse at 45% 50%,
+      color-mix(in srgb, var(--color-brand-green) 20%, var(--color-surface) 80%) 0%,
+      color-mix(in srgb, var(--color-brand-green) 10%, var(--color-surface) 90%) 58%,
+      color-mix(in srgb, var(--color-surface) 32%, transparent) 100%
+    );
+}
+
 .dashboard-balance-hero {
   --dashboard-mo-size: clamp(100px, 27vw, 132px);
-  --dashboard-tip-width: clamp(148px, 42vw, 214px);
+  --dashboard-tip-width: clamp(178px, 48vw, 252px);
   min-height: calc(var(--dashboard-mo-size) + 40px);
   grid-template-columns: minmax(0, 1fr) calc(var(--dashboard-mo-size) + 6px);
 }
@@ -450,16 +488,17 @@ html[data-theme="dark"] .mo-tip-bubble {
 
 .dashboard-balance-hero__tip {
   right: calc(var(--dashboard-mo-size) * 0.44);
-  top: 0;
+  top: -22px;
   width: var(--dashboard-tip-width);
-  max-width: calc(100vw - 156px);
+  max-width: min(252px, calc(100vw - 126px));
 }
 
 .mo-tip-bubble--overlay {
   min-height: 0;
-  padding: 8px 9px;
+  padding: 9px 11px;
   border-radius: 14px;
   box-shadow: 0 12px 24px rgba(15, 23, 42, 0.14);
+  overflow: visible;
   contain: layout;
   transform-origin: calc(100% - clamp(18px, calc(var(--dashboard-mo-size, 96px) * 0.2), 30px)) calc(100% + 6px);
   will-change: opacity, transform, filter;
@@ -485,22 +524,19 @@ html[data-theme="dark"] .mo-tip-bubble {
 }
 
 .mo-tip-bubble--overlay::after {
-  content: "";
-  position: absolute;
-  right: clamp(12px, calc(var(--dashboard-mo-size, 96px) * 0.18), 24px);
-  bottom: -6px;
-  width: 12px;
-  height: 12px;
-  border-right: 1px solid var(--mo-tip-stroke);
-  border-bottom: 1px solid var(--mo-tip-stroke);
-  background: var(--mo-tip-fill);
-  transform: rotate(45deg);
+  content: none;
+}
+
+.mo-tip-bubble--overlay::before {
+  z-index: 0;
 }
 
 .mo-tip-bubble--overlay .mo-tip-bubble__text {
-  gap: 5px;
-  font-size: 0.6875rem;
-  line-height: 1.28;
+  position: relative;
+  z-index: 1;
+  gap: 6px;
+  font-size: clamp(0.6875rem, 2.7vw, 0.8125rem);
+  line-height: 1.32;
 }
 
 .mo-tip-bubble--overlay .mo-tip-bubble__badge {
@@ -518,22 +554,22 @@ html[data-theme="dark"] .mo-tip-bubble {
 @media (max-width: 374px) {
   .dashboard-balance-hero {
     --dashboard-mo-size: clamp(88px, 25vw, 104px);
-    --dashboard-tip-width: clamp(132px, 40vw, 160px);
+    --dashboard-tip-width: clamp(154px, 54vw, 186px);
     grid-template-columns: minmax(0, 1fr) calc(var(--dashboard-mo-size) + 2px);
   }
 
   .dashboard-balance-hero__tip {
     right: calc(var(--dashboard-mo-size) * 0.38);
-    max-width: calc(100vw - 146px);
+    top: -18px;
+    max-width: calc(100vw - 112px);
   }
 
   .mo-tip-bubble--overlay {
-    padding: 7px 8px;
+    padding: 8px 10px;
   }
 
   .mo-tip-bubble--overlay .mo-tip-bubble__text {
-    font-size: 0.625rem;
-    line-height: 1.24;
+    line-height: 1.28;
   }
 }
 
@@ -1537,6 +1573,88 @@ html[data-theme="dark"] .mo-mascot {
   filter:
     drop-shadow(0 8px 18px rgb(0 0 0 / 0.28))
     drop-shadow(0 0 12px rgb(255 210 70 / 0.06));
+}
+
+.profile-avatar-frame,
+.dashboard-avatar-frame {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  width: 4rem;
+  height: 4rem;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 999px;
+  padding: 5px;
+  background: color-mix(in srgb, var(--color-surface) 94%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--color-brand-green) 8%, transparent),
+    0 10px 24px color-mix(in srgb, var(--color-brand-green) 10%, transparent);
+}
+
+.dashboard-avatar-frame {
+  width: 4.625rem;
+  height: 4.625rem;
+  flex-shrink: 0;
+  transition:
+    transform 200ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.dashboard-avatar-frame:hover {
+  transform: scale(1.03);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--color-brand-green) 14%, transparent),
+    0 14px 30px color-mix(in srgb, var(--color-brand-green) 14%, transparent);
+}
+
+.dashboard-avatar-frame:focus {
+  outline: none;
+}
+
+.dashboard-avatar-frame:focus-visible {
+  outline: 0;
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--color-brand-green) 26%, transparent),
+    0 14px 30px color-mix(in srgb, var(--color-brand-green) 14%, transparent);
+}
+
+.profile-avatar-frame::before,
+.dashboard-avatar-frame::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  border: 1px solid color-mix(in srgb, var(--color-brand-green) 34%, var(--color-border) 66%);
+  background:
+    radial-gradient(
+      ellipse at center,
+      color-mix(in srgb, var(--color-brand-green) 18%, var(--color-surface) 82%) 0%,
+      color-mix(in srgb, var(--color-brand-green) 10%, var(--color-surface) 90%) 56%,
+      color-mix(in srgb, var(--color-surface) 42%, transparent) 100%
+    );
+  pointer-events: none;
+}
+
+.profile-avatar-frame > :first-child,
+.dashboard-avatar-frame > :first-child {
+  position: relative;
+  z-index: 1;
+  background: #A8C5E0;
+}
+
+html[data-theme="dark"] .profile-avatar-frame::before,
+html[data-theme="dark"] .dashboard-avatar-frame::before {
+  background:
+    radial-gradient(
+      ellipse at center,
+      color-mix(in srgb, var(--color-brand-green) 20%, var(--color-surface) 80%) 0%,
+      color-mix(in srgb, var(--color-brand-green) 11%, var(--color-surface) 89%) 58%,
+      color-mix(in srgb, var(--color-surface) 36%, transparent) 100%
+    );
+  border-color: color-mix(in srgb, var(--color-brand-green) 38%, var(--color-border) 62%);
 }
 
 .brand-title {
