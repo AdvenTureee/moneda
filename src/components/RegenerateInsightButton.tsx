@@ -8,6 +8,7 @@ import { isClosedMonthlyPeriod } from '@/lib/utils';
 interface RegenerateInsightButtonProps {
   period: string;
   hasInsight: boolean;
+  billingClosingDay?: number | null;
   hideHeading?: boolean;
   variant?: 'default' | 'card';
 }
@@ -15,13 +16,14 @@ interface RegenerateInsightButtonProps {
 export default function RegenerateInsightButton({
   period,
   hasInsight,
+  billingClosingDay,
   hideHeading = false,
   variant = 'default',
 }: RegenerateInsightButtonProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
-  const isClosed = isClosedMonthlyPeriod(period);
+  const isClosed = isClosedMonthlyPeriod(period, billingClosingDay);
 
   async function handleClick() {
     if (!isClosed) return;
@@ -61,7 +63,7 @@ export default function RegenerateInsightButton({
   const buttonLabel = loading
     ? 'Gerando…'
     : !isClosed
-      ? 'Mês aberto'
+      ? 'Ciclo aberto'
       : hasInsight
         ? 'Regenerar'
         : 'Gerar';
@@ -75,7 +77,7 @@ export default function RegenerateInsightButton({
       )}
       {!isClosed && variant !== 'card' && (
         <span className="text-xs text-[#6B7280]">
-          Disponível quando o mês fechar.
+          Disponível quando o ciclo fechar.
         </span>
       )}
       <button
@@ -86,8 +88,8 @@ export default function RegenerateInsightButton({
         style={{ boxShadow: btnShadow }}
         aria-label={
           isClosed
-            ? hasInsight ? 'Regenerar resumo do mês' : 'Gerar resumo do mês'
-            : 'Resumo do mês disponível quando o mês fechar'
+            ? hasInsight ? 'Regenerar resumo do ciclo' : 'Gerar resumo do ciclo'
+            : 'Resumo do ciclo disponível quando o ciclo fechar'
         }
       >
         <ArrowsClockwise
@@ -104,7 +106,7 @@ export default function RegenerateInsightButton({
 
   return (
     <div className="flex items-center justify-between mb-2">
-      <h2 className="text-base font-heading text-[#1A1D23]">Resumo do mês</h2>
+      <h2 className="text-base font-heading text-[#1A1D23]">Resumo do ciclo</h2>
       {content}
     </div>
   );

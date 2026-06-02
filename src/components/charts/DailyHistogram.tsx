@@ -5,10 +5,13 @@ import { useRouter } from 'next/navigation';
 import ChartCard from './ChartCard';
 import ChartTooltip from './ChartTooltip';
 import { formatCurrency } from '@/lib/utils';
+import { DEFAULT_BILLING_CLOSING_DAY, getBillingCycleForPeriod } from '@/lib/billingCycle';
+import { toLocalDateInput } from '@/lib/date';
 
 interface DailyHistogramProps {
   data: Array<{ date: string; amount: number }>;
   period: string;
+  billingClosingDay?: number | null;
 }
 
 function formatFullDate(dateStr: string): string {
@@ -38,7 +41,7 @@ const HEIGHT = 170;
 const PAD = { top: 12, right: 8, bottom: 28, left: 36 };
 const COMPACT_PAD_LEFT = 8;
 
-export default function DailyHistogram({ data, period }: DailyHistogramProps) {
+export default function DailyHistogram({ data, period, billingClosingDay = DEFAULT_BILLING_CLOSING_DAY }: DailyHistogramProps) {
   const router = useRouter();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [hovered, setHovered] = useState<string | null>(null);
@@ -59,22 +62,26 @@ export default function DailyHistogram({ data, period }: DailyHistogramProps) {
   }, []);
 
   const bars = useMemo(() => {
-    const [year, month] = period.split('-').map(Number);
-    const daysInMonth = new Date(year, month, 0).getDate();
+    const cycle = getBillingCycleForPeriod(period, billingClosingDay);
     const map = new Map(data.map((d) => [d.date, d.amount]));
-
     const result: { date: string; day: number; amount: number; weekend: boolean }[] = [];
-    for (let day = 1; day <= daysInMonth; day++) {
-      const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const cursor = new Date(cycle.start);
+    cursor.setHours(12, 0, 0, 0);
+    const end = new Date(cycle.end);
+    end.setHours(12, 0, 0, 0);
+
+    while (cursor.getTime() <= end.getTime()) {
+      const dateStr = toLocalDateInput(cursor);
       result.push({
         date: dateStr,
-        day,
+        day: cursor.getDate(),
         amount: map.get(dateStr) ?? 0,
         weekend: isWeekend(dateStr),
       });
+      cursor.setDate(cursor.getDate() + 1);
     }
     return result;
-  }, [data, period]);
+  }, [billingClosingDay, data, period]);
 
   const maxAmount = useMemo(() => Math.max(...bars.map((b) => b.amount), 1), [bars]);
   const total = useMemo(() => bars.reduce((s, b) => s + b.amount, 0), [bars]);
@@ -124,7 +131,7 @@ export default function DailyHistogram({ data, period }: DailyHistogramProps) {
     <div ref={containerRef}>
       <ChartCard
         title="Gastos diários"
-        ariaLabel="Histograma de gastos diários"
+        ariaLabel="Histograma de gastos diários do ciclo"
         headerRight={
           total > 0 ? (
             <span className="text-xs text-[#6B7280]">

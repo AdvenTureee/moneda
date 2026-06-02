@@ -4,6 +4,12 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { CalendarBlank, CaretDown } from '@phosphor-icons/react';
 import DatePicker from '@/components/DatePicker';
+import {
+  DEFAULT_BILLING_CLOSING_DAY,
+  getBillingCycleForPeriod,
+  getCurrentBillingPeriod,
+  shiftPeriod,
+} from '@/lib/billingCycle';
 
 export interface DateRange {
   /** ISO timestamp at the start of the local day, e.g. "2026-05-01T03:00:00.000Z" in GMT-3. */
@@ -16,6 +22,7 @@ export interface DateRange {
 interface DateRangePickerProps {
   value: DateRange;
   onChange: (range: DateRange) => void;
+  billingClosingDay?: number | null;
 }
 
 function startOfDay(d: Date): string {
@@ -41,18 +48,16 @@ function isoToDateInput(iso: string | null): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-export function buildPreset(id: string): DateRange {
+export function buildPreset(id: string, billingClosingDay: number | null = DEFAULT_BILLING_CLOSING_DAY): DateRange {
   const now = new Date();
   switch (id) {
-    case 'this-month': {
-      const from = new Date(now.getFullYear(), now.getMonth(), 1);
-      const to = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-      return { from: startOfDay(from), to: endOfDay(to), presetId: id };
-    }
-    case 'last-month': {
-      const from = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-      const to = new Date(now.getFullYear(), now.getMonth(), 0);
-      return { from: startOfDay(from), to: endOfDay(to), presetId: id };
+    case 'current-cycle':
+    case 'cycle-1': {
+      const period = id === 'current-cycle'
+        ? getCurrentBillingPeriod(billingClosingDay)
+        : shiftPeriod(getCurrentBillingPeriod(billingClosingDay), -1);
+      const cycle = getBillingCycleForPeriod(period, billingClosingDay);
+      return { from: cycle.start.toISOString(), to: cycle.end.toISOString(), presetId: id };
     }
     case 'last-30': {
       const from = new Date(now);
@@ -66,9 +71,9 @@ export function buildPreset(id: string): DateRange {
 }
 
 const PRESETS: { id: string; label: string }[] = [
+  { id: 'current-cycle', label: 'Ciclo atual' },
+  { id: 'cycle-1', label: 'Ciclo anterior' },
   { id: 'all', label: 'Tudo' },
-  { id: 'this-month', label: 'Este mês' },
-  { id: 'last-month', label: 'Mês passado' },
   { id: 'last-30', label: 'Últimos 30 dias' },
 ];
 
@@ -83,7 +88,7 @@ function labelFor(range: DateRange): string {
   return 'Período';
 }
 
-export default function DateRangePicker({ value, onChange }: DateRangePickerProps) {
+export default function DateRangePicker({ value, onChange, billingClosingDay = DEFAULT_BILLING_CLOSING_DAY }: DateRangePickerProps) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
@@ -116,7 +121,7 @@ export default function DateRangePicker({ value, onChange }: DateRangePickerProp
   }, [open]);
 
   function pickPreset(id: string) {
-    onChange(buildPreset(id));
+    onChange(buildPreset(id, billingClosingDay));
     setOpen(false);
   }
 

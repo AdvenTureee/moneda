@@ -28,7 +28,7 @@ const HEIGHT = 190;
 const PAD = { top: 18, right: 12, bottom: 34, left: 42 };
 const MODES: Array<{ value: SpendingTimelineMode; label: string }> = [
   { value: 'year', label: 'Ano' },
-  { value: 'month', label: 'Mês' },
+  { value: 'month', label: 'Ciclo' },
   { value: 'day', label: 'Dia' },
 ];
 
@@ -61,7 +61,7 @@ function dateLabel(dateKey: string): string {
 
 function modeTitle(mode: SpendingTimelineMode): string {
   if (mode === 'year') return 'Gastos por ano';
-  if (mode === 'month') return 'Gastos por mês';
+  if (mode === 'month') return 'Gastos no ciclo';
   return 'Gastos por dia';
 }
 
@@ -224,7 +224,7 @@ export default function SpendingTimelineChart({ data }: SpendingTimelineChartPro
     <div ref={containerRef}>
       <ChartCard
         title={modeTitle(mode)}
-        ariaLabel={mode === 'year' ? 'Comparativo de gasto mensal e teto planejado' : 'Comparativo de gasto acumulado e planejado'}
+        ariaLabel={mode === 'year' ? 'Comparativo de gasto por ciclo e teto planejado' : 'Comparativo de gasto acumulado e planejado'}
         headerRight={
           <span className="text-xs text-[#6B7280]">
             Planejado:{' '}

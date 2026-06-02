@@ -87,26 +87,26 @@ export default async function DashboardPage({
             <h1 className="text-2xl font-heading font-bold tracking-tight text-[var(--color-text-primary)]">
               Moneda
             </h1>
-            <div className="flex items-center gap-4">
-              <MonthPicker value={period} closingDay={billingClosingDay} />
-              <Link
-                href="/perfil"
-                className="h-[60px] w-[60px] shrink-0 overflow-hidden rounded-full bg-[#A8C5E0] flex items-center justify-center text-lg font-bold text-white ring-[3px] ring-[#5BBF8E]/80 ring-offset-[3px] ring-offset-[var(--background)] shadow-[0_10px_24px_rgba(0,0,0,0.14)] transition-[transform,box-shadow,ring-color] duration-200 hover:scale-[1.03] hover:ring-[#5BBF8E] focus:outline-none focus-visible:ring-4"
-                style={{ background: '#A8C5E0' }}
-                aria-label={user.email ?? 'Usuário'}
-              >
-                {avatarUrl ? (
-                  <img
-                    src={avatarUrl}
-                    alt=""
-                    className="h-full w-full object-cover object-center"
-                    referrerPolicy="no-referrer"
-                  />
-                ) : (
-                  fullName?.[0]?.toUpperCase() ?? user.email?.[0]?.toUpperCase() ?? '?'
-                )}
-              </Link>
-            </div>
+            <Link
+              href="/perfil"
+              className="h-[60px] w-[60px] shrink-0 overflow-hidden rounded-full bg-[#A8C5E0] flex items-center justify-center text-lg font-bold text-white ring-[3px] ring-[#5BBF8E]/80 ring-offset-[3px] ring-offset-[var(--background)] shadow-[0_10px_24px_rgba(0,0,0,0.14)] transition-[transform,box-shadow,ring-color] duration-200 hover:scale-[1.03] hover:ring-[#5BBF8E] focus:outline-none focus-visible:ring-4"
+              style={{ background: '#A8C5E0' }}
+              aria-label={user.email ?? 'Usuário'}
+            >
+              {avatarUrl ? (
+                <img
+                  src={avatarUrl}
+                  alt=""
+                  className="h-full w-full object-cover object-center"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                fullName?.[0]?.toUpperCase() ?? user.email?.[0]?.toUpperCase() ?? '?'
+              )}
+            </Link>
+          </div>
+          <div className="mt-3 flex justify-start">
+            <MonthPicker value={period} closingDay={billingClosingDay} />
           </div>
         </header>
 

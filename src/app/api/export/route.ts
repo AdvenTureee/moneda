@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { createSessionClient } from '@/lib/supabase/server';
 import { getExpenses } from '@/lib/expenses';
 import type { ExpensePaymentMethod } from '@/types';
@@ -44,12 +44,44 @@ function formatAmount(centavos: number): string {
   return (centavos / 100).toFixed(2).replace('.', ',');
 }
 
-export async function GET() {
+function parseDateRangeParam(value: string | null, boundary: 'start' | 'end'): string | null {
+  if (!value) return null;
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const [year, month, day] = value.split('-').map(Number);
+    const date = boundary === 'start'
+      ? new Date(year, month - 1, day, 0, 0, 0, 0)
+      : new Date(year, month - 1, day, 23, 59, 59, 999);
+    return date.toISOString();
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toISOString();
+}
+
+export async function GET(request: NextRequest) {
   const supabase = await createSessionClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const expenses = await getExpenses({ userId: user.id });
+  const startParam = request.nextUrl.searchParams.get('startDate') ?? request.nextUrl.searchParams.get('from');
+  const endParam = request.nextUrl.searchParams.get('endDate') ?? request.nextUrl.searchParams.get('to');
+  const startDate = parseDateRangeParam(startParam, 'start');
+  const endDate = parseDateRangeParam(endParam, 'end');
+
+  if ((startParam && !startDate) || (endParam && !endDate)) {
+    return NextResponse.json({ error: 'Período inválido.' }, { status: 400 });
+  }
+  if (startDate && endDate && new Date(startDate).getTime() > new Date(endDate).getTime()) {
+    return NextResponse.json({ error: 'Data inicial maior que data final.' }, { status: 400 });
+  }
+
+  const expenses = await getExpenses({
+    userId: user.id,
+    ...(startDate && { startDate }),
+    ...(endDate && { endDate }),
+  });
 
   const header = [
     'Data',
