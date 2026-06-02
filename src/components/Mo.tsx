@@ -1,5 +1,7 @@
 'use client';
 
+import { useId } from 'react';
+
 export type MoVariant = 'idle' | 'happy' | 'sad' | 'thinking';
 
 export interface MoProps {
@@ -13,6 +15,7 @@ export interface MoProps {
   eyesClosed?: boolean;
   browX?: number;
   browY?: number;
+  speaking?: boolean;
 }
 
 const PALETTE = {
@@ -33,8 +36,10 @@ export default function Mo({
   eyesClosed = false,
   browX = 0,
   browY = 0,
+  speaking = false,
 }: MoProps) {
   const resolvedSize = size ?? 80;
+  const mouthClipId = `mo-mouth-${useId().replace(/:/g, '')}`;
 
   // Pupil tracking — clamp into [-1, 1] then translate within the eye.
   const px = Math.max(-1, Math.min(1, pupilX)) * 2.2;
@@ -136,15 +141,44 @@ export default function Mo({
           )}
         </>
       )}
-      <path
-        d="M 40,52 Q 50,61 60,52"
-        stroke={PALETTE.ink}
-        strokeWidth={2}
-        strokeLinecap="round"
-        fill="none"
-      />
-      <path d="M 38,49 Q 42,52 38,54" stroke={PALETTE.ink} strokeWidth={2} strokeLinecap="round" fill="none" />
-      <path d="M 62,49 Q 58,52 62,54" stroke={PALETTE.ink} strokeWidth={2} strokeLinecap="round" fill="none" />
+      {speaking ? (
+        <>
+          <defs>
+            <clipPath id={mouthClipId} clipPathUnits="userSpaceOnUse">
+              <ellipse cx={50} cy={55} rx={5.6} ry={7} />
+            </clipPath>
+          </defs>
+          <g className="mo-mouth-speaking">
+            <ellipse
+              cx={50}
+              cy={55}
+              rx={5.6}
+              ry={7}
+              fill={PALETTE.ink}
+              stroke={PALETTE.ink}
+              strokeWidth={3.2}
+            />
+            <path
+              d="M 43.5,58.5 C 42.9,53.9 48.2,53.2 50,57.1 C 52.7,53.3 57.8,55.1 57,60.1 C 56.4,64.1 52.4,65.1 50.1,67.3 C 47.5,65 44.1,62.9 43.5,58.5 Z"
+              fill={PALETTE.blush}
+              opacity={0.92}
+              clipPath={`url(#${mouthClipId})`}
+            />
+          </g>
+        </>
+      ) : (
+        <>
+          <path
+            d="M 40,52 Q 50,61 60,52"
+            stroke={PALETTE.ink}
+            strokeWidth={2}
+            strokeLinecap="round"
+            fill="none"
+          />
+          <path d="M 38,49 Q 42,52 38,54" stroke={PALETTE.ink} strokeWidth={2} strokeLinecap="round" fill="none" />
+          <path d="M 62,49 Q 58,52 62,54" stroke={PALETTE.ink} strokeWidth={2} strokeLinecap="round" fill="none" />
+        </>
+      )}
       {variant === 'thinking' && (
         <g fontFamily="ui-sans-serif, system-ui, sans-serif">
           <text x={72} y={16} fontSize={13} fontWeight={900} fill={PALETTE.ink}>
@@ -201,6 +235,26 @@ export default function Mo({
           50% { transform: translateY(-1.2px); }
         }
         .animate-brow-float { animation: brow-move 3s ease-in-out infinite; }
+        @keyframes mo-speaking-mouth {
+          0%, 100% { transform: scaleY(0.95) scaleX(1); }
+          50% { transform: scaleY(1.03) scaleX(0.98); }
+        }
+        .mo-mouth-speaking {
+          animation: mo-speaking-mouth 520ms cubic-bezier(0.4, 0, 0.2, 1) infinite;
+          transform-box: fill-box;
+          transform-origin: center;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .animate-body-float,
+          .animate-float-l1,
+          .animate-float-l2,
+          .animate-float-a1,
+          .animate-float-a2,
+          .animate-brow-float,
+          .mo-mouth-speaking {
+            animation: none !important;
+          }
+        }
       `}</style>
       <g className="animate-body-float">
       {/* Coin edge (back disc, darker — shows the thickness on the right/bottom) */}

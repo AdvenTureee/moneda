@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import TrackedMascot from '@/components/TrackedMascot';
 import MoTipBubble from '@/components/MoTipBubble';
@@ -13,6 +13,8 @@ interface DashboardBalanceHeroProps {
   displayName?: string | null;
 }
 
+const MO_SPEAKING_MS = 500;
+
 export default function DashboardBalanceHero({
   remaining,
   period,
@@ -21,6 +23,8 @@ export default function DashboardBalanceHero({
   const [showTip, setShowTip] = useState(false);
   const [tipMode, setTipMode] = useState<'session' | 'tip'>('tip');
   const [tipAdvanceToken, setTipAdvanceToken] = useState(0);
+  const [moSpeaking, setMoSpeaking] = useState(false);
+  const speakingTimerRef = useRef<number | null>(null);
   const isNegative = remaining < 0;
   const sessionGreeting = useMemo(() => getSessionGreeting(displayName), [displayName]);
 
@@ -32,10 +36,26 @@ export default function DashboardBalanceHero({
     setShowTip(true);
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if (speakingTimerRef.current !== null) {
+        window.clearTimeout(speakingTimerRef.current);
+      }
+    };
+  }, []);
+
   function handleMoClick() {
     setTipMode('tip');
     setShowTip(true);
     setTipAdvanceToken((current) => current + 1);
+    setMoSpeaking(true);
+    if (speakingTimerRef.current !== null) {
+      window.clearTimeout(speakingTimerRef.current);
+    }
+    speakingTimerRef.current = window.setTimeout(() => {
+      setMoSpeaking(false);
+      speakingTimerRef.current = null;
+    }, MO_SPEAKING_MS);
   }
 
   return (
@@ -83,7 +103,10 @@ export default function DashboardBalanceHero({
               <MoTipBubble
                 period={period}
                 variant="overlay"
-                onDismiss={() => setShowTip(false)}
+                onDismiss={() => {
+                  setShowTip(false);
+                  setMoSpeaking(false);
+                }}
                 advanceToken={tipAdvanceToken}
                 autoRotate={false}
                 autoDismissMs={tipMode === 'session' ? 9000 : 6800}
@@ -102,6 +125,7 @@ export default function DashboardBalanceHero({
             <TrackedMascot
               variant={isNegative ? 'sad' : 'happy'}
               size={94}
+              speaking={moSpeaking}
               className="dashboard-balance-hero__mo drop-shadow-[0_10px_18px_rgba(15,23,42,0.16)]"
             />
           </button>
