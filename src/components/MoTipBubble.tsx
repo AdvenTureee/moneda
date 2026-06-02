@@ -6,6 +6,9 @@ import { MO_TIPS, getGreeting, type MoTip } from '@/data/moTips';
 
 const ROTATION_MS = 14000;
 const FADE_MS = 180;
+const DEFAULT_AUTO_DISMISS_MS = 4200;
+const personalTipsCache = new Map<string, MoTip[]>();
+const personalTipsRequestCache = new Map<string, Promise<MoTip[]>>();
 
 function pickRandomIndex(exclude: number, poolSize: number): number {
   if (poolSize <= 1) return 0;
@@ -23,6 +26,7 @@ interface MoTipBubbleProps {
   advanceToken?: number;
   autoRotate?: boolean;
   startWithTip?: boolean;
+  autoDismissMs?: number;
 }
 
 export default function MoTipBubble({
@@ -32,6 +36,7 @@ export default function MoTipBubble({
   advanceToken = 0,
   autoRotate = true,
   startWithTip = false,
+  autoDismissMs = DEFAULT_AUTO_DISMISS_MS,
 }: MoTipBubbleProps) {
   const greeting = getGreeting();
   const [greetingShown, setGreetingShown] = useState(startWithTip);
@@ -53,17 +58,38 @@ export default function MoTipBubble({
 
   useEffect(() => {
     let cancelled = false;
-    const controller = new AbortController();
 
     async function loadPersonalTips() {
+      const cached = personalTipsCache.get(period);
+      if (cached) {
+        setPersonalTips(cached);
+        return;
+      }
+
       try {
-        const res = await fetch(`/api/ai/mo-tips?period=${encodeURIComponent(period)}`, {
-          signal: controller.signal,
-        });
-        if (!res.ok || cancelled) return;
-        const data = (await res.json()) as { tips?: MoTip[] };
-        if (!cancelled && Array.isArray(data.tips) && data.tips.length > 0) {
-          setPersonalTips(data.tips);
+        let request = personalTipsRequestCache.get(period);
+        if (!request) {
+          request = fetch(`/api/ai/mo-tips?period=${encodeURIComponent(period)}`)
+            .then(async (res) => {
+              if (!res.ok) return [];
+              const data = (await res.json()) as { tips?: MoTip[] };
+              return Array.isArray(data.tips) ? data.tips : [];
+            })
+            .then((tips) => {
+              if (tips.length > 0) personalTipsCache.set(period, tips);
+              personalTipsRequestCache.delete(period);
+              return tips;
+            })
+            .catch(() => {
+              personalTipsRequestCache.delete(period);
+              return [];
+            });
+          personalTipsRequestCache.set(period, request);
+        }
+
+        const tips = await request;
+        if (!cancelled && tips.length > 0) {
+          setPersonalTips(tips);
         }
       } catch {
         // mantém apenas dicas padrão
@@ -73,7 +99,6 @@ export default function MoTipBubble({
     loadPersonalTips();
     return () => {
       cancelled = true;
-      controller.abort();
     };
   }, [period]);
 
@@ -122,6 +147,12 @@ export default function MoTipBubble({
     setGreetingShown(true);
     setIndex((current) => pickRandomIndex(current, tipPoolSizeRef.current));
   }, [advanceToken]);
+
+  useEffect(() => {
+    if (!onDismiss || !autoDismissMs || autoDismissMs <= 0) return;
+    const dismissTimer = window.setTimeout(onDismiss, autoDismissMs);
+    return () => window.clearTimeout(dismissTimer);
+  }, [advanceToken, autoDismissMs, onDismiss]);
 
   const tip = greetingShown ? tipPool[index] ?? MO_TIPS[0] : greeting;
 

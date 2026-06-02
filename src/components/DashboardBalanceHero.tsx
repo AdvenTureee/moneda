@@ -73,6 +73,7 @@ export default function DashboardBalanceHero({
                 advanceToken={tipAdvanceToken}
                 autoRotate={false}
                 startWithTip
+                autoDismissMs={4200}
               />
             </div>
           )}
