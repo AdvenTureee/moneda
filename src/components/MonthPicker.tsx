@@ -10,6 +10,7 @@ interface MonthPickerProps {
   value: string;
   monthsBack?: number;
   closingDay?: number;
+  fullWidth?: boolean;
 }
 
 interface CycleOption {
@@ -35,7 +36,12 @@ function buildOptions(monthsBack: number, closingDay: number): CycleOption[] {
   return opts;
 }
 
-export default function MonthPicker({ value, monthsBack = 12, closingDay = 10 }: MonthPickerProps) {
+export default function MonthPicker({
+  value,
+  monthsBack = 12,
+  closingDay = 10,
+  fullWidth = false,
+}: MonthPickerProps) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
@@ -85,12 +91,14 @@ export default function MonthPicker({ value, monthsBack = 12, closingDay = 10 }:
   }
 
   return (
-    <div className="relative w-full sm:w-auto">
+    <div className={`relative w-full ${fullWidth ? '' : 'sm:w-auto'}`}>
       <button
         ref={buttonRef}
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="themed-card flex min-h-[50px] w-full items-center justify-between gap-3 rounded-[14px] border border-[color-mix(in_srgb,var(--color-border)_76%,transparent)] bg-[color-mix(in_srgb,var(--color-surface)_88%,transparent)] px-3.5 py-2 text-left shadow-sm outline-none transition-[border-color,background-color,box-shadow,transform] hover:border-[#A8C5E0]/70 hover:bg-[color-mix(in_srgb,var(--color-surface-alt)_72%,var(--color-surface)_28%)] active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-[#A8C5E0] focus-visible:ring-offset-1 sm:min-h-10 sm:w-auto sm:min-w-[184px] sm:px-3"
+        className={`themed-card flex min-h-[50px] w-full items-center justify-between gap-3 rounded-[14px] border border-[color-mix(in_srgb,var(--color-border)_76%,transparent)] bg-[color-mix(in_srgb,var(--color-surface)_88%,transparent)] px-3.5 py-2 text-left shadow-sm outline-none transition-[border-color,background-color,box-shadow,transform] hover:border-[#A8C5E0]/70 hover:bg-[color-mix(in_srgb,var(--color-surface-alt)_72%,var(--color-surface)_28%)] active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-[#A8C5E0] focus-visible:ring-offset-1 sm:min-h-10 sm:px-3 ${
+          fullWidth ? '' : 'sm:w-auto sm:min-w-[184px]'
+        }`}
         aria-label={`Ciclo: ${currentLabel}. Clique para trocar.`}
         aria-expanded={open}
       >
@@ -135,29 +143,31 @@ export default function MonthPicker({ value, monthsBack = 12, closingDay = 10 }:
                 <p className="mt-0.5 text-xs font-medium text-[var(--color-text-secondary)]">Período financeiro pelo fechamento do cartão</p>
               </div>
             )}
-            <div className="max-h-[min(340px,calc(100dvh_-_124px))] overflow-y-auto overscroll-contain pr-0.5">
-              {options.map((opt) => (
-                <button
-                  key={opt.period}
-                  type="button"
-                  onClick={() => pick(opt.period)}
-                  className={`date-range-option flex min-h-12 w-full items-center justify-between gap-3 rounded-[12px] px-3.5 py-2 text-left transition-colors ${
-                    opt.period === value
-                      ? 'date-range-option--selected font-semibold'
-                      : ''
-                  }`}
-                  role="option"
-                  aria-selected={opt.period === value}
-                >
-                  <span className="min-w-0">
-                    <span className="block text-sm font-bold text-[var(--color-text-primary)]">{opt.month}</span>
-                    <span className="mt-0.5 block truncate text-xs font-semibold text-[var(--color-text-secondary)]">{opt.range}</span>
-                  </span>
-                  {opt.period === value && (
-                    <span className="h-2 w-2 shrink-0 rounded-full bg-[#5BBF8E]" aria-hidden />
-                  )}
-                </button>
-              ))}
+            <div className="cycle-menu-scroll-shell max-h-[min(340px,calc(100dvh_-_124px))] overflow-hidden rounded-[14px]">
+              <div className="cycle-menu-scroll max-h-[min(340px,calc(100dvh_-_124px))] overflow-y-auto overflow-x-hidden overscroll-contain pr-0.5">
+                {options.map((opt) => (
+                  <button
+                    key={opt.period}
+                    type="button"
+                    onClick={() => pick(opt.period)}
+                    className={`date-range-option flex min-h-12 w-full items-center justify-between gap-3 rounded-[12px] px-3.5 py-2 text-left transition-colors ${
+                      opt.period === value
+                        ? 'date-range-option--selected font-semibold'
+                        : ''
+                    }`}
+                    role="option"
+                    aria-selected={opt.period === value}
+                  >
+                    <span className="min-w-0">
+                      <span className="block text-sm font-bold text-[var(--color-text-primary)]">{opt.month}</span>
+                      <span className="mt-0.5 block truncate text-xs font-semibold text-[var(--color-text-secondary)]">{opt.range}</span>
+                    </span>
+                    {opt.period === value && (
+                      <span className="h-2 w-2 shrink-0 rounded-full bg-[#5BBF8E]" aria-hidden />
+                    )}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </>,
