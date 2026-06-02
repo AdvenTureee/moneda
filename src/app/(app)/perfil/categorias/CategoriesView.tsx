@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
-import { CaretLeft, Check, X, Trash, Plus, MagnifyingGlass } from '@phosphor-icons/react';
+import { ArrowLeft, Check, X, Trash, Plus, MagnifyingGlass } from '@phosphor-icons/react';
 import Icon, { AVAILABLE_ICONS } from '@/components/Icon';
 import { useToast } from '@/components/ToastProvider';
 import { useCategories } from '@/hooks/useCategories';
@@ -169,7 +169,7 @@ export default function CategoriesView() {
           className="flex items-center justify-center w-8 h-8 rounded-full text-[#6B7280] hover:bg-[#F1F3F7] transition-colors"
           aria-label="Voltar"
         >
-          <CaretLeft size={18} />
+          <ArrowLeft size={18} weight="bold" />
         </Link>
         <div>
           <h1 className="text-xl font-heading text-[#1A1D23]">Gerenciar categorias</h1>

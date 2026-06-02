@@ -3,10 +3,10 @@
 import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import {
+  ArrowLeft,
   WarningCircle,
   Trash,
   Plus,
-  CaretLeft,
   Minus,
   Moon,
   Sun,
@@ -289,7 +289,7 @@ export default function OnboardingView({ defaultCategories, firstName }: Onboard
             aria-label="Voltar"
             className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-[#F1F3F7] transition-colors disabled:opacity-30"
           >
-            <CaretLeft size={18} weight="bold" className="text-[#1A1D23]" />
+            <ArrowLeft size={18} weight="bold" className="text-[#1A1D23]" />
           </button>
           <div className="flex-1 flex items-center justify-center gap-1.5">
             {STEP_ORDER.map((_, i) => (

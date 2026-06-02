@@ -56,13 +56,13 @@ export default function DeleteAccountForm({ confirmationName }: DeleteAccountFor
 
   return (
     <main className="mx-auto max-w-lg px-4 pb-24">
-      <header className="py-6 animate-fade-up delay-0">
+      <header className="relative py-5 animate-fade-up delay-0">
         <Link
           href="/perfil"
-          className="mb-3 inline-flex items-center gap-1 text-sm text-[#6B7280] transition-colors hover:text-[#1A1D23]"
+          className="absolute left-0 top-5 flex h-9 w-9 items-center justify-center rounded-full text-[#1A1D23] transition-colors hover:bg-[#F1F3F7]"
+          aria-label="Voltar para Perfil"
         >
-          <ArrowLeft size={14} weight="bold" />
-          Voltar
+          <ArrowLeft size={20} weight="bold" />
         </Link>
         <div className="flex flex-col items-center text-center">
           <div className="relative">

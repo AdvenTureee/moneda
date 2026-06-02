@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useState, useTransition } from 'react';
-import { CaretLeft, Check } from '@phosphor-icons/react';
+import { ArrowLeft, Check } from '@phosphor-icons/react';
 import { useToast } from '@/components/ToastProvider';
 import { updateCurrency } from '../actions';
 import { formatCurrency } from '@/lib/utils';
@@ -39,18 +39,20 @@ export default function CurrencyForm({ initialCurrency }: CurrencyFormProps) {
 
   return (
     <div className="max-w-lg mx-auto px-4 pb-24 [scrollbar-gutter:stable]">
-      <header className="py-6 animate-fade-up delay-0">
+      <header className="flex items-center gap-3 py-5 animate-fade-up delay-0">
         <Link
           href="/perfil"
-          className="inline-flex items-center gap-1 text-sm text-[#6B7280] hover:text-[#1A1D23] transition-colors mb-3"
+          className="flex h-9 w-9 items-center justify-center rounded-full text-[#1A1D23] transition-colors hover:bg-[#F1F3F7]"
+          aria-label="Voltar para Perfil"
         >
-          <CaretLeft size={14} weight="bold" />
-          Voltar
+          <ArrowLeft size={20} weight="bold" />
         </Link>
-        <h1 className="text-2xl font-heading text-[#1A1D23]">Moeda</h1>
-        <p className="text-sm text-[#6B7280] mt-1">
-          Escolha como os valores serão formatados.
-        </p>
+        <div>
+          <h1 className="text-xl font-heading text-[#1A1D23]">Moeda</h1>
+          <p className="text-xs text-[#6B7280] mt-0.5">
+            Escolha como os valores serão formatados.
+          </p>
+        </div>
       </header>
 
       <div
