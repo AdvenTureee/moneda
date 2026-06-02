@@ -134,18 +134,52 @@ Usa o WhatsApp para lançar compras no supermercado e despesas da escola. Consul
 ### V1 — Produto Básico Funcional + Diferenciais de Canal
 **Objetivo:** Usuário tem conta, dados persistidos e vê o Moneda como o app mais conveniente que já usou — porque funciona 100% no WhatsApp.
 
-- Autenticação (Google OAuth)
-- Banco de dados **Supabase**
-- Histórico completo e busca
-- Onboarding 
-- Onboarding pede telefone do WhatsApp como passo opcional. O lançamento pelo WhatsApp permanece indisponível até a confirmação por código via WhatsApp Business do Moneda estar pronta.
-- Lançamento no crédito registra se a compra foi à vista ou parcelada; em parcelado, o usuário informa parcela atual e total de parcelas.
-- **🎙️ Áudio via WhatsApp** — usuário manda voz, Groq Whisper transcreve e registra o gasto automaticamente (nenhum concorrente tem isso)
-- **📈 Previsor do fim do mês** — alerta automático no dia 20: "no ritmo atual você vai gastar R$ X — R$ Y acima do mês passado"
-- **🤖 CFO conversacional básico** — usuário pode perguntar via WhatsApp: "quanto gastei essa semana?", "qual minha maior categoria?", "estou dentro do orçamento?"
-- Primeiro insight automático via IA (Groq `llama-3.3-70b-versatile`)
+#### App
+
+- **Dashboard completo**
+- **Onboarding**
+  - Qual o orçamento?
+  - Categorias
+  - Distribuição por categoria
+  - Adicionar gastos recorrentes
+  - Adicionar WhatsApp
+  - Dia do fechamento do cartão
+  - Modo escuro ou claro
+- **Termo LGPD**
+- **Criptografia de dados sensíveis**
+- **Login com Google**
+- **Feed completo** com:
+  - Filtros por método de pagamento, data e categorias; pesquisa por categoria e descrição
+  - Filtro padrão: gastos dos últimos 30 dias
+  - Edição dos gastos
+- **Adicionar gasto** em forma de formulário
+- **Insights:**
+  - *Perguntas para a Mo* — chat para dúvidas financeiras (com limite diário de perguntas)
+  - *Análise da Mo* — fechamento do mês com análise total
+- **Perfil:**
+  - *Orçamento* — definir quanto quer gastar no mês e por categoria; IA distribui com 3 opções: Essencial, Equilibrado e Flexível
+  - *Ganhos e receitas* — adicionar ganhos com descrição, origem e data de recebimento
+  - *Gerenciar categorias* — ver todas as categorias, editar as adicionadas pelo usuário, adicionar novas com ícone, cor, nome e palavras-chave
+  - *Moeda* — alterar a moeda de referência
+  - *Interface* — alternar entre modo claro e escuro
+  - *Notificações:*
+    - Resumo semanal por e-mail (todo domingo)
+    - Alerta de orçamento por e-mail (quando os gastos ultrapassarem a receita ou o orçamento)
+    - Notificações push: lembrete de vencimento do cartão (D-1), alerta de estouro de orçamento/receita e aviso de resumo semanal disponível
+  - *Conexões* — adicionar número do WhatsApp, vincular conta Google
+  - *Redefinir senha* — envio de e-mail para redefinição, incentivo a senha forte, opção de visualizar senha digitada
+  - *Exportar dados* — exportar o feed em CSV
+  - *Sair da conta*
+  - *Apagar conta*
+- **Fechamento do mês** de acordo com o cartão
+- **Previsor do fim do mês** — alerta automático no dia 20: "no ritmo atual você vai gastar R$ X — R$ Y acima do mês passado"
+- Lançamento no crédito registra se a compra foi à vista ou parcelada; em parcelado, o usuário informa parcela atual e total de parcelas
 - UX polish: empty states, loading states, mobile-first
-- Preferência visual local: alternância entre modo claro e modo escuro em Perfil > Preferências.
+
+#### Automação (WhatsApp)
+
+- **🎙️ Envio de gastos por texto e áudio** — usuário manda mensagem ou voz, Groq Whisper transcreve e registra o gasto automaticamente (nenhum concorrente tem isso)
+- Onboarding pede telefone do WhatsApp como passo opcional. O lançamento pelo WhatsApp permanece indisponível até a confirmação por código via WhatsApp Business do Moneda estar pronta
 
 **Critério de saída:** 30-day retention > 40%.
 
@@ -154,14 +188,28 @@ Usa o WhatsApp para lançar compras no supermercado e despesas da escola. Consul
 ### V2 — Engajamento, Inteligência e Vida Social do Dinheiro
 **Objetivo:** Moneda começa a surpreender o usuário com insights que ele não pediu, e vira ferramenta de casal.
 
-- Insights proativos semanais via WhatsApp
-- Metas mensais por categoria com acompanhamento em tempo real
-- Categorias customizáveis pelo usuário
-- Dashboard com gráficos de evolução mês a mês
-- Gráfico anual compara cada mês contra seu próprio teto de orçamento, sem acumular o orçamento ao longo do ano.
-- Notificações de alerta de orçamento
-- **💑 Modo Casal / Conta Compartilhada** — dois números WhatsApp vinculados, dashboard consolidado, notificação quando o casal passa de meta (principal vetor de indicação viral)
+#### App
+
+- **Insights proativos semanais** — enviados pelo WhatsApp e exibidos na aba de Insights
+- **💑 Modo Casal / Conta Compartilhada:**
+  - Vincular 2 contas: mescla ganhos e gastos de ambos (2 usuários em uma conta)
+  - Dashboard com insight de quem gasta mais — total de gastos de cada um (gráfico igual ao de categoria)
+  - A definir: outras funcionalidades específicas do modo casal
+- **Assinatura do app** (modelo freemium → pago)
+- **Ler extratos do banco**
 - **🔄 Detector de assinaturas e recorrências** — identifica gastos que se repetem, avisa quando o valor muda ("sua Netflix subiu de R$ 44,90 para R$ 55,90 esse mês")
+- **Conectar com SMS** — contato específico que recebe mensagens de gastos (viabilidade a confirmar)
+- Metas mensais por categoria com acompanhamento em tempo real
+- Dashboard com gráficos de evolução mês a mês
+- Gráfico anual compara cada mês contra seu próprio teto de orçamento, sem acumular o orçamento ao longo do ano
+- Notificações de alerta de orçamento
+
+#### Automação (WhatsApp)
+
+- Insights proativos semanais enviados todo domingo
+- **💑 Modo Casal** — 2 números de WhatsApp vinculados à mesma conta
+- **🤖 CFO conversacional** — usuário pode fazer perguntas sobre a conta (ex: "Qual categoria gastei mais no mês?", "Quanto já gastei esse mês?", "Quanto posso gastar?", "Faça um resumo do meu mês / semana")
+- **📸 Registrar comprovante como gasto** — usuário manda foto via WhatsApp, IA lê total, estabelecimento e data e registra automaticamente
 
 **Critério de saída:** DAU/MAU > 20%.
 
@@ -170,26 +218,33 @@ Usa o WhatsApp para lançar compras no supermercado e despesas da escola. Consul
 ### V3 — Conexão Bancária, Automação e Zero Fricção Total
 **Objetivo:** Zero esforço de lançamento — o Moneda importa, lê fotos e responde qualquer pergunta.
 
+#### App
+
+- **Conta família / multi-usuário**
+- **Aba Insights** — comparação anônima com pares ("Pessoas com renda similar gastam X em Y")
+- **Aba de investimentos** (escopo a definir)
+- **📱 App mobile nativo**
+- **💼 Modo MEI / Freelancer** — separa gastos pessoais de profissionais com tag simples, calcula quanto separar de imposto (tabela Simples Nacional / MEI), gera relatório de despesas dedutíveis mensais
 - Open Banking (leitura de extratos bancários)
 - Lançamento automático de transações bancárias
 - Detecção de duplicatas (manual vs automático)
-- **📸 Foto de comprovante / cupom fiscal** — usuário manda foto via WhatsApp, Groq Vision lê total, estabelecimento e data e registra automaticamente
+
+#### Automação (WhatsApp)
+
+- Receber e registrar gastos da conta família
 - **🤖 CFO conversacional completo** — histórico multi-mês, perguntas complexas: "qual foi meu mês mais barato em 2026?", "quando foi a última vez que gastei mais de R$ 200 de uma vez?", "quanto economizei nos últimos 3 meses?"
-- Conta familiar / multi-usuário
 
 **Critério de saída:** 60% dos usuários ativos têm ao menos uma conta bancária conectada ou foto de comprovante enviada.
 
 ---
 
 ### V4 — Plataforma Financeira Pessoal + Profissional
-**Objetivo:** Moneda vira a referência financeira do usuário — não apenas controle, mas orientação — e expande para autônomos e MEIs.
+**Objetivo:** Moneda vira a referência financeira do usuário — não apenas controle, mas orientação.
 
 - Simulações ("Se eu cortar delivery, quanto poupo em 6 meses?")
 - Integração com investimentos (visão de patrimônio)
-- App mobile nativo
 - Relatório anual para IR
-- API pública para parceiros
-- **💼 Modo MEI / Freelancer** — separa gastos pessoais de profissionais com tag simples, calcula quanto separar de imposto (tabela Simples Nacional / MEI), gera relatório de despesas dedutíveis mensais
+- **API pública para parceiros**
 
 **Critério de saída:** NPS > 60, churn mensal < 3%.
 
