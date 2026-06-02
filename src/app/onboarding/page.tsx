@@ -7,6 +7,7 @@ import {
 import { getCategories } from '@/lib/categories';
 import { decryptProfilePii, getDisplayNameFromUser } from '@/lib/security/profilePii';
 import { MOCK_USER } from '@/data/mock';
+import { TERMS_VERSION } from '@/lib/legal';
 import OnboardingView from './OnboardingView';
 
 
@@ -25,9 +26,12 @@ export default async function OnboardingPage() {
     const admin = createServiceClient();
     const { data: profile } = await admin
       .from('profiles')
-      .select('onboarded,name_ciphertext,name_iv,name_tag,email_ciphertext,email_iv,email_tag,phone_ciphertext,phone_iv,phone_tag')
+      .select('onboarded,terms_accepted_at,terms_version,name_ciphertext,name_iv,name_tag,email_ciphertext,email_iv,email_tag,phone_ciphertext,phone_iv,phone_tag')
       .eq('id', userId)
       .single();
+    if (!profile?.terms_accepted_at || profile.terms_version !== TERMS_VERSION) {
+      redirect('/');
+    }
     if (profile?.onboarded === true) {
       redirect('/');
     }

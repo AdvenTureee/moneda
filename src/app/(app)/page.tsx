@@ -12,12 +12,13 @@ import { getDashboardMetrics, getSpendingTimeline } from '@/lib/expenses';
 import { getBudgets } from '@/lib/budgets';
 import { getMonthlyIncomeTotalCents } from '@/lib/incomes';
 import { getMonthlyBudgetCents } from '@/lib/monthlyBudget';
-import { getNullableBillingClosingDay, isUserOnboarded } from '@/lib/profiles';
+import { getNullableBillingClosingDay } from '@/lib/profiles';
 import { decryptProfilePii, getDisplayNameFromUser } from '@/lib/security/profilePii';
 import { formatCurrency } from '@/lib/utils';
 import { getCurrentBillingPeriod, normalizeBillingClosingDay } from '@/lib/billingCycle';
 import { createServiceClient, createSessionClient, isSupabaseEnabled } from '@/lib/supabase/server';
 import BillingClosingDayPrompt from '@/components/BillingClosingDayPrompt';
+import { TERMS_VERSION } from '@/lib/legal';
 
 // A page lê cookies de auth (createSessionClient) → Next a renderiza dinamicamente
 // por padrão. As queries de DB dentro do render usam `unstable_cache` com tags
@@ -36,10 +37,26 @@ export default async function DashboardPage({
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  // First-login → send to onboarding. Lê de profiles.onboarded (não de
-  // user_metadata, que provedores OAuth como o Google sobrescrevem a cada login).
-  if (!(await isUserOnboarded(user.id))) {
-    redirect('/onboarding');
+  if (isSupabaseEnabled()) {
+    const admin = createServiceClient();
+    const { data: profile } = await admin
+      .from('profiles')
+      .select('onboarded,terms_accepted_at,terms_version')
+      .eq('id', user.id)
+      .single();
+
+    const requiresTermsAcceptance =
+      !profile?.terms_accepted_at ||
+      profile.terms_version !== TERMS_VERSION;
+    if (requiresTermsAcceptance) {
+      return <div className="min-h-[60dvh]" aria-hidden />;
+    }
+
+    // First-login → send to onboarding. Lê de profiles.onboarded (não de
+    // user_metadata, que provedores OAuth como o Google sobrescrevem a cada login).
+    if (profile?.onboarded !== true) {
+      redirect('/onboarding');
+    }
   }
 
   const sp = await searchParams;

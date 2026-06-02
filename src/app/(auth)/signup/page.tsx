@@ -116,18 +116,11 @@ export default function SignupPage() {
 
   async function handleGoogleSignup() {
     setError('');
-    if (!termsAccepted) {
-      setError('Para criar sua conta com Google, aceite os Termos de Uso e a Política de Proteção de Dados.');
-      return;
-    }
     setGoogleLoading(true);
     const supabase = createClient();
-    const callbackUrl = new URL('/auth/callback', window.location.origin);
-    callbackUrl.searchParams.set('terms_accepted', '1');
-    callbackUrl.searchParams.set('terms_version', TERMS_VERSION);
     const { error: authError } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: callbackUrl.toString() },
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
     });
     if (authError) {
       console.error('[signup:google]', authError);

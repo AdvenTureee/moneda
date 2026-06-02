@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { revalidateTag } from 'next/cache';
 import { cacheTags } from '@/lib/cache';
+import { TERMS_VERSION } from '@/lib/legal';
 import {
   buildProfileIdentityPiiUpdate,
   buildProfilePhonePiiUpdate,
@@ -23,6 +24,19 @@ export async function POST() {
     return NextResponse.json({ ok: false, error: 'Sessão expirada.' }, { status: 401 });
   }
 
+  const admin = createServiceClient();
+  const { data: profile } = await admin
+    .from('profiles')
+    .select('terms_accepted_at, terms_version')
+    .eq('id', user.id)
+    .single();
+  if (!profile?.terms_accepted_at || profile.terms_version !== TERMS_VERSION) {
+    return NextResponse.json(
+      { ok: false, error: 'Aceite os termos antes de sincronizar o perfil.' },
+      { status: 403 },
+    );
+  }
+
   let piiUpdate: ReturnType<typeof buildProfileIdentityPiiUpdate> &
     Partial<ReturnType<typeof buildProfilePhonePiiUpdate>>;
   try {
@@ -41,7 +55,6 @@ export async function POST() {
     );
   }
 
-  const admin = createServiceClient();
   const { error } = await admin
     .from('profiles')
     .update(piiUpdate)

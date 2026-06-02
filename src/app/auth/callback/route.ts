@@ -16,9 +16,6 @@ export async function GET(request: NextRequest) {
   const code = searchParams.get('code');
   const next = searchParams.get('next') ?? '/';
   const isRecoveryNext = next.startsWith('/perfil/senha') && next.includes('recovery=1');
-  const shouldRegisterTerms =
-    searchParams.get('terms_accepted') === '1' &&
-    searchParams.get('terms_version') === TERMS_VERSION;
   // OAuth providers podem retornar erro direto (usuário cancelou, app não autorizado, etc.).
   const providerError = searchParams.get('error');
   const providerErrorDescription = searchParams.get('error_description');
@@ -72,48 +69,50 @@ export async function GET(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser();
   if (user) {
-    const acceptedAt = new Date().toISOString();
-    const profileUpdate: Database['public']['Tables']['profiles']['Update'] = {};
-
-    if (shouldRegisterTerms) {
-      Object.assign(profileUpdate, {
-        terms_accepted_at: acceptedAt,
-        terms_version: TERMS_VERSION,
-        privacy_accepted_at: acceptedAt,
-      });
-    }
-
     try {
-      Object.assign(profileUpdate, buildProfileIdentityPiiUpdate({
-        name: getDisplayNameFromUser(user),
-        email: user.email ?? null,
-      }));
-      const metadataPhone = user.user_metadata?.phone as string | undefined;
-      if (metadataPhone) {
-        Object.assign(profileUpdate, buildProfilePhonePiiUpdate(metadataPhone));
+      const admin = createServiceClient();
+      const { data: profile } = await admin
+        .from('profiles')
+        .select('terms_accepted_at, terms_version')
+        .eq('id', user.id)
+        .single();
+      const canSyncPii =
+        Boolean(profile?.terms_accepted_at) &&
+        profile?.terms_version === TERMS_VERSION;
+
+      if (canSyncPii) {
+        const profileUpdate: Database['public']['Tables']['profiles']['Update'] = {};
+
+        try {
+          Object.assign(profileUpdate, buildProfileIdentityPiiUpdate({
+            name: getDisplayNameFromUser(user),
+            email: user.email ?? null,
+          }));
+          const metadataPhone = user.user_metadata?.phone as string | undefined;
+          if (metadataPhone) {
+            Object.assign(profileUpdate, buildProfilePhonePiiUpdate(metadataPhone));
+          }
+        } catch {
+          console.error('[auth/callback] PII sync skipped: crypto env unavailable');
+        }
+
+        if (Object.keys(profileUpdate).length > 0) {
+          const { error: profileError } = await admin
+            .from('profiles')
+            .update(profileUpdate)
+            .eq('id', user.id);
+          if (profileError) {
+            console.error('[auth/callback] profile sync failed', {
+              message: profileError.message,
+              code: profileError.code,
+            });
+          } else {
+            revalidateTag(cacheTags.profile(user.id), { expire: 0 });
+          }
+        }
       }
     } catch {
-      console.error('[auth/callback] PII sync skipped: crypto env unavailable');
-    }
-
-    if (Object.keys(profileUpdate).length > 0) {
-      try {
-        const admin = createServiceClient();
-        const { error: profileError } = await admin
-          .from('profiles')
-          .update(profileUpdate)
-          .eq('id', user.id);
-        if (profileError) {
-          console.error('[auth/callback] profile sync failed', {
-            message: profileError.message,
-            code: profileError.code,
-          });
-        } else {
-          revalidateTag(cacheTags.profile(user.id), { expire: 0 });
-        }
-      } catch {
-        console.error('[auth/callback] profile sync skipped: service env unavailable');
-      }
+      console.error('[auth/callback] profile sync skipped: service env unavailable');
     }
   }
 
