@@ -155,14 +155,20 @@ export default function Mo({
               rx={5.6}
               ry={7}
               fill={PALETTE.ink}
-              stroke={PALETTE.ink}
-              strokeWidth={3.2}
             />
             <path
               d="M 43.5,58.5 C 42.9,53.9 48.2,53.2 50,57.1 C 52.7,53.3 57.8,55.1 57,60.1 C 56.4,64.1 52.4,65.1 50.1,67.3 C 47.5,65 44.1,62.9 43.5,58.5 Z"
               fill={PALETTE.blush}
-              opacity={0.92}
               clipPath={`url(#${mouthClipId})`}
+            />
+            <ellipse
+              cx={50}
+              cy={55}
+              rx={5.6}
+              ry={7}
+              fill="none"
+              stroke={PALETTE.ink}
+              strokeWidth={1.8}
             />
           </g>
         </>
