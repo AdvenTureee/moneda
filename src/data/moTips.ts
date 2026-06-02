@@ -18,6 +18,18 @@ export function getGreeting(): MoTip {
   return { id: 'greeting', kind: 'greeting', text: `${greet}! Como posso te ajudar?` };
 }
 
+export function getSessionGreeting(name?: string | null): MoTip {
+  const h = new Date().getHours();
+  const greet = greetingForHour(h);
+  const firstName = name?.trim().split(/\s+/)[0];
+  const salutation = firstName ? `${greet}, ${firstName}` : greet;
+  return {
+    id: 'session-greeting',
+    kind: 'greeting',
+    text: `${salutation}! Eu sou a Mo. Clique em mim quando quiser uma dica rápida sobre seu dinheiro. Se precisar de uma conversa maior, entre no chat de Insights que eu te ajudo com mais calma.`,
+  };
+}
+
 // Ícone usado pelo balão é derivado do `kind`:
 // finance → 'TrendUp', app → 'Lightbulb' (ver MoTipBubble.tsx)
 export const MO_TIPS: MoTip[] = [

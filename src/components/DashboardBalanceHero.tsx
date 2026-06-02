@@ -1,25 +1,39 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import TrackedMascot from '@/components/TrackedMascot';
 import MoTipBubble from '@/components/MoTipBubble';
+import { getSessionGreeting } from '@/data/moTips';
 import { formatCurrency } from '@/lib/utils';
 
 interface DashboardBalanceHeroProps {
   remaining: number;
   period: string;
+  displayName?: string | null;
 }
 
 export default function DashboardBalanceHero({
   remaining,
   period,
+  displayName,
 }: DashboardBalanceHeroProps) {
   const [showTip, setShowTip] = useState(false);
+  const [tipMode, setTipMode] = useState<'session' | 'tip'>('tip');
   const [tipAdvanceToken, setTipAdvanceToken] = useState(0);
   const isNegative = remaining < 0;
+  const sessionGreeting = useMemo(() => getSessionGreeting(displayName), [displayName]);
+
+  useEffect(() => {
+    const key = 'moneda:mo-session-greeting-shown';
+    if (window.sessionStorage.getItem(key) === '1') return;
+    window.sessionStorage.setItem(key, '1');
+    setTipMode('session');
+    setShowTip(true);
+  }, []);
 
   function handleMoClick() {
+    setTipMode('tip');
     setShowTip(true);
     setTipAdvanceToken((current) => current + 1);
   }
@@ -72,8 +86,9 @@ export default function DashboardBalanceHero({
                 onDismiss={() => setShowTip(false)}
                 advanceToken={tipAdvanceToken}
                 autoRotate={false}
-                startWithTip
-                autoDismissMs={4200}
+                autoDismissMs={tipMode === 'session' ? 9000 : 6800}
+                initialTip={tipMode === 'session' ? sessionGreeting : undefined}
+                fetchPersonalTips={tipMode !== 'session'}
               />
             </div>
           )}

@@ -6,7 +6,9 @@ import { MO_TIPS, getGreeting, type MoTip } from '@/data/moTips';
 
 const ROTATION_MS = 14000;
 const FADE_MS = 180;
-const DEFAULT_AUTO_DISMISS_MS = 4200;
+const EXIT_MS = 220;
+const GREETING_MS = 1500;
+const DEFAULT_AUTO_DISMISS_MS = 6800;
 const personalTipsCache = new Map<string, MoTip[]>();
 const personalTipsRequestCache = new Map<string, Promise<MoTip[]>>();
 
@@ -19,6 +21,13 @@ function pickRandomIndex(exclude: number, poolSize: number): number {
   return next;
 }
 
+function pickRandomTip(pool: MoTip[], excludeId?: string): MoTip {
+  if (pool.length === 0) return MO_TIPS[0];
+  const candidates = excludeId ? pool.filter((tip) => tip.id !== excludeId) : pool;
+  const source = candidates.length > 0 ? candidates : pool;
+  return source[Math.floor(Math.random() * source.length)] ?? source[0] ?? MO_TIPS[0];
+}
+
 interface MoTipBubbleProps {
   period: string;
   variant?: 'default' | 'overlay';
@@ -27,6 +36,9 @@ interface MoTipBubbleProps {
   autoRotate?: boolean;
   startWithTip?: boolean;
   autoDismissMs?: number;
+  initialTip?: MoTip;
+  fetchPersonalTips?: boolean;
+  showGreetingBeforeTip?: boolean;
 }
 
 export default function MoTipBubble({
@@ -37,15 +49,28 @@ export default function MoTipBubble({
   autoRotate = true,
   startWithTip = false,
   autoDismissMs = DEFAULT_AUTO_DISMISS_MS,
+  initialTip,
+  fetchPersonalTips = true,
+  showGreetingBeforeTip = false,
 }: MoTipBubbleProps) {
   const greeting = getGreeting();
   const [greetingShown, setGreetingShown] = useState(startWithTip);
   const [index, setIndex] = useState(0);
   const [fading, setFading] = useState(false);
+  const [exiting, setExiting] = useState(false);
   const [personalTips, setPersonalTips] = useState<MoTip[]>([]);
+  const [clickOnlyTip, setClickOnlyTip] = useState<MoTip | null>(() =>
+    initialTip ?? (startWithTip ? pickRandomTip(MO_TIPS) : null),
+  );
   const timerRef = useRef<number | null>(null);
   const fadeRef = useRef<number | null>(null);
+  const exitRef = useRef<number | null>(null);
+  const greetingRef = useRef<number | null>(null);
+  const handledAdvanceTokenRef = useRef(0);
+  const tipPoolRef = useRef<MoTip[]>(MO_TIPS);
   const tipPoolSizeRef = useRef(0);
+  const clickOnlyTipRef = useRef<MoTip | null>(clickOnlyTip);
+  const clickOnlyMode = Boolean(onDismiss) && !autoRotate;
 
   const tipPool = useMemo(
     () => (personalTips.length > 0 ? [...personalTips, ...MO_TIPS] : MO_TIPS),
@@ -53,10 +78,16 @@ export default function MoTipBubble({
   );
 
   useEffect(() => {
+    tipPoolRef.current = tipPool;
     tipPoolSizeRef.current = tipPool.length;
-  }, [tipPool.length]);
+  }, [tipPool]);
 
   useEffect(() => {
+    clickOnlyTipRef.current = clickOnlyTip;
+  }, [clickOnlyTip]);
+
+  useEffect(() => {
+    if (!fetchPersonalTips) return;
     let cancelled = false;
 
     async function loadPersonalTips() {
@@ -100,7 +131,7 @@ export default function MoTipBubble({
     return () => {
       cancelled = true;
     };
-  }, [period]);
+  }, [fetchPersonalTips, period]);
 
   const advance = useCallback(() => {
     setFading(true);
@@ -123,6 +154,20 @@ export default function MoTipBubble({
     }, ROTATION_MS);
   }, [advance, autoRotate]);
 
+  const requestDismiss = useCallback(() => {
+    if (!onDismiss) return;
+    setExiting(true);
+    if (exitRef.current !== null) window.clearTimeout(exitRef.current);
+    if (greetingRef.current !== null) {
+      window.clearTimeout(greetingRef.current);
+      greetingRef.current = null;
+    }
+    exitRef.current = window.setTimeout(() => {
+      exitRef.current = null;
+      onDismiss();
+    }, EXIT_MS);
+  }, [onDismiss]);
+
   useEffect(() => {
     if (!autoRotate) return;
     scheduleNext();
@@ -138,27 +183,69 @@ export default function MoTipBubble({
     return () => {
       if (timerRef.current !== null) window.clearTimeout(timerRef.current);
       if (fadeRef.current !== null) window.clearTimeout(fadeRef.current);
+      if (exitRef.current !== null) window.clearTimeout(exitRef.current);
+      if (greetingRef.current !== null) window.clearTimeout(greetingRef.current);
       document.removeEventListener('visibilitychange', onVisibility);
     };
   }, [autoRotate, scheduleNext]);
 
   useEffect(() => {
+    return () => {
+      if (timerRef.current !== null) window.clearTimeout(timerRef.current);
+      if (fadeRef.current !== null) window.clearTimeout(fadeRef.current);
+      if (exitRef.current !== null) window.clearTimeout(exitRef.current);
+      if (greetingRef.current !== null) window.clearTimeout(greetingRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
     if (advanceToken <= 0) return;
+    if (handledAdvanceTokenRef.current === advanceToken) return;
+    handledAdvanceTokenRef.current = advanceToken;
+    if (exitRef.current !== null) {
+      window.clearTimeout(exitRef.current);
+      exitRef.current = null;
+    }
+    setExiting(false);
+    setFading(false);
+    if (clickOnlyMode) {
+      if (greetingRef.current !== null) window.clearTimeout(greetingRef.current);
+      setClickOnlyTip(pickRandomTip(tipPoolRef.current, clickOnlyTipRef.current?.id));
+      if (showGreetingBeforeTip) {
+        setGreetingShown(false);
+        greetingRef.current = window.setTimeout(() => {
+          setFading(true);
+          fadeRef.current = window.setTimeout(() => {
+            setGreetingShown(true);
+            setFading(false);
+          }, FADE_MS);
+        }, GREETING_MS);
+      } else {
+        setGreetingShown(true);
+      }
+      return;
+    }
     setGreetingShown(true);
     setIndex((current) => pickRandomIndex(current, tipPoolSizeRef.current));
-  }, [advanceToken]);
+  }, [advanceToken, clickOnlyMode]);
 
   useEffect(() => {
     if (!onDismiss || !autoDismissMs || autoDismissMs <= 0) return;
-    const dismissTimer = window.setTimeout(onDismiss, autoDismissMs);
+    const dismissTimer = window.setTimeout(requestDismiss, autoDismissMs);
     return () => window.clearTimeout(dismissTimer);
-  }, [advanceToken, autoDismissMs, onDismiss]);
+  }, [advanceToken, autoDismissMs, onDismiss, requestDismiss]);
 
-  const tip = greetingShown ? tipPool[index] ?? MO_TIPS[0] : greeting;
+  const tip = clickOnlyMode
+    ? showGreetingBeforeTip && !greetingShown
+      ? greeting
+      : clickOnlyTip ?? MO_TIPS[0]
+    : greetingShown
+      ? tipPool[index] ?? MO_TIPS[0]
+      : greeting;
 
   const handleClick = () => {
     if (onDismiss) {
-      onDismiss();
+      requestDismiss();
       return;
     }
     advance();
@@ -171,6 +258,8 @@ export default function MoTipBubble({
       onClick={handleClick}
       className={`mo-tip-bubble group w-full text-left transition-transform duration-150 active:scale-[0.995] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#A8C5E0] focus-visible:ring-offset-2 ${
         variant === 'overlay' ? 'mo-tip-bubble--overlay' : ''
+      } ${
+        exiting ? 'mo-tip-bubble--exiting' : ''
       }`}
       aria-label={onDismiss ? 'Ocultar dica da Mo' : 'Toque para a próxima dica da Mo'}
     >
@@ -183,8 +272,13 @@ export default function MoTipBubble({
           animation: fading
             ? undefined
             : `${variant === 'overlay' ? 'mo-tip-overlay-enter' : 'mo-tip-enter'} ${FADE_MS}ms cubic-bezier(0.22, 1, 0.36, 1) both`,
-          transition: `opacity ${FADE_MS}ms ease`,
+          transition: `opacity ${FADE_MS}ms ease, transform ${FADE_MS}ms cubic-bezier(0.22, 1, 0.36, 1)`,
           opacity: fading ? 0 : 1,
+          transform: fading
+            ? variant === 'overlay'
+              ? 'translateY(6px) scale(0.98)'
+              : 'translateY(4px)'
+            : undefined,
         }}
       >
         <p className="mo-tip-bubble__text">

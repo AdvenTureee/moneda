@@ -461,6 +461,27 @@ html[data-theme="dark"] .mo-tip-bubble {
   border-radius: 14px;
   box-shadow: 0 12px 24px rgba(15, 23, 42, 0.14);
   contain: layout;
+  transform-origin: calc(100% - clamp(18px, calc(var(--dashboard-mo-size, 96px) * 0.2), 30px)) calc(100% + 6px);
+  will-change: opacity, transform, filter;
+}
+
+.mo-tip-bubble--exiting {
+  pointer-events: none;
+  animation: mo-tip-bubble-exit 220ms cubic-bezier(0.25, 1, 0.5, 1) both;
+}
+
+@keyframes mo-tip-bubble-exit {
+  from {
+    opacity: 1;
+    filter: blur(0);
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  to {
+    opacity: 0;
+    filter: blur(1.5px);
+    transform: translate3d(0, 7px, 0) scale(0.985);
+  }
 }
 
 .mo-tip-bubble--overlay::after {

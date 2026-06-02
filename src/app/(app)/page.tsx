@@ -144,7 +144,7 @@ export default async function DashboardPage({
           </div>
         </header>
 
-        <DashboardBalanceHero remaining={remaining} period={period} />
+        <DashboardBalanceHero remaining={remaining} period={period} displayName={fullName} />
 
         <section className="mb-3 animate-fade-up delay-2" aria-label="Ciclo financeiro">
           <MonthPicker value={period} closingDay={billingClosingDay} fullWidth />
