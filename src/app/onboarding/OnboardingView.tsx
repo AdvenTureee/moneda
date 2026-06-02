@@ -18,6 +18,7 @@ import Mo from '@/components/Mo';
 import { useTheme, type ThemePreference } from '@/components/ThemeProvider';
 import { formatCurrency } from '@/lib/utils';
 import { distributeBudgetByPreset } from '@/lib/budgetPresets';
+import { localDateToIso, todayLocalDate } from '@/lib/date';
 import { formatWhatsappPhone, normalizeWhatsappPhone } from '@/lib/phone';
 import {
   completeOnboardingAction,
@@ -41,6 +42,7 @@ interface ExpenseRow {
   amountCents: number;
   amountDisplay: string;
   categoryId: string;
+  occurredAtInput: string;
 }
 
 const SWATCHES = [
@@ -55,6 +57,7 @@ function newRow(defaultCategoryId: string): ExpenseRow {
     amountCents: 0,
     amountDisplay: '',
     categoryId: defaultCategoryId,
+    occurredAtInput: todayLocalDate(),
   };
 }
 
@@ -137,7 +140,7 @@ export default function OnboardingView({ defaultCategories, firstName }: Onboard
       case 'theme': return true;
       case 'closing': return closingDay >= 1 && closingDay <= 28;
       case 'expenses': return expenseRows.every(
-        (r) => r.description.trim() && r.amountCents > 0 && r.categoryId,
+        (r) => r.description.trim() && r.amountCents > 0 && r.categoryId && r.occurredAtInput,
       );
       case 'categories': return true;
     }
@@ -240,6 +243,7 @@ export default function OnboardingView({ defaultCategories, firstName }: Onboard
         description: r.description.trim(),
         amountCents: r.amountCents,
         categoryId: r.categoryId,
+        occurredAt: localDateToIso(r.occurredAtInput),
       })),
       customCategories,
       whatsappPhone: normalizeWhatsappPhone(whatsappPhone),
@@ -710,6 +714,18 @@ export default function OnboardingView({ defaultCategories, firstName }: Onboard
                       ))}
                     </select>
                   </div>
+                  <label className="block">
+                    <span className="mb-1 block text-[11px] font-bold uppercase tracking-[0.08em] text-[#9CA3AF]">
+                      Data em que cai na conta
+                    </span>
+                    <input
+                      type="date"
+                      value={row.occurredAtInput}
+                      onChange={(e) => updateRow(row.tempId, { occurredAtInput: e.target.value })}
+                      className="w-full rounded-[8px] border border-[#E5E7EB] bg-[#F8F9FB] px-3 py-2 text-sm font-semibold text-[#1A1D23] outline-none transition-colors focus:border-[#A8C5E0] focus:bg-white"
+                      aria-label="Data em que o gasto cai na conta"
+                    />
+                  </label>
                 </div>
               ))}
             </div>

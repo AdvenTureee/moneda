@@ -33,6 +33,7 @@ const DATE_FILTERS = [
   { id: 'last-month', label: 'Mês passado' },
   { id: 'last-30', label: 'Últimos 30 dias' },
 ];
+const DEFAULT_DATE_PRESET = 'last-30';
 
 function parseDateInputToIso(input: string, end: boolean): string | null {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(input)) return null;
@@ -75,7 +76,7 @@ function FeedPageInner() {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [activePaymentMethod, setActivePaymentMethod] = useState<ExpensePaymentMethod | null>(null);
   const [search, setSearch] = useState('');
-  const [dateRange, setDateRange] = useState<DateRange>(() => buildPreset('all'));
+  const [dateRange, setDateRange] = useState<DateRange>(() => buildPreset(DEFAULT_DATE_PRESET));
   const [activeView, setActiveView] = useState<FeedView>('history');
   const [customFrom, setCustomFrom] = useState('');
   const [customTo, setCustomTo] = useState('');
@@ -241,7 +242,7 @@ function FeedPageInner() {
     : 'Todas';
   const paymentMeta = activePaymentMethod ? PAYMENT_METHOD_BADGES[activePaymentMethod] : null;
   const activeFilterCount =
-    (dateRange.presetId !== 'all' ? 1 : 0) + (activeCategory ? 1 : 0) + (activePaymentMethod ? 1 : 0);
+    (dateRange.presetId !== DEFAULT_DATE_PRESET ? 1 : 0) + (activeCategory ? 1 : 0) + (activePaymentMethod ? 1 : 0);
   const filterTabs: Array<{
     id: FilterTab;
     label: string;
@@ -254,7 +255,7 @@ function FeedPageInner() {
       label: 'Data',
       value: dateFilterLabel(dateRange),
       icon: CalendarBlank,
-      active: dateRange.presetId !== 'all',
+      active: dateRange.presetId !== DEFAULT_DATE_PRESET,
     },
     {
       id: 'category',
@@ -273,7 +274,7 @@ function FeedPageInner() {
   ];
 
   const clearFilters = useCallback(() => {
-    setDateRange(buildPreset('all'));
+    setDateRange(buildPreset(DEFAULT_DATE_PRESET));
     setCustomFrom('');
     setCustomTo('');
     setActiveCategory(null);

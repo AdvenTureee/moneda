@@ -20,6 +20,7 @@ export interface OnboardingRecurringExpense {
   description: string;
   amountCents: number;
   categoryId: string;
+  occurredAt: string;
 }
 
 export interface OnboardingCustomCategory {
@@ -69,6 +70,7 @@ function validatePayload(p: OnboardingPayload): string | null {
     if (!r.description.trim()) return 'Cada gasto recorrente precisa de uma descrição.';
     if (!Number.isFinite(r.amountCents) || r.amountCents <= 0) return 'Valor do gasto inválido.';
     if (!r.categoryId) return 'Selecione uma categoria para cada gasto.';
+    if (!r.occurredAt || Number.isNaN(new Date(r.occurredAt).getTime())) return 'Data do gasto recorrente inválida.';
   }
   for (const b of p.categoryBudgets ?? []) {
     if (!b.categoryId) return 'Categoria de orçamento inválida.';
@@ -99,7 +101,6 @@ export async function completeOnboardingAction(
       const userId = user.id;
       const admin = createServiceClient();
       const normalizedWhatsappPhone = normalizeWhatsappPhone(payload.whatsappPhone);
-      const nowIso = new Date().toISOString();
 
       // 1. Profile fields (incluindo o flag `onboarded` — fica em profiles
       //    porque user_metadata é sobrescrito a cada login OAuth).
@@ -169,7 +170,7 @@ export async function completeOnboardingAction(
             paymentMethod: 'other',
             source: 'manual',
             tags: [],
-            occurredAt: nowIso,
+            occurredAt: r.occurredAt,
             isRecurring: true,
           })));
         } catch (expError) {
@@ -219,7 +220,7 @@ export async function completeOnboardingAction(
           paymentMethod: 'other',
           tags: [],
           isRecurring: true,
-          createdAt: new Date(),
+          createdAt: new Date(r.occurredAt),
         });
       });
     }
