@@ -28,10 +28,12 @@ export async function middleware(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
   const isAuthCallback = pathname.startsWith('/auth/callback');
+  const isPasswordRecovery = pathname === '/redefinir-senha';
   const isAuthRoute =
     pathname === '/login' ||
     pathname === '/signup' ||
-    pathname.startsWith('/auth/');
+    pathname.startsWith('/auth/') ||
+    isPasswordRecovery;
 
   if (!user && !isAuthRoute) {
     const url = request.nextUrl.clone();

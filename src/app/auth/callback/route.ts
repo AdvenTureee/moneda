@@ -15,6 +15,7 @@ export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get('code');
   const next = searchParams.get('next') ?? '/';
+  const isRecoveryNext = next.startsWith('/perfil/senha') && next.includes('recovery=1');
   const shouldRegisterTerms =
     searchParams.get('terms_accepted') === '1' &&
     searchParams.get('terms_version') === TERMS_VERSION;
@@ -31,6 +32,12 @@ export async function GET(request: NextRequest) {
   if (!code) {
     console.error('[auth/callback] missing code param', { url: request.url });
     return NextResponse.redirect(`${origin}/login?error=missing_code`);
+  }
+
+  if (isRecoveryNext) {
+    const resetUrl = new URL('/redefinir-senha', origin);
+    resetUrl.searchParams.set('code', code);
+    return NextResponse.redirect(resetUrl);
   }
 
   // IMPORTANTE: criar a response antes do client e gravar os cookies de sessão

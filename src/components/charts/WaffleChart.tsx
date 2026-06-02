@@ -26,6 +26,7 @@ interface Cell {
   amount: number;
   percentage: number;
   isOthers: boolean;
+  isMixedOthers: boolean;
 }
 
 interface WaffleSelectionPreviewProps {
@@ -33,6 +34,10 @@ interface WaffleSelectionPreviewProps {
   total: number;
   selectedCategoryIds: string[];
 }
+
+type WaffleGroup = TopCategory & {
+  isMixedOthers: boolean;
+};
 
 const GRID = 10;
 const CELL_COUNT = GRID * GRID;
@@ -67,17 +72,22 @@ export default function WaffleChart({
       else visible.push(cat);
     }
 
-    const result = [...visible];
+    const result: WaffleGroup[] = visible.map((category) => ({
+      ...category,
+      isMixedOthers: false,
+    }));
     if (grouped.length > 0) {
       const amount = grouped.reduce((sum, cat) => sum + cat.amount, 0);
       const percentage = total > 0 ? (amount / total) * 100 : 0;
+      const isMixedOthers = grouped.length > 1;
       result.push({
         categoryId: '__others__',
-        categoryName: grouped.length === 1 ? grouped[0].categoryName : 'Outros',
-        categoryIcon: grouped.length === 1 ? grouped[0].categoryIcon : 'Package',
-        categoryColor: grouped.length === 1 ? grouped[0].categoryColor : OTHERS_COLOR,
+        categoryName: isMixedOthers ? 'Outros' : grouped[0].categoryName,
+        categoryIcon: isMixedOthers ? 'Package' : grouped[0].categoryIcon,
+        categoryColor: isMixedOthers ? OTHERS_COLOR : grouped[0].categoryColor,
         amount,
         percentage,
+        isMixedOthers,
       });
     }
 
@@ -113,6 +123,7 @@ export default function WaffleChart({
           amount: group.amount,
           percentage: total > 0 ? (group.amount / total) * 100 : 0,
           isOthers: group.categoryId === '__others__',
+          isMixedOthers: group.isMixedOthers,
         });
       }
     }
@@ -161,13 +172,14 @@ export default function WaffleChart({
               <button
                 key={`${cell.categoryId}-${cell.index}`}
                 type="button"
-                className="aspect-square rounded-[4px] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#A8C5E0] focus-visible:ring-offset-2"
+                className="aspect-square rounded-[4px] border focus:outline-none focus-visible:ring-2 focus-visible:ring-[#A8C5E0] focus-visible:ring-offset-2"
                 style={{
-                  backgroundColor: cell.categoryColor,
+                  backgroundColor: cell.isMixedOthers ? 'transparent' : cell.categoryColor,
+                  borderColor: cell.isMixedOthers ? 'var(--color-border)' : 'transparent',
                   opacity: isDimmed ? 0.28 : 1,
                   transform: ready ? (isHovered ? 'scale(1.08)' : 'scale(1)') : 'scale(0.65)',
                   transition:
-                    'opacity 160ms ease-out, transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1)',
+                    'border-color 160ms ease-out, opacity 160ms ease-out, transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1)',
                   transitionDelay: ready ? '0ms' : `${Math.min(cell.index * 8, 420)}ms`,
                 }}
                 onFocus={() => setHoveredId(cell.categoryId)}
@@ -215,17 +227,22 @@ function buildCells(categories: TopCategory[], total: number): Cell[] {
     else visible.push(cat);
   }
 
-  const groups: TopCategory[] = [...visible];
+  const groups: WaffleGroup[] = visible.map((category) => ({
+    ...category,
+    isMixedOthers: false,
+  }));
   if (grouped.length > 0) {
     const amount = grouped.reduce((sum, cat) => sum + cat.amount, 0);
     const percentage = total > 0 ? (amount / total) * 100 : 0;
+    const isMixedOthers = grouped.length > 1;
     groups.push({
       categoryId: '__others__',
-      categoryName: grouped.length === 1 ? grouped[0].categoryName : 'Outros',
-      categoryIcon: grouped.length === 1 ? grouped[0].categoryIcon : 'Package',
-      categoryColor: grouped.length === 1 ? grouped[0].categoryColor : OTHERS_COLOR,
+      categoryName: isMixedOthers ? 'Outros' : grouped[0].categoryName,
+      categoryIcon: isMixedOthers ? 'Package' : grouped[0].categoryIcon,
+      categoryColor: isMixedOthers ? OTHERS_COLOR : grouped[0].categoryColor,
       amount,
       percentage,
+      isMixedOthers,
     });
   }
 
@@ -255,6 +272,7 @@ function buildCells(categories: TopCategory[], total: number): Cell[] {
         amount: group.amount,
         percentage: total > 0 ? (group.amount / total) * 100 : 0,
         isOthers: group.categoryId === '__others__',
+        isMixedOthers: group.isMixedOthers,
       });
     }
   }
@@ -289,8 +307,10 @@ export function WaffleSelectionPreview({
               key={`${cell.categoryId}-${cell.index}`}
               className="aspect-square rounded-[3px]"
               style={{
-                backgroundColor: isSelected ? cell.categoryColor : 'var(--color-surface-alt)',
-                border: isSelected ? '0' : '1px solid var(--color-border)',
+                backgroundColor:
+                  isSelected && !cell.isMixedOthers ? cell.categoryColor : 'var(--color-surface-alt)',
+                border:
+                  isSelected && !cell.isMixedOthers ? '0' : '1px solid var(--color-border)',
                 opacity: isSelected ? 1 : 0.72,
               }}
             />

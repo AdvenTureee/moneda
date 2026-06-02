@@ -272,7 +272,7 @@ export async function sendPasswordReset(): Promise<ActionResult> {
   const origin = host ? `${proto}://${host}` : '';
 
   const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
-    redirectTo: origin ? `${origin}/auth/callback?next=/perfil/senha?recovery=1` : undefined,
+    redirectTo: origin ? `${origin}/redefinir-senha` : undefined,
   });
   if (error) {
     console.error('[resetPassword]', error);
