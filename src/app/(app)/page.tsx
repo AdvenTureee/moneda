@@ -1,15 +1,13 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import DashboardMetric from '@/components/DashboardMetric';
 import ExpenseCard from '@/components/ExpenseCard';
 import CategoryBreakdown from '@/components/CategoryBreakdown';
 import SpendingTimelineChart from '@/components/charts/SpendingTimelineChart';
-import TrackedMascot from '@/components/TrackedMascot';
-import MoTipBubble from '@/components/MoTipBubble';
 import Mo from '@/components/Mo';
 import Icon from '@/components/Icon';
 import Confetti from '@/components/Confetti';
 import MonthPicker from '@/components/MonthPicker';
+import DashboardBalanceHero from '@/components/DashboardBalanceHero';
 import { getDashboardMetrics, getSpendingTimeline } from '@/lib/expenses';
 import { getBudgets } from '@/lib/budgets';
 import { getMonthlyIncomeTotalCents } from '@/lib/incomes';
@@ -64,6 +62,11 @@ export default async function DashboardPage({
   const totalBudgetCents = budgets.reduce((sum, b) => sum + b.amountCents, 0);
   const BUDGET_CENTS = monthlyBudgetCents > 0 ? monthlyBudgetCents : totalBudgetCents;
   const remaining = BUDGET_CENTS + monthlyIncomeTotalCents - metrics.totalSpent;
+  const compactMetrics = [
+    { label: 'Orçamento', value: formatCurrency(BUDGET_CENTS) },
+    { label: 'Gasto', value: formatCurrency(metrics.totalSpent) },
+    { label: 'Ganhos', value: formatCurrency(monthlyIncomeTotalCents) },
+  ];
 
   // Custom personalized AI Welcome message if no insight exists yet.
   let fullName = getDisplayNameFromUser(user);
@@ -77,6 +80,39 @@ export default async function DashboardPage({
     if (profile) fullName = decryptProfilePii(profile).name || fullName;
   }
   const avatarUrl = (user.user_metadata?.avatar_url as string | undefined) ?? null;
+  const financialShortcuts = (
+    <>
+      <Link
+        href="/perfil/ganhos"
+        className="group flex min-h-10 min-w-0 items-center justify-between gap-2 rounded-[12px] bg-[color-mix(in_srgb,var(--color-success)_8%,var(--color-surface)_92%)] px-3 py-2 text-[var(--color-text-primary)] transition-[background-color,transform] duration-150 active:scale-[0.99] hover:bg-[color-mix(in_srgb,var(--color-success)_12%,var(--color-surface)_88%)]"
+      >
+        <span className="flex min-w-0 items-center gap-2">
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--color-success)_18%,var(--color-surface)_82%)] text-[var(--color-success)]">
+            <Icon name="TrendUp" size={15} weight="bold" />
+          </span>
+          <span className="truncate text-sm font-bold">Ganhos</span>
+        </span>
+        <span className="shrink-0 text-sm font-bold text-[var(--color-text-tertiary)] transition-transform duration-150 group-hover:translate-x-0.5">
+          ›
+        </span>
+      </Link>
+
+      <Link
+        href={`/insights?period=${period}&open=monthly_summary`}
+        className="group flex min-h-10 min-w-0 items-center justify-between gap-2 rounded-[12px] bg-[color-mix(in_srgb,var(--color-success)_8%,var(--color-surface)_92%)] px-3 py-2 text-[var(--color-text-primary)] transition-[background-color,transform] duration-150 active:scale-[0.99] hover:bg-[color-mix(in_srgb,var(--color-success)_12%,var(--color-surface)_88%)]"
+      >
+        <span className="flex min-w-0 items-center gap-2">
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--color-success)_18%,var(--color-surface)_82%)] text-[var(--color-success)]">
+            <Icon name="Sparkle" size={15} weight="bold" />
+          </span>
+          <span className="truncate text-sm font-bold">Resumo</span>
+        </span>
+        <span className="shrink-0 text-sm font-bold text-[var(--color-text-tertiary)] transition-transform duration-150 group-hover:translate-x-0.5">
+          ›
+        </span>
+      </Link>
+    </>
+  );
 
   return (
     <>
@@ -105,110 +141,37 @@ export default async function DashboardPage({
               )}
             </Link>
           </div>
-          <div className="mt-3 flex justify-start">
-            <MonthPicker value={period} closingDay={billingClosingDay} />
-          </div>
         </header>
 
-        <section className="dashboard-mo-tip-row flex items-center gap-5 pb-4 animate-fade-up delay-1">
-          <div className="shrink-0">
-            <TrackedMascot variant="idle" size={124} />
-          </div>
-          <div className="flex-1 min-w-0">
-            <MoTipBubble period={period} />
-          </div>
+        <DashboardBalanceHero remaining={remaining} period={period} />
+
+        <section className="mb-3 animate-fade-up delay-2" aria-label="Ciclo financeiro">
+          <MonthPicker value={period} closingDay={billingClosingDay} />
         </section>
 
-        {/* Hero: dinheiro restante (principal) */}
-        <section className="mb-5 animate-fade-up delay-2" aria-label="Dinheiro restante">
-          <p className="text-xs text-[#6B7280] font-medium mb-1">
-            Dinheiro restante
-          </p>
-          <p
-            className="text-[40px] font-extrabold tabular-nums leading-none"
-            style={{ color: remaining >= 0 ? 'var(--color-text-primary)' : 'var(--color-error)' }}
-            aria-label={
-              remaining >= 0
-                ? `Restante: ${formatCurrency(remaining)}`
-                : `Estourou em ${formatCurrency(Math.abs(remaining))}`
-            }
-          >
-            {remaining >= 0 ? formatCurrency(remaining) : 'Estourou!'}
-          </p>
-          {remaining < 0 && (
-            <div className="mt-2 space-y-2">
-              <p className="text-xs font-medium text-[#E07070]">
-                −{formatCurrency(Math.abs(remaining))}
+        <section
+          className="themed-card mb-4 grid grid-cols-3 gap-1.5 rounded-[14px] bg-white p-2 animate-fade-up delay-3"
+          aria-label="Resumo financeiro do ciclo"
+        >
+          {compactMetrics.map((item) => (
+            <div
+              key={item.label}
+              className="min-w-0 rounded-[10px] px-2 py-2 text-left"
+            >
+              <p className="truncate text-[10px] font-semibold uppercase tracking-[0.04em] text-[var(--color-text-tertiary)]">
+                {item.label}
               </p>
-              <Link
-                href="/perfil/ganhos"
-                className="inline-flex items-center gap-1.5 rounded-full bg-[#FDF0F0] px-3 py-2 text-xs font-bold text-[#B14C4C] transition-colors hover:bg-[#F8E4E4]"
-              >
-                Cadastrar ganho para abater o estouro
-                <span aria-hidden>›</span>
-              </Link>
+              <p className="mt-1 truncate text-sm font-extrabold tabular-nums text-[var(--color-text-primary)] min-[390px]:text-base">
+                {item.value}
+              </p>
             </div>
-          )}
-        </section>
-
-        {/* Metric cards */}
-        <section className="flex flex-wrap gap-3 mb-3 animate-fade-up delay-3" aria-label="Métricas do mês">
-          <DashboardMetric
-            label="Orçamento"
-            value={formatCurrency(BUDGET_CENTS)}
-          />
-          {monthlyIncomeTotalCents > 0 && (
-            <DashboardMetric
-              label="Ganhos do mês"
-              value={formatCurrency(monthlyIncomeTotalCents)}
-            />
-          )}
-          <DashboardMetric
-            label="Gasto total"
-            value={formatCurrency(metrics.totalSpent)}
-          />
-        </section>
-
-        <section className="mb-4 grid grid-cols-2 gap-2.5 animate-fade-up delay-4" aria-label="Atalhos financeiros">
-          <Link
-            href="/perfil/ganhos"
-            className="themed-card group flex min-h-12 min-w-0 items-center gap-2 rounded-[14px] bg-white px-2.5 py-2.5 transition-[background-color,box-shadow,transform] duration-150 active:scale-[0.99] hover:shadow-[var(--shadow-card)] min-[380px]:gap-2.5 min-[380px]:px-3.5"
-          >
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--color-success)_16%,var(--color-surface)_84%)] text-[var(--color-success)]">
-              <Icon name="TrendUp" size={17} weight="bold" />
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block truncate text-xs font-bold text-[var(--color-text-primary)] min-[380px]:text-sm">
-                Ganhos do mês
-              </span>
-            </span>
-            <span className="shrink-0 text-base font-bold text-[var(--color-text-tertiary)] transition-transform duration-150 group-hover:translate-x-0.5">
-              ›
-            </span>
-          </Link>
-
-          <Link
-            href={`/insights?period=${period}&open=monthly_summary`}
-            className="themed-card group flex min-h-12 min-w-0 items-center gap-2 rounded-[14px] bg-white px-2.5 py-2.5 transition-[background-color,box-shadow,transform] duration-150 active:scale-[0.99] hover:shadow-[var(--shadow-card)] min-[380px]:gap-2.5 min-[380px]:px-3.5"
-          >
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--color-success)_16%,var(--color-surface)_84%)] text-[var(--color-success)]">
-              <Icon name="Sparkle" size={17} weight="bold" />
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block truncate text-xs font-bold text-[var(--color-text-primary)] min-[380px]:text-sm">
-                Resumo do mês
-              </span>
-            </span>
-            <span className="shrink-0 text-base font-bold text-[var(--color-text-tertiary)] transition-transform duration-150 group-hover:translate-x-0.5">
-              ›
-            </span>
-          </Link>
+          ))}
         </section>
 
         {/* Category breakdown */}
         {metrics.topCategories.length > 0 && (
           <section
-            className="themed-card mb-6 bg-white rounded-[16px] p-5 animate-fade-up delay-5"
+            className="themed-card mb-4 bg-white rounded-[16px] p-5 animate-fade-up delay-4"
             aria-label="Gastos por categoria"
           >
             <div className="flex items-center justify-between mb-2">
@@ -223,16 +186,29 @@ export default async function DashboardPage({
               total={metrics.totalSpent}
               expensesByCategory={metrics.expensesByCategory}
             />
+
+            <div className="mt-4 grid grid-cols-2 gap-2 border-t border-[color-mix(in_srgb,var(--color-border)_72%,transparent)] pt-3" aria-label="Atalhos financeiros">
+              {financialShortcuts}
+            </div>
+          </section>
+        )}
+
+        {metrics.topCategories.length === 0 && (
+          <section
+            className="mb-4 grid grid-cols-2 gap-2 animate-fade-up delay-4"
+            aria-label="Atalhos financeiros"
+          >
+            {financialShortcuts}
           </section>
         )}
 
         {/* Spending timeline */}
-        <section className="mb-6 animate-fade-up delay-6">
+        <section className="mb-6 animate-fade-up delay-5">
           <SpendingTimelineChart data={spendingTimeline} />
         </section>
 
         {/* Recent expenses */}
-        <section aria-label="Últimos gastos" className="animate-fade-up delay-8">
+        <section aria-label="Últimos gastos" className="animate-fade-up delay-6">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-base font-heading text-[#1A1D23]">Últimos gastos</h2>
             <Link href="/feed" className="text-xs font-medium text-[#A8C5E0]">

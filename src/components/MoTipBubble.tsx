@@ -18,21 +18,38 @@ function pickRandomIndex(exclude: number, poolSize: number): number {
 
 interface MoTipBubbleProps {
   period: string;
+  variant?: 'default' | 'overlay';
+  onDismiss?: () => void;
+  advanceToken?: number;
+  autoRotate?: boolean;
+  startWithTip?: boolean;
 }
 
-export default function MoTipBubble({ period }: MoTipBubbleProps) {
+export default function MoTipBubble({
+  period,
+  variant = 'default',
+  onDismiss,
+  advanceToken = 0,
+  autoRotate = true,
+  startWithTip = false,
+}: MoTipBubbleProps) {
   const greeting = getGreeting();
-  const [greetingShown, setGreetingShown] = useState(false);
+  const [greetingShown, setGreetingShown] = useState(startWithTip);
   const [index, setIndex] = useState(0);
   const [fading, setFading] = useState(false);
   const [personalTips, setPersonalTips] = useState<MoTip[]>([]);
   const timerRef = useRef<number | null>(null);
   const fadeRef = useRef<number | null>(null);
+  const tipPoolSizeRef = useRef(0);
 
   const tipPool = useMemo(
     () => (personalTips.length > 0 ? [...personalTips, ...MO_TIPS] : MO_TIPS),
     [personalTips],
   );
+
+  useEffect(() => {
+    tipPoolSizeRef.current = tipPool.length;
+  }, [tipPool.length]);
 
   useEffect(() => {
     let cancelled = false;
@@ -73,14 +90,16 @@ export default function MoTipBubble({ period }: MoTipBubbleProps) {
   }, [greetingShown, tipPool.length]);
 
   const scheduleNext = useCallback(() => {
+    if (!autoRotate) return;
     if (timerRef.current !== null) window.clearTimeout(timerRef.current);
     timerRef.current = window.setTimeout(function tick() {
       advance();
       timerRef.current = window.setTimeout(tick, ROTATION_MS);
     }, ROTATION_MS);
-  }, [advance]);
+  }, [advance, autoRotate]);
 
   useEffect(() => {
+    if (!autoRotate) return;
     scheduleNext();
     const onVisibility = () => {
       if (document.visibilityState === 'visible') {
@@ -96,11 +115,21 @@ export default function MoTipBubble({ period }: MoTipBubbleProps) {
       if (fadeRef.current !== null) window.clearTimeout(fadeRef.current);
       document.removeEventListener('visibilitychange', onVisibility);
     };
-  }, [scheduleNext]);
+  }, [autoRotate, scheduleNext]);
+
+  useEffect(() => {
+    if (advanceToken <= 0) return;
+    setGreetingShown(true);
+    setIndex((current) => pickRandomIndex(current, tipPoolSizeRef.current));
+  }, [advanceToken]);
 
   const tip = greetingShown ? tipPool[index] ?? MO_TIPS[0] : greeting;
 
   const handleClick = () => {
+    if (onDismiss) {
+      onDismiss();
+      return;
+    }
     advance();
     scheduleNext();
   };
@@ -109,8 +138,10 @@ export default function MoTipBubble({ period }: MoTipBubbleProps) {
     <button
       type="button"
       onClick={handleClick}
-      className="mo-tip-bubble group w-full text-left transition-transform duration-150 active:scale-[0.995] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#A8C5E0] focus-visible:ring-offset-2"
-      aria-label="Toque para a próxima dica da Mo"
+      className={`mo-tip-bubble group w-full text-left transition-transform duration-150 active:scale-[0.995] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#A8C5E0] focus-visible:ring-offset-2 ${
+        variant === 'overlay' ? 'mo-tip-bubble--overlay' : ''
+      }`}
+      aria-label={onDismiss ? 'Ocultar dica da Mo' : 'Toque para a próxima dica da Mo'}
     >
       <div
         key={tip.id}
@@ -118,7 +149,9 @@ export default function MoTipBubble({ period }: MoTipBubbleProps) {
         role="status"
         aria-live="polite"
         style={{
-          animation: fading ? undefined : `mo-tip-enter ${FADE_MS}ms cubic-bezier(0.22, 1, 0.36, 1) both`,
+          animation: fading
+            ? undefined
+            : `${variant === 'overlay' ? 'mo-tip-overlay-enter' : 'mo-tip-enter'} ${FADE_MS}ms cubic-bezier(0.22, 1, 0.36, 1) both`,
           transition: `opacity ${FADE_MS}ms ease`,
           opacity: fading ? 0 : 1,
         }}
@@ -136,6 +169,17 @@ export default function MoTipBubble({ period }: MoTipBubbleProps) {
         @keyframes mo-tip-enter {
           from { opacity: 0; transform: translateY(4px); }
           to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes mo-tip-overlay-enter {
+          from { opacity: 0; transform: translateY(6px) scale(0.98); }
+          to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .mo-tip-bubble__content {
+            animation: none !important;
+            opacity: 1 !important;
+            transform: none !important;
+          }
         }
       `}</style>
     </button>

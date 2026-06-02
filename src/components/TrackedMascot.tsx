@@ -5,7 +5,7 @@ import Mo from './Mo';
 import type { MoProps } from './Mo';
 
 export default function TrackedMascot(props: MoProps) {
-  const ref = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLSpanElement>(null);
   const [pupilX, setPupilX] = useState(0);
   const [pupilY, setPupilY] = useState(0);
   const frameRef = useRef<number>(0);
@@ -61,8 +61,8 @@ export default function TrackedMascot(props: MoProps) {
   }, []);
 
   return (
-    <div ref={ref} className="inline-block">
+    <span ref={ref} className="inline-block">
       <Mo {...props} pupilX={pupilX} pupilY={pupilY} />
-    </div>
+    </span>
   );
 }
