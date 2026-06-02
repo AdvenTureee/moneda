@@ -32,8 +32,8 @@ interface OnboardingViewProps {
   firstName: string;
 }
 
-type Step = 'budget' | 'categoryBudget' | 'whatsapp' | 'theme' | 'closing' | 'pet' | 'expenses' | 'categories';
-const STEP_ORDER: Step[] = ['budget', 'categoryBudget', 'whatsapp', 'theme', 'closing', 'pet', 'expenses', 'categories'];
+type Step = 'budget' | 'categories' | 'categoryBudget' | 'expenses' | 'whatsapp' | 'closing' | 'theme';
+const STEP_ORDER: Step[] = ['budget', 'categories', 'categoryBudget', 'expenses', 'whatsapp', 'closing', 'theme'];
 
 interface ExpenseRow {
   tempId: string;
@@ -82,36 +82,6 @@ export default function OnboardingView({ defaultCategories, firstName }: Onboard
   const [monthlyBudgetDisplay, setMonthlyBudgetDisplay] = useState('');
 
   // Q2
-  const budgetCategories = useMemo(
-    () => defaultCategories.filter((c) => c.id !== 'pet'),
-    [defaultCategories],
-  );
-  const [categoryBudgetsMap, setCategoryBudgetsMap] = useState<Record<string, number>>({});
-  const [categoryBudgetTouched, setCategoryBudgetTouched] = useState(false);
-  const [categoryBudgetSkipped, setCategoryBudgetSkipped] = useState(false);
-  const [categoryBudgetManual, setCategoryBudgetManual] = useState(false);
-
-  // Q3
-  const [whatsappPhone, setWhatsappPhone] = useState('');
-
-  // Q4
-  // Theme preference is saved locally through ThemeProvider.
-
-  // Q5
-  const [closingDay, setClosingDay] = useState(10);
-
-  // Q6
-  const [hasPet, setHasPet] = useState<boolean | null>(null);
-
-  // Q7
-  const visibleCategories = useMemo(
-    () => defaultCategories.filter((c) => (hasPet ? true : c.id !== 'pet')),
-    [defaultCategories, hasPet],
-  );
-  const firstCategoryId = visibleCategories[0]?.id ?? '';
-  const [expenseRows, setExpenseRows] = useState<ExpenseRow[]>([]);
-
-  // Q8
   const [showCustomForm, setShowCustomForm] = useState(false);
   const [customDraft, setCustomDraft] = useState<OnboardingCustomCategory>({
     name: '',
@@ -119,6 +89,41 @@ export default function OnboardingView({ defaultCategories, firstName }: Onboard
     color: SWATCHES[0],
   });
   const [customCategories, setCustomCategories] = useState<OnboardingCustomCategory[]>([]);
+
+  const allCategories = useMemo<Category[]>(
+    () => [
+      ...defaultCategories,
+      ...customCategories.map((category, index) => ({
+        id: category.clientId ?? `custom-${index}`,
+        name: category.name,
+        icon: category.icon,
+        color: category.color,
+        keywords: [],
+      })),
+    ],
+    [defaultCategories, customCategories],
+  );
+
+  // Q3
+  const budgetCategories = allCategories;
+  const [categoryBudgetsMap, setCategoryBudgetsMap] = useState<Record<string, number>>({});
+  const [categoryBudgetTouched, setCategoryBudgetTouched] = useState(false);
+  const [categoryBudgetSkipped, setCategoryBudgetSkipped] = useState(false);
+  const [categoryBudgetManual, setCategoryBudgetManual] = useState(false);
+
+  // Q4
+  const [whatsappPhone, setWhatsappPhone] = useState('');
+
+  // Q5
+  // Theme preference is saved locally through ThemeProvider.
+
+  // Q6
+  const [closingDay, setClosingDay] = useState(10);
+
+  // Q7
+  const visibleCategories = allCategories;
+  const firstCategoryId = visibleCategories[0]?.id ?? '';
+  const [expenseRows, setExpenseRows] = useState<ExpenseRow[]>([]);
 
   // Submit
   const [error, setError] = useState<string | null>(null);
@@ -131,7 +136,6 @@ export default function OnboardingView({ defaultCategories, firstName }: Onboard
       case 'whatsapp': return !whatsappPhone.trim() || normalizeWhatsappPhone(whatsappPhone) !== null;
       case 'theme': return true;
       case 'closing': return closingDay >= 1 && closingDay <= 28;
-      case 'pet': return hasPet !== null;
       case 'expenses': return expenseRows.every(
         (r) => r.description.trim() && r.amountCents > 0 && r.categoryId,
       );
@@ -186,12 +190,30 @@ export default function OnboardingView({ defaultCategories, firstName }: Onboard
 
   function saveCustomCategory() {
     if (!customDraft.name.trim()) return;
-    setCustomCategories((cs) => [...cs, customDraft]);
+    setCustomCategories((cs) => [
+      ...cs,
+      {
+        ...customDraft,
+        clientId: `custom-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      },
+    ]);
     setCustomDraft({ name: '', icon: 'Tag', color: SWATCHES[0] });
     setShowCustomForm(false);
   }
 
   function removeCustomCategory(idx: number) {
+    const categoryId = customCategories[idx]?.clientId;
+    const fallbackCategoryId = defaultCategories[0]?.id ?? '';
+    if (categoryId) {
+      setCategoryBudgetsMap((prev) => {
+        const next = { ...prev };
+        delete next[categoryId];
+        return next;
+      });
+      setExpenseRows((rows) =>
+        rows.map((row) => row.categoryId === categoryId ? { ...row, categoryId: fallbackCategoryId } : row),
+      );
+    }
     setCustomCategories((cs) => cs.filter((_, i) => i !== idx));
   }
 
@@ -214,7 +236,6 @@ export default function OnboardingView({ defaultCategories, firstName }: Onboard
     const payload: OnboardingPayload = {
       monthlyBudgetCents,
       billingClosingDay: closingDay,
-      hasPet: hasPet === true,
       recurringExpenses: expenseRows.map<OnboardingRecurringExpense>((r) => ({
         description: r.description.trim(),
         amountCents: r.amountCents,
@@ -339,7 +360,7 @@ export default function OnboardingView({ defaultCategories, firstName }: Onboard
           <section className="flex-1">
             <Mo variant="happy" size={86} className="mx-auto" />
             <h2 className="text-xl font-heading text-center text-[#1A1D23] mt-3">
-              Quer dividir por categoria?
+              Distribuição por categoria
             </h2>
             <p className="text-sm text-[#6B7280] text-center mt-2 mb-5 max-w-[340px] mx-auto">
               Eu posso transformar seu orçamento mensal em limites por categoria. É só uma sugestão inicial, você ajusta depois.
@@ -591,7 +612,7 @@ export default function OnboardingView({ defaultCategories, firstName }: Onboard
           <section className="flex-1">
             <Mo variant="happy" size={96} className="mx-auto" />
             <h2 className="text-xl font-heading text-center text-[#1A1D23] mt-3">
-              Fechamento do cartão
+              Dia de fechamento do cartão
             </h2>
             <p className="text-sm text-[#6B7280] text-center mt-2 mb-6 max-w-[320px] mx-auto">
               Em qual dia a fatura do seu cartão fecha? Vamos usar para insights de ciclo de cobrança.
@@ -628,43 +649,9 @@ export default function OnboardingView({ defaultCategories, firstName }: Onboard
           </section>
         )}
 
-        {step === 'pet' && (
-          <section className="flex-1">
-            <Mo variant="happy" size={96} className="mx-auto" />
-            <h2 className="text-xl font-heading text-center text-[#1A1D23] mt-3">
-              Você tem pet?
-            </h2>
-            <p className="text-sm text-[#6B7280] text-center mt-2 mb-6 max-w-[320px] mx-auto">
-              Se sim, ativamos a categoria <strong>Pet</strong> para você acompanhar esses gastos.
-            </p>
-            <div className="grid grid-cols-2 gap-3">
-              {[
-                { value: true, label: 'Sim 🐾' },
-                { value: false, label: 'Não' },
-              ].map((opt) => {
-                const active = hasPet === opt.value;
-                return (
-                  <button
-                    key={String(opt.value)}
-                    type="button"
-                    onClick={() => setHasPet(opt.value)}
-                    className={`py-8 rounded-[16px] border-2 text-lg font-bold transition-all active:scale-[0.98] ${
-                      active
-                        ? 'border-[#5BBF8E] bg-[#EEF9F4] text-[#1A1D23]'
-                        : 'border-[#E5E7EB] bg-white text-[#6B7280] hover:border-[#A8C5E0]'
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                );
-              })}
-            </div>
-          </section>
-        )}
-
         {step === 'expenses' && (
           <section className="flex-1">
-            <h2 className="text-xl font-heading text-[#1A1D23]">Gastos recorrentes</h2>
+            <h2 className="text-xl font-heading text-[#1A1D23]">Adicionar gastos recorrentes</h2>
             <p className="text-sm text-[#6B7280] mt-1 mb-4">
               Cadastre seus gastos mensais (aluguel, assinaturas...). Você pode pular e adicionar depois.
             </p>
@@ -739,13 +726,13 @@ export default function OnboardingView({ defaultCategories, firstName }: Onboard
 
         {step === 'categories' && (
           <section className="flex-1">
-            <h2 className="text-xl font-heading text-[#1A1D23]">Suas categorias</h2>
+            <h2 className="text-xl font-heading text-[#1A1D23]">Categorias</h2>
             <p className="text-sm text-[#6B7280] mt-1 mb-4">
               Estas são as categorias que você terá disponíveis. Não se preocupe, você pode mudar depois.
             </p>
 
             <div className="grid grid-cols-3 gap-2 mb-4">
-              {visibleCategories.map((cat) => (
+              {defaultCategories.map((cat) => (
                 <div
                   key={cat.id}
                   className="flex flex-col items-center gap-1 rounded-[12px] py-3 px-2 border border-[#E5E7EB] bg-white"
@@ -901,10 +888,8 @@ export default function OnboardingView({ defaultCategories, firstName }: Onboard
                 <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 Salvando...
               </>
-            ) : step === 'categories' ? (
-              'Concluir'
             ) : step === 'theme' ? (
-              theme === 'dark' ? 'Continuar no modo escuro' : 'Continuar no modo claro'
+              theme === 'dark' ? 'Concluir no modo escuro' : 'Concluir no modo claro'
             ) : step === 'budget' && monthlyBudgetCents > 0 ? (
               `Continuar — ${formatCurrency(monthlyBudgetCents)}/mês`
             ) : step === 'categoryBudget' ? (

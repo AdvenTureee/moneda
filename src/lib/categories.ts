@@ -25,7 +25,7 @@ export interface CategoryWithMeta extends Category {
 
 async function getCategoriesFromDB(
   userId: string,
-  opts: { applyHasPetGate: boolean },
+  _opts: { applyHasPetGate: boolean },
 ): Promise<CategoryWithMeta[]> {
   const db = createServiceClient();
   const { data, error } = await db
@@ -37,18 +37,7 @@ async function getCategoriesFromDB(
 
   if (error) throw new Error(`getCategories: ${error.message}`);
 
-  let includesPet = true;
-  if (opts.applyHasPetGate && (data as CategoryRow[]).some((row) => row.id === 'pet')) {
-    const { data: profile } = await db
-      .from('profiles')
-      .select('has_pet')
-      .eq('id', userId)
-      .single();
-    includesPet = profile?.has_pet === true;
-  }
-
   return (data as CategoryRow[])
-    .filter((row) => includesPet || row.id !== 'pet')
     .map((row) => ({
       id: row.id,
       name: row.name,
@@ -75,7 +64,7 @@ function getCategoriesFromMock(): CategoryWithMeta[] {
 }
 
 export interface GetCategoriesOptions {
-  /** Quando true (padrão), oculta a categoria Pet de usuários sem `profile.has_pet`. */
+  /** Compatibilidade: Pet agora aparece sempre para todos os usuários. */
   applyHasPetGate?: boolean;
 }
 
@@ -94,7 +83,7 @@ export async function getCategories(
   const applyHasPetGate = options.applyHasPetGate ?? true;
   return unstable_cache(
     () => getCategoriesImpl(userId, applyHasPetGate),
-    ['categories', userId, applyHasPetGate ? 'gated' : 'all'],
+    ['categories', userId, 'all'],
     {
       // Categorias mudam raríssimo → TTL longo, invalidação explícita via
       // revalidateTag em criar/editar/deletar categoria.

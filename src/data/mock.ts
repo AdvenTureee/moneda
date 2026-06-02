@@ -71,6 +71,16 @@ export const CATEGORIES: Category[] = [
     ],
   },
   {
+    id: 'pet',
+    name: 'Pet',
+    icon: 'PawPrint',
+    color: '#EC4899',
+    keywords: [
+      'pet', 'cachorro', 'gato', 'ração', 'racao', 'veterinário', 'veterinario',
+      'banho e tosa', 'petshop',
+    ],
+  },
+  {
     id: 'outros',
     name: 'Outros',
     icon: 'Package',

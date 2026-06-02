@@ -23,6 +23,7 @@ export interface OnboardingRecurringExpense {
 }
 
 export interface OnboardingCustomCategory {
+  clientId?: string;
   name: string;
   icon: string;
   color: string;
@@ -36,7 +37,6 @@ export interface OnboardingCategoryBudget {
 export interface OnboardingPayload {
   monthlyBudgetCents: number;
   billingClosingDay: number;
-  hasPet: boolean;
   recurringExpenses: OnboardingRecurringExpense[];
   customCategories: OnboardingCustomCategory[];
   categoryBudgets?: OnboardingCategoryBudget[];
@@ -55,7 +55,7 @@ function slugifyCategoryName(name: string): string {
 
 function buildCustomCategoryId(userId: string, name: string, index: number): string {
   const base = slugifyCategoryName(name) || `cat${index}`;
-  return `u_${userId.replace(/-/g, '').slice(0, 8)}_${base}`.slice(0, 60);
+  return `u_${userId.replace(/-/g, '').slice(0, 8)}_${base}_${index + 1}`.slice(0, 60);
 }
 
 function validatePayload(p: OnboardingPayload): string | null {
@@ -108,7 +108,7 @@ export async function completeOnboardingAction(
         .update({
           monthly_budget_cents: payload.monthlyBudgetCents || null,
           billing_closing_day: payload.billingClosingDay,
-          has_pet: payload.hasPet,
+          has_pet: true,
           onboarded: true,
           ...(normalizedWhatsappPhone
             ? buildProfilePhonePiiUpdate(normalizedWhatsappPhone)
@@ -122,6 +122,7 @@ export async function completeOnboardingAction(
       revalidateTag(cacheTags.profile(userId), { expire: 0 });
 
       // 2. Custom categories
+      const customCategoryIdMap = new Map<string, string>();
       if (payload.customCategories.length > 0) {
         const inserts = payload.customCategories.map((c, i) => ({
           id: buildCustomCategoryId(userId, c.name, i),
@@ -138,14 +139,18 @@ export async function completeOnboardingAction(
           console.error('[completeOnboarding] custom categories:', catError);
           return { ok: false, error: 'Não foi possível criar suas categorias.' };
         }
+        payload.customCategories.forEach((category, index) => {
+          if (category.clientId) customCategoryIdMap.set(category.clientId, inserts[index].id);
+        });
       }
+      const resolveCategoryId = (categoryId: string) => customCategoryIdMap.get(categoryId) ?? categoryId;
 
-      // 3. Recurring expenses
+      // 3. Category budgets
       if ((payload.categoryBudgets ?? []).length > 0) {
         const period = getCurrentPeriod();
         await Promise.all((payload.categoryBudgets ?? []).map((budget) => upsertBudget({
           userId,
-          categoryId: budget.categoryId,
+          categoryId: resolveCategoryId(budget.categoryId),
           period,
           amountCents: Math.round(budget.amountCents),
         })));
@@ -159,7 +164,7 @@ export async function completeOnboardingAction(
           await Promise.all(payload.recurringExpenses.map((r) => createExpense({
             userId,
             amount: r.amountCents,
-            category: r.categoryId,
+            category: resolveCategoryId(r.categoryId),
             description: r.description.trim(),
             paymentMethod: 'other',
             source: 'manual',
@@ -181,20 +186,24 @@ export async function completeOnboardingAction(
     } else {
       // Mock mode: persist via in-memory store.
       const userId = MOCK_USER.id;
+      const customCategoryIdMap = new Map<string, string>();
       payload.customCategories.forEach((c, i) => {
+        const id = buildCustomCategoryId(userId, c.name, i);
         addUserCategory({
-          id: buildCustomCategoryId(userId, c.name, i),
+          id,
           name: c.name.trim(),
           icon: c.icon,
           color: c.color,
           keywords: [],
         });
+        if (c.clientId) customCategoryIdMap.set(c.clientId, id);
       });
+      const resolveCategoryId = (categoryId: string) => customCategoryIdMap.get(categoryId) ?? categoryId;
       if ((payload.categoryBudgets ?? []).length > 0) {
         const period = getCurrentPeriod();
         await Promise.all((payload.categoryBudgets ?? []).map((budget) => upsertBudget({
           userId,
-          categoryId: budget.categoryId,
+          categoryId: resolveCategoryId(budget.categoryId),
           period,
           amountCents: Math.round(budget.amountCents),
         })));
@@ -204,7 +213,7 @@ export async function completeOnboardingAction(
           id: `mock-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
           userId,
           amount: r.amountCents,
-          category: r.categoryId,
+          category: resolveCategoryId(r.categoryId),
           description: r.description.trim(),
           source: 'manual',
           paymentMethod: 'other',

@@ -38,8 +38,7 @@ export default async function OnboardingPage() {
     if (fullName) firstName = fullName.split(' ')[0];
   }
 
-  // Pet precisa ser visível no passo 3 caso o usuário escolha "Sim",
-  // então pulamos o gate de has_pet aqui (decisão é client-side).
+  // Pet agora é categoria default para todos.
   const categories = await getCategories(userId, { applyHasPetGate: false });
   const defaultCategories = categories.filter((c) => c.is_default);
 
