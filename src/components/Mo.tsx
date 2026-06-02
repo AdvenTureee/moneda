@@ -148,7 +148,8 @@ export default function Mo({
               <ellipse cx={50} cy={55} rx={5.6} ry={7} />
             </clipPath>
           </defs>
-          <g className="mo-mouth-speaking">
+          <g transform="translate(-1 0)">
+            <g className="mo-mouth-speaking">
             <ellipse
               cx={50}
               cy={55}
@@ -170,6 +171,7 @@ export default function Mo({
               stroke={PALETTE.ink}
               strokeWidth={1.8}
             />
+            </g>
           </g>
         </>
       ) : (
