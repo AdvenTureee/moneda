@@ -145,7 +145,7 @@ export default function Mo({
         <>
           <defs>
             <clipPath id={mouthClipId} clipPathUnits="userSpaceOnUse">
-              <ellipse cx={50} cy={55} rx={5.6} ry={7} />
+              <ellipse cx={50} cy={55} rx={5.8} ry={6.3} />
             </clipPath>
           </defs>
           <g transform="translate(-1 0)">
@@ -153,8 +153,8 @@ export default function Mo({
             <ellipse
               cx={50}
               cy={55}
-              rx={5.6}
-              ry={7}
+              rx={5.8}
+              ry={6.3}
               fill={PALETTE.ink}
             />
             <path
@@ -165,8 +165,8 @@ export default function Mo({
             <ellipse
               cx={50}
               cy={55}
-              rx={5.6}
-              ry={7}
+              rx={5.8}
+              ry={6.3}
               fill="none"
               stroke={PALETTE.ink}
               strokeWidth={1.8}
