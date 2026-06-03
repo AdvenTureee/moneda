@@ -7,6 +7,7 @@ import { getBudgets } from '@/lib/budgets';
 import { cacheTags } from '@/lib/cache';
 import { getMonthlyBudgetCents } from '@/lib/monthlyBudget';
 import {
+  BILLING_CYCLE_RULE_VERSION,
   getBillingCycleForPeriod,
   getBillingPeriodForDate,
 } from '@/lib/billingCycle';
@@ -600,7 +601,7 @@ async function getDashboardMetricsFromDBViaQuery(
     .eq('user_id', userId)
     .is('deleted_at', null)
     .gte('occurred_at', cycle.start.toISOString())
-    .lte('occurred_at', cycle.end.toISOString());
+    .lt('occurred_at', cycle.endExclusive.toISOString());
 
   if (error) throw new Error(`getDashboardMetrics: ${error.message}`);
 
@@ -712,12 +713,12 @@ function getDashboardMetricsFromMock(userId: string, period: string, closingDay:
   const cycle = getBillingCycleForPeriod(period, closingDay);
   const expenses = getExpensesByPeriod(userId, period).filter((e) => {
     const d = new Date(e.createdAt);
-    return d >= cycle.start && d <= cycle.end;
+    return d >= cycle.start && d < cycle.endExclusive;
   });
   const sessionAll = mockGetAll(userId);
   const periodExpenses = sessionAll.filter((e) => {
     const d = new Date(e.createdAt);
-    return d >= cycle.start && d <= cycle.end;
+    return d >= cycle.start && d < cycle.endExclusive;
   });
   const seen = new Set<string>();
   const allPeriod = periodExpenses.filter((e) => {
@@ -1129,7 +1130,7 @@ export async function getDashboardMetrics(
 ): Promise<DashboardMetrics> {
   const raw = await unstable_cache(
     () => getDashboardMetricsImpl(userId, period, closingDay),
-    ['dashboard-metrics', userId, period, String(closingDay)],
+    ['dashboard-metrics', BILLING_CYCLE_RULE_VERSION, userId, period, String(closingDay)],
     {
       tags: [cacheTags.metrics(userId), cacheTags.expenses(userId)],
       revalidate: 300,
@@ -1180,7 +1181,7 @@ async function getMonthlyTotalsFromDB(
     .eq('user_id', userId)
     .is('deleted_at', null)
     .gte('occurred_at', startCycle.start.toISOString())
-    .lte('occurred_at', endCycle.end.toISOString());
+    .lt('occurred_at', endCycle.endExclusive.toISOString());
 
   if (error) throw new Error(`getMonthlyTotals: ${error.message}`);
 
@@ -1233,7 +1234,7 @@ export async function getMonthlyTotals(
 ): Promise<MonthlyTotal[]> {
   return unstable_cache(
     () => getMonthlyTotalsImpl(userId, endPeriod, months, closingDay),
-    ['monthly-totals', userId, endPeriod, String(months), String(closingDay)],
+    ['monthly-totals', BILLING_CYCLE_RULE_VERSION, userId, endPeriod, String(months), String(closingDay)],
     {
       // Meses fechados quase nunca mudam. TTL maior; invalidação explícita
       // ocorre via revalidateTag nas mutations de expense.
@@ -1268,7 +1269,7 @@ function buildCycleDayBuckets(period: string, closingDay: number): SpendingTimel
   const cycle = getBillingCycleForPeriod(period, closingDay);
   const buckets: SpendingTimelineBucket[] = [];
   const cursor = new Date(cycle.start);
-  while (cursor <= cycle.end) {
+  while (cursor < cycle.endExclusive) {
     buckets.push({
       key: localDateKey(cursor),
       label: String(cursor.getDate()),
@@ -1296,7 +1297,7 @@ async function getSpendingTimelineFromDB(
   const [year, month] = period.split('-').map(Number);
   await ensureExpenseSeriesMaterialized(userId, `${year}-12`);
   const yearStart = getBillingCycleForPeriod(`${year}-01`, closingDay).start;
-  const yearEnd = getBillingCycleForPeriod(`${year}-12`, closingDay).end;
+  const yearEndExclusive = getBillingCycleForPeriod(`${year}-12`, closingDay).endExclusive;
 
   const { data, error } = await db
     .from('expenses')
@@ -1304,7 +1305,7 @@ async function getSpendingTimelineFromDB(
     .eq('user_id', userId)
     .is('deleted_at', null)
     .gte('occurred_at', yearStart.toISOString())
-    .lte('occurred_at', yearEnd.toISOString());
+    .lt('occurred_at', yearEndExclusive.toISOString());
 
   if (error) throw new Error(`getSpendingTimeline: ${error.message}`);
 
@@ -1410,7 +1411,7 @@ export async function getSpendingTimeline(
 ): Promise<SpendingTimelineData> {
   return unstable_cache(
     () => getSpendingTimelineImpl(userId, period, closingDay),
-    ['spending-timeline', userId, period, String(closingDay)],
+    ['spending-timeline', BILLING_CYCLE_RULE_VERSION, userId, period, String(closingDay)],
     {
       tags: [
         cacheTags.expenses(userId),

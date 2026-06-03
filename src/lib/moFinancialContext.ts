@@ -11,7 +11,7 @@ import { createServiceClient, isSupabaseEnabled } from '@/lib/supabase/server';
 import { decryptProfilePii, getDisplayNameFromUser } from '@/lib/security/profilePii';
 import { formatCurrency } from '@/lib/utils';
 import { getBillingClosingDay } from '@/lib/profiles';
-import { getBillingCycleForPeriod } from '@/lib/billingCycle';
+import { BILLING_CYCLE_RULE_VERSION, getBillingCycleForPeriod } from '@/lib/billingCycle';
 import type { User } from '@supabase/supabase-js';
 import type { ExpensePaymentMethod } from '@/types';
 
@@ -262,7 +262,7 @@ export async function getCachedFinancialContextBlockForChat(
 ): Promise<string> {
   return unstable_cache(
     () => buildFinancialContextBlockImpl(user, period),
-    ['mo-chat-context-block', 'v2', user.id, period],
+    ['mo-chat-context-block', 'v2', BILLING_CYCLE_RULE_VERSION, user.id, period],
     {
       revalidate: 180,
       tags: [

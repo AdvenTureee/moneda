@@ -4,7 +4,7 @@ import { createServiceClient, isSupabaseEnabled } from '@/lib/supabase/server';
 import { generateId } from '@/lib/utils';
 import { unstable_cache } from 'next/cache';
 import { cacheTags } from '@/lib/cache';
-import { getBillingCycleForPeriod } from '@/lib/billingCycle';
+import { BILLING_CYCLE_RULE_VERSION, getBillingCycleForPeriod } from '@/lib/billingCycle';
 
 type IncomesRow = Database['public']['Tables']['incomes']['Row'];
 type IncomesInsert = Database['public']['Tables']['incomes']['Insert'];
@@ -61,7 +61,7 @@ async function getMonthlyIncomeTotalCentsImpl(
       .eq('user_id', userId)
       .is('deleted_at', null)
       .gte('received_at', cycle.start.toISOString())
-      .lte('received_at', cycle.end.toISOString());
+      .lt('received_at', cycle.endExclusive.toISOString());
 
     if (error) throw new Error(`getMonthlyIncomeTotalCents: ${error.message}`);
     return (data ?? []).reduce((sum, row) => sum + (row.amount_cents ?? 0), 0);
@@ -70,7 +70,7 @@ async function getMonthlyIncomeTotalCentsImpl(
   return sessionIncomes
     .filter((income) => {
       const d = new Date(income.receivedAt);
-      return income.userId === userId && d >= cycle.start && d <= cycle.end;
+      return income.userId === userId && d >= cycle.start && d < cycle.endExclusive;
     })
     .reduce((sum, income) => sum + income.amount, 0);
 }
@@ -82,7 +82,7 @@ export async function getMonthlyIncomeTotalCents(
 ): Promise<number> {
   return unstable_cache(
     () => getMonthlyIncomeTotalCentsImpl(userId, period, closingDay),
-    ['monthly-income-total-cents', userId, period, String(closingDay)],
+    ['monthly-income-total-cents', BILLING_CYCLE_RULE_VERSION, userId, period, String(closingDay)],
     {
       tags: [cacheTags.profile(userId)],
       revalidate: 300,

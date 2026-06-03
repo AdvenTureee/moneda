@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "test": "node --test --import jiti/register tests/*.test.ts",
     "start": "next start",
     "backfill:pii": "node --env-file=.env scripts/backfill-pii.mjs",
     "nullify:legacy-pii": "node --env-file=.env scripts/nullify-legacy-pii.mjs"
@@ -28,6 +29,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "jiti": "^2.7.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

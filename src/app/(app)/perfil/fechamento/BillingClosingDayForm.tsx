@@ -60,7 +60,7 @@ export default function BillingClosingDayForm({
           <div className="min-w-0">
             <p className="text-sm font-bold text-[#1A1D23]">Dia da fatura</p>
             <p className="mt-0.5 text-xs leading-relaxed text-[#6B7280]">
-              Se fecha dia {day}, o ciclo termina nesse dia e o próximo começa no dia seguinte.
+              Se fecha dia {day}, o novo ciclo começa nesse dia às 00:00.
             </p>
           </div>
         </div>

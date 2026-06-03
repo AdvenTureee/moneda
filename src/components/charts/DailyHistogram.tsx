@@ -67,10 +67,10 @@ export default function DailyHistogram({ data, period, billingClosingDay = DEFAU
     const result: { date: string; day: number; amount: number; weekend: boolean }[] = [];
     const cursor = new Date(cycle.start);
     cursor.setHours(12, 0, 0, 0);
-    const end = new Date(cycle.end);
-    end.setHours(12, 0, 0, 0);
+    const endExclusive = new Date(cycle.endExclusive);
+    endExclusive.setHours(12, 0, 0, 0);
 
-    while (cursor.getTime() <= end.getTime()) {
+    while (cursor.getTime() < endExclusive.getTime()) {
       const dateStr = toLocalDateInput(cursor);
       result.push({
         date: dateStr,
