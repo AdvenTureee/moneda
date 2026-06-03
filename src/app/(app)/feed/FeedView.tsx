@@ -504,7 +504,7 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
 
           <div
             ref={filtersAnchorRef}
-            className="-mx-0.5 flex gap-1.5 overflow-x-auto px-0.5 pb-0.5 text-[11px] font-semibold text-[#6B7280] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            className="-mx-0.5 flex gap-1.5 overflow-x-auto px-0.5 pb-0.5 text-[11px] font-semibold text-[#1A1D23] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           >
             {filterTabs.map((tab) => {
               const TabIcon = tab.icon;
@@ -520,7 +520,7 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
                   className={`group flex h-8 max-w-[180px] shrink-0 items-center justify-center gap-1.5 rounded-full border px-3 text-center outline-none transition-[background-color,border-color,box-shadow,color,transform] duration-150 ease-out active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-[#A8C5E0] focus-visible:ring-offset-1 ${
                     tab.active
                       ? 'border-[#5BBF8E]/45 bg-[#EEF9F4] text-[#2E8F67] hover:border-[#5BBF8E]/70 hover:bg-[#EAF7F0] dark:border-[#5BBF8E]/45 dark:bg-[#5BBF8E]/14 dark:text-[#7EE0AE]'
-                      : 'border-[#E5E7EB] bg-[#F8F9FB] text-[#6B7280] hover:border-[#A8C5E0]/70 hover:bg-[#EEF2F7] dark:border-white/10 dark:bg-white/6 dark:text-[#CBD5E1] dark:hover:bg-white/10'
+                      : 'border-[#E5E7EB] bg-[#F8F9FB] text-[#1A1D23] hover:border-[#A8C5E0]/70 hover:bg-[#EEF2F7] dark:border-white/10 dark:bg-white/6 dark:text-[#CBD5E1] dark:hover:bg-white/10'
                   }`}
                 >
                   {PaymentIcon && paymentMeta ? (
@@ -580,7 +580,7 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
               <div className="flex items-center justify-between gap-3 px-2 pb-2 pt-1">
                 <div>
                   <p className="text-sm font-bold text-[#1A1D23] dark:text-[#F5F7FA]">Filtros</p>
-                  <p className="text-xs font-medium text-[#9CA3AF]">
+                  <p className="text-xs font-medium text-[#6B7280]">
                     {filterTabs.find((tab) => tab.id === activeFilterTab)?.label}: {filterTabs.find((tab) => tab.id === activeFilterTab)?.value}
                   </p>
                 </div>

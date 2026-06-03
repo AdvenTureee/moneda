@@ -9,6 +9,7 @@ export type PaymentMethodBadge = {
   Icon: ComponentType<IconProps>;
   color: string;
   bg: string;
+  bgDark?: string;
 };
 
 export const PAYMENT_METHOD_BADGES: Partial<Record<ExpensePaymentMethod, PaymentMethodBadge>> = {
@@ -19,6 +20,7 @@ export const PAYMENT_METHOD_BADGES: Partial<Record<ExpensePaymentMethod, Payment
     Icon: CurrencyDollar,
     color: '#4DB6AC',
     bg: '#E0F4F2',
+    bgDark: 'rgba(77, 182, 172, 0.18)',
   },
   debit: {
     label: 'Débito',
@@ -27,6 +29,7 @@ export const PAYMENT_METHOD_BADGES: Partial<Record<ExpensePaymentMethod, Payment
     Icon: Bank,
     color: '#477FA8',
     bg: '#E3F0FA',
+    bgDark: 'rgba(71, 127, 168, 0.18)',
   },
   credit: {
     label: 'Crédito',
@@ -35,6 +38,7 @@ export const PAYMENT_METHOD_BADGES: Partial<Record<ExpensePaymentMethod, Payment
     Icon: CreditCard,
     color: '#B57922',
     bg: '#FEF1D6',
+    bgDark: 'rgba(181, 121, 34, 0.18)',
   },
   boleto: {
     label: 'Boleto',
@@ -43,6 +47,7 @@ export const PAYMENT_METHOD_BADGES: Partial<Record<ExpensePaymentMethod, Payment
     Icon: Barcode,
     color: '#6B4FA3',
     bg: '#EFE8FF',
+    bgDark: 'rgba(107, 79, 163, 0.18)',
   },
   cash: {
     label: 'Dinheiro',
@@ -51,6 +56,7 @@ export const PAYMENT_METHOD_BADGES: Partial<Record<ExpensePaymentMethod, Payment
     Icon: Money,
     color: '#2E8F67',
     bg: '#DDF7EA',
+    bgDark: 'rgba(46, 143, 103, 0.18)',
   },
 };
 

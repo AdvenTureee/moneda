@@ -626,7 +626,7 @@ html[data-theme="dark"] .mo-tip-bubble::before {
 }
 
 .date-range-option {
-  color: var(--color-text-secondary);
+  color: var(--color-text-primary);
 }
 
 .date-range-option:hover {

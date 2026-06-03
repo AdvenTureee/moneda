@@ -62,6 +62,7 @@ export default function UpcomingInstallmentsModal({
   const paymentBadge = PAYMENT_METHOD_BADGES[expense.paymentMethod];
   const primaryColor = paymentBadge?.color ?? '#2E8F67';
   const circleBg = paymentBadge?.bg ?? '#EEF9F4';
+  const circleBgDark = paymentBadge?.bgDark ?? circleBg;
 
   return createPortal(
     <div
@@ -77,16 +78,22 @@ export default function UpcomingInstallmentsModal({
         aria-modal
         aria-label="Próximas parcelas"
       >
-        <div className="flex items-center gap-3 border-b border-[#F1F3F7] bg-white px-5 py-4 dark:border-[var(--color-brand-blue-dark)] dark:bg-[var(--color-brand-blue-dark)]">
+        <div className="flex items-center gap-3 border-b border-[#F1F3F7] bg-white px-5 py-4 dark:border-[var(--color-border)] dark:bg-[var(--color-surface)]">
           <span
-            className="flex h-11 w-11 items-center justify-center rounded-full"
-            style={{ backgroundColor: circleBg, color: primaryColor }}
+            className="flex h-11 w-11 items-center justify-center rounded-full bg-[color:var(--payment-bg)] text-[color:var(--payment-color)] dark:bg-[color:var(--payment-bg-dark)]"
+            style={
+              {
+                '--payment-bg': circleBg,
+                '--payment-bg-dark': circleBgDark,
+                '--payment-color': primaryColor,
+              } as React.CSSProperties
+            }
           >
             <CreditCard size={20} weight="bold" />
           </span>
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-[#1A1D23] dark:text-white truncate">Próximas parcelas</p>
-            <p className="mt-0.5 text-xs text-[#6B7280] dark:text-[#CBD5E1] truncate">
+            <p className="text-sm font-semibold text-[var(--color-text-primary)] truncate">Próximas parcelas</p>
+            <p className="mt-0.5 text-xs text-[var(--color-text-secondary)] truncate">
               {expense.description}
             </p>
           </div>
@@ -115,14 +122,19 @@ export default function UpcomingInstallmentsModal({
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="text-sm font-semibold text-[#1A1D23] dark:text-[var(--color-text-primary)]">
-                        Parcela {installment.index}/{installment.total}
-                      </p>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-sm font-semibold text-[#1A1D23] dark:text-[var(--color-text-primary)]">
+                          Parcela
+                        </p>
+                        <span className="shrink-0 rounded-full bg-[#FEF1D6] px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-[#B57922] dark:bg-[#B57922]/18 dark:text-[#F0B45F]">
+                          {installment.index}/{installment.total}
+                        </span>
+                      </div>
                       <p className="mt-1 text-xs text-[#6B7280] dark:text-[var(--color-text-tertiary)]">
                         {formatDateFull(installment.date)}
                       </p>
                     </div>
-                    <span className="rounded-full bg-white px-3 py-1 text-sm font-semibold text-[#1A1D23] shadow-sm dark:bg-[var(--color-surface)] dark:text-[var(--color-text-primary)]">
+                    <span className="rounded-full bg-white px-3 py-1 text-sm font-semibold text-[#E07070] shadow-sm dark:bg-[var(--color-surface)] dark:text-[#E07070]">
                       {formatCurrency(installment.amount)}
                     </span>
                   </div>
