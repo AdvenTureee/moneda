@@ -8,6 +8,8 @@ import ExpenseCard from '@/components/ExpenseCard';
 import AddExpenseModal from '@/components/AddExpenseModal';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import DatePicker from '@/components/DatePicker';
+import UpcomingInstallmentsModal from '@/components/UpcomingInstallmentsModal';
+import { hasUpcomingInstallments } from '@/lib/installments';
 import type { DateRange } from '@/components/DateRangePicker';
 import Icon from '@/components/Icon';
 import Mo from '@/components/Mo';
@@ -199,6 +201,7 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
   const [error, setError] = useState<string | null>(null);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [deletingExpense, setDeletingExpense] = useState<Expense | null>(null);
+  const [selectedInstallmentExpense, setSelectedInstallmentExpense] = useState<Expense | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => setMounted(true), []);
@@ -395,6 +398,11 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
 
   const handleDelete = useCallback(async (expense: Expense) => {
     setDeletingExpense(expense);
+  }, []);
+
+  const handleInstallmentClick = useCallback((expense: Expense) => {
+    if (!hasUpcomingInstallments(expense)) return;
+    setSelectedInstallmentExpense(expense);
   }, []);
 
   const confirmDelete = useCallback(async () => {
@@ -876,6 +884,7 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
                             <ExpenseCard
                               expense={expense}
                               variant="full"
+                              onClick={hasUpcomingInstallments(expense) ? () => handleInstallmentClick(expense) : undefined}
                               onEdit={() => setEditingExpense(expense)}
                               onDelete={() => handleDelete(expense)}
                               onReceiptChanged={fetchExpenses}
@@ -895,6 +904,12 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
         onClose={() => setEditingExpense(null)}
         onSave={handleEditSave}
         editExpense={editingExpense ?? undefined}
+      />
+      <UpcomingInstallmentsModal
+        isOpen={!!selectedInstallmentExpense}
+        expense={selectedInstallmentExpense}
+        billingClosingDay={billingClosingDay}
+        onClose={() => setSelectedInstallmentExpense(null)}
       />
       <ConfirmDialog
         isOpen={!!deletingExpense}

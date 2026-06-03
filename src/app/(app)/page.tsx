@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import ExpenseCard from '@/components/ExpenseCard';
 import CategoryBreakdown from '@/components/CategoryBreakdown';
+import RecentInstallmentExpenses from '@/components/RecentInstallmentExpenses';
 import SpendingTimelineChart from '@/components/charts/SpendingTimelineChart';
 import Mo from '@/components/Mo';
 import Icon from '@/components/Icon';
@@ -245,16 +245,10 @@ export default async function DashboardPage({
               </p>
             </div>
           ) : (
-            <div className="space-y-2">
-              {metrics.recentExpenses.map((expense, i) => (
-                <div key={expense.id} className={`animate-fade-up delay-${Math.min(i + 8, 9)}`}>
-                  <ExpenseCard
-                    expense={expense}
-                    variant="compact"
-                  />
-                </div>
-              ))}
-            </div>
+            <RecentInstallmentExpenses
+              expenses={metrics.recentExpenses}
+              billingClosingDay={billingClosingDay}
+            />
           )}
         </section>
 

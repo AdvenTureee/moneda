@@ -194,6 +194,7 @@ export default function ExpenseCard({
         }}
       />
       <button
+        type="button"
         onClick={onClick}
         className="flex items-center gap-3 flex-1 min-w-0 text-left"
       >
