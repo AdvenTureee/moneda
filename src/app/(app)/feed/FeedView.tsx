@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect, useCallback, useRef, useLayoutEffect, Suspense, type ComponentType } from 'react';
 import { createPortal } from 'react-dom';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { CalendarBlank, CreditCard, MagnifyingGlass, Tag, Wallet, X } from '@phosphor-icons/react';
 import ExpenseCard from '@/components/ExpenseCard';
 import AddExpenseModal from '@/components/AddExpenseModal';
@@ -163,6 +163,7 @@ interface FeedViewProps {
 function FeedPageInner({ billingClosingDay }: FeedViewProps) {
   const searchParams = useSearchParams();
   const { showToast } = useToast();
+  const router = useRouter();
   const dateFilters = useMemo(() => buildDateFilters(billingClosingDay), [billingClosingDay]);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [activePaymentMethod, setActivePaymentMethod] = useState<ExpensePaymentMethod | null>(null);
@@ -401,13 +402,16 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
     try {
       const res = await fetch(`/api/expenses?id=${deletingExpense.id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Erro ao excluir gasto');
+      window.sessionStorage.setItem('moneda:expense-mutated', '1');
+      window.dispatchEvent(new CustomEvent('expense-mutated', { detail: { expense: deletingExpense } }));
       setDeletingExpense(null);
       showToast('success', 'Gasto excluído com sucesso');
       fetchExpenses();
+      router.refresh();
     } catch {
       setDeletingExpense(null);
     }
-  }, [deletingExpense, fetchExpenses, showToast]);
+  }, [deletingExpense, fetchExpenses, router, showToast]);
 
   const handleEditSave = useCallback(async (input: ExpenseInput) => {
     if (!editingExpense) return;
@@ -419,9 +423,12 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
       });
       if (!res.ok) throw new Error('Erro ao atualizar gasto');
       const data = await res.json().catch(() => null);
+      window.sessionStorage.setItem('moneda:expense-mutated', '1');
+      window.dispatchEvent(new CustomEvent('expense-mutated', { detail: { expense: data?.data } }));
       setEditingExpense(null);
       showToast('success', 'Gasto atualizado com sucesso');
       fetchExpenses();
+      router.refresh();
       return data?.data;
     } catch {
       // ignore

@@ -8,6 +8,7 @@ import Icon from '@/components/Icon';
 import Confetti from '@/components/Confetti';
 import MonthPicker from '@/components/MonthPicker';
 import DashboardBalanceHero from '@/components/DashboardBalanceHero';
+import RefreshOnExpenseMutation from '@/components/RefreshOnExpenseMutation';
 import { getDashboardMetrics, getSpendingTimeline } from '@/lib/expenses';
 import { getBudgets } from '@/lib/budgets';
 import { getMonthlyIncomeTotalCents } from '@/lib/incomes';
@@ -133,6 +134,7 @@ export default async function DashboardPage({
 
   return (
     <>
+      <RefreshOnExpenseMutation />
       <div className="max-w-lg mx-auto px-4">
         {/* Header */}
         <header className="relative z-40 pt-8 pb-3 animate-fade-up delay-0">

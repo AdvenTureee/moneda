@@ -1157,7 +1157,11 @@ export async function getDashboardMetrics(
     () => getDashboardMetricsImpl(userId, period, closingDay),
     ['dashboard-metrics', BILLING_CYCLE_RULE_VERSION, userId, period, String(closingDay)],
     {
-      tags: [cacheTags.metrics(userId), cacheTags.expenses(userId)],
+      tags: [
+        cacheTags.metrics(userId),
+        cacheTags.expenses(userId),
+        cacheTags.categories(userId),
+      ],
       revalidate: 300,
     },
   )();
