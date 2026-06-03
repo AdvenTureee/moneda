@@ -34,9 +34,6 @@ export const metadata: Metadata = {
       { url: '/moico-192.png', sizes: '192x192', type: 'image/png' },
       { url: '/moico-512.png', sizes: '512x512', type: 'image/png' },
     ],
-    apple: [
-      { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
-    ],
   },
 };
 
@@ -77,6 +74,18 @@ export default function RootLayout({
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        <link
+          rel="apple-touch-icon"
+          sizes="180x180"
+          href="/apple-touch-icon-light.png"
+          media="(prefers-color-scheme: light)"
+        />
+        <link
+          rel="apple-touch-icon"
+          sizes="180x180"
+          href="/apple-touch-icon-dark.png"
+          media="(prefers-color-scheme: dark)"
+        />
       </head>
       <body className="bg-[#F8F9FB] min-h-full antialiased font-body">
         <ThemeProvider>
