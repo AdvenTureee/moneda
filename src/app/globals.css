@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where([data-theme="dark"] *));
+
 @theme inline {
   /* Brand */
   --color-brand-blue: #A8C5E0;

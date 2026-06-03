@@ -475,8 +475,8 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
                   onClick={() => handleViewChange(view.id)}
                   className={`relative z-10 min-h-8 rounded-[10px] px-3 text-[13px] font-bold outline-none transition-[color,transform] duration-150 active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-[#A8C5E0] focus-visible:ring-offset-1 ${
                     selected
-                      ? 'text-[#2E8F67] dark:text-[#7EE0AE]'
-                      : 'text-[#6B7280] hover:text-[#1A1D23] dark:text-[#9CA3AF] dark:hover:text-[#F5F7FA]'
+                      ? 'text-[#2E8F67] hover:text-[#1D7A55] dark:text-[#7EE0AE] dark:hover:text-[#A1E8C8]'
+                      : 'text-[#4B5563] hover:text-[#1A1D23] dark:text-[#9CA3AF] dark:hover:text-[#F5F7FA]'
                   }`}
                 >
                   {view.label}
@@ -579,7 +579,7 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
             >
               <div className="flex items-center justify-between gap-3 px-2 pb-2 pt-1">
                 <div>
-                  <p className="text-sm font-bold text-[#1A1D23] dark:text-[#F5F7FA]">Filtros</p>
+                  <p className="text-sm font-bold text-[#2E8F67] dark:text-[#7EE0AE]">Filtros</p>
                   <p className="text-xs font-medium text-[#6B7280]">
                     {filterTabs.find((tab) => tab.id === activeFilterTab)?.label}: {filterTabs.find((tab) => tab.id === activeFilterTab)?.value}
                   </p>
@@ -623,7 +623,7 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
                             <span className="min-w-0">
                               <span className="block text-sm font-bold">{item.label}</span>
                               {item.description && (
-                                <span className="block truncate text-[11px] font-semibold opacity-70">{item.description}</span>
+                                <span className="block truncate text-[11px] font-semibold text-[#6B7280] dark:text-[#94A3B8]">{item.description}</span>
                               )}
                             </span>
                             {selected && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#5BBF8E]" aria-hidden />}
@@ -651,7 +651,7 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
                               <span className="min-w-0">
                                 <span className="block text-sm font-semibold">{item.label}</span>
                                 {item.description && (
-                                  <span className="block truncate text-[11px] font-medium opacity-70">{item.description}</span>
+                                  <span className="block truncate text-[11px] font-medium text-[#6B7280] dark:text-[#94A3B8]">{item.description}</span>
                                 )}
                               </span>
                               {selected && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#5BBF8E]" aria-hidden />}
