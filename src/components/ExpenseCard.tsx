@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { DotsThree, Eye, Paperclip, PencilSimple, Trash, X } from '@phosphor-icons/react';
+import { CalendarBlank, DotsThree, Eye, Paperclip, PencilSimple, Trash, X } from '@phosphor-icons/react';
 import Icon from '@/components/Icon';
 import ReceiptViewerModal from '@/components/ReceiptViewerModal';
 import { PAYMENT_METHOD_BADGES } from '@/lib/paymentMethods';
@@ -26,6 +26,7 @@ interface ExpenseCardProps {
   onEdit?: () => void;
   onDelete?: () => void;
   onReceiptChanged?: () => void;
+  onViewInstallments?: () => void;
 }
 
 export default function ExpenseCard({
@@ -35,6 +36,7 @@ export default function ExpenseCard({
   onEdit,
   onDelete,
   onReceiptChanged,
+  onViewInstallments,
 }: ExpenseCardProps) {
   const category = expense.categoryData;
   const isCompact = variant === 'compact';
@@ -58,7 +60,7 @@ export default function ExpenseCard({
     installmentLabel
       ? `${paymentLabel} ${installmentLabel}`
       : paymentLabel;
-  const shouldShowMenu = Boolean(expense.receipt || onReceiptChanged || hasCardActions);
+  const shouldShowMenu = Boolean(expense.receipt || onReceiptChanged || hasCardActions || onViewInstallments);
   const menuItemClass =
     'expense-action-item group flex min-h-10 w-full items-center gap-3 rounded-[11px] px-3.5 text-left text-sm font-medium transition-[background,color,transform] duration-150 active:scale-[0.985] disabled:opacity-50';
   const menuItemDangerClass =
@@ -73,7 +75,7 @@ export default function ExpenseCard({
     const rect = trigger.getBoundingClientRect();
     const width = Math.min(264, window.innerWidth - 16);
     const actionsCount =
-      (expense.receipt ? 3 : 1) + (!isCompact && onEdit ? 1 : 0) + (!isCompact && onDelete ? 1 : 0);
+      (expense.receipt ? 3 : 1) + (onViewInstallments ? 1 : 0) + (!isCompact && onEdit ? 1 : 0) + (!isCompact && onDelete ? 1 : 0);
     const estimatedHeight = actionsCount * 40 + (!isCompact && hasCardActions ? 9 : 0) + 12;
     const left = Math.max(8, Math.min(rect.right - width, window.innerWidth - width - 8));
     const below = rect.bottom + 8;
@@ -334,6 +336,18 @@ export default function ExpenseCard({
               >
                 <Paperclip size={17} className={menuIconClass} />
                 Adicionar comprovante
+              </button>
+            )}
+
+            {onViewInstallments && (
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => runMenuAction(onViewInstallments)}
+                className={menuItemClass}
+              >
+                <CalendarBlank size={17} className={menuIconClass} />
+                Ver parcelas
               </button>
             )}
 

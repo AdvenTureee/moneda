@@ -888,6 +888,7 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
                               onEdit={() => setEditingExpense(expense)}
                               onDelete={() => handleDelete(expense)}
                               onReceiptChanged={fetchExpenses}
+                              onViewInstallments={hasUpcomingInstallments(expense) ? () => handleInstallmentClick(expense) : undefined}
                             />
                           </div>
                         ))}
