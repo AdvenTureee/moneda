@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "test": "node --test --import jiti/register tests/*.test.ts",
+    "test": "node --test --import jiti/register --import ./tests/test-setup.ts tests/*.test.ts",
     "start": "next start",
     "backfill:pii": "node --env-file=.env scripts/backfill-pii.mjs",
     "nullify:legacy-pii": "node --env-file=.env scripts/nullify-legacy-pii.mjs"

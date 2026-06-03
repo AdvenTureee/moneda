@@ -2,12 +2,14 @@
 
 import { useState, useMemo, useEffect, useCallback, useRef, useLayoutEffect, Suspense, type ComponentType } from 'react';
 import { createPortal } from 'react-dom';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { CalendarBlank, CreditCard, MagnifyingGlass, Tag, Wallet, X } from '@phosphor-icons/react';
 import ExpenseCard from '@/components/ExpenseCard';
 import AddExpenseModal from '@/components/AddExpenseModal';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import DatePicker from '@/components/DatePicker';
+import UpcomingInstallmentsModal from '@/components/UpcomingInstallmentsModal';
+import { hasUpcomingInstallments } from '@/lib/installments';
 import type { DateRange } from '@/components/DateRangePicker';
 import Icon from '@/components/Icon';
 import Mo from '@/components/Mo';
@@ -163,6 +165,7 @@ interface FeedViewProps {
 function FeedPageInner({ billingClosingDay }: FeedViewProps) {
   const searchParams = useSearchParams();
   const { showToast } = useToast();
+  const router = useRouter();
   const dateFilters = useMemo(() => buildDateFilters(billingClosingDay), [billingClosingDay]);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [activePaymentMethod, setActivePaymentMethod] = useState<ExpensePaymentMethod | null>(null);
@@ -198,6 +201,7 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
   const [error, setError] = useState<string | null>(null);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [deletingExpense, setDeletingExpense] = useState<Expense | null>(null);
+  const [selectedInstallmentExpense, setSelectedInstallmentExpense] = useState<Expense | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => setMounted(true), []);
@@ -396,18 +400,26 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
     setDeletingExpense(expense);
   }, []);
 
+  const handleInstallmentClick = useCallback((expense: Expense) => {
+    if (!hasUpcomingInstallments(expense)) return;
+    setSelectedInstallmentExpense(expense);
+  }, []);
+
   const confirmDelete = useCallback(async () => {
     if (!deletingExpense) return;
     try {
       const res = await fetch(`/api/expenses?id=${deletingExpense.id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Erro ao excluir gasto');
+      window.sessionStorage.setItem('moneda:expense-mutated', '1');
+      window.dispatchEvent(new CustomEvent('expense-mutated', { detail: { expense: deletingExpense } }));
       setDeletingExpense(null);
       showToast('success', 'Gasto excluído com sucesso');
       fetchExpenses();
+      router.refresh();
     } catch {
       setDeletingExpense(null);
     }
-  }, [deletingExpense, fetchExpenses, showToast]);
+  }, [deletingExpense, fetchExpenses, router, showToast]);
 
   const handleEditSave = useCallback(async (input: ExpenseInput) => {
     if (!editingExpense) return;
@@ -419,9 +431,12 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
       });
       if (!res.ok) throw new Error('Erro ao atualizar gasto');
       const data = await res.json().catch(() => null);
+      window.sessionStorage.setItem('moneda:expense-mutated', '1');
+      window.dispatchEvent(new CustomEvent('expense-mutated', { detail: { expense: data?.data } }));
       setEditingExpense(null);
       showToast('success', 'Gasto atualizado com sucesso');
       fetchExpenses();
+      router.refresh();
       return data?.data;
     } catch {
       // ignore
@@ -460,8 +475,8 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
                   onClick={() => handleViewChange(view.id)}
                   className={`relative z-10 min-h-8 rounded-[10px] px-3 text-[13px] font-bold outline-none transition-[color,transform] duration-150 active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-[#A8C5E0] focus-visible:ring-offset-1 ${
                     selected
-                      ? 'text-[#2E8F67] dark:text-[#7EE0AE]'
-                      : 'text-[#6B7280] hover:text-[#1A1D23] dark:text-[#9CA3AF] dark:hover:text-[#F5F7FA]'
+                      ? 'text-[#2E8F67] hover:text-[#1D7A55] dark:text-[#7EE0AE] dark:hover:text-[#A1E8C8]'
+                      : 'text-[#4B5563] hover:text-[#1A1D23] dark:text-[#9CA3AF] dark:hover:text-[#F5F7FA]'
                   }`}
                 >
                   {view.label}
@@ -489,7 +504,7 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
 
           <div
             ref={filtersAnchorRef}
-            className="-mx-0.5 flex gap-1.5 overflow-x-auto px-0.5 pb-0.5 text-[11px] font-semibold text-[#6B7280] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            className="-mx-0.5 flex gap-1.5 overflow-x-auto px-0.5 pb-0.5 text-[11px] font-semibold text-[#1A1D23] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           >
             {filterTabs.map((tab) => {
               const TabIcon = tab.icon;
@@ -505,7 +520,7 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
                   className={`group flex h-8 max-w-[180px] shrink-0 items-center justify-center gap-1.5 rounded-full border px-3 text-center outline-none transition-[background-color,border-color,box-shadow,color,transform] duration-150 ease-out active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-[#A8C5E0] focus-visible:ring-offset-1 ${
                     tab.active
                       ? 'border-[#5BBF8E]/45 bg-[#EEF9F4] text-[#2E8F67] hover:border-[#5BBF8E]/70 hover:bg-[#EAF7F0] dark:border-[#5BBF8E]/45 dark:bg-[#5BBF8E]/14 dark:text-[#7EE0AE]'
-                      : 'border-[#E5E7EB] bg-[#F8F9FB] text-[#6B7280] hover:border-[#A8C5E0]/70 hover:bg-[#EEF2F7] dark:border-white/10 dark:bg-white/6 dark:text-[#CBD5E1] dark:hover:bg-white/10'
+                      : 'border-[#E5E7EB] bg-[#F8F9FB] text-[#1A1D23] hover:border-[#A8C5E0]/70 hover:bg-[#EEF2F7] dark:border-white/10 dark:bg-white/6 dark:text-[#CBD5E1] dark:hover:bg-white/10'
                   }`}
                 >
                   {PaymentIcon && paymentMeta ? (
@@ -564,8 +579,8 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
             >
               <div className="flex items-center justify-between gap-3 px-2 pb-2 pt-1">
                 <div>
-                  <p className="text-sm font-bold text-[#1A1D23] dark:text-[#F5F7FA]">Filtros</p>
-                  <p className="text-xs font-medium text-[#9CA3AF]">
+                  <p className="text-sm font-bold text-[#2E8F67] dark:text-[#7EE0AE]">Filtros</p>
+                  <p className="text-xs font-medium text-[#6B7280]">
                     {filterTabs.find((tab) => tab.id === activeFilterTab)?.label}: {filterTabs.find((tab) => tab.id === activeFilterTab)?.value}
                   </p>
                 </div>
@@ -608,7 +623,7 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
                             <span className="min-w-0">
                               <span className="block text-sm font-bold">{item.label}</span>
                               {item.description && (
-                                <span className="block truncate text-[11px] font-semibold opacity-70">{item.description}</span>
+                                <span className="block truncate text-[11px] font-semibold text-[#6B7280] dark:text-[#94A3B8]">{item.description}</span>
                               )}
                             </span>
                             {selected && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#5BBF8E]" aria-hidden />}
@@ -636,7 +651,7 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
                               <span className="min-w-0">
                                 <span className="block text-sm font-semibold">{item.label}</span>
                                 {item.description && (
-                                  <span className="block truncate text-[11px] font-medium opacity-70">{item.description}</span>
+                                  <span className="block truncate text-[11px] font-medium text-[#6B7280] dark:text-[#94A3B8]">{item.description}</span>
                                 )}
                               </span>
                               {selected && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#5BBF8E]" aria-hidden />}
@@ -869,6 +884,7 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
                             <ExpenseCard
                               expense={expense}
                               variant="full"
+                              onClick={hasUpcomingInstallments(expense) ? () => handleInstallmentClick(expense) : undefined}
                               onEdit={() => setEditingExpense(expense)}
                               onDelete={() => handleDelete(expense)}
                               onReceiptChanged={fetchExpenses}
@@ -888,6 +904,12 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
         onClose={() => setEditingExpense(null)}
         onSave={handleEditSave}
         editExpense={editingExpense ?? undefined}
+      />
+      <UpcomingInstallmentsModal
+        isOpen={!!selectedInstallmentExpense}
+        expense={selectedInstallmentExpense}
+        billingClosingDay={billingClosingDay}
+        onClose={() => setSelectedInstallmentExpense(null)}
       />
       <ConfirmDialog
         isOpen={!!deletingExpense}

@@ -1,13 +1,14 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import ExpenseCard from '@/components/ExpenseCard';
 import CategoryBreakdown from '@/components/CategoryBreakdown';
+import RecentInstallmentExpenses from '@/components/RecentInstallmentExpenses';
 import SpendingTimelineChart from '@/components/charts/SpendingTimelineChart';
 import Mo from '@/components/Mo';
 import Icon from '@/components/Icon';
 import Confetti from '@/components/Confetti';
 import MonthPicker from '@/components/MonthPicker';
 import DashboardBalanceHero from '@/components/DashboardBalanceHero';
+import RefreshOnExpenseMutation from '@/components/RefreshOnExpenseMutation';
 import { getDashboardMetrics, getSpendingTimeline } from '@/lib/expenses';
 import { getBudgets } from '@/lib/budgets';
 import { getMonthlyIncomeTotalCents } from '@/lib/incomes';
@@ -133,6 +134,7 @@ export default async function DashboardPage({
 
   return (
     <>
+      <RefreshOnExpenseMutation />
       <div className="max-w-lg mx-auto px-4">
         {/* Header */}
         <header className="relative z-40 pt-8 pb-3 animate-fade-up delay-0">
@@ -243,16 +245,10 @@ export default async function DashboardPage({
               </p>
             </div>
           ) : (
-            <div className="space-y-2">
-              {metrics.recentExpenses.map((expense, i) => (
-                <div key={expense.id} className={`animate-fade-up delay-${Math.min(i + 8, 9)}`}>
-                  <ExpenseCard
-                    expense={expense}
-                    variant="compact"
-                  />
-                </div>
-              ))}
-            </div>
+            <RecentInstallmentExpenses
+              expenses={metrics.recentExpenses}
+              billingClosingDay={billingClosingDay}
+            />
           )}
         </section>
 

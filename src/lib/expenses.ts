@@ -6,10 +6,12 @@ import { getCategories, getCategoriesByIds } from '@/lib/categories';
 import { getBudgets } from '@/lib/budgets';
 import { cacheTags } from '@/lib/cache';
 import { getMonthlyBudgetCents } from '@/lib/monthlyBudget';
+import { getBillingClosingDay } from '@/lib/profiles';
 import {
   BILLING_CYCLE_RULE_VERSION,
   getBillingCycleForPeriod,
   getBillingPeriodForDate,
+  shiftPeriod as shiftBillingPeriod,
 } from '@/lib/billingCycle';
 
 type ExpensesRow = Database['public']['Tables']['expenses']['Row'];
@@ -91,8 +93,19 @@ function addMonthsClamped(date: Date, months: number, preferredDay = date.getDat
   );
 }
 
-function occurrenceDate(series: ExpenseSeriesRow, occurrenceIndex: number): Date {
-  return addMonthsClamped(new Date(series.start_at), occurrenceIndex - 1, series.day_of_month);
+export function occurrenceDate(series: ExpenseSeriesRow, occurrenceIndex: number, closingDay: number): Date {
+  if (series.kind !== 'installment') {
+    return addMonthsClamped(new Date(series.start_at), occurrenceIndex - 1, series.day_of_month);
+  }
+
+  const firstOccurrence = new Date(series.start_at);
+  if (occurrenceIndex === 1) {
+    return firstOccurrence;
+  }
+
+  const firstPeriod = getBillingPeriodForDate(firstOccurrence, closingDay);
+  const targetPeriod = shiftBillingPeriod(firstPeriod, occurrenceIndex - 1);
+  return getBillingCycleForPeriod(targetPeriod, closingDay).start;
 }
 
 function seriesKindFromExpense(row: Pick<ExpensesRow, 'series_id' | 'is_recurring' | 'payment_method' | 'metadata'>): Expense['seriesKind'] {
@@ -210,6 +223,7 @@ function buildSeriesInsert(input: ExpenseInput, occurredAt: string): ExpenseSeri
 function buildOccurrenceInsert(
   series: ExpenseSeriesRow,
   occurrenceIndex: number,
+  closingDay: number,
 ): ExpensesInsert {
   const installmentTotal = series.kind === 'installment' ? series.total_occurrences ?? 2 : null;
   const metadata = installmentTotal
@@ -225,7 +239,7 @@ function buildOccurrenceInsert(
     payment_method: series.payment_method,
     metadata,
     tags: series.tags,
-    occurred_at: occurrenceDate(series, occurrenceIndex).toISOString(),
+    occurred_at: occurrenceDate(series, occurrenceIndex, closingDay).toISOString(),
     is_recurring: series.kind === 'recurring',
     series_id: series.id,
     series_occurrence_index: occurrenceIndex,
@@ -235,8 +249,9 @@ function buildOccurrenceInsert(
 function buildExpenseUpdateFromSeries(
   series: ExpenseSeriesRow,
   occurrenceIndex: number,
+  closingDay: number,
 ): ExpensesUpdate {
-  const insert = buildOccurrenceInsert(series, occurrenceIndex);
+  const insert = buildOccurrenceInsert(series, occurrenceIndex, closingDay);
   return {
     amount_cents: insert.amount_cents,
     category_id: insert.category_id,
@@ -257,6 +272,7 @@ function periodFromExpenseFilters(filters: ExpenseFilters): string {
 
 async function ensureExpenseSeriesMaterialized(userId: string, throughPeriod: string): Promise<void> {
   const db = createServiceClient();
+  const closingDay = await getBillingClosingDay(userId);
   const [throughY, throughM] = throughPeriod.split('-').map(Number);
   const throughEnd = new Date(throughY, throughM, 0, 23, 59, 59).toISOString();
 
@@ -286,7 +302,7 @@ async function ensureExpenseSeriesMaterialized(userId: string, throughPeriod: st
     }
 
     for (let index = 1; index <= maxOccurrence; index += 1) {
-      inserts.push(buildOccurrenceInsert(series, index));
+      inserts.push(buildOccurrenceInsert(series, index, closingDay));
     }
   }
 
@@ -360,6 +376,14 @@ function rowToExpense(row: ExpensesRow): Expense {
   };
 }
 
+export function filterRecentExpenses(expenses: Expense[]): Expense[] {
+  const now = Date.now();
+  return expenses
+    .filter((expense) => new Date(expense.createdAt).getTime() <= now)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, 5);
+}
+
 // ---------------------------------------------------------------------------
 // Supabase implementations
 // ---------------------------------------------------------------------------
@@ -423,11 +447,12 @@ async function createExpenseInDB(input: ExpenseInput): Promise<Expense> {
     if (seriesError) throw new Error(`createExpenseSeries: ${seriesError.message}`);
 
     const series = seriesData as ExpenseSeriesRow;
+    const closingDay = await getBillingClosingDay(input.userId);
     const occurrenceIndex = series.kind === 'installment'
       ? input.creditDetails?.installmentCurrent ?? 1
       : 1;
     const insert = {
-      ...buildOccurrenceInsert(series, occurrenceIndex),
+      ...buildOccurrenceInsert(series, occurrenceIndex, closingDay),
       occurred_at: occurredAt,
     };
 
@@ -641,9 +666,7 @@ async function getDashboardMetricsFromDBViaQuery(
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([date, amount]) => ({ date, amount }));
 
-  const recentExpenses = enriched
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    .slice(0, 5);
+  const recentExpenses = filterRecentExpenses(enriched);
 
   const expensesByCategory: Record<string, Expense[]> = {};
   for (const e of enriched) {
@@ -747,7 +770,7 @@ function getDashboardMetricsFromMock(userId: string, period: string, closingDay:
     byDay[key] = (byDay[key] ?? 0) + e.amount;
   }
   const dailySpending = Object.entries(byDay).sort(([a], [b]) => a.localeCompare(b)).map(([date, amount]) => ({ date, amount }));
-  const recentExpenses = enriched.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 5);
+  const recentExpenses = filterRecentExpenses(enriched);
   const expensesByCategory: Record<string, Expense[]> = {};
   for (const e of enriched) (expensesByCategory[e.category] ??= []).push(e);
   for (const list of Object.values(expensesByCategory)) {
@@ -808,11 +831,12 @@ async function convertExistingExpenseToSeries(
   if (seriesError) throw new Error(`createExpenseSeries: ${seriesError.message}`);
 
   const series = seriesData as ExpenseSeriesRow;
+  const closingDay = await getBillingClosingDay(next.userId!);
   const occurrenceIndex = series.kind === 'installment'
     ? next.creditDetails?.installmentCurrent ?? 1
     : 1;
   const occurrenceUpdates = {
-    ...buildExpenseUpdateFromSeries(series, occurrenceIndex),
+    ...buildExpenseUpdateFromSeries(series, occurrenceIndex, closingDay),
     occurred_at: next.occurredAt ?? existing.occurred_at,
     series_id: series.id,
     series_occurrence_index: occurrenceIndex,
@@ -849,9 +873,10 @@ async function updateExpenseSeriesFromOccurrence(
   }
 
   const series = seriesData as ExpenseSeriesRow;
+  const closingDay = await getBillingClosingDay(series.user_id);
   const occurrenceDateForEdit = input.occurredAt
     ? new Date(input.occurredAt)
-    : occurrenceDate(series, occurrenceIndex);
+    : occurrenceDate(series, occurrenceIndex, closingDay);
 
   if (series.kind === 'recurring' && input.isRecurring === false) {
     const nowIso = new Date().toISOString();
@@ -931,7 +956,7 @@ async function updateExpenseSeriesFromOccurrence(
     const index = row.series_occurrence_index ?? occurrenceIndex;
     return db
       .from('expenses')
-      .update(buildExpenseUpdateFromSeries(nextSeries, index))
+      .update(buildExpenseUpdateFromSeries(nextSeries, index, closingDay))
       .eq('id', row.id);
   }));
 
@@ -1132,7 +1157,11 @@ export async function getDashboardMetrics(
     () => getDashboardMetricsImpl(userId, period, closingDay),
     ['dashboard-metrics', BILLING_CYCLE_RULE_VERSION, userId, period, String(closingDay)],
     {
-      tags: [cacheTags.metrics(userId), cacheTags.expenses(userId)],
+      tags: [
+        cacheTags.metrics(userId),
+        cacheTags.expenses(userId),
+        cacheTags.categories(userId),
+      ],
       revalidate: 300,
     },
   )();
