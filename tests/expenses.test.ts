@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { occurrenceDate } from '../src/lib/expenses';
+import { occurrenceDate, filterRecentExpenses } from '../src/lib/expenses';
 
 describe('installment occurrence date', () => {
   it('keeps the first installment on the original purchase date and moves following installments to the next billing cycle start', () => {
@@ -26,5 +26,20 @@ describe('installment occurrence date', () => {
 
     assert.equal(occurrenceDate(series, 1, 20).toISOString(), firstDate.toISOString());
     assert.equal(occurrenceDate(series, 2, 20).toISOString(), new Date(2026, 5, 20, 0, 0, 0, 0).toISOString());
+  });
+
+  it('does not include future scheduled expenses in recentExpenses', () => {
+    const now = new Date();
+    const expenses = [
+      { id: 'past', createdAt: new Date(now.getTime() - 24 * 60 * 60 * 1000) },
+      { id: 'future', createdAt: new Date(now.getTime() + 24 * 60 * 60 * 1000) },
+      { id: 'today', createdAt: new Date(now.getTime() - 60 * 60 * 1000) },
+    ] as any;
+
+    const filtered = filterRecentExpenses(expenses);
+
+    assert.equal(filtered.some((expense) => expense.id === 'future'), false);
+    assert.equal(filtered.some((expense) => expense.id === 'past'), true);
+    assert.equal(filtered.some((expense) => expense.id === 'today'), true);
   });
 });

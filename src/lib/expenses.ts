@@ -376,6 +376,14 @@ function rowToExpense(row: ExpensesRow): Expense {
   };
 }
 
+export function filterRecentExpenses(expenses: Expense[]): Expense[] {
+  const now = Date.now();
+  return expenses
+    .filter((expense) => new Date(expense.createdAt).getTime() <= now)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, 5);
+}
+
 // ---------------------------------------------------------------------------
 // Supabase implementations
 // ---------------------------------------------------------------------------
@@ -658,9 +666,7 @@ async function getDashboardMetricsFromDBViaQuery(
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([date, amount]) => ({ date, amount }));
 
-  const recentExpenses = enriched
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    .slice(0, 5);
+  const recentExpenses = filterRecentExpenses(enriched);
 
   const expensesByCategory: Record<string, Expense[]> = {};
   for (const e of enriched) {
@@ -764,7 +770,7 @@ function getDashboardMetricsFromMock(userId: string, period: string, closingDay:
     byDay[key] = (byDay[key] ?? 0) + e.amount;
   }
   const dailySpending = Object.entries(byDay).sort(([a], [b]) => a.localeCompare(b)).map(([date, amount]) => ({ date, amount }));
-  const recentExpenses = enriched.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 5);
+  const recentExpenses = filterRecentExpenses(enriched);
   const expensesByCategory: Record<string, Expense[]> = {};
   for (const e of enriched) (expensesByCategory[e.category] ??= []).push(e);
   for (const list of Object.values(expensesByCategory)) {
