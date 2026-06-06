@@ -49,6 +49,22 @@ function invalidateExpenseCaches(userId: string) {
   revalidateTag(cacheTags.profile(userId), opts);
 }
 
+function expenseMutationErrorResponse(error: unknown) {
+  const message = error instanceof Error ? error.message : 'Erro desconhecido';
+  const isPaymentMethodConstraint =
+    message.includes('expenses_payment_method_check') ||
+    message.includes('expense_series_payment_method_check');
+
+  if (isPaymentMethodConstraint) {
+    return NextResponse.json(
+      { error: 'Forma de pagamento ainda não está habilitada no banco de dados.' },
+      { status: 422 },
+    );
+  }
+
+  return NextResponse.json({ error: message }, { status: 500 });
+}
+
 export async function GET(req: NextRequest) {
   const supabase = await createSessionClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -109,9 +125,13 @@ export async function POST(req: NextRequest) {
     isRecurring: body.isRecurring,
   };
 
-  const expense = await createExpense(input);
-  invalidateExpenseCaches(user.id);
-  return NextResponse.json({ data: expense }, { status: 201 });
+  try {
+    const expense = await createExpense(input);
+    invalidateExpenseCaches(user.id);
+    return NextResponse.json({ data: expense }, { status: 201 });
+  } catch (error) {
+    return expenseMutationErrorResponse(error);
+  }
 }
 
 export async function PATCH(req: NextRequest) {
@@ -134,17 +154,21 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: 'paymentMethod is invalid' }, { status: 422 });
   }
 
-  const expense = await updateExpense(body.id, {
-    amount: body.amount,
-    category: body.category,
-    description: body.description,
-    occurredAt: body.occurredAt,
-    isRecurring: body.isRecurring,
-    paymentMethod: readPaymentMethod(body),
-    creditDetails: readPaymentMethod(body) === 'credit' ? body.creditDetails ?? null : null,
-  });
-  invalidateExpenseCaches(user.id);
-  return NextResponse.json({ data: expense });
+  try {
+    const expense = await updateExpense(body.id, {
+      amount: body.amount,
+      category: body.category,
+      description: body.description,
+      occurredAt: body.occurredAt,
+      isRecurring: body.isRecurring,
+      paymentMethod: readPaymentMethod(body),
+      creditDetails: readPaymentMethod(body) === 'credit' ? body.creditDetails ?? null : null,
+    });
+    invalidateExpenseCaches(user.id);
+    return NextResponse.json({ data: expense });
+  } catch (error) {
+    return expenseMutationErrorResponse(error);
+  }
 }
 
 export async function DELETE(req: NextRequest) {
