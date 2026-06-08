@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import Link from 'next/link';
+import Link, { useLinkStatus } from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { House, List, PlusCircle, Sparkle, User } from '@phosphor-icons/react';
 
@@ -27,6 +27,16 @@ function scrollPageToTop() {
     left: 0,
     behavior: reduceMotion ? 'auto' : 'smooth',
   });
+}
+
+function NavPendingHint({ optimistic }: { optimistic: boolean }) {
+  const { pending } = useLinkStatus();
+  return (
+    <span
+      className={`bottom-nav-pending-hint ${pending || optimistic ? 'bottom-nav-pending-hint--visible' : ''}`}
+      aria-hidden
+    />
+  );
 }
 
 interface BottomNavProps {
@@ -55,6 +65,12 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
     setPendingHref(null);
   }, [pathname]);
 
+  useEffect(() => {
+    if (!pendingHref) return;
+    const timer = window.setTimeout(() => setPendingHref(null), 3000);
+    return () => window.clearTimeout(timer);
+  }, [pendingHref]);
+
   return (
     <nav
       className="fixed bottom-0 left-0 right-0 bg-white z-40"
@@ -67,12 +83,13 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
             return (
               <button
                 key={item.label}
+                type="button"
                 onClick={() => {
                   setPendingHref(null);
                   onAddExpense?.();
                 }}
                 aria-label="Adicionar gasto"
-                className={`bottom-nav-action justify-self-center flex flex-col items-center justify-center w-[60px] h-[60px] rounded-full bg-[#5BBF8E] text-white -mt-5 active:scale-90 transition-transform duration-75 ${pendingHref === item.href ? 'bottom-nav-action--pending' : ''}`}
+                className={`bottom-nav-action justify-self-center flex flex-col items-center justify-center w-[60px] h-[60px] rounded-full bg-[#5BBF8E] text-white -mt-5 touch-manipulation active:scale-90 transition-transform duration-75 ${pendingHref === item.href ? 'bottom-nav-action--pending' : ''}`}
                 style={{ boxShadow: 'var(--shadow-nav-action)' }}
               >
                 <item.icon size={28} />
@@ -84,7 +101,7 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
             ? pathname === '/'
             : pathname.startsWith(item.href);
           const isSamePath = pathname === item.href;
-          const isPending = pendingHref === item.href && !isActive;
+          const isPending = pendingHref === item.href && !isSamePath;
 
           return (
             <Link
@@ -93,6 +110,11 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
               prefetch
               onMouseEnter={() => prefetchRoute(item.href)}
               onTouchStart={() => prefetchRoute(item.href)}
+              onPointerDown={(event) => {
+                if (event.pointerType === 'mouse' && event.button !== 0) return;
+                prefetchRoute(item.href);
+                if (!isSamePath) setPendingHref(item.href);
+              }}
               onClick={(event) => {
                 if (isSamePath) {
                   event.preventDefault();
@@ -100,10 +122,10 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
                   scrollPageToTop();
                   return;
                 }
-                if (!isActive) setPendingHref(item.href);
+                setPendingHref(item.href);
               }}
               onFocus={() => prefetchRoute(item.href)}
-              className={`bottom-nav-link relative justify-self-center flex flex-col items-center justify-center gap-0.5 w-full min-w-[44px] min-h-[44px] rounded-lg transition-colors duration-150 ${
+              className={`bottom-nav-link relative justify-self-center flex flex-col items-center justify-center gap-0.5 w-full min-w-[44px] min-h-[44px] rounded-lg touch-manipulation transition-colors duration-150 ${
                 isActive || isPending
                   ? 'text-[#A8C5E0]'
                   : 'text-[#9CA3AF] hover:text-[#6B7280]'
@@ -112,6 +134,7 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
             >
               <item.icon size={20} />
               <span className="text-[10px] font-medium leading-none">{item.label}</span>
+              <NavPendingHint optimistic={isPending} />
               {(isActive || isPending) && (
                 <span className={`bottom-nav-indicator absolute -bottom-0.5 h-0.5 rounded-full ${isPending ? 'bottom-nav-indicator--pending' : ''}`} />
               )}

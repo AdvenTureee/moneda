@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect, useCallback, useRef, useLayoutEffect, Suspense, type ComponentType } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef, useLayoutEffect, useTransition, Suspense, type ComponentType } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { CalendarBlank, CreditCard, MagnifyingGlass, Tag, Wallet, X } from '@phosphor-icons/react';
@@ -169,7 +169,8 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
   const dateFilters = useMemo(() => buildDateFilters(billingClosingDay), [billingClosingDay]);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [activePaymentMethod, setActivePaymentMethod] = useState<ExpensePaymentMethod | null>(null);
-  const [search, setSearch] = useState('');
+  const [searchInput, setSearchInput] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [dateRange, setDateRange] = useState<DateRange>(() => buildPreset(DEFAULT_DATE_PRESET, billingClosingDay));
   const [activeView, setActiveView] = useState<FeedView>('history');
   const [customFrom, setCustomFrom] = useState('');
@@ -178,6 +179,7 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
   const [activeFilterTab, setActiveFilterTab] = useState<FilterTab>('date');
   const [filtersPosition, setFiltersPosition] = useState<{ top: number; left: number; width: number } | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [, startUiTransition] = useTransition();
   const filtersAnchorRef = useRef<HTMLDivElement | null>(null);
 
   // Read date range from URL after mount to avoid SSR/CSR hydration mismatch.
@@ -203,8 +205,14 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
   const [deletingExpense, setDeletingExpense] = useState<Expense | null>(null);
   const [selectedInstallmentExpense, setSelectedInstallmentExpense] = useState<Expense | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const requestSeqRef = useRef(0);
 
   useEffect(() => setMounted(true), []);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedSearch(searchInput), 180);
+    return () => window.clearTimeout(timer);
+  }, [searchInput]);
 
   useEffect(() => {
     if (!filtersOpen) return;
@@ -252,6 +260,8 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
   const fetchExpenses = useCallback(async () => {
     abortRef.current?.abort();
     const controller = new AbortController();
+    const requestSeq = requestSeqRef.current + 1;
+    requestSeqRef.current = requestSeq;
     abortRef.current = controller;
     setLoading(true);
     setError(null);
@@ -259,7 +269,7 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
       const params = new URLSearchParams();
       if (activeCategory) params.set('category', activeCategory);
       if (activePaymentMethod) params.set('paymentMethod', activePaymentMethod);
-      if (search.trim()) params.set('search', search.trim());
+      if (debouncedSearch.trim()) params.set('search', debouncedSearch.trim());
       if (dateRange.from) params.set('startDate', dateRange.from);
       if (dateRange.to) params.set('endDate', dateRange.to);
       if (activeView === 'scheduled') params.set('onlyFuture', 'true');
@@ -278,10 +288,13 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
       if ((e as Error)?.name === 'AbortError') return;
       setError(e instanceof Error ? e.message : 'Erro desconhecido');
     } finally {
-      setHasLoadedExpenses(true);
-      setLoading(false);
+      if (requestSeqRef.current === requestSeq) {
+        setHasLoadedExpenses(true);
+        setLoading(false);
+        if (abortRef.current === controller) abortRef.current = null;
+      }
     }
-  }, [activeCategory, activePaymentMethod, search, dateRange, activeView]);
+  }, [activeCategory, activePaymentMethod, debouncedSearch, dateRange, activeView]);
 
   useEffect(() => {
     fetchExpenses();
@@ -315,8 +328,8 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
       result = result.filter((e) => e.paymentMethod === activePaymentMethod);
     }
 
-    if (search.trim()) {
-      const q = search.toLowerCase().trim();
+    if (debouncedSearch.trim()) {
+      const q = debouncedSearch.toLowerCase().trim();
       result = result.filter(
         (e) =>
           e.description.toLowerCase().includes(q) ||
@@ -329,7 +342,7 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
       const bTime = new Date(b.createdAt).getTime();
       return activeView === 'scheduled' ? aTime - bTime : bTime - aTime;
     });
-  }, [allExpenses, activeCategory, activePaymentMethod, search, activeView]);
+  }, [allExpenses, activeCategory, activePaymentMethod, debouncedSearch, activeView]);
 
   const groups = activeView === 'scheduled'
     ? [...groupExpensesByDate(filtered)].reverse()
@@ -371,11 +384,13 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
   ];
 
   const clearFilters = useCallback(() => {
-    setDateRange(buildPreset(DEFAULT_DATE_PRESET, billingClosingDay));
-    setCustomFrom('');
-    setCustomTo('');
-    setActiveCategory(null);
-    setActivePaymentMethod(null);
+    startUiTransition(() => {
+      setDateRange(buildPreset(DEFAULT_DATE_PRESET, billingClosingDay));
+      setCustomFrom('');
+      setCustomTo('');
+      setActiveCategory(null);
+      setActivePaymentMethod(null);
+    });
   }, [billingClosingDay]);
 
   const openFilterTab = useCallback((tabId: FilterTab) => {
@@ -387,13 +402,16 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
     const from = parseDateInputToIso(customFrom, false);
     const to = parseDateInputToIso(customTo, true);
     if (!from || !to) return;
-    setDateRange({ from, to, presetId: 'custom' });
+    startUiTransition(() => {
+      setDateRange({ from, to, presetId: 'custom' });
+    });
   }, [customFrom, customTo]);
 
   const handleViewChange = useCallback((nextView: FeedView) => {
     if (nextView === activeView) return;
-    setAllExpenses([]);
-    setActiveView(nextView);
+    startUiTransition(() => {
+      setActiveView(nextView);
+    });
   }, [activeView]);
 
   const handleDelete = useCallback(async (expense: Expense) => {
@@ -444,6 +462,7 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
   }, [editingExpense, fetchExpenses, showToast]);
 
   const showInitialSkeleton = loading && !hasLoadedExpenses;
+  const showRefreshing = loading && hasLoadedExpenses;
 
   return (
     <>
@@ -453,7 +472,7 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
           <h1 className="text-2xl font-heading text-[#1A1D23]">Feed de Gastos</h1>
         </header>
 
-        <div className="themed-card bg-white rounded-[14px] p-2.5 space-y-2.5 mb-4 animate-fade-up delay-1">
+        <div className="themed-card bg-white rounded-[14px] p-2.5 space-y-2.5 mb-5 animate-fade-up delay-1">
           <div className="relative grid grid-cols-2 overflow-hidden rounded-[12px] bg-[#F4F6FA] p-0.5 dark:bg-white/6" role="tablist" aria-label="Visão do feed">
             <span
               className={`absolute bottom-0.5 top-0.5 w-[calc(50%-2px)] rounded-[10px] bg-[#EEF9F4] shadow-sm transition-transform duration-200 ease-out dark:bg-[#5BBF8E]/14 ${
@@ -494,8 +513,8 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
                 />
                 <input
                   type="search"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
                   placeholder="Buscar gasto..."
                   className="themed-field h-9 w-full rounded-[9px] border border-[#E5E7EB] bg-[#F8F9FB] pl-9 pr-3 text-sm text-[#1A1D23] placeholder:text-[#7C8898] outline-none transition-colors focus:border-[#A8C5E0] dark:border-white/10 dark:bg-white/6 dark:text-[#F5F7FA] dark:placeholder:text-[#94A3B8]"
                   aria-label="Buscar gastos"
@@ -615,7 +634,7 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
                           <button
                             key={item.id}
                             type="button"
-                            onClick={() => setDateRange(item.range)}
+                            onClick={() => startUiTransition(() => setDateRange(item.range))}
                             className={`date-range-option flex min-h-12 w-full items-center justify-between gap-3 rounded-[11px] px-3 text-left transition-colors ${
                               selected ? 'date-range-option--selected' : ''
                             }`}
@@ -643,7 +662,7 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
                             <button
                               key={item.id}
                               type="button"
-                              onClick={() => setDateRange(item.range)}
+                              onClick={() => startUiTransition(() => setDateRange(item.range))}
                               className={`date-range-option flex min-h-11 w-full items-center justify-between gap-3 rounded-[11px] px-3 text-left transition-colors ${
                                 selected ? 'date-range-option--selected' : ''
                               }`}
@@ -668,7 +687,7 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
                           <button
                             key={item.id}
                             type="button"
-                            onClick={() => setDateRange(item.range)}
+                            onClick={() => startUiTransition(() => setDateRange(item.range))}
                             className={`date-range-option min-h-11 rounded-[11px] px-3 text-left text-sm font-semibold transition-colors ${
                               selected ? 'date-range-option--selected' : ''
                             }`}
@@ -723,7 +742,7 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
                   <div className="space-y-1" role="tabpanel" aria-label="Filtro de categoria">
                     <button
                       type="button"
-                      onClick={() => setActiveCategory(null)}
+                      onClick={() => startUiTransition(() => setActiveCategory(null))}
                       className={`date-range-option flex min-h-11 w-full items-center gap-2 rounded-[11px] px-3 text-left text-sm font-semibold transition-colors ${
                         activeCategory === null ? 'date-range-option--selected' : ''
                       }`}
@@ -735,9 +754,9 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
                       <button
                         key={category.id}
                         type="button"
-                        onClick={() =>
-                          setActiveCategory((prev) => (prev === category.id ? null : category.id))
-                        }
+                        onClick={() => startUiTransition(() => {
+                          setActiveCategory((prev) => (prev === category.id ? null : category.id));
+                        })}
                         className={`date-range-option flex min-h-11 w-full items-center gap-2 rounded-[11px] px-3 text-left text-sm font-semibold transition-colors ${
                           activeCategory === category.id ? 'date-range-option--selected' : ''
                         }`}
@@ -753,7 +772,7 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
                   <div className="grid grid-cols-2 gap-1.5" role="tabpanel" aria-label="Filtro de método de pagamento">
                     <button
                       type="button"
-                      onClick={() => setActivePaymentMethod(null)}
+                      onClick={() => startUiTransition(() => setActivePaymentMethod(null))}
                       className={`date-range-option flex min-h-11 items-center gap-2 rounded-[11px] px-3 text-left text-sm font-semibold transition-colors ${
                         activePaymentMethod === null ? 'date-range-option--selected' : ''
                       }`}
@@ -768,9 +787,9 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
                           <button
                             key={method.value}
                             type="button"
-                            onClick={() =>
-                              setActivePaymentMethod((prev) => (prev === method.value ? null : method.value))
-                            }
+                            onClick={() => startUiTransition(() => {
+                              setActivePaymentMethod((prev) => (prev === method.value ? null : method.value));
+                            })}
                             className={`date-range-option flex min-h-11 items-center gap-2 rounded-[11px] px-3 text-left text-sm font-semibold transition-colors ${
                               activePaymentMethod === method.value ? 'date-range-option--selected' : ''
                             }`}
@@ -789,8 +808,19 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
           document.body,
         )}
 
+        <div
+          className={`feed-progress-slot ${showRefreshing && !showInitialSkeleton ? 'feed-progress-slot--active' : ''}`}
+          aria-hidden={!showRefreshing || showInitialSkeleton}
+        >
+          <div className="feed-progress" role="presentation">
+            <div className="feed-progress__track">
+              <span className="feed-progress__bar" />
+            </div>
+          </div>
+        </div>
+
         {/* Expense list grouped by date */}
-        <div className="relative min-h-[500px]">
+        <div className="relative min-h-[500px]" aria-busy={showRefreshing}>
           {/* Skeleton layer */}
           <div
             className="absolute inset-0 space-y-4 transition-opacity duration-200"
@@ -810,8 +840,8 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
 
           {/* Content layer */}
           <div
-            className="transition-opacity duration-200"
-            style={{ opacity: showInitialSkeleton ? 0 : 1 }}
+            className="transition-opacity duration-150"
+            style={{ opacity: showInitialSkeleton ? 0 : showRefreshing ? 0.72 : 1 }}
           >
             {error ? (
                 <div className="flex flex-col items-center py-16 text-center">
@@ -826,7 +856,7 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
                 </div>
               ) : groups.length === 0 ? (
                 <div className="flex flex-col items-center py-16 text-center">
-                  {search || activeCategory || activePaymentMethod || dateRange.presetId !== DEFAULT_DATE_PRESET ? (
+                  {debouncedSearch || activeCategory || activePaymentMethod || dateRange.presetId !== DEFAULT_DATE_PRESET ? (
                     <>
                       <Mo variant="thinking" size={128} className="mb-4 animate-bounce-in" />
                       <p className="text-base font-semibold text-[#1A1D23]">

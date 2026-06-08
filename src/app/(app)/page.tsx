@@ -255,7 +255,7 @@ export default async function DashboardPage({
         <div className="h-6" />
       </div>
       <BillingClosingDayPrompt open={isSupabaseEnabled() && nullableClosingDay === null} initialDay={billingClosingDay} />
-      {remaining > 0 && <Confetti trigger sessionKey="dashboard-confetti" />}
+      {remaining > 0 && <Confetti trigger sessionKey="dashboard-confetti" delayMs={700} />}
     </>
   );
 }
