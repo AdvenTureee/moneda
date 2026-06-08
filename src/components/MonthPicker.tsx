@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { CaretDown } from '@phosphor-icons/react';
@@ -46,7 +46,13 @@ export default function MonthPicker({
   const [mounted, setMounted] = useState(false);
   const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [dragY, setDragY] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
+  const dragStartYRef = useRef(0);
+  const dragStartTimeRef = useRef(0);
+  const isDraggingRef = useRef(false);
+  const dragYRef = useRef(0);
   const router = useRouter();
   const menuWidth = 280;
 
@@ -56,6 +62,23 @@ export default function MonthPicker({
   const options = buildOptions(monthsBack, closingDay);
 
   useEffect(() => setMounted(true), []);
+
+  const closeMenu = useCallback(() => {
+    setOpen(false);
+    setDragY(0);
+    dragYRef.current = 0;
+    isDraggingRef.current = false;
+    setIsDragging(false);
+  }, []);
+
+  useEffect(() => {
+    if (!open) {
+      setDragY(0);
+      dragYRef.current = 0;
+      isDraggingRef.current = false;
+      setIsDragging(false);
+    }
+  }, [open]);
 
   useLayoutEffect(() => {
     if (!open) return;
@@ -85,10 +108,58 @@ export default function MonthPicker({
   }, [open]);
 
   function pick(period: string) {
-    setOpen(false);
+    closeMenu();
     router.push(`/?period=${period}`);
     router.refresh();
   }
+
+  const handleGrabPointerDown = useCallback((e: React.PointerEvent<HTMLButtonElement>) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    e.preventDefault();
+    e.stopPropagation();
+    dragStartYRef.current = e.clientY;
+    dragStartTimeRef.current = performance.now();
+    dragYRef.current = 0;
+    isDraggingRef.current = true;
+    setIsDragging(true);
+    e.currentTarget.setPointerCapture(e.pointerId);
+  }, []);
+
+  const handleGrabPointerMove = useCallback((e: React.PointerEvent<HTMLButtonElement>) => {
+    if (!isDraggingRef.current) return;
+    e.preventDefault();
+    const nextDragY = Math.max(0, e.clientY - dragStartYRef.current);
+    dragYRef.current = nextDragY;
+    setDragY(nextDragY);
+  }, []);
+
+  const handleGrabPointerUp = useCallback((e: React.PointerEvent<HTMLButtonElement>) => {
+    if (!isDraggingRef.current) return;
+    e.preventDefault();
+    const finalDragY = dragYRef.current;
+    const elapsed = Math.max(performance.now() - dragStartTimeRef.current, 1);
+    const velocity = finalDragY / elapsed;
+    isDraggingRef.current = false;
+    dragYRef.current = 0;
+    setIsDragging(false);
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
+
+    if (finalDragY > 72 || velocity > 0.6) {
+      closeMenu();
+      return;
+    }
+
+    setDragY(0);
+  }, [closeMenu]);
+
+  const cancelGrab = useCallback(() => {
+    isDraggingRef.current = false;
+    dragYRef.current = 0;
+    setIsDragging(false);
+    setDragY(0);
+  }, []);
 
   return (
     <div className={`relative w-full ${fullWidth ? '' : 'sm:w-auto'}`}>
@@ -96,13 +167,16 @@ export default function MonthPicker({
         ref={buttonRef}
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className={`themed-card flex min-h-[50px] w-full items-center justify-between gap-3 rounded-[14px] border border-[color-mix(in_srgb,var(--color-border)_76%,transparent)] bg-[color-mix(in_srgb,var(--color-surface)_88%,transparent)] px-3.5 py-2 text-left shadow-sm outline-none transition-[border-color,background-color,box-shadow,transform] hover:border-[#A8C5E0]/70 hover:bg-[color-mix(in_srgb,var(--color-surface-alt)_72%,var(--color-surface)_28%)] active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-[#A8C5E0] focus-visible:ring-offset-1 sm:min-h-10 sm:px-3 ${
+        className={`dashboard-cycle-filter themed-card flex min-h-[54px] w-full items-center justify-between gap-3 rounded-[14px] border border-[color-mix(in_srgb,var(--color-border)_76%,transparent)] bg-[color-mix(in_srgb,var(--color-surface)_88%,transparent)] px-3.5 py-2 text-left shadow-sm outline-none transition-[border-color,background-color,box-shadow,transform] hover:border-[#A8C5E0]/70 hover:bg-[color-mix(in_srgb,var(--color-surface-alt)_72%,var(--color-surface)_28%)] active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-[#A8C5E0] focus-visible:ring-offset-1 sm:min-h-10 sm:px-3 ${
           fullWidth ? '' : 'sm:w-auto sm:min-w-[184px]'
         }`}
         aria-label={`Ciclo: ${currentLabel}. Clique para trocar.`}
         aria-expanded={open}
       >
         <span className="min-w-0">
+          <span className="mb-0.5 block text-[11px] font-bold leading-none text-[var(--color-text-tertiary)]">
+            Ciclo financeiro
+          </span>
           <span className="block text-sm font-extrabold leading-tight text-[var(--color-text-primary)]">
             {current.month}
           </span>
@@ -123,7 +197,7 @@ export default function MonthPicker({
         <>
           <div
             className={`fixed inset-0 z-[100] ${isMobile ? 'bg-black/20 backdrop-blur-[2px]' : ''}`}
-            onClick={() => setOpen(false)}
+            onClick={closeMenu}
             aria-hidden
           />
           <div
@@ -132,13 +206,33 @@ export default function MonthPicker({
                 ? 'bottom-3 left-3 right-3 max-h-[min(520px,calc(100dvh_-_24px_-_env(safe-area-inset-bottom)))] pb-[calc(0.5rem_+_env(safe-area-inset-bottom))]'
                 : 'max-h-[min(360px,calc(100dvh_-_16px))] w-[min(280px,calc(100vw_-_16px))]'
             }`}
-            style={isMobile ? undefined : { top: position.top, left: position.left }}
+            style={
+              isMobile
+                ? {
+                    transform: `translateY(${dragY}px)`,
+                    transition: isDragging ? 'none' : 'transform 180ms cubic-bezier(0.22, 1, 0.36, 1)',
+                  }
+                : { top: position.top, left: position.left }
+            }
+            data-dragging={isDragging ? 'true' : undefined}
             role="listbox"
             aria-label="Filtro de ciclo"
           >
             {isMobile && (
-              <div className="px-2 pb-2 pt-1">
-                <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-[color-mix(in_srgb,var(--color-text-tertiary)_42%,transparent)]" />
+              <div className="px-2 pb-2">
+                <button
+                  type="button"
+                  className="cycle-filter-grab flex min-h-11 w-full touch-none select-none items-center justify-center cursor-grab active:cursor-grabbing"
+                  aria-label="Arraste para baixo para fechar o filtro de ciclo"
+                  onPointerDown={handleGrabPointerDown}
+                  onPointerMove={handleGrabPointerMove}
+                  onPointerUp={handleGrabPointerUp}
+                  onPointerCancel={cancelGrab}
+                  onLostPointerCapture={cancelGrab}
+                  onContextMenu={(e) => e.preventDefault()}
+                >
+                  <span className="cycle-filter-grab__bar h-1.5 w-14 rounded-full" />
+                </button>
                 <p className="text-sm font-extrabold text-[var(--color-text-primary)]">Escolher ciclo</p>
                 <p className="mt-0.5 text-xs font-medium text-[var(--color-text-secondary)]">Período financeiro pelo fechamento do cartão</p>
               </div>

@@ -386,7 +386,7 @@ export default function AddExpenseModal({
       onClick={handleBackdropClick}
     >
       <div
-        className="modal-sheet w-full max-w-lg bg-white rounded-t-[24px] flex max-h-[84dvh] flex-col overflow-hidden"
+        className="modal-sheet add-expense-sheet w-full max-w-lg bg-white rounded-t-[24px] flex max-h-[88dvh] flex-col overflow-hidden"
         style={{
           boxShadow: 'var(--shadow-overlay)',
           transform: sheetTransform,
@@ -399,7 +399,7 @@ export default function AddExpenseModal({
         {/* Drag handle */}
         <button
           type="button"
-          className="flex w-full touch-none select-none justify-center pt-2.5 pb-1.5 cursor-grab active:cursor-grabbing"
+          className="add-expense-grab flex min-h-12 w-full touch-none select-none items-center justify-center cursor-grab active:cursor-grabbing"
           aria-label="Arraste para baixo para fechar"
           onPointerDown={handleHandlePointerDown}
           onPointerMove={handleHandlePointerMove}
@@ -408,7 +408,7 @@ export default function AddExpenseModal({
           onLostPointerCapture={handleHandleLostPointerCapture}
           onContextMenu={(e) => e.preventDefault()}
         >
-          <span className="w-10 h-1 rounded-full bg-[#E5E7EB]" />
+          <span className="add-expense-grab__bar h-1.5 w-14 rounded-full" />
         </button>
 
         {/* Header */}
