@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 
 const END_THRESHOLD = 12;
 const WAVE_DURATION_MS = 900;
+const TAB_SCROLL_RESET_SUPPRESSION_MS = 250;
 
 type Boundary = 'top' | 'bottom';
 
@@ -15,6 +16,7 @@ export default function ScrollFadeIndicator() {
   const wasAtTopRef = useRef(true);
   const wasAtEndRef = useRef(false);
   const timeoutRef = useRef<number | null>(null);
+  const ignoreTopWaveUntilRef = useRef(0);
   const pathname = usePathname();
 
   useEffect(() => {
@@ -48,6 +50,15 @@ export default function ScrollFadeIndicator() {
       }, WAVE_DURATION_MS);
     }
 
+    function suppressTopWave() {
+      ignoreTopWaveUntilRef.current = performance.now() + TAB_SCROLL_RESET_SUPPRESSION_MS;
+      setBoundary(null);
+      if (timeoutRef.current) {
+        window.clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+    }
+
     function update() {
       const doc = document.documentElement;
       const scrollY = window.scrollY;
@@ -61,7 +72,9 @@ export default function ScrollFadeIndicator() {
       }
 
       if (isAtTop && !wasAtTopRef.current && hasScrolledAwayFromTopRef.current) {
-        triggerWave('top');
+        if (performance.now() >= ignoreTopWaveUntilRef.current) {
+          triggerWave('top');
+        }
       }
 
       if (isAtEnd && !wasAtEndRef.current) {
@@ -75,12 +88,14 @@ export default function ScrollFadeIndicator() {
     update();
     window.addEventListener('scroll', update, { passive: true });
     window.addEventListener('resize', update);
+    window.addEventListener('moneda:tab-scroll-reset', suppressTopWave);
     const ro = new ResizeObserver(update);
     ro.observe(document.body);
 
     return () => {
       window.removeEventListener('scroll', update);
       window.removeEventListener('resize', update);
+      window.removeEventListener('moneda:tab-scroll-reset', suppressTopWave);
       ro.disconnect();
       if (timeoutRef.current) {
         window.clearTimeout(timeoutRef.current);

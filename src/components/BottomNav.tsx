@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import Link, { useLinkStatus } from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { House, List, PlusCircle, Sparkle, User } from '@phosphor-icons/react';
@@ -29,11 +29,26 @@ function scrollPageToTop() {
   });
 }
 
-function NavPendingHint({ optimistic }: { optimistic: boolean }) {
+function isModifiedClick(event: React.MouseEvent<HTMLAnchorElement>) {
+  return (
+    event.button !== 0 ||
+    event.metaKey ||
+    event.ctrlKey ||
+    event.shiftKey ||
+    event.altKey
+  );
+}
+
+function resetTabScroll() {
+  window.dispatchEvent(new CustomEvent('moneda:tab-scroll-reset'));
+  window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+}
+
+function NavPendingHint() {
   const { pending } = useLinkStatus();
   return (
     <span
-      className={`bottom-nav-pending-hint ${pending || optimistic ? 'bottom-nav-pending-hint--visible' : ''}`}
+      className={`bottom-nav-pending-hint ${pending ? 'bottom-nav-pending-hint--visible' : ''}`}
       aria-hidden
     />
   );
@@ -46,7 +61,9 @@ interface BottomNavProps {
 export default function BottomNav({ onAddExpense }: BottomNavProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const [pendingHref, setPendingHref] = useState<string | null>(null);
+  const shouldResetScrollRef = useRef(false);
+  const previousPathnameRef = useRef(pathname);
+  const resetScrollTimeoutRef = useRef<number | null>(null);
 
   const prefetchRoute = useCallback(
     (href: string) => {
@@ -55,21 +72,37 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
     [router],
   );
 
-  useEffect(() => {
-    for (const item of NAV_ITEMS) {
-      if (!item.isAction) prefetchRoute(item.href);
+  const clearPendingScrollReset = useCallback(() => {
+    shouldResetScrollRef.current = false;
+    if (resetScrollTimeoutRef.current) {
+      window.clearTimeout(resetScrollTimeoutRef.current);
+      resetScrollTimeoutRef.current = null;
     }
-  }, [prefetchRoute]);
+  }, []);
 
-  useEffect(() => {
-    setPendingHref(null);
-  }, [pathname]);
+  const scheduleScrollReset = useCallback(() => {
+    shouldResetScrollRef.current = true;
+    if (resetScrollTimeoutRef.current) {
+      window.clearTimeout(resetScrollTimeoutRef.current);
+    }
 
-  useEffect(() => {
-    if (!pendingHref) return;
-    const timer = window.setTimeout(() => setPendingHref(null), 3000);
-    return () => window.clearTimeout(timer);
-  }, [pendingHref]);
+    resetScrollTimeoutRef.current = window.setTimeout(() => {
+      shouldResetScrollRef.current = false;
+      resetScrollTimeoutRef.current = null;
+    }, 3000);
+  }, []);
+
+  useLayoutEffect(() => {
+    if (previousPathnameRef.current === pathname) return;
+
+    previousPathnameRef.current = pathname;
+    if (!shouldResetScrollRef.current) return;
+
+    clearPendingScrollReset();
+    resetTabScroll();
+  }, [clearPendingScrollReset, pathname]);
+
+  useEffect(() => clearPendingScrollReset, [clearPendingScrollReset]);
 
   return (
     <nav
@@ -84,12 +117,9 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
               <button
                 key={item.label}
                 type="button"
-                onClick={() => {
-                  setPendingHref(null);
-                  onAddExpense?.();
-                }}
+                onClick={() => onAddExpense?.()}
                 aria-label="Adicionar gasto"
-                className={`bottom-nav-action justify-self-center flex flex-col items-center justify-center w-[60px] h-[60px] rounded-full bg-[#5BBF8E] text-white -mt-5 touch-manipulation active:scale-90 transition-transform duration-75 ${pendingHref === item.href ? 'bottom-nav-action--pending' : ''}`}
+                className="bottom-nav-action justify-self-center flex flex-col items-center justify-center w-[60px] h-[60px] rounded-full bg-[#5BBF8E] text-white -mt-5 touch-manipulation active:scale-90 transition-transform duration-75"
                 style={{ boxShadow: 'var(--shadow-nav-action)' }}
               >
                 <item.icon size={28} />
@@ -101,42 +131,38 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
             ? pathname === '/'
             : pathname.startsWith(item.href);
           const isSamePath = pathname === item.href;
-          const isPending = pendingHref === item.href && !isSamePath;
 
           return (
             <Link
               key={item.label}
               href={item.href}
               prefetch
+              scroll={false}
               onMouseEnter={() => prefetchRoute(item.href)}
-              onTouchStart={() => prefetchRoute(item.href)}
-              onPointerDown={(event) => {
-                if (event.pointerType === 'mouse' && event.button !== 0) return;
-                prefetchRoute(item.href);
-                if (!isSamePath) setPendingHref(item.href);
-              }}
               onClick={(event) => {
-                if (isSamePath) {
-                  event.preventDefault();
-                  setPendingHref(null);
-                  scrollPageToTop();
-                  return;
-                }
-                setPendingHref(item.href);
+                if (!isSamePath || isModifiedClick(event)) return;
+
+                event.preventDefault();
+                clearPendingScrollReset();
+                scrollPageToTop();
+              }}
+              onNavigate={() => {
+                resetTabScroll();
+                scheduleScrollReset();
               }}
               onFocus={() => prefetchRoute(item.href)}
-              className={`bottom-nav-link relative justify-self-center flex flex-col items-center justify-center gap-0.5 w-full min-w-[44px] min-h-[44px] rounded-lg touch-manipulation transition-colors duration-150 ${
-                isActive || isPending
+              className={`bottom-nav-link relative justify-self-center flex flex-col items-center justify-center gap-0.5 w-full min-w-[44px] min-h-[44px] rounded-lg touch-manipulation transition-[color,transform] duration-150 active:scale-[0.98] ${
+                isActive
                   ? 'text-[#A8C5E0]'
                   : 'text-[#9CA3AF] hover:text-[#6B7280]'
-              } ${isPending ? 'bottom-nav-link--pending' : ''}`}
+              }`}
               aria-current={isActive ? 'page' : undefined}
             >
               <item.icon size={20} />
               <span className="text-[10px] font-medium leading-none">{item.label}</span>
-              <NavPendingHint optimistic={isPending} />
-              {(isActive || isPending) && (
-                <span className={`bottom-nav-indicator absolute -bottom-0.5 h-0.5 rounded-full ${isPending ? 'bottom-nav-indicator--pending' : ''}`} />
+              <NavPendingHint />
+              {isActive && (
+                <span className="bottom-nav-indicator absolute -bottom-0.5 h-0.5 rounded-full" />
               )}
             </Link>
           );

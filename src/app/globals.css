@@ -116,6 +116,7 @@ body {
 /* Solid bg on <html> covers safe-area / overscroll on Safari iOS. */
 html {
   background: var(--background);
+  scrollbar-gutter: stable;
 }
 
 body {
@@ -879,15 +880,6 @@ html[data-theme="dark"] .expense-action-separator {
   touch-action: manipulation;
 }
 
-.bottom-nav-link--pending {
-  background: color-mix(in srgb, var(--color-brand-blue) 10%, transparent);
-}
-
-.bottom-nav-action--pending {
-  filter: brightness(1.04);
-  transform: scale(0.96);
-}
-
 .bottom-nav-indicator {
   left: 50%;
   width: 20px;
@@ -896,11 +888,6 @@ html[data-theme="dark"] .expense-action-separator {
   transition:
     background-color 160ms cubic-bezier(0.22, 1, 0.36, 1),
     width 160ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.bottom-nav-indicator--pending {
-  width: 24px;
-  background: color-mix(in srgb, var(--color-brand-green) 76%, var(--color-brand-blue) 24%);
 }
 
 .bottom-nav-pending-hint {
@@ -1965,18 +1952,21 @@ html[data-theme="dark"] .bg-white\/90 {
 
 /* Full-height app shell that survives Safari iOS toolbar quirks. */
 .app-shell {
-  min-height: 100vh;
+  --app-scroll-reserve: min(320px, 42vh);
+  min-height: calc(100vh + var(--app-scroll-reserve));
+  overflow-anchor: none;
 }
 
 @supports (height: 100dvh) {
   .app-shell {
-    min-height: 100dvh;
+    --app-scroll-reserve: min(320px, 42dvh);
+    min-height: calc(100dvh + var(--app-scroll-reserve));
   }
 }
 
 @supports (-webkit-touch-callout: none) and (not (height: 100dvh)) {
   .app-shell {
-    min-height: -webkit-fill-available;
+    min-height: calc(100vh + var(--app-scroll-reserve));
   }
 }
 
