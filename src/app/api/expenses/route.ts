@@ -1,9 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { revalidateTag } from 'next/cache';
 import { getExpenses, createExpense, updateExpense, deleteExpense } from '@/lib/expenses';
 import type { ExpenseFilters, ExpenseInput, ExpensePaymentMethod } from '@/types';
 import { createSessionClient } from '@/lib/supabase/server';
 import { cacheTags } from '@/lib/cache';
+import { noStoreJson } from '@/lib/http';
 
 const PAYMENT_METHODS = new Set<ExpensePaymentMethod>([
   'pix',
@@ -56,19 +57,19 @@ function expenseMutationErrorResponse(error: unknown) {
     message.includes('expense_series_payment_method_check');
 
   if (isPaymentMethodConstraint) {
-    return NextResponse.json(
+    return noStoreJson(
       { error: 'Forma de pagamento ainda não está habilitada no banco de dados.' },
       { status: 422 },
     );
   }
 
-  return NextResponse.json({ error: message }, { status: 500 });
+  return noStoreJson({ error: message }, { status: 500 });
 }
 
 export async function GET(req: NextRequest) {
   const supabase = await createSessionClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!user) return noStoreJson({ error: 'Unauthorized' }, { status: 401 });
 
   const { searchParams } = new URL(req.url);
   const filters: ExpenseFilters = {
@@ -86,30 +87,30 @@ export async function GET(req: NextRequest) {
   };
 
   const expenses = await getExpenses(filters);
-  return NextResponse.json({ data: expenses, count: expenses.length });
+  return noStoreJson({ data: expenses, count: expenses.length });
 }
 
 export async function POST(req: NextRequest) {
   const supabase = await createSessionClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!user) return noStoreJson({ error: 'Unauthorized' }, { status: 401 });
 
   let body: ExpenseBody;
   try {
     body = await req.json();
   } catch {
-    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
+    return noStoreJson({ error: 'Invalid JSON' }, { status: 400 });
   }
 
   if (!body.amount || !body.category) {
-    return NextResponse.json(
+    return noStoreJson(
       { error: 'amount and category are required' },
       { status: 422 }
     );
   }
 
   if (hasInvalidPaymentMethod(body)) {
-    return NextResponse.json({ error: 'paymentMethod is invalid' }, { status: 422 });
+    return noStoreJson({ error: 'paymentMethod is invalid' }, { status: 422 });
   }
 
   const input: ExpenseInput = {
@@ -128,7 +129,7 @@ export async function POST(req: NextRequest) {
   try {
     const expense = await createExpense(input);
     invalidateExpenseCaches(user.id);
-    return NextResponse.json({ data: expense }, { status: 201 });
+    return noStoreJson({ data: expense }, { status: 201 });
   } catch (error) {
     return expenseMutationErrorResponse(error);
   }
@@ -137,21 +138,21 @@ export async function POST(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   const supabase = await createSessionClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!user) return noStoreJson({ error: 'Unauthorized' }, { status: 401 });
 
   let body: { id: string } & ExpenseBody;
   try {
     body = await req.json();
   } catch {
-    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
+    return noStoreJson({ error: 'Invalid JSON' }, { status: 400 });
   }
 
   if (!body.id) {
-    return NextResponse.json({ error: 'id is required' }, { status: 422 });
+    return noStoreJson({ error: 'id is required' }, { status: 422 });
   }
 
   if (hasInvalidPaymentMethod(body)) {
-    return NextResponse.json({ error: 'paymentMethod is invalid' }, { status: 422 });
+    return noStoreJson({ error: 'paymentMethod is invalid' }, { status: 422 });
   }
 
   try {
@@ -165,7 +166,7 @@ export async function PATCH(req: NextRequest) {
       creditDetails: readPaymentMethod(body) === 'credit' ? body.creditDetails ?? null : null,
     });
     invalidateExpenseCaches(user.id);
-    return NextResponse.json({ data: expense });
+    return noStoreJson({ data: expense });
   } catch (error) {
     return expenseMutationErrorResponse(error);
   }
@@ -174,15 +175,15 @@ export async function PATCH(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   const supabase = await createSessionClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!user) return noStoreJson({ error: 'Unauthorized' }, { status: 401 });
 
   const { searchParams } = new URL(req.url);
   const id = searchParams.get('id');
   if (!id) {
-    return NextResponse.json({ error: 'id query param is required' }, { status: 422 });
+    return noStoreJson({ error: 'id query param is required' }, { status: 422 });
   }
 
   await deleteExpense(id);
   invalidateExpenseCaches(user.id);
-  return NextResponse.json({ ok: true });
+  return noStoreJson({ ok: true });
 }

@@ -1,7 +1,7 @@
-import { NextResponse } from 'next/server';
 import { revalidateTag } from 'next/cache';
 import { cacheTags } from '@/lib/cache';
 import { TERMS_VERSION } from '@/lib/legal';
+import { noStoreJson } from '@/lib/http';
 import {
   buildProfileIdentityPiiUpdate,
   buildProfilePhonePiiUpdate,
@@ -16,13 +16,13 @@ import type { Database } from '@/types/supabase';
 
 export async function POST() {
   if (!isSupabaseEnabled()) {
-    return NextResponse.json({ ok: true, termsVersion: TERMS_VERSION });
+    return noStoreJson({ ok: true, termsVersion: TERMS_VERSION });
   }
 
   const session = await createSessionClient();
   const { data: { user } } = await session.auth.getUser();
   if (!user) {
-    return NextResponse.json({ ok: false, error: 'Sessao expirada.' }, { status: 401 });
+    return noStoreJson({ ok: false, error: 'Sessao expirada.' }, { status: 401 });
   }
 
   const admin = createServiceClient();
@@ -53,12 +53,12 @@ export async function POST() {
 
   if (error) {
     console.error('[terms:accept]', error);
-    return NextResponse.json(
+    return noStoreJson(
       { ok: false, error: 'Nao foi possivel registrar seu aceite.' },
       { status: 500 },
     );
   }
 
   revalidateTag(cacheTags.profile(user.id), { expire: 0 });
-  return NextResponse.json({ ok: true, termsVersion: TERMS_VERSION });
+  return noStoreJson({ ok: true, termsVersion: TERMS_VERSION });
 }

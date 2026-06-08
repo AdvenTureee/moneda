@@ -6,10 +6,16 @@ import { buildMoChatMessages, streamMoChatReply } from '@/lib/groq';
 import { checkRateLimit, pruneRateLimitBuckets } from '@/lib/rateLimit';
 import { getBillingClosingDay } from '@/lib/profiles';
 import { getCurrentBillingPeriod } from '@/lib/billingCycle';
+import { SENSITIVE_RESPONSE_HEADERS } from '@/lib/http';
 import type { ChatHistoryItem } from '@/types/chat';
 
 const PERIOD_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
 const CHAT_LIMIT_PER_MINUTE = 12;
+const SSE_HEADERS = {
+  ...SENSITIVE_RESPONSE_HEADERS,
+  'Content-Type': 'text/event-stream; charset=utf-8',
+  'Cache-Control': `${SENSITIVE_RESPONSE_HEADERS['Cache-Control']}, no-transform`,
+} as const;
 
 function sanitizeHistory(raw: unknown): ChatHistoryItem[] {
   if (!Array.isArray(raw)) return [];
@@ -43,14 +49,14 @@ export async function POST(req: NextRequest) {
     if (!user) {
       return new Response(sseLine({ error: 'Não autenticado.' }), {
         status: 401,
-        headers: { 'Content-Type': 'text/event-stream; charset=utf-8' },
+        headers: SSE_HEADERS,
       });
     }
 
     if (!process.env.GROQ_API_KEY) {
       return new Response(sseLine({ error: 'Serviço de IA indisponível.' }), {
         status: 500,
-        headers: { 'Content-Type': 'text/event-stream; charset=utf-8' },
+        headers: SSE_HEADERS,
       });
     }
 
@@ -64,7 +70,7 @@ export async function POST(req: NextRequest) {
         {
           status: 429,
           headers: {
-            'Content-Type': 'text/event-stream; charset=utf-8',
+            ...SSE_HEADERS,
             'Retry-After': String(rate.retryAfterSec),
           },
         },
@@ -76,7 +82,7 @@ export async function POST(req: NextRequest) {
     if (!message || message.length > 800) {
       return new Response(sseLine({ error: 'Mensagem inválida.' }), {
         status: 400,
-        headers: { 'Content-Type': 'text/event-stream; charset=utf-8' },
+        headers: SSE_HEADERS,
       });
     }
 
@@ -131,15 +137,14 @@ export async function POST(req: NextRequest) {
 
     return new Response(stream, {
       headers: {
-        'Content-Type': 'text/event-stream; charset=utf-8',
-        'Cache-Control': 'no-cache, no-transform',
+        ...SSE_HEADERS,
         Connection: 'keep-alive',
       },
     });
   } catch {
     return new Response(sseLine({ error: 'Erro interno. Tente novamente.' }), {
       status: 500,
-      headers: { 'Content-Type': 'text/event-stream; charset=utf-8' },
+      headers: SSE_HEADERS,
     });
   }
 }

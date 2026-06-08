@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { createSessionClient, createServiceClient, isSupabaseEnabled } from '@/lib/supabase/server';
 import { generateMonthlySummary, detectSpendingAlerts } from '@/lib/groq';
 import { getExpenses } from '@/lib/expenses';
@@ -6,6 +6,7 @@ import { getCategories } from '@/lib/categories';
 import { isClosedMonthlyPeriod, isValidPeriod } from '@/lib/utils';
 import { getBillingClosingDay } from '@/lib/profiles';
 import { getBillingCycleForPeriod, getCurrentBillingPeriod, shiftPeriod } from '@/lib/billingCycle';
+import { noStoreJson } from '@/lib/http';
 
 const MONTH_NOT_CLOSED_MESSAGE = 'O resumo mensal fica disponível quando o mês fechar.';
 
@@ -14,7 +15,7 @@ export async function POST(req: NextRequest) {
     const session = await createSessionClient();
     const { data: { user } } = await session.auth.getUser();
     if (!user) {
-      return NextResponse.json({ error: 'Não autenticado.' }, { status: 401 });
+      return noStoreJson({ error: 'Não autenticado.' }, { status: 401 });
     }
 
     const body = await req.json();
@@ -22,15 +23,15 @@ export async function POST(req: NextRequest) {
     const period: string = body.period ?? getCurrentBillingPeriod(closingDay);
 
     if (!isValidPeriod(period)) {
-      return NextResponse.json({ error: 'Período inválido.' }, { status: 400 });
+      return noStoreJson({ error: 'Período inválido.' }, { status: 400 });
     }
 
     if (!isClosedMonthlyPeriod(period, closingDay)) {
-      return NextResponse.json({ error: MONTH_NOT_CLOSED_MESSAGE }, { status: 403 });
+      return noStoreJson({ error: MONTH_NOT_CLOSED_MESSAGE }, { status: 403 });
     }
 
     if (!process.env.GROQ_API_KEY) {
-      return NextResponse.json({ error: 'GROQ_API_KEY não configurada.' }, { status: 500 });
+      return noStoreJson({ error: 'GROQ_API_KEY não configurada.' }, { status: 500 });
     }
 
     const cycle = getBillingCycleForPeriod(period, closingDay);
@@ -89,7 +90,7 @@ export async function POST(req: NextRequest) {
       insightId = data?.id ?? null;
     }
 
-    return NextResponse.json({
+    return noStoreJson({
       id: insightId,
       type: 'monthly_summary',
       period,
@@ -99,6 +100,6 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Erro desconhecido';
-    return NextResponse.json({ error: `Erro ao gerar resumo: ${message}` }, { status: 500 });
+    return noStoreJson({ error: `Erro ao gerar resumo: ${message}` }, { status: 500 });
   }
 }

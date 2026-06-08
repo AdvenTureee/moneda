@@ -1,8 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { revalidateTag } from 'next/cache';
 import { v4 as uuidv4 } from 'uuid';
 import { createServiceClient, createSessionClient, isSupabaseEnabled } from '@/lib/supabase/server';
 import { cacheTags } from '@/lib/cache';
+import { noStoreJson } from '@/lib/http';
 
 const BUCKET = 'expense_receipts';
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -53,58 +54,58 @@ async function getOwnedExpense(admin: ReturnType<typeof createServiceClient>, ex
 
 export async function GET(req: NextRequest) {
   if (!isSupabaseEnabled()) {
-    return NextResponse.json({ error: 'Storage indisponível.' }, { status: 501 });
+    return noStoreJson({ error: 'Storage indisponível.' }, { status: 501 });
   }
 
   const user = await getCurrentUser();
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!user) return noStoreJson({ error: 'Unauthorized' }, { status: 401 });
 
   const expenseId = new URL(req.url).searchParams.get('expenseId');
   if (!expenseId) {
-    return NextResponse.json({ error: 'expenseId é obrigatório.' }, { status: 422 });
+    return noStoreJson({ error: 'expenseId é obrigatório.' }, { status: 422 });
   }
 
   const admin = createServiceClient();
   const expense = await getOwnedExpense(admin, expenseId, user.id);
-  if (!expense) return NextResponse.json({ error: 'Gasto não encontrado.' }, { status: 404 });
+  if (!expense) return noStoreJson({ error: 'Gasto não encontrado.' }, { status: 404 });
   if (!expense.receipt_path) {
-    return NextResponse.json({ error: 'Nenhum comprovante anexado.' }, { status: 404 });
+    return noStoreJson({ error: 'Nenhum comprovante anexado.' }, { status: 404 });
   }
 
   const { data, error } = await admin.storage
     .from(BUCKET)
     .createSignedUrl(expense.receipt_path, 60 * 10);
 
-  if (error) return NextResponse.json({ error: 'Não foi possível abrir o comprovante.' }, { status: 500 });
-  return NextResponse.json({ url: data.signedUrl });
+  if (error) return noStoreJson({ error: 'Não foi possível abrir o comprovante.' }, { status: 500 });
+  return noStoreJson({ url: data.signedUrl });
 }
 
 export async function POST(req: NextRequest) {
   if (!isSupabaseEnabled()) {
-    return NextResponse.json({ error: 'Storage indisponível.' }, { status: 501 });
+    return noStoreJson({ error: 'Storage indisponível.' }, { status: 501 });
   }
 
   const user = await getCurrentUser();
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!user) return noStoreJson({ error: 'Unauthorized' }, { status: 401 });
 
   const formData = await req.formData();
   const expenseId = String(formData.get('expenseId') ?? '');
   const file = formData.get('file');
 
-  if (!expenseId) return NextResponse.json({ error: 'expenseId é obrigatório.' }, { status: 422 });
+  if (!expenseId) return noStoreJson({ error: 'expenseId é obrigatório.' }, { status: 422 });
   if (!file || !(file instanceof File)) {
-    return NextResponse.json({ error: 'Arquivo não enviado.' }, { status: 400 });
+    return noStoreJson({ error: 'Arquivo não enviado.' }, { status: 400 });
   }
   if (file.size > MAX_FILE_SIZE) {
-    return NextResponse.json({ error: 'Arquivo maior que 10MB.' }, { status: 413 });
+    return noStoreJson({ error: 'Arquivo maior que 10MB.' }, { status: 413 });
   }
   if (!ALLOWED_MIME_TYPES.has(file.type)) {
-    return NextResponse.json({ error: 'Formato de comprovante não permitido.' }, { status: 415 });
+    return noStoreJson({ error: 'Formato de comprovante não permitido.' }, { status: 415 });
   }
 
   const admin = createServiceClient();
   const expense = await getOwnedExpense(admin, expenseId, user.id);
-  if (!expense) return NextResponse.json({ error: 'Gasto não encontrado.' }, { status: 404 });
+  if (!expense) return noStoreJson({ error: 'Gasto não encontrado.' }, { status: 404 });
 
   const ext = MIME_TO_EXT[file.type] ?? 'bin';
   const path = `${user.id}/${expenseId}/${uuidv4()}.${ext}`;
@@ -118,7 +119,7 @@ export async function POST(req: NextRequest) {
     });
 
   if (uploadError) {
-    return NextResponse.json({ error: 'Falha ao anexar comprovante.' }, { status: 500 });
+    return noStoreJson({ error: 'Falha ao anexar comprovante.' }, { status: 500 });
   }
 
   const { error: updateError } = await admin
@@ -135,7 +136,7 @@ export async function POST(req: NextRequest) {
 
   if (updateError) {
     await admin.storage.from(BUCKET).remove([path]);
-    return NextResponse.json({ error: 'Upload feito, mas não foi possível vincular.' }, { status: 500 });
+    return noStoreJson({ error: 'Upload feito, mas não foi possível vincular.' }, { status: 500 });
   }
 
   if (expense.receipt_path) {
@@ -143,25 +144,25 @@ export async function POST(req: NextRequest) {
   }
 
   invalidateExpenseCaches(user.id);
-  return NextResponse.json({ ok: true });
+  return noStoreJson({ ok: true });
 }
 
 export async function DELETE(req: NextRequest) {
   if (!isSupabaseEnabled()) {
-    return NextResponse.json({ error: 'Storage indisponível.' }, { status: 501 });
+    return noStoreJson({ error: 'Storage indisponível.' }, { status: 501 });
   }
 
   const user = await getCurrentUser();
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!user) return noStoreJson({ error: 'Unauthorized' }, { status: 401 });
 
   const expenseId = new URL(req.url).searchParams.get('expenseId');
   if (!expenseId) {
-    return NextResponse.json({ error: 'expenseId é obrigatório.' }, { status: 422 });
+    return noStoreJson({ error: 'expenseId é obrigatório.' }, { status: 422 });
   }
 
   const admin = createServiceClient();
   const expense = await getOwnedExpense(admin, expenseId, user.id);
-  if (!expense) return NextResponse.json({ error: 'Gasto não encontrado.' }, { status: 404 });
+  if (!expense) return noStoreJson({ error: 'Gasto não encontrado.' }, { status: 404 });
 
   const { error: updateError } = await admin
     .from('expenses')
@@ -175,9 +176,9 @@ export async function DELETE(req: NextRequest) {
     .eq('id', expenseId)
     .eq('user_id', user.id);
 
-  if (updateError) return NextResponse.json({ error: 'Não foi possível remover.' }, { status: 500 });
+  if (updateError) return noStoreJson({ error: 'Não foi possível remover.' }, { status: 500 });
   if (expense.receipt_path) await admin.storage.from(BUCKET).remove([expense.receipt_path]);
 
   invalidateExpenseCaches(user.id);
-  return NextResponse.json({ ok: true });
+  return noStoreJson({ ok: true });
 }

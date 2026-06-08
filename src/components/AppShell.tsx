@@ -11,6 +11,20 @@ import ScrollFadeIndicator from '@/components/ScrollFadeIndicator';
 import type { ExpenseInput } from '@/types';
 
 const WHATSAPP_PROMPT_DISMISSED_KEY = 'moneda:whatsapp-phone-prompt-dismissed';
+const AUTHENTICATED_PREFETCH_ROUTES = [
+  '/',
+  '/feed',
+  '/insights',
+  '/perfil',
+  '/perfil/ganhos',
+  '/perfil/orcamento',
+  '/perfil/categorias',
+  '/perfil/fechamento',
+  '/perfil/notificacoes',
+  '/perfil/moeda',
+  '/perfil/senha',
+  '/perfil/whatsapp',
+] as const;
 
 function ShellContent({
   children,
@@ -34,6 +48,24 @@ function ShellContent({
     termsAccepted &&
     !whatsappAnswered &&
     !whatsappDismissed;
+
+  useEffect(() => {
+    if (isTermsBlocking) return;
+
+    const prefetchRoutes = () => {
+      for (const href of AUTHENTICATED_PREFETCH_ROUTES) {
+        router.prefetch(href);
+      }
+    };
+
+    if ('requestIdleCallback' in window) {
+      const idleId = window.requestIdleCallback(prefetchRoutes, { timeout: 1800 });
+      return () => window.cancelIdleCallback(idleId);
+    }
+
+    const timer = globalThis.setTimeout(prefetchRoutes, 600);
+    return () => globalThis.clearTimeout(timer);
+  }, [isTermsBlocking, router]);
 
   useEffect(() => {
     if (!requiresWhatsappPhone) return;

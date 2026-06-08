@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { createSessionClient, createServiceClient } from '@/lib/supabase/server';
 import { v4 as uuidv4 } from 'uuid';
 import sharp from 'sharp';
+import { noStoreJson } from '@/lib/http';
 
 const MAX_FILE_SIZE = 7 * 1024 * 1024;
 
@@ -34,22 +35,22 @@ export async function POST(req: NextRequest) {
     const session = await createSessionClient();
     const { data: { user } } = await session.auth.getUser();
     if (!user) {
-      return NextResponse.json({ error: 'Não autenticado.' }, { status: 401 });
+      return noStoreJson({ error: 'Não autenticado.' }, { status: 401 });
     }
 
     const formData = await req.formData();
     const file = formData.get('file');
 
     if (!file || !(file instanceof File)) {
-      return NextResponse.json({ error: 'Arquivo não enviado.' }, { status: 400 });
+      return noStoreJson({ error: 'Arquivo não enviado.' }, { status: 400 });
     }
 
     if (file.size > MAX_FILE_SIZE) {
-      return NextResponse.json({ error: 'Arquivo maior que 7MB.' }, { status: 413 });
+      return noStoreJson({ error: 'Arquivo maior que 7MB.' }, { status: 413 });
     }
 
     if (!ALLOWED_MIME_TYPES.includes(file.type)) {
-      return NextResponse.json({ error: 'Formato de imagem não permitido.' }, { status: 415 });
+      return noStoreJson({ error: 'Formato de imagem não permitido.' }, { status: 415 });
     }
 
     const arrayBuffer = await file.arrayBuffer();
@@ -81,7 +82,7 @@ export async function POST(req: NextRequest) {
       });
 
     if (uploadError) {
-      return NextResponse.json({ error: 'Falha ao fazer upload.' }, { status: 500 });
+      return noStoreJson({ error: 'Falha ao fazer upload.' }, { status: 500 });
     }
 
     const { data: signedUrlData, error: signedUrlError } = await admin.storage
@@ -89,7 +90,7 @@ export async function POST(req: NextRequest) {
       .createSignedUrl(filePath, 31536000);
 
     if (signedUrlError) {
-      return NextResponse.json({ error: 'Upload feito, mas erro ao gerar URL.' }, { status: 500 });
+      return noStoreJson({ error: 'Upload feito, mas erro ao gerar URL.' }, { status: 500 });
     }
 
     const { error: updateError } = await session.auth.updateUser({
@@ -97,11 +98,11 @@ export async function POST(req: NextRequest) {
     });
 
     if (updateError) {
-      return NextResponse.json({ url: signedUrlData.signedUrl });
+      return noStoreJson({ url: signedUrlData.signedUrl });
     }
 
-    return NextResponse.json({ url: signedUrlData.signedUrl });
+    return noStoreJson({ url: signedUrlData.signedUrl });
   } catch (error) {
-    return NextResponse.json({ error: 'Erro interno no servidor.' }, { status: 500 });
+    return noStoreJson({ error: 'Erro interno no servidor.' }, { status: 500 });
   }
 }

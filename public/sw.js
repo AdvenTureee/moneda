@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'moneda-pwa-v1';
+const CACHE_VERSION = 'moneda-pwa-v2';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 
@@ -42,23 +42,30 @@ self.addEventListener('fetch', (event) => {
   if (request.method !== 'GET') return;
 
   const url = new URL(request.url);
-  if (url.origin !== self.location.origin || url.pathname.startsWith('/api/')) {
-    return;
-  }
-
-  if (request.mode === 'navigate') {
-    event.respondWith(
-      fetch(request).catch(() => caches.match('/offline.html'))
-    );
+  if (url.origin !== self.location.origin) {
     return;
   }
 
   if (
+    url.pathname.startsWith('/api/') ||
+    request.mode === 'navigate' ||
+    request.destination === 'document' ||
+    request.destination === '' ||
+    url.pathname.startsWith('/_next/data/')
+  ) {
+    if (request.mode === 'navigate') {
+      event.respondWith(fetch(request).catch(() => caches.match('/offline.html')));
+    }
+    return;
+  }
+
+  if (
+    url.pathname.startsWith('/_next/static/') ||
     request.destination === 'image' ||
     request.destination === 'font' ||
     request.destination === 'style' ||
     request.destination === 'script' ||
-    url.pathname.startsWith('/_next/static/')
+    request.destination === 'manifest'
   ) {
     event.respondWith(staleWhileRevalidate(request));
   }
@@ -70,7 +77,7 @@ async function staleWhileRevalidate(request) {
 
   const fresh = fetch(request)
     .then((response) => {
-      if (response.ok) {
+      if (response.ok && isPublicStaticResponse(request, response)) {
         cache.put(request, response.clone());
       }
       return response;
@@ -78,4 +85,21 @@ async function staleWhileRevalidate(request) {
     .catch(() => cached);
 
   return cached || fresh;
+}
+
+function isPublicStaticResponse(request, response) {
+  const url = new URL(request.url);
+  const contentType = response.headers.get('content-type') || '';
+  return (
+    url.pathname.startsWith('/_next/static/') ||
+    request.destination === 'image' ||
+    request.destination === 'font' ||
+    request.destination === 'style' ||
+    request.destination === 'script' ||
+    request.destination === 'manifest' ||
+    contentType.startsWith('image/') ||
+    contentType.includes('font') ||
+    contentType.includes('javascript') ||
+    contentType.includes('css')
+  );
 }

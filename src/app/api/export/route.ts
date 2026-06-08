@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { createSessionClient } from '@/lib/supabase/server';
 import { getExpenses } from '@/lib/expenses';
+import { noStoreJson, SENSITIVE_RESPONSE_HEADERS } from '@/lib/http';
 import type { ExpensePaymentMethod } from '@/types';
 
 const PAYMENT_LABELS: Record<ExpensePaymentMethod, string> = {
@@ -63,7 +64,7 @@ function parseDateRangeParam(value: string | null, boundary: 'start' | 'end'): s
 export async function GET(request: NextRequest) {
   const supabase = await createSessionClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!user) return noStoreJson({ error: 'Unauthorized' }, { status: 401 });
 
   const startParam = request.nextUrl.searchParams.get('startDate') ?? request.nextUrl.searchParams.get('from');
   const endParam = request.nextUrl.searchParams.get('endDate') ?? request.nextUrl.searchParams.get('to');
@@ -71,10 +72,10 @@ export async function GET(request: NextRequest) {
   const endDate = parseDateRangeParam(endParam, 'end');
 
   if ((startParam && !startDate) || (endParam && !endDate)) {
-    return NextResponse.json({ error: 'Período inválido.' }, { status: 400 });
+    return noStoreJson({ error: 'Período inválido.' }, { status: 400 });
   }
   if (startDate && endDate && new Date(startDate).getTime() > new Date(endDate).getTime()) {
-    return NextResponse.json({ error: 'Data inicial maior que data final.' }, { status: 400 });
+    return noStoreJson({ error: 'Data inicial maior que data final.' }, { status: 400 });
   }
 
   const expenses = await getExpenses({
@@ -138,7 +139,7 @@ export async function GET(request: NextRequest) {
     headers: {
       'Content-Type': 'text/csv; charset=utf-8',
       'Content-Disposition': `attachment; filename="moneda-export-${today}.csv"`,
-      'Cache-Control': 'no-store',
+      ...SENSITIVE_RESPONSE_HEADERS,
     },
   });
 }
