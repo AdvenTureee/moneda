@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { ArrowLeft, Check, X, Trash, Plus, MagnifyingGlass } from '@phosphor-icons/react';
 import Icon, { AVAILABLE_ICONS } from '@/components/Icon';
+import { CategoriesListSkeleton } from '@/components/profile/ProfileSkeletons';
 import { useToast } from '@/components/ToastProvider';
 import { useCategories } from '@/hooks/useCategories';
 
@@ -210,9 +211,8 @@ export default function CategoriesView() {
 
       {/* Loading */}
       {loading && (
-        <div className="flex flex-col items-center py-16 text-center">
-          <span className="w-6 h-6 border-2 border-[#A8C5E0] border-t-transparent rounded-full animate-spin mb-3" />
-          <p className="text-sm text-[#6B7280]">Carregando categorias…</p>
+        <div className="mb-6 animate-fade-up delay-2">
+          <CategoriesListSkeleton />
         </div>
       )}
 
