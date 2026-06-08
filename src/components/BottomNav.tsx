@@ -126,7 +126,7 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
       style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
       aria-label="Navegação principal"
     >
-      <div className="grid grid-cols-5 items-center h-14 max-w-lg mx-auto px-2">
+      <div className="grid h-[68px] grid-cols-5 items-center max-w-lg mx-auto px-2">
         {NAV_ITEMS.map((item) => {
           if (item.isAction) {
             return (
@@ -135,10 +135,10 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
                 type="button"
                 onClick={() => onAddExpense?.()}
                 aria-label="Adicionar gasto"
-                className="bottom-nav-action justify-self-center flex flex-col items-center justify-center w-[60px] h-[60px] rounded-full bg-[#5BBF8E] text-white -mt-5 touch-manipulation active:scale-90 transition-transform duration-75"
+                className="bottom-nav-action justify-self-center flex flex-col items-center justify-center h-[68px] w-[68px] rounded-full bg-[#5BBF8E] text-white -mt-6 touch-manipulation active:scale-90 transition-transform duration-75"
                 style={{ boxShadow: 'var(--shadow-nav-action)' }}
               >
-                <item.icon size={28} />
+                <item.icon size={32} />
               </button>
             );
           }
@@ -168,15 +168,15 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
                 scheduleScrollReset();
               }}
               onFocus={() => prefetchRoute(href)}
-              className={`bottom-nav-link relative justify-self-center flex flex-col items-center justify-center gap-0.5 w-full min-w-[44px] min-h-[44px] rounded-lg touch-manipulation transition-[color,transform] duration-150 active:scale-[0.98] ${
+              className={`bottom-nav-link relative justify-self-center flex flex-col items-center justify-center gap-1 w-full min-w-[50px] min-h-[56px] rounded-xl touch-manipulation transition-[color,transform] duration-150 active:scale-[0.98] ${
                 isActive
                   ? 'text-[#A8C5E0]'
                   : 'text-[#9CA3AF] hover:text-[#6B7280]'
               }`}
               aria-current={isActive ? 'page' : undefined}
             >
-              <item.icon size={20} />
-              <span className="text-[10px] font-medium leading-none">{item.label}</span>
+              <item.icon size={23} />
+              <span className="text-[11px] font-semibold leading-none">{item.label}</span>
               <NavPendingHint />
               {isActive && (
                 <span className="bottom-nav-indicator absolute -bottom-0.5 h-0.5 rounded-full" />

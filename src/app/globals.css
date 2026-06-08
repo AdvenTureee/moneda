@@ -1899,7 +1899,7 @@ html[data-theme="dark"] .category-focus-row::before {
 }
 
 .scroll-boundary-wave--bottom {
-  bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(68px + env(safe-area-inset-bottom, 0px));
   transform-origin: center bottom;
 }
 

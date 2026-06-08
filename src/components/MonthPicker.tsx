@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
-import { CaretDown } from '@phosphor-icons/react';
+import { ArrowUUpLeft, CaretDown } from '@phosphor-icons/react';
 import { formatBillingCycleLabel, getCurrentBillingPeriod, shiftPeriod } from '@/lib/billingCycle';
 import { setStoredDashboardPeriod } from '@/lib/navigationState';
 
@@ -49,7 +49,7 @@ export default function MonthPicker({
   const [isMobile, setIsMobile] = useState(false);
   const [dragY, setDragY] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
-  const buttonRef = useRef<HTMLButtonElement | null>(null);
+  const filterRef = useRef<HTMLDivElement | null>(null);
   const dragStartYRef = useRef(0);
   const dragStartTimeRef = useRef(0);
   const isDraggingRef = useRef(false);
@@ -59,6 +59,8 @@ export default function MonthPicker({
 
   const currentLabel = formatBillingCycleLabel(value, closingDay);
   const current = splitCycleLabel(currentLabel);
+  const currentPeriod = getCurrentBillingPeriod(closingDay);
+  const isViewingCurrentPeriod = value === currentPeriod;
 
   const options = buildOptions(monthsBack, closingDay);
 
@@ -88,9 +90,9 @@ export default function MonthPicker({
   useLayoutEffect(() => {
     if (!open) return;
     const update = () => {
-      const btn = buttonRef.current;
-      if (!btn) return;
-      const rect = btn.getBoundingClientRect();
+      const filter = filterRef.current;
+      if (!filter) return;
+      const rect = filter.getBoundingClientRect();
       const mobile = window.innerWidth < 640;
       setIsMobile(mobile);
       if (mobile) {
@@ -169,17 +171,20 @@ export default function MonthPicker({
 
   return (
     <div className={`relative w-full ${fullWidth ? '' : 'sm:w-auto'}`}>
-      <button
-        ref={buttonRef}
-        type="button"
-        onClick={() => setOpen((o) => !o)}
+      <div
+        ref={filterRef}
         className={`dashboard-cycle-filter themed-card flex min-h-[54px] w-full items-center justify-between gap-3 rounded-[14px] border border-[color-mix(in_srgb,var(--color-border)_76%,transparent)] bg-[color-mix(in_srgb,var(--color-surface)_88%,transparent)] px-3.5 py-2 text-left shadow-sm outline-none transition-[border-color,background-color,box-shadow,transform] hover:border-[#A8C5E0]/70 hover:bg-[color-mix(in_srgb,var(--color-surface-alt)_72%,var(--color-surface)_28%)] active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-[#A8C5E0] focus-visible:ring-offset-1 sm:min-h-10 sm:px-3 ${
           fullWidth ? '' : 'sm:w-auto sm:min-w-[184px]'
         }`}
-        aria-label={`Ciclo: ${currentLabel}. Clique para trocar.`}
         aria-expanded={open}
       >
-        <span className="min-w-0">
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          className="min-w-0 flex-1 text-left outline-none"
+          aria-label={`Ciclo: ${currentLabel}. Clique para trocar.`}
+          aria-expanded={open}
+        >
           <span className="mb-0.5 block text-[11px] font-bold leading-none text-[var(--color-text-tertiary)]">
             Ciclo financeiro
           </span>
@@ -189,15 +194,35 @@ export default function MonthPicker({
           <span className="mt-0.5 block truncate text-xs font-semibold leading-tight text-[var(--color-text-secondary)]">
             {current.range}
           </span>
+        </button>
+        <span className="flex shrink-0 items-center gap-1.5">
+          {!isViewingCurrentPeriod && (
+            <button
+              type="button"
+              onClick={() => pick(currentPeriod)}
+              className="grid h-8 w-8 place-items-center rounded-full border border-[color-mix(in_srgb,var(--color-brand-green)_30%,transparent)] bg-[color-mix(in_srgb,var(--color-brand-green)_12%,var(--color-surface)_88%)] text-[var(--color-brand-green-dark)] shadow-[0_6px_14px_color-mix(in_srgb,var(--color-brand-green)_14%,transparent)] outline-none transition-[background-color,border-color,box-shadow,transform] hover:border-[color-mix(in_srgb,var(--color-brand-green)_46%,transparent)] hover:bg-[color-mix(in_srgb,var(--color-brand-green)_18%,var(--color-surface)_82%)] active:scale-95 focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--color-brand-green)_44%,transparent)] focus-visible:ring-offset-1"
+              aria-label="Voltar para o ciclo atual"
+              title="Voltar para o ciclo atual"
+            >
+              <ArrowUUpLeft size={15} weight="bold" aria-hidden />
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => setOpen((o) => !o)}
+            className="grid h-8 w-8 place-items-center rounded-full bg-[color-mix(in_srgb,var(--color-surface-alt)_80%,transparent)] text-[var(--color-text-secondary)] outline-none transition-[background-color,transform] hover:bg-[color-mix(in_srgb,var(--color-surface-alt)_92%,transparent)] active:scale-95 focus-visible:ring-2 focus-visible:ring-[#A8C5E0] focus-visible:ring-offset-1"
+            aria-label="Abrir filtro de ciclo"
+            aria-expanded={open}
+          >
+            <CaretDown
+              size={13}
+              weight="bold"
+              className={open ? 'rotate-180 transition-transform' : 'transition-transform'}
+              aria-hidden
+            />
+          </button>
         </span>
-        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[color-mix(in_srgb,var(--color-surface-alt)_80%,transparent)] text-[var(--color-text-secondary)]">
-          <CaretDown
-            size={13}
-            weight="bold"
-            className={open ? 'rotate-180 transition-transform' : 'transition-transform'}
-          />
-        </span>
-      </button>
+      </div>
 
       {mounted && open && position && createPortal(
         <>

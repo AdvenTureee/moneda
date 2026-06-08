@@ -124,7 +124,7 @@ function ShellContent({
     <>
       <main
         className="app-shell"
-        style={{ paddingBottom: 'calc(56px + env(safe-area-inset-bottom, 0px))' }}
+        style={{ paddingBottom: 'calc(68px + env(safe-area-inset-bottom, 0px))' }}
       >
         {children}
       </main>
