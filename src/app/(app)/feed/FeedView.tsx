@@ -42,6 +42,54 @@ const PAYMENT_FILTERS: Array<{ value: ExpensePaymentMethod; label: string; icon:
   }));
 
 const DEFAULT_DATE_PRESET = 'current-cycle';
+const FEED_FILTERS_STORAGE_KEY = 'moneda:feed-filters:v1';
+
+interface StoredFeedFilters {
+  dateRange?: DateRange;
+  activeCategory?: string | null;
+  activePaymentMethod?: ExpensePaymentMethod | null;
+  searchInput?: string;
+  activeView?: FeedView;
+}
+
+function isPaymentMethod(value: unknown): value is ExpensePaymentMethod {
+  return typeof value === 'string' && PAYMENT_FILTERS.some((method) => method.value === value);
+}
+
+function normalizeStoredDateRange(value: unknown): DateRange | null {
+  if (!value || typeof value !== 'object') return null;
+  const range = value as Partial<DateRange>;
+  const from = typeof range.from === 'string' || range.from === null ? range.from : null;
+  const to = typeof range.to === 'string' || range.to === null ? range.to : null;
+  const presetId = typeof range.presetId === 'string' ? range.presetId : DEFAULT_DATE_PRESET;
+  return { from, to, presetId };
+}
+
+function loadStoredFeedFilters(): StoredFeedFilters | null {
+  try {
+    const raw = window.sessionStorage.getItem(FEED_FILTERS_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    const dateRange = normalizeStoredDateRange(parsed.dateRange);
+    return {
+      dateRange: dateRange ?? undefined,
+      activeCategory: typeof parsed.activeCategory === 'string' ? parsed.activeCategory : null,
+      activePaymentMethod: isPaymentMethod(parsed.activePaymentMethod) ? parsed.activePaymentMethod : null,
+      searchInput: typeof parsed.searchInput === 'string' ? parsed.searchInput : '',
+      activeView: parsed.activeView === 'scheduled' ? 'scheduled' : 'history',
+    };
+  } catch {
+    return null;
+  }
+}
+
+function saveStoredFeedFilters(filters: StoredFeedFilters) {
+  try {
+    window.sessionStorage.setItem(FEED_FILTERS_STORAGE_KEY, JSON.stringify(filters));
+  } catch {
+    // Storage can be unavailable in private contexts.
+  }
+}
 
 function parseDateInputToIso(input: string, end: boolean): string | null {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(input)) return null;
@@ -179,16 +227,39 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
   const [activeFilterTab, setActiveFilterTab] = useState<FilterTab>('date');
   const [filtersPosition, setFiltersPosition] = useState<{ top: number; left: number; width: number } | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [filtersHydrated, setFiltersHydrated] = useState(false);
   const [, startUiTransition] = useTransition();
   const filtersAnchorRef = useRef<HTMLDivElement | null>(null);
 
-  // Read date range from URL after mount to avoid SSR/CSR hydration mismatch.
+  // Read filters after mount to avoid SSR/CSR hydration mismatch.
   useEffect(() => {
+    const stored = loadStoredFeedFilters();
+    if (stored) {
+      if (stored.dateRange) setDateRange(stored.dateRange);
+      setActiveCategory(stored.activeCategory ?? null);
+      setActivePaymentMethod(stored.activePaymentMethod ?? null);
+      setSearchInput(stored.searchInput ?? '');
+      setDebouncedSearch(stored.searchInput ?? '');
+      setActiveView(stored.activeView ?? 'history');
+    }
+
     const range = rangeFromSearchParams(new URLSearchParams(searchParams.toString()));
     if (range) setDateRange(range);
-    // Run only on initial mount; further filter changes come from the picker.
+    setFiltersHydrated(true);
+    // Run only on initial mount; further filter changes come from the controls.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (!filtersHydrated) return;
+    saveStoredFeedFilters({
+      dateRange,
+      activeCategory,
+      activePaymentMethod,
+      searchInput,
+      activeView,
+    });
+  }, [activeCategory, activePaymentMethod, activeView, dateRange, filtersHydrated, searchInput]);
 
   useEffect(() => {
     if (dateRange.presetId !== 'custom') return;
@@ -258,6 +329,7 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
   }, [filtersOpen]);
 
   const fetchExpenses = useCallback(async () => {
+    if (!filtersHydrated) return;
     abortRef.current?.abort();
     const controller = new AbortController();
     const requestSeq = requestSeqRef.current + 1;
@@ -294,7 +366,7 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
         if (abortRef.current === controller) abortRef.current = null;
       }
     }
-  }, [activeCategory, activePaymentMethod, debouncedSearch, dateRange, activeView]);
+  }, [activeCategory, activePaymentMethod, debouncedSearch, dateRange, activeView, filtersHydrated]);
 
   useEffect(() => {
     fetchExpenses();
@@ -352,7 +424,10 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
     : 'Todas';
   const paymentMeta = activePaymentMethod ? PAYMENT_METHOD_BADGES[activePaymentMethod] : null;
   const activeFilterCount =
-    (dateRange.presetId !== DEFAULT_DATE_PRESET ? 1 : 0) + (activeCategory ? 1 : 0) + (activePaymentMethod ? 1 : 0);
+    (dateRange.presetId !== DEFAULT_DATE_PRESET ? 1 : 0) +
+    (activeCategory ? 1 : 0) +
+    (activePaymentMethod ? 1 : 0) +
+    (searchInput.trim() ? 1 : 0);
   const filterTabs: Array<{
     id: FilterTab;
     label: string;
@@ -390,6 +465,8 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
       setCustomTo('');
       setActiveCategory(null);
       setActivePaymentMethod(null);
+      setSearchInput('');
+      setDebouncedSearch('');
     });
   }, [billingClosingDay]);
 

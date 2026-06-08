@@ -474,7 +474,7 @@ html[data-theme="dark"] .mo-tip-bubble::before {
 
 .dashboard-balance-hero {
   --dashboard-mo-size: clamp(100px, 27vw, 132px);
-  --dashboard-tip-width: clamp(178px, 48vw, 252px);
+  --dashboard-tip-width: clamp(260px, 72vw, 360px);
   min-height: calc(var(--dashboard-mo-size) + 40px);
   grid-template-columns: minmax(0, 1fr) calc(var(--dashboard-mo-size) + 6px);
 }
@@ -493,7 +493,7 @@ html[data-theme="dark"] .mo-tip-bubble::before {
   right: calc(var(--dashboard-mo-size) * 0.44);
   top: -22px;
   width: var(--dashboard-tip-width);
-  max-width: min(252px, calc(100vw - 126px));
+  max-width: calc(100vw - 44px);
 }
 
 .mo-tip-bubble--overlay {
@@ -547,24 +547,22 @@ html[data-theme="dark"] .mo-tip-bubble::before {
 }
 
 .mo-tip-bubble--overlay .mo-tip-bubble__message {
-  display: -webkit-box;
-  overflow: hidden;
-  overflow-wrap: normal;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
+  display: block;
+  overflow: visible;
+  overflow-wrap: anywhere;
 }
 
 @media (max-width: 374px) {
   .dashboard-balance-hero {
     --dashboard-mo-size: clamp(88px, 25vw, 104px);
-    --dashboard-tip-width: clamp(154px, 54vw, 186px);
+    --dashboard-tip-width: clamp(230px, 76vw, 290px);
     grid-template-columns: minmax(0, 1fr) calc(var(--dashboard-mo-size) + 2px);
   }
 
   .dashboard-balance-hero__tip {
     right: calc(var(--dashboard-mo-size) * 0.38);
     top: -18px;
-    max-width: calc(100vw - 112px);
+    max-width: calc(100vw - 34px);
   }
 
   .mo-tip-bubble--overlay {

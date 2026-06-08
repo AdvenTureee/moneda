@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { CaretDown } from '@phosphor-icons/react';
 import { formatBillingCycleLabel, getCurrentBillingPeriod, shiftPeriod } from '@/lib/billingCycle';
+import { setStoredDashboardPeriod } from '@/lib/navigationState';
 
 interface MonthPickerProps {
   value: string;
@@ -63,6 +64,10 @@ export default function MonthPicker({
 
   useEffect(() => setMounted(true), []);
 
+  useEffect(() => {
+    setStoredDashboardPeriod(value);
+  }, [value]);
+
   const closeMenu = useCallback(() => {
     setOpen(false);
     setDragY(0);
@@ -109,6 +114,7 @@ export default function MonthPicker({
 
   function pick(period: string) {
     closeMenu();
+    setStoredDashboardPeriod(period);
     router.push(`/?period=${period}`);
     router.refresh();
   }

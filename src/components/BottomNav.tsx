@@ -1,9 +1,13 @@
 'use client';
 
-import { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import Link, { useLinkStatus } from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { House, List, PlusCircle, Sparkle, User } from '@phosphor-icons/react';
+import {
+  DASHBOARD_PERIOD_CHANGED_EVENT,
+  dashboardHrefWithStoredPeriod,
+} from '@/lib/navigationState';
 
 interface NavItem {
   label: string;
@@ -61,6 +65,7 @@ interface BottomNavProps {
 export default function BottomNav({ onAddExpense }: BottomNavProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const [dashboardHref, setDashboardHref] = useState('/');
   const shouldResetScrollRef = useRef(false);
   const previousPathnameRef = useRef(pathname);
   const resetScrollTimeoutRef = useRef<number | null>(null);
@@ -104,6 +109,17 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
 
   useEffect(() => clearPendingScrollReset, [clearPendingScrollReset]);
 
+  useEffect(() => {
+    const updateDashboardHref = () => setDashboardHref(dashboardHrefWithStoredPeriod());
+    updateDashboardHref();
+    window.addEventListener(DASHBOARD_PERIOD_CHANGED_EVENT, updateDashboardHref);
+    window.addEventListener('storage', updateDashboardHref);
+    return () => {
+      window.removeEventListener(DASHBOARD_PERIOD_CHANGED_EVENT, updateDashboardHref);
+      window.removeEventListener('storage', updateDashboardHref);
+    };
+  }, []);
+
   return (
     <nav
       className="fixed bottom-0 left-0 right-0 bg-white z-40"
@@ -127,6 +143,7 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
             );
           }
 
+          const href = item.href === '/' ? dashboardHref : item.href;
           const isActive = item.href === '/'
             ? pathname === '/'
             : pathname.startsWith(item.href);
@@ -135,10 +152,10 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
           return (
             <Link
               key={item.label}
-              href={item.href}
+              href={href}
               prefetch
               scroll={false}
-              onMouseEnter={() => prefetchRoute(item.href)}
+              onMouseEnter={() => prefetchRoute(href)}
               onClick={(event) => {
                 if (!isSamePath || isModifiedClick(event)) return;
 
@@ -150,7 +167,7 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
                 resetTabScroll();
                 scheduleScrollReset();
               }}
-              onFocus={() => prefetchRoute(item.href)}
+              onFocus={() => prefetchRoute(href)}
               className={`bottom-nav-link relative justify-self-center flex flex-col items-center justify-center gap-0.5 w-full min-w-[44px] min-h-[44px] rounded-lg touch-manipulation transition-[color,transform] duration-150 active:scale-[0.98] ${
                 isActive
                   ? 'text-[#A8C5E0]'
