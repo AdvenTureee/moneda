@@ -5,10 +5,13 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
   ArrowRight,
-  ShieldCheck,
+  CaretLeft,
+  CaretRight,
   WhatsappLogo,
 } from '@phosphor-icons/react';
 import Mo from '@/components/Mo';
+import { BubbleBackground } from '@/components/animate-ui/components/backgrounds/bubble';
+import { MotionCarousel } from '@/components/animate-ui/components/community/motion-carousel';
 
 interface HomeLandingProps {
   whatsappUrl: string;
@@ -47,6 +50,15 @@ const openMoji = {
 } as const;
 
 type OpenMojiName = keyof typeof openMoji;
+
+const bubbleColors = {
+  first: '168,197,224',
+  second: '91,191,142',
+  third: '122,174,207',
+  fourth: '240,168,85',
+  fifth: '255,255,255',
+  sixth: '63,168,118',
+};
 
 const faqs = [
   {
@@ -292,20 +304,72 @@ function HowItWorksSection() {
           Três passos. Nenhuma planilha.
         </h2>
       </div>
-      <div className="mt-8 grid gap-4 md:grid-cols-3">
-        {steps.map((step, index) => (
-          <div key={step.title} className="rounded-[16px] border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
-            <div className="flex items-center justify-between">
-              <OpenMojiIcon name={step.emoji as OpenMojiName} size={34} />
-              <span className="text-sm font-extrabold tabular-nums text-[var(--color-brand-green-dark)]">
-                {String(index + 1).padStart(2, '0')}
-              </span>
+      <MotionCarousel
+        className="mx-auto mt-8 max-w-5xl"
+        slides={steps.map((step, index) => (
+          <article
+            key={step.title}
+            className="flex min-h-[245px] flex-col justify-between rounded-[16px] border border-[color-mix(in_srgb,var(--color-border)_72%,transparent)] bg-[color-mix(in_srgb,var(--color-surface)_88%,transparent)] p-5 shadow-[var(--shadow-card-soft)] backdrop-blur-sm"
+          >
+            <div>
+              <div className="flex items-center justify-between">
+                <span className="grid h-14 w-14 place-items-center rounded-[14px] bg-[var(--color-surface-alt)]">
+                  <OpenMojiIcon name={step.emoji as OpenMojiName} size={34} />
+                </span>
+                <span className="text-sm font-extrabold tabular-nums text-[var(--color-brand-green-dark)]">
+                  {String(index + 1).padStart(2, '0')}
+                </span>
+              </div>
+              <h3 className="mt-5 text-xl font-heading font-bold text-[var(--color-text-primary)]">{step.title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-[var(--color-text-secondary)]">{step.text}</p>
             </div>
-            <h3 className="mt-4 text-lg font-heading font-bold text-[var(--color-text-primary)]">{step.title}</h3>
-            <p className="mt-2 text-sm leading-relaxed text-[var(--color-text-secondary)]">{step.text}</p>
-          </div>
+            <div className="mt-6 h-1.5 rounded-full bg-[var(--color-surface-alt)]">
+              <div
+                className="h-full rounded-full bg-[var(--color-brand-green)]"
+                style={{ width: `${((index + 1) / steps.length) * 100}%` }}
+              />
+            </div>
+          </article>
         ))}
-      </div>
+        renderControls={({ scrollSnaps, selectedIndex, scrollPrev, scrollNext, scrollTo, canScrollPrev, canScrollNext }) => (
+          <div className="mt-5 flex items-center justify-center gap-3">
+            <button
+              type="button"
+              onClick={scrollPrev}
+              disabled={!canScrollPrev}
+              className="grid h-11 w-11 place-items-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-primary)] transition disabled:opacity-40"
+              aria-label="Passo anterior"
+            >
+              <CaretLeft size={18} weight="bold" />
+            </button>
+            <div className="flex items-center gap-2">
+              {scrollSnaps.map((_, index) => (
+                <button
+                  key={index}
+                  type="button"
+                  onClick={() => scrollTo(index)}
+                  className={`h-2.5 rounded-full transition-all ${
+                    selectedIndex === index
+                      ? 'w-8 bg-[var(--color-brand-green)]'
+                      : 'w-2.5 bg-[color-mix(in_srgb,var(--color-text-tertiary)_42%,transparent)]'
+                  }`}
+                  aria-label={`Ir para o passo ${index + 1}`}
+                  aria-current={selectedIndex === index ? 'step' : undefined}
+                />
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={scrollNext}
+              disabled={!canScrollNext}
+              className="grid h-11 w-11 place-items-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-primary)] transition disabled:opacity-40"
+              aria-label="Próximo passo"
+            >
+              <CaretRight size={18} weight="bold" />
+            </button>
+          </div>
+        )}
+      />
     </Band>
   );
 }
@@ -436,34 +500,52 @@ function StartSection({ whatsappUrl }: { whatsappUrl: string }) {
 
 function TrustAndFaq() {
   const [open, setOpen] = useState(0);
+  const trustItems = [
+    { title: 'Criptografia de dados sensíveis', text: 'A camada de segurança existe porque gasto pessoal é informação íntima.' },
+    { title: 'Privacidade por padrão', text: 'O Moneda usa seus dados para organizar gastos e gerar insights, não para complicar sua vida.' },
+    { title: 'Controle do usuário', text: 'Você pode revisar configurações de privacidade e apagar seus dados pelo perfil.' },
+  ];
+
   return (
-    <Band tone="blue">
-      <div className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr]">
-        <div>
-          <TextLabel>Confiança</TextLabel>
-          <h2 className="mt-3 text-2xl font-heading font-bold text-[var(--color-text-primary)] sm:text-3xl">
-            Dinheiro pede cuidado, não suspense.
-          </h2>
-          <div className="mt-6 space-y-4">
-            {[
-              { title: 'Criptografia', text: 'Dados sensíveis tratados com camada de segurança.', emoji: 'lock' },
-              { title: 'Uso interno', text: 'Informações usadas para organizar gastos e gerar insights.' },
-              { title: 'Exclusão de conta', text: 'Você pode apagar seus dados pelo perfil.' },
-            ].map((item) => (
-              <div key={item.title} className="flex gap-3">
-                {item.emoji ? (
-                  <OpenMojiIcon name={item.emoji as OpenMojiName} size={24} className="mt-0.5" />
-                ) : (
-                  <ShieldCheck size={22} weight="fill" className="mt-0.5 shrink-0 text-[var(--color-brand-green)]" />
-                )}
-                <p className="text-sm leading-relaxed text-[var(--color-text-secondary)]">
-                  <span className="font-bold text-[var(--color-text-primary)]">{item.title}:</span> {item.text}
-                </p>
-              </div>
-            ))}
+    <Band tone="ink" className="home-band--crypto">
+      <div className="grid gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-start">
+        <div className="relative overflow-hidden rounded-[18px] border border-[color-mix(in_srgb,var(--color-brand-green)_32%,var(--color-border))] bg-[color-mix(in_srgb,var(--color-surface)_90%,transparent)] p-6 shadow-[var(--shadow-card-soft)] backdrop-blur-sm sm:p-8">
+          <div className="absolute right-4 top-4 h-28 w-28 rounded-full bg-[color-mix(in_srgb,var(--color-brand-green)_18%,transparent)] blur-2xl" />
+          <div className="relative">
+            <div className="mb-7 grid h-24 w-24 place-items-center rounded-[18px] bg-[color-mix(in_srgb,var(--color-brand-green)_14%,var(--color-surface))] shadow-[0_18px_34px_color-mix(in_srgb,var(--color-brand-green)_18%,transparent)]">
+              <OpenMojiIcon name="lock" size={62} label="Cadeado com chave" />
+            </div>
+            <TextLabel>Criptografia</TextLabel>
+            <h2 className="mt-3 max-w-2xl text-4xl font-heading font-extrabold leading-[1.04] text-[var(--color-text-primary)] sm:text-5xl">
+              Seu dinheiro merece uma conversa protegida.
+            </h2>
+            <p className="mt-5 max-w-xl text-base leading-relaxed text-[var(--color-text-secondary)] sm:text-lg">
+              O Moneda trata dados sensíveis com cuidado desde a primeira mensagem. Clareza financeira não precisa custar privacidade.
+            </p>
           </div>
         </div>
-        <div className="divide-y divide-[var(--color-border)] rounded-[16px] border border-[var(--color-border)] bg-[var(--color-surface)]">
+
+        <div className="grid gap-4">
+          {trustItems.map((item) => (
+            <div
+              key={item.title}
+              className="rounded-[16px] border border-[color-mix(in_srgb,var(--color-border)_72%,transparent)] bg-[color-mix(in_srgb,var(--color-surface)_86%,transparent)] p-5 backdrop-blur-sm"
+            >
+              <h3 className="font-heading text-base font-bold text-[var(--color-text-primary)]">{item.title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-[var(--color-text-secondary)]">{item.text}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="mt-10 grid gap-6 lg:grid-cols-[0.72fr_1.28fr] lg:items-start">
+        <div>
+          <TextLabel>Perguntas frequentes</TextLabel>
+          <h2 className="mt-3 max-w-sm text-2xl font-heading font-bold text-[var(--color-text-primary)] sm:text-3xl">
+            O básico, sem enrolar.
+          </h2>
+        </div>
+        <div className="divide-y divide-[var(--color-border)] rounded-[16px] border border-[color-mix(in_srgb,var(--color-border)_72%,transparent)] bg-[color-mix(in_srgb,var(--color-surface)_88%,transparent)] backdrop-blur-sm">
           {faqs.map((faq, index) => (
             <div key={faq.q}>
               <button
@@ -516,8 +598,12 @@ function FinalCta({ whatsappUrl }: { whatsappUrl: string }) {
 
 export default function HomeLanding({ whatsappUrl }: HomeLandingProps) {
   return (
-    <main className="min-h-dvh bg-[var(--color-bg)] text-[var(--color-text-primary)]">
-      <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-5 sm:px-6 lg:px-8">
+    <main className="relative min-h-dvh overflow-x-clip bg-[var(--color-bg)] text-[var(--color-text-primary)]">
+      <BubbleBackground
+        colors={bubbleColors}
+        className="fixed inset-0 z-0 opacity-40"
+      />
+      <header className="relative z-10 mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-5 sm:px-6 lg:px-8">
         <Link href="/" className="flex items-center gap-2 font-heading text-xl font-extrabold text-[var(--color-text-primary)]">
           <span className="grid h-8 w-8 place-items-center rounded-full bg-[var(--color-brand-green)] text-sm font-black text-white">M</span>
           Moneda
@@ -533,6 +619,11 @@ export default function HomeLanding({ whatsappUrl }: HomeLandingProps) {
       </header>
 
       <section className="home-band home-band--hero relative overflow-hidden">
+        <BubbleBackground
+          interactive
+          colors={bubbleColors}
+          className="absolute inset-0 z-0 opacity-55"
+        />
         <div className="relative z-[1] mx-auto grid min-h-[calc(100dvh-76px)] w-full max-w-6xl items-center gap-10 px-4 pb-14 pt-8 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:px-8">
           <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.36 }}>
             <TextLabel>Controle financeiro no WhatsApp</TextLabel>

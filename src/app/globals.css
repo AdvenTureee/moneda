@@ -134,65 +134,79 @@ body {
 
 .home-band {
   isolation: isolate;
+  position: relative;
 }
 
 .home-band::before {
   content: '';
   position: absolute;
-  inset: -22% -12%;
+  inset: 0;
   z-index: 0;
-  opacity: 0.62;
+  opacity: 0.58;
   pointer-events: none;
   background:
-    radial-gradient(ellipse at 18% 28%, var(--home-orb-a, rgba(168, 197, 224, 0.22)), transparent 38%),
-    radial-gradient(ellipse at 82% 72%, var(--home-orb-b, rgba(91, 191, 142, 0.16)), transparent 42%);
+    linear-gradient(180deg, transparent 0%, var(--home-wash, transparent) 42%, transparent 100%),
+    radial-gradient(ellipse at 18% 28%, var(--home-orb-a, rgba(168, 197, 224, 0.14)), transparent 44%),
+    radial-gradient(ellipse at 82% 72%, var(--home-orb-b, rgba(91, 191, 142, 0.1)), transparent 48%);
   transform: translate3d(0, 0, 0);
-  animation: home-band-drift 18s cubic-bezier(0.22, 1, 0.36, 1) infinite alternate both;
+  animation: home-band-drift 22s cubic-bezier(0.22, 1, 0.36, 1) infinite alternate both;
 }
 
 .home-band--hero {
-  --home-orb-a: rgba(168, 197, 224, 0.22);
-  --home-orb-b: rgba(91, 191, 142, 0.14);
+  --home-wash: color-mix(in srgb, var(--color-brand-blue) 8%, transparent);
+  --home-orb-a: rgba(168, 197, 224, 0.12);
+  --home-orb-b: rgba(91, 191, 142, 0.1);
   background:
-    linear-gradient(180deg, var(--color-bg), color-mix(in srgb, var(--color-brand-blue) 10%, var(--color-bg) 90%));
+    linear-gradient(180deg, var(--color-bg), color-mix(in srgb, var(--color-brand-blue) 6%, var(--color-bg) 94%) 58%, transparent);
 }
 
 .home-band--plain {
-  --home-orb-a: rgba(168, 197, 224, 0.1);
-  --home-orb-b: rgba(91, 191, 142, 0.08);
-  background: var(--color-bg);
+  --home-wash: color-mix(in srgb, var(--color-surface) 38%, transparent);
+  --home-orb-a: rgba(168, 197, 224, 0.07);
+  --home-orb-b: rgba(91, 191, 142, 0.06);
+  background: transparent;
 }
 
 .home-band--blue {
-  --home-orb-a: rgba(168, 197, 224, 0.28);
-  --home-orb-b: rgba(255, 255, 255, 0.54);
-  background: color-mix(in srgb, var(--color-brand-blue) 15%, var(--color-bg) 85%);
+  --home-wash: color-mix(in srgb, var(--color-brand-blue) 8%, transparent);
+  --home-orb-a: rgba(168, 197, 224, 0.13);
+  --home-orb-b: rgba(255, 255, 255, 0.28);
+  background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--color-brand-blue) 6%, var(--color-bg) 94%) 46%, transparent);
 }
 
 .home-band--green {
-  --home-orb-a: rgba(91, 191, 142, 0.18);
-  --home-orb-b: rgba(168, 197, 224, 0.12);
-  background: color-mix(in srgb, var(--color-brand-green) 10%, var(--color-bg) 90%);
+  --home-wash: color-mix(in srgb, var(--color-brand-green) 7%, transparent);
+  --home-orb-a: rgba(91, 191, 142, 0.1);
+  --home-orb-b: rgba(168, 197, 224, 0.08);
+  background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--color-brand-green) 5%, var(--color-bg) 95%) 48%, transparent);
 }
 
 .home-band--warm {
-  --home-orb-a: rgba(240, 168, 85, 0.16);
-  --home-orb-b: rgba(168, 197, 224, 0.12);
-  background: color-mix(in srgb, var(--color-warning) 8%, var(--color-bg) 92%);
+  --home-wash: color-mix(in srgb, var(--color-warning) 6%, transparent);
+  --home-orb-a: rgba(240, 168, 85, 0.08);
+  --home-orb-b: rgba(168, 197, 224, 0.08);
+  background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--color-warning) 4%, var(--color-bg) 96%) 50%, transparent);
 }
 
 .home-band--ink {
-  --home-orb-a: rgba(168, 197, 224, 0.14);
-  --home-orb-b: rgba(91, 191, 142, 0.12);
-  background: color-mix(in srgb, var(--color-text-primary) 4%, var(--color-bg) 96%);
+  --home-wash: color-mix(in srgb, var(--color-text-primary) 3%, transparent);
+  --home-orb-a: rgba(168, 197, 224, 0.08);
+  --home-orb-b: rgba(91, 191, 142, 0.08);
+  background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--color-text-primary) 3%, var(--color-bg) 97%) 50%, transparent);
+}
+
+.home-band--crypto {
+  --home-wash: color-mix(in srgb, var(--color-brand-green) 10%, transparent);
+  --home-orb-a: rgba(91, 191, 142, 0.14);
+  --home-orb-b: rgba(168, 197, 224, 0.1);
 }
 
 @keyframes home-band-drift {
   from {
-    transform: translate3d(-1.5%, -1%, 0) scale(1);
+    transform: translate3d(-0.8%, -0.6%, 0) scale(1);
   }
   to {
-    transform: translate3d(1.5%, 1%, 0) scale(1.035);
+    transform: translate3d(0.8%, 0.6%, 0) scale(1.018);
   }
 }
 
