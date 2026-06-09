@@ -59,7 +59,7 @@ export default function LoginPage() {
       return;
     }
 
-    router.push('/');
+    router.push('/app');
     router.refresh();
   }
 

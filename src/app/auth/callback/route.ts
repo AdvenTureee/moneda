@@ -14,7 +14,8 @@ import type { Database } from '@/types/supabase';
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get('code');
-  const next = searchParams.get('next') ?? '/';
+  const requestedNext = searchParams.get('next');
+  const next = !requestedNext || requestedNext === '/' ? '/app' : requestedNext;
   const isRecoveryNext = next.startsWith('/perfil/senha') && next.includes('recovery=1');
   // OAuth providers podem retornar erro direto (usuário cancelou, app não autorizado, etc.).
   const providerError = searchParams.get('error');
