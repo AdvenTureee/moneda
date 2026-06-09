@@ -2,7 +2,7 @@ export const TERMS_VERSION = '1.1';
 
 export const TERMS_UPDATED_LABEL = '28 de maio de 2026';
 
-export const TERMS_CONTACT_EMAIL = 'gabrielmain7@outlook.com';
+export const TERMS_CONTACT_EMAIL = 'suporte@moneda.info';
 
 export const TERMS_SUMMARY = [
   'Seus dados são usados para operar sua conta, organizar suas finanças, proteger o acesso e entregar funcionalidades do Moneda.',

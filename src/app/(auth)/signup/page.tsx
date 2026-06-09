@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Eye, EyeSlash } from '@phosphor-icons/react';
+import { ArrowRight, Eye, EyeSlash } from '@phosphor-icons/react';
 import TermsModal from '@/components/TermsModal';
 import { TERMS_VERSION } from '@/lib/legal';
 import { PASSWORD_REQUIREMENTS_LABEL, isStrongPassword } from '@/lib/password';
@@ -313,12 +313,16 @@ export default function SignupPage() {
             </button>
           </form>
 
-          <p className="mt-4 text-center text-xs text-[#6B7280]">
-            Já tem conta?{' '}
-            <Link href="/login" className="font-semibold text-[#A8C5E0]">
-              Entrar
+          <div className="mt-4 rounded-[14px] border border-[#A8C5E0]/35 bg-[#A8C5E0]/10 p-2">
+            <Link
+              href="/login"
+              className="flex min-h-12 items-center justify-center gap-2 rounded-[10px] text-sm font-semibold text-[#DCEBFA] transition-colors hover:bg-[#A8C5E0]/14 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A8C5E0]"
+            >
+              Já tem conta?
+              <span className="font-extrabold text-[#A8C5E0]">Entrar</span>
+              <ArrowRight size={17} weight="bold" aria-hidden />
             </Link>
-          </p>
+          </div>
           <TermsModal
             isOpen={termsModalOpen}
             onClose={() => setTermsModalOpen(false)}

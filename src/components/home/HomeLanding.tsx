@@ -801,6 +801,15 @@ function LandingFooter() {
         </div>
         <div className="grid gap-1 sm:text-right">
           <p>CNPJ 47.932.528/0001-62</p>
+          <a
+            href="https://api.whatsapp.com/send/?phone=5511991333769&text&type=phone_number&app_absent=0"
+            target="_blank"
+            rel="noreferrer"
+            className="font-semibold text-[var(--color-text-primary)] underline-offset-2 transition-colors hover:text-[var(--color-brand-green-dark)] hover:underline"
+          >
+            <WhatsappLogo size={18} weight="bold" className="inline-block align-[-3px]" aria-hidden />
+            <span className="ml-1.5">(+55) 1199133-3769</span>
+          </a>
           <address className="not-italic">
             Av Francisco Nobrega Barbosa, 301, Apto 81 A - Parques Alves de Lima
           </address>
@@ -821,30 +830,32 @@ export default function HomeLanding({ whatsappUrl }: HomeLandingProps) {
       />
       <div className="pointer-events-none fixed inset-0 z-0 bg-[linear-gradient(180deg,color-mix(in_srgb,var(--color-bg)_94%,transparent)_0%,color-mix(in_srgb,var(--color-bg)_84%,transparent)_46%,var(--color-bg)_100%)]" />
 
-      <header className="relative z-10 mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-5 sm:px-6 lg:px-8">
-        <Link href="/" className="flex items-center gap-2 font-heading text-xl font-extrabold text-[var(--color-text-primary)]">
-          <Image
-            src={moicoPng}
-            alt=""
-            sizes="40px"
-            className="h-9 w-9 rounded-full object-contain sm:h-10 sm:w-10"
-          />
+      <header className="relative z-10 mx-auto grid min-h-20 w-full max-w-6xl grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 py-5 sm:px-6 lg:px-8">
+        <div aria-hidden />
+        <Link
+          href="/"
+          className="justify-self-center font-heading text-[clamp(1.85rem,4vw,2.75rem)] font-extrabold leading-none tracking-[0.01em] text-[var(--color-text-primary)]"
+        >
           Moneda
         </Link>
-        <nav className="flex items-center gap-1.5 sm:gap-2">
+        <nav className="justify-self-end rounded-full bg-[color-mix(in_srgb,var(--color-surface)_72%,transparent)] p-1 shadow-[0_12px_30px_rgba(26,29,35,0.05)] backdrop-blur-sm">
+          <div className="flex items-center gap-1">
           <ThemeToggleButton />
           <Link
             href="/login"
-            className="rounded-full px-3 py-2 text-sm font-bold text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-alt)] hover:text-[var(--color-text-primary)] sm:px-4"
+            className="hidden min-h-10 items-center rounded-full px-3 text-sm font-bold text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-alt)] hover:text-[var(--color-text-primary)] min-[520px]:inline-flex sm:px-4"
           >
             Entrar
           </Link>
           <Link
             href="/signup"
-            className="rounded-full bg-[var(--color-surface)] px-3 py-2 text-sm font-bold text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-alt)] sm:px-4"
+            aria-label="Criar conta"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[var(--color-brand-green)] text-sm font-extrabold text-white transition-colors hover:bg-[var(--color-brand-green-dark)] sm:w-auto sm:px-4"
           >
-            Criar conta
+            <span className="hidden sm:inline">Criar conta</span>
+            <ArrowRight size={18} weight="bold" className="sm:hidden" aria-hidden />
           </Link>
+          </div>
         </nav>
       </header>
 
