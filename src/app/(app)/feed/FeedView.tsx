@@ -9,6 +9,7 @@ import AddExpenseModal from '@/components/AddExpenseModal';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import DatePicker from '@/components/DatePicker';
 import UpcomingInstallmentsModal from '@/components/UpcomingInstallmentsModal';
+import PageHeader from '@/components/PageHeader';
 import { hasUpcomingInstallments } from '@/lib/installments';
 import type { DateRange } from '@/components/DateRangePicker';
 import Icon from '@/components/Icon';
@@ -572,10 +573,10 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
   return (
     <>
       <div className="max-w-lg mx-auto px-4 pb-24 [scrollbar-gutter:stable]">
-        {/* Header */}
-        <header className="pt-6 pb-2 animate-fade-up delay-0">
-          <h1 className="text-2xl font-heading text-[var(--color-text-primary)]">Feed de Gastos</h1>
-        </header>
+        <PageHeader
+          title="Feed de Gastos"
+          subtitle="Histórico e agendados em um só lugar."
+        />
 
         {focusParam === 'overspend' && showOverspendNotice && topCategories.length > 0 && (
           <div

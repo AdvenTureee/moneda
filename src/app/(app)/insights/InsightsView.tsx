@@ -10,6 +10,7 @@ import Icon from '@/components/Icon';
 import Mo from '@/components/Mo';
 import MoInsightsChat from '@/components/MoInsightsChat';
 import CategoryChip from '@/components/CategoryChip';
+import PageHeader from '@/components/PageHeader';
 import { formatCurrency, isClosedMonthlyPeriod } from '@/lib/utils';
 import type { AIInsight } from '@/types';
 
@@ -239,11 +240,7 @@ export default function InsightsView({
 
   return (
     <div className="max-w-lg mx-auto px-4 pb-24">
-      {/* Header */}
-      <header className="py-5 animate-fade-up delay-0">
-        <h1 className="text-xl font-heading text-[#1A1D23]">Insights</h1>
-        <p className="text-xs text-[#6B7280] mt-1 capitalize">{monthName}</p>
-      </header>
+      <PageHeader title="Insights" subtitle={monthName} />
 
       <MoInsightsChat period={period} expenseCount={expenseCount} />
 

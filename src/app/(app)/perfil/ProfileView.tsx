@@ -23,6 +23,7 @@ import {
   CalendarBlank,
 } from '@phosphor-icons/react';
 import { useToast } from '@/components/ToastProvider';
+import PageHeader from '@/components/PageHeader';
 import {
   updateDisplayName,
   updateEmail,
@@ -204,10 +205,7 @@ export default function ProfileView({
 
   return (
     <div className="max-w-lg mx-auto px-4 pb-24">
-      <header className="py-6 animate-fade-up delay-0">
-        <h1 className="text-2xl font-heading text-[#1A1D23]">Perfil</h1>
-        <p className="text-sm text-[#6B7280] mt-1">Gerencie sua conta e preferências.</p>
-      </header>
+      <PageHeader title="Perfil" subtitle="Gerencie sua conta e preferências." />
 
       {/* Identity card */}
       <section

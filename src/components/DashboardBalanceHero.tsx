@@ -94,7 +94,7 @@ export default function DashboardBalanceHero({
   return (
     <section className="mb-4 animate-fade-up delay-1" aria-label="Status do orçamento">
       <div className="dashboard-balance-hero relative grid items-end gap-2 overflow-visible rounded-[18px] py-1">
-        <div className={`relative z-10 min-w-0 ${budgetState === 'overBudget' ? '' : 'pb-2'} pt-8`}>
+        <div className={`relative z-10 min-w-0 ${budgetState === 'overBudget' ? '' : 'pb-2'} pt-2`}>
           {budgetState === 'healthy' && (
             <>
               <p className="mb-1 text-xs font-medium text-[#6B7280]">

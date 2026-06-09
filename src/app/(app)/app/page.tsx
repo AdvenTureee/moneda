@@ -8,6 +8,7 @@ import Icon from '@/components/Icon';
 import Confetti from '@/components/Confetti';
 import MonthPicker from '@/components/MonthPicker';
 import DashboardBalanceHero from '@/components/DashboardBalanceHero';
+import PageHeader from '@/components/PageHeader';
 import RefreshOnExpenseMutation from '@/components/RefreshOnExpenseMutation';
 import { getDashboardMetrics, getSpendingTimeline } from '@/lib/expenses';
 import { getBudgets } from '@/lib/budgets';
@@ -133,12 +134,10 @@ export default async function DashboardPage({
     <>
       <RefreshOnExpenseMutation />
       <div className="max-w-lg mx-auto px-4">
-        {/* Header */}
-        <header className="relative z-40 pt-8 pb-3 animate-fade-up delay-0">
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-heading font-bold tracking-tight text-[var(--color-text-primary)]">
-              Moneda
-            </h1>
+        <PageHeader
+          title="Moneda"
+          subtitle="Seu dinheiro, finalmente claro."
+          action={
             <Link
               href="/perfil"
               className="dashboard-avatar-frame text-lg font-bold text-white"
@@ -157,8 +156,9 @@ export default async function DashboardPage({
                 )}
               </span>
             </Link>
-          </div>
-        </header>
+          }
+          className="relative z-40 min-h-[88px] pb-2"
+        />
 
         <DashboardBalanceHero budgetTotal={budgetTotal} expensesTotal={expensesTotal} incomeTotal={incomeTotal} period={period} displayName={fullName} />
 
