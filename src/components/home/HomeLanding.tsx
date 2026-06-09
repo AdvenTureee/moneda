@@ -12,12 +12,17 @@ import {
   CreditCard,
   ListBullets,
   LockKey,
+  Moon,
   Receipt,
   ShieldCheck,
+  Sun,
   Trash,
+  UploadSimple,
+  Wallet,
   WhatsappLogo,
 } from '@phosphor-icons/react';
 import { BubbleBackground } from '@/components/animate-ui/components/backgrounds/bubble';
+import { useTheme } from '@/components/ThemeProvider';
 import moicoPng from '../../../moico-png.png';
 
 interface HomeLandingProps {
@@ -107,6 +112,39 @@ const trustItems = [
   { icon: ShieldCheck, text: 'Privacidade tratada como parte do produto, não como rodapé.' },
   { icon: LockKey, text: 'Dados sensíveis protegidos desde o primeiro registro.' },
   { icon: Trash, text: 'Você pode revisar preferências e apagar seus dados pelo perfil.' },
+];
+
+const availableFeatures = [
+  {
+    icon: Receipt,
+    title: 'Adicionar gastos',
+    text: 'Registre despesas com valor, categoria e data.',
+    tone: 'blue' as const,
+  },
+  {
+    icon: Wallet,
+    title: 'Adicionar ganhos',
+    text: 'Acompanhe entradas para entender o mês inteiro.',
+    tone: 'green' as const,
+  },
+  {
+    icon: UploadSimple,
+    title: 'Upload de comprovantes',
+    text: 'Guarde recibos e imagens junto do lançamento.',
+    tone: 'warm' as const,
+  },
+  {
+    icon: ChartPieSlice,
+    title: 'Visual fácil de gastos',
+    text: 'Veja onde o dinheiro concentra sem abrir planilha.',
+    tone: 'blue' as const,
+  },
+  {
+    icon: ListBullets,
+    title: 'Feed e categorias organizadas',
+    text: 'Revise tudo em uma linha do tempo clara.',
+    tone: 'ink' as const,
+  },
 ];
 
 const faqs = [
@@ -212,23 +250,19 @@ function IconBadge({
   );
 }
 
-function CtaButton({ whatsappUrl, large = false }: { whatsappUrl: string; large?: boolean }) {
-  const external = /^https?:\/\//.test(whatsappUrl);
-
+function CtaButton({ large = false }: { large?: boolean }) {
   return (
     <motion.a
-      href={whatsappUrl}
-      target={external ? '_blank' : undefined}
-      rel={external ? 'noreferrer' : undefined}
+      href="/signup"
       whileHover={{ scale: 1.015 }}
       whileTap={{ scale: 0.985 }}
       transition={{ duration: 0.16, ease: easeOut }}
-      className={`inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full bg-[var(--color-brand-blue)] font-extrabold text-[#102033] transition-colors duration-200 hover:bg-[var(--color-brand-blue-dark)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-blue)] focus-visible:ring-offset-2 ${
+      className={`inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full bg-[var(--color-brand-green)] font-extrabold text-white transition-colors duration-200 hover:bg-[var(--color-brand-green-dark)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-green)] focus-visible:ring-offset-2 ${
         large ? 'min-h-14 min-w-[232px] px-7 text-base' : 'min-h-12 px-5 text-sm'
       }`}
     >
-      <WhatsappLogo size={20} weight="bold" />
-      Começar pelo WhatsApp
+      Começar agora
+      <ArrowRight size={19} weight="bold" aria-hidden />
     </motion.a>
   );
 }
@@ -367,7 +401,27 @@ function FeaturePills() {
   );
 }
 
-function HeroSection({ whatsappUrl }: { whatsappUrl: string }) {
+function ThemeToggleButton() {
+  const { isDark, toggleTheme } = useTheme();
+  const Icon = isDark ? Sun : Moon;
+
+  return (
+    <motion.button
+      type="button"
+      onClick={toggleTheme}
+      whileHover={{ scale: 1.015 }}
+      whileTap={{ scale: 0.985 }}
+      transition={{ duration: 0.16, ease: easeOut }}
+      className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[var(--color-surface)] text-[var(--color-text-primary)] shadow-[0_10px_24px_rgba(26,29,35,0.04)] transition-colors hover:bg-[var(--color-surface-alt)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-blue)] focus-visible:ring-offset-2"
+      aria-label={isDark ? 'Ativar tema claro' : 'Ativar tema escuro'}
+      aria-pressed={isDark}
+    >
+      <Icon size={19} weight="bold" aria-hidden />
+    </motion.button>
+  );
+}
+
+function HeroSection() {
   return (
     <section className="home-band home-band--hero relative">
       <div className="relative z-[1] mx-auto grid min-h-[calc(100dvh-76px)] w-full max-w-6xl items-center gap-10 px-4 pb-16 pt-8 sm:px-6 lg:grid-cols-[0.86fr_1.14fr] lg:px-8">
@@ -382,7 +436,7 @@ function HeroSection({ whatsappUrl }: { whatsappUrl: string }) {
             transition={{ duration: 0.34, ease: easeOut }}
             className="text-lg font-extrabold text-[var(--color-brand-blue-dark)]"
           >
-            Moneda vive no WhatsApp.
+            *Moneda WhatsApp em desenvolvimento
           </motion.p>
           <motion.h1
             variants={fadeUp}
@@ -403,7 +457,7 @@ function HeroSection({ whatsappUrl }: { whatsappUrl: string }) {
             transition={{ duration: 0.42, ease: easeOut }}
             className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center"
           >
-            <CtaButton whatsappUrl={whatsappUrl} large />
+            <CtaButton large />
             <a
               href="#como-funciona"
               className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full px-5 text-sm font-bold text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-alt)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-blue)] focus-visible:ring-offset-2"
@@ -418,6 +472,75 @@ function HeroSection({ whatsappUrl }: { whatsappUrl: string }) {
         <ChatStage />
       </div>
     </section>
+  );
+}
+
+function AvailableAppSection() {
+  return (
+    <Section className="home-band--solid">
+      <motion.div
+        variants={staggerGroup}
+        initial="hidden"
+        whileInView="show"
+        viewport={{ once: true, margin: '-100px' }}
+        className="overflow-hidden rounded-[16px] border border-[color-mix(in_srgb,var(--color-border)_76%,transparent)] bg-[var(--color-surface)] p-5 shadow-[0_24px_60px_rgba(26,29,35,0.08)] sm:p-6 lg:grid lg:grid-cols-[0.82fr_1.18fr] lg:gap-8 lg:p-8"
+      >
+        <motion.div
+          variants={fadeUp}
+          transition={{ duration: 0.36, ease: easeOut }}
+          className="flex flex-col justify-between"
+        >
+          <div>
+            <p className="inline-flex rounded-full bg-[color-mix(in_srgb,var(--color-brand-green)_16%,var(--color-surface))] px-3 py-1.5 text-sm font-extrabold text-[var(--color-brand-green-dark)]">
+              App disponível agora
+            </p>
+            <h2 className="mt-5 max-w-xl text-balance font-heading text-[clamp(2.35rem,4vw,4.25rem)] font-extrabold leading-[0.98] text-[var(--color-text-primary)]">
+              O app já está pronto para organizar seu dinheiro.
+            </h2>
+            <p className="mt-5 max-w-xl text-lg leading-relaxed text-[var(--color-text-secondary)]">
+              Enquanto o Moneda WhatsApp está em desenvolvimento, você já pode usar o app para registrar, revisar e entender sua vida financeira.
+            </p>
+          </div>
+
+          <motion.a
+            href="/signup"
+            whileHover={{ scale: 1.015 }}
+            whileTap={{ scale: 0.985 }}
+            transition={{ duration: 0.16, ease: easeOut }}
+            className="mt-8 inline-flex min-h-13 w-full items-center justify-center gap-2 rounded-full bg-[var(--color-brand-green)] px-6 text-sm font-extrabold text-white transition-colors hover:bg-[var(--color-brand-green-dark)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-green)] focus-visible:ring-offset-2 sm:w-auto"
+          >
+            Entrar no app agora
+            <ArrowRight size={18} weight="bold" aria-hidden />
+          </motion.a>
+        </motion.div>
+
+        <motion.div
+          variants={staggerGroup}
+          className="mt-8 grid gap-3 sm:grid-cols-2 lg:mt-0"
+        >
+          {availableFeatures.map((feature, index) => (
+            <motion.article
+              key={feature.title}
+              variants={fadeUp}
+              transition={{ duration: 0.34, ease: easeOut, delay: index * 0.03 }}
+              className={`flex min-h-[132px] gap-3 rounded-[14px] border border-[color-mix(in_srgb,var(--color-border)_70%,transparent)] bg-[var(--color-surface-alt)] p-4 ${
+                index === availableFeatures.length - 1 ? 'sm:col-span-2 lg:col-span-1' : ''
+              }`}
+            >
+              <IconBadge icon={feature.icon} tone={feature.tone} size="sm" />
+              <div>
+                <h3 className="font-heading text-lg font-extrabold leading-tight text-[var(--color-text-primary)]">
+                  {feature.title}
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-[var(--color-text-secondary)]">
+                  {feature.text}
+                </p>
+              </div>
+            </motion.article>
+          ))}
+        </motion.div>
+      </motion.div>
+    </Section>
   );
 }
 
@@ -571,7 +694,7 @@ function ClaritySection() {
   );
 }
 
-function TrustSection({ whatsappUrl }: { whatsappUrl: string }) {
+function TrustSection() {
   const [open, setOpen] = useState(0);
 
   return (
@@ -653,7 +776,7 @@ function TrustSection({ whatsappUrl }: { whatsappUrl: string }) {
           O primeiro registro leva menos tempo do que abrir uma planilha.
         </p>
         <div className="mt-8">
-          <CtaButton whatsappUrl={whatsappUrl} large />
+          <CtaButton large />
         </div>
       </div>
     </Section>
@@ -661,6 +784,8 @@ function TrustSection({ whatsappUrl }: { whatsappUrl: string }) {
 }
 
 export default function HomeLanding({ whatsappUrl }: HomeLandingProps) {
+  void whatsappUrl;
+
   return (
     <main className="relative min-h-dvh overflow-x-clip bg-[var(--color-bg)] text-[var(--color-text-primary)]">
       <BubbleBackground
@@ -679,16 +804,17 @@ export default function HomeLanding({ whatsappUrl }: HomeLandingProps) {
           />
           Moneda
         </Link>
-        <nav className="flex items-center gap-2">
+        <nav className="flex items-center gap-1.5 sm:gap-2">
+          <ThemeToggleButton />
           <Link
             href="/login"
-            className="rounded-full px-4 py-2 text-sm font-bold text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-alt)] hover:text-[var(--color-text-primary)]"
+            className="rounded-full px-3 py-2 text-sm font-bold text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-alt)] hover:text-[var(--color-text-primary)] sm:px-4"
           >
             Entrar
           </Link>
           <Link
             href="/signup"
-            className="rounded-full bg-[var(--color-surface)] px-4 py-2 text-sm font-bold text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-alt)]"
+            className="rounded-full bg-[var(--color-surface)] px-3 py-2 text-sm font-bold text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-alt)] sm:px-4"
           >
             Criar conta
           </Link>
@@ -696,11 +822,12 @@ export default function HomeLanding({ whatsappUrl }: HomeLandingProps) {
       </header>
 
       <div className="relative z-[1]">
-        <HeroSection whatsappUrl={whatsappUrl} />
+        <HeroSection />
+        <AvailableAppSection />
         <TurnSection />
         <FlowSection />
         <ClaritySection />
-        <TrustSection whatsappUrl={whatsappUrl} />
+        <TrustSection />
       </div>
     </main>
   );
