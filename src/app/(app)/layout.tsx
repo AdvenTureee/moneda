@@ -1,11 +1,8 @@
 import { redirect } from 'next/navigation';
 import AppShell from '@/components/AppShell';
 import { TERMS_VERSION } from '@/lib/legal';
-import {
-  createServiceClient,
-  createSessionClient,
-  isSupabaseEnabled,
-} from '@/lib/supabase/server';
+import { getProfileGateStatus } from '@/lib/profiles';
+import { createSessionClient, isSupabaseEnabled } from '@/lib/supabase/server';
 
 /**
  * Layout do "shell autenticado". Envolve as 9 rotas com `<AppShell>` (que
@@ -24,20 +21,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) redirect('/login');
 
-    const admin = createServiceClient();
-    const { data: profile } = await admin
-      .from('profiles')
-      .select('terms_accepted_at, terms_version, phone, phone_hash, phone_ciphertext')
-      .eq('id', user.id)
-      .single();
-
+    const profile = await getProfileGateStatus(user.id);
     requiresTermsAcceptance =
-      !profile?.terms_accepted_at ||
-      profile.terms_version !== TERMS_VERSION;
-    requiresWhatsappPhone =
-      !profile?.phone &&
-      !profile?.phone_hash &&
-      !profile?.phone_ciphertext;
+      !profile.termsAcceptedAt ||
+      profile.termsVersion !== TERMS_VERSION;
+    requiresWhatsappPhone = !profile.hasWhatsappPhone;
   }
 
   return (

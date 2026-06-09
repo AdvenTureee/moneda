@@ -147,6 +147,7 @@ export async function updateCurrency(formData: FormData): Promise<ActionResult> 
 
   revalidatePath('/perfil');
   revalidatePath('/perfil/moeda');
+  revalidateTag(cacheTags.profile(user.id), { expire: 0 });
   return { ok: true, message: `Moeda atualizada para ${raw}.` };
 }
 
@@ -242,6 +243,7 @@ export async function updateNotificationPrefs(formData: FormData): Promise<Actio
   }
 
   revalidatePath('/perfil/notificacoes');
+  revalidateTag(cacheTags.profile(user.id), { expire: 0 });
   return { ok: true, message: 'Preferências atualizadas.' };
 }
 

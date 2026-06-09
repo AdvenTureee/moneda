@@ -1,4 +1,3 @@
-import { Suspense } from 'react';
 import { redirect } from 'next/navigation';
 import InsightsView from './InsightsView';
 import { getDashboardMetrics } from '@/lib/expenses';
@@ -37,16 +36,14 @@ export default async function InsightsPage({
     : null;
 
   return (
-      <Suspense fallback={<div className="max-w-lg mx-auto px-4 pb-24 pt-5"><div className="h-6 w-32 bg-[#F1F3F7] rounded animate-pulse mb-4" /><div className="h-40 bg-[#F1F3F7] rounded-[20px] animate-pulse mb-6" /></div>}>
-      <InsightsView
-        period={period}
-        monthName={monthName}
-        totalSpent={metrics.totalSpent}
-        expenseCount={metrics.expenseCount}
-        changePct={changePct}
-        insights={insights}
-        billingClosingDay={closingDay}
-      />
-      </Suspense>
+    <InsightsView
+      period={period}
+      monthName={monthName}
+      totalSpent={metrics.totalSpent}
+      expenseCount={metrics.expenseCount}
+      changePct={changePct}
+      insights={insights}
+      billingClosingDay={closingDay}
+    />
   );
 }

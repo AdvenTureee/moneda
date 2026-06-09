@@ -13,7 +13,7 @@ import { getDashboardMetrics, getSpendingTimeline } from '@/lib/expenses';
 import { getBudgets } from '@/lib/budgets';
 import { getMonthlyIncomeTotalCents } from '@/lib/incomes';
 import { getMonthlyBudgetCents } from '@/lib/monthlyBudget';
-import { getNullableBillingClosingDay } from '@/lib/profiles';
+import { getNullableBillingClosingDay, getProfileGateStatus } from '@/lib/profiles';
 import { decryptProfilePii, getDisplayNameFromUser } from '@/lib/security/profilePii';
 import { formatCurrency } from '@/lib/utils';
 import { getCurrentBillingPeriod, normalizeBillingClosingDay } from '@/lib/billingCycle';
@@ -39,23 +39,17 @@ export default async function DashboardPage({
   if (!user) redirect('/login');
 
   if (isSupabaseEnabled()) {
-    const admin = createServiceClient();
-    const { data: profile } = await admin
-      .from('profiles')
-      .select('onboarded,terms_accepted_at,terms_version')
-      .eq('id', user.id)
-      .single();
-
+    const profile = await getProfileGateStatus(user.id);
     const requiresTermsAcceptance =
-      !profile?.terms_accepted_at ||
-      profile.terms_version !== TERMS_VERSION;
+      !profile.termsAcceptedAt ||
+      profile.termsVersion !== TERMS_VERSION;
     if (requiresTermsAcceptance) {
       return <div className="min-h-[60dvh]" aria-hidden />;
     }
 
     // First-login → send to onboarding. Lê de profiles.onboarded (não de
     // user_metadata, que provedores OAuth como o Google sobrescrevem a cada login).
-    if (profile?.onboarded !== true) {
+    if (profile.onboarded !== true) {
       redirect('/onboarding');
     }
   }
