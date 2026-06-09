@@ -1,19 +1,13 @@
 import type { Metadata, Viewport } from 'next';
-import { DM_Sans, Epilogue } from 'next/font/google';
+import { Inter } from 'next/font/google';
 import NextTopLoader from 'nextjs-toploader';
 import PWARegistrar from '@/components/PWARegistrar';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import './globals.css';
 
-const dmSans = DM_Sans({
+const inter = Inter({
   subsets: ['latin'],
-  variable: '--font-body',
-  display: 'swap',
-});
-
-const epilogue = Epilogue({
-  subsets: ['latin'],
-  variable: '--font-heading',
+  variable: '--font-inter',
   display: 'swap',
 });
 
@@ -69,15 +63,15 @@ export default function RootLayout({
   return (
     <html
       lang="pt-BR"
-      className={`${dmSans.variable} ${epilogue.variable}`}
+      className={inter.variable}
       data-theme="light"
       suppressHydrationWarning
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body className="bg-[#F8F9FB] min-h-full antialiased font-body">
-        <NextTopLoader color="#5BBF8E" height={3} showSpinner={false} />
+      <body className="min-h-full bg-[var(--color-bg)] antialiased font-body">
+        <NextTopLoader color="#A8C5E0" height={3} showSpinner={false} />
         <ThemeProvider>
           <PWARegistrar />
           {children}

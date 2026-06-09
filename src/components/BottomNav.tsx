@@ -122,8 +122,7 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 bg-white z-40"
-      style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+      className="fixed bottom-0 left-0 right-0 z-40 bg-[var(--color-surface)] pb-[env(safe-area-inset-bottom,0px)]"
       aria-label="Navegação principal"
     >
       <div className="grid h-[68px] grid-cols-5 items-center max-w-lg mx-auto px-2">

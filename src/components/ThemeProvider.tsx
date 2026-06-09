@@ -39,10 +39,11 @@ function readStoredTheme(): ThemePreference {
   if (typeof window === 'undefined') return DEFAULT_THEME;
   try {
     const stored = window.localStorage.getItem(STORAGE_KEY);
-    return isTheme(stored) ? stored : DEFAULT_THEME;
+    if (isTheme(stored)) return stored;
   } catch {
-    return DEFAULT_THEME;
+    // ignore
   }
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 
 function applyTheme(theme: ThemePreference) {
