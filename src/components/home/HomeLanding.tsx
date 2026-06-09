@@ -20,6 +20,7 @@ import {
   Moon,
   Receipt,
   ShieldCheck,
+  Sparkle,
   Sun,
   Trash,
   UploadSimple,
@@ -28,7 +29,7 @@ import {
 } from '@phosphor-icons/react';
 import { useTheme } from '@/components/ThemeProvider';
 import TrackedMascot from '@/components/TrackedMascot';
-import moicoPng from '../../../moico-png.png';
+import MoFooter from '@/components/MoFooter';
 
 interface HomeLandingProps {
   whatsappUrl: string;
@@ -210,11 +211,11 @@ function SectionTitle({
   return (
     <div className={align === 'center' ? 'mx-auto max-w-3xl text-center' : 'max-w-2xl'}>
       {eyebrow && (
-        <p className="mb-3 text-sm font-semibold text-[var(--color-brand-blue-dark)]">
+        <p className="mb-1 font-heading text-[clamp(2rem,4vw,3.5rem)] font-bold leading-tight text-[var(--color-brand-green)]">
           {eyebrow}
         </p>
       )}
-      <h2 className="font-heading text-[clamp(2rem,4vw,3.5rem)] font-bold leading-tight text-[var(--color-text-primary)]">
+      <h2 className="font-heading text-[clamp(1.125rem,1.8vw,1.5rem)] font-semibold leading-relaxed text-[var(--color-text-secondary)]">
         {title}
       </h2>
       {children && (
@@ -270,11 +271,17 @@ function ThemeToggleButton() {
 
 function ProductMock({ compact = false }: { compact?: boolean }) {
   return (
-    <Surface className={`${compact ? 'p-4' : 'p-5'}`}>
+    <Surface className={`relative ${compact ? 'p-4' : 'p-5'}`}>
+      <Sparkle
+        size={44}
+        weight="fill"
+        className="absolute -top-5 right-1 rotate-12 text-[var(--color-brand-green)]"
+        aria-hidden
+      />
       <div className="flex items-center gap-4 border-b border-[var(--color-border)] pb-4">
         <TrackedMascot variant="idle" size={96} />
         <div>
-          <p className="text-lg font-bold text-[var(--color-text-primary)]">Moneda web app</p>
+          <p className="text-lg font-bold text-[var(--color-text-primary)]">Moneda Web App</p>
           <p className="text-sm text-[var(--color-text-secondary)]">Controle financeiro inteligente</p>
         </div>
       </div>
@@ -436,16 +443,28 @@ function HeroSection() {
 }
 
 function FloatingSummary() {
+  const [mounted, setMounted] = useState(false);
   const [activeSection, setActiveSection] = useState('');
   const [footerVisible, setFooterVisible] = useState(false);
+
+  useEffect(() => { setMounted(true); }, []);
+
+  const countRef = useRef(0);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
           if (entry.isIntersecting) {
+            countRef.current += 1;
             const id = entry.target.id === 'faq' ? 'privacidade' : entry.target.id;
             setActiveSection(id);
+          } else {
+            countRef.current -= 1;
+            if (countRef.current <= 0) {
+              countRef.current = 0;
+              setActiveSection('');
+            }
           }
         }
       },
@@ -472,41 +491,51 @@ function FloatingSummary() {
     return () => observer.disconnect();
   }, []);
 
-  const hide = footerVisible ? 'opacity-0 pointer-events-none' : 'opacity-100';
+  const hide = !mounted || footerVisible || !activeSection ? 'opacity-0 pointer-events-none' : 'opacity-100';
 
   return (
     <>
+      {/* MENU MOBILE COM FADE NAS EXTREMIDADES E SEM LINHAS */}
       <nav
         aria-label="Navegação rápida"
-        className={`fixed bottom-6 left-1/2 z-50 -translate-x-1/2 transition-opacity duration-300 md:hidden ${hide}`}
+        className={`fixed bottom-3 left-1/2 z-50 -translate-x-1/2 w-auto max-w-[90vw] transition-opacity duration-300 md:hidden ${hide}`}
       >
-        <div className="flex items-center gap-1 rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] p-1.5 shadow-lg">
-          {summaryItems.map((item) => {
-            const sectionId = item.href.replace('#', '');
-            const isActive = activeSection === sectionId;
-            return (
-              <a
-                key={item.href}
-                href={item.href}
-                className={`grid h-9 w-9 place-items-center rounded-full transition-colors ${
-                  isActive
-                    ? 'bg-[var(--color-brand-blue)] text-white'
-                    : 'text-[var(--color-text-tertiary)] hover:bg-[var(--color-surface-alt)] hover:text-[var(--color-text-secondary)]'
-                }`}
-                aria-label={item.label}
-              >
-                <item.icon size={16} weight={isActive ? 'fill' : 'bold'} aria-hidden />
-              </a>
-            );
-          })}
+        <div className="relative rounded-full bg-[var(--color-bg)]/60 backdrop-blur-md px-4 py-1.5 shadow-[var(--shadow-card-soft)]">
+          <div
+            className="flex items-center gap-2 overflow-x-auto no-scrollbar scroll-smooth whitespace-nowrap"
+            style={{ 
+              maskImage: 'linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%)', 
+              WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%)' 
+            }}
+          >
+            {summaryItems.map((item) => {
+              const sectionId = item.href.replace('#', '');
+              const isActive = activeSection === sectionId;
+              return (
+                <a
+                  key={item.href}
+                  href={item.href}
+                  className={`grid h-9 w-9 shrink-0 place-items-center rounded-full transition-colors ${
+                    isActive
+                      ? 'bg-[var(--color-brand-blue)] text-white'
+                      : 'text-[var(--color-text-tertiary)] hover:bg-[var(--color-surface-alt)] hover:text-[var(--color-text-secondary)]'
+                  }`}
+                  aria-label={item.label}
+                >
+                  <item.icon size={16} weight={isActive ? 'fill' : 'bold'} aria-hidden />
+                </a>
+              );
+            })}
+          </div>
         </div>
       </nav>
 
+      {/* MENU DESKTOP (LATERAL) */}
       <nav
         aria-label="Navegação rápida"
         className={`fixed left-6 top-1/2 z-50 hidden -translate-y-1/2 transition-opacity duration-300 md:block ${hide}`}
       >
-        <div className="flex flex-col items-start gap-2">
+        <div className="flex flex-col items-start gap-2 rounded-xl bg-[var(--color-bg)]/50 backdrop-blur-md border border-[var(--color-border)] px-3 py-2">
           {summaryItems.map((item) => {
             const sectionId = item.href.replace('#', '');
             const isActive = activeSection === sectionId;
@@ -760,8 +789,8 @@ function TrustAndFaqSection() {
       <div className="grid gap-4 lg:grid-cols-2 lg:items-stretch">
         <Surface className="flex min-h-[420px] flex-col p-5 sm:p-6">
           <div>
-            <p className="text-sm font-semibold text-[var(--color-brand-blue-dark)]">Privacidade</p>
-            <h2 className="mt-3 font-heading text-[clamp(2rem,4vw,3.5rem)] font-bold leading-tight text-[var(--color-text-primary)]">
+            <p className="mb-1 font-heading text-[clamp(2rem,4vw,3.5rem)] font-bold leading-tight text-[var(--color-brand-green)]">Privacidade</p>
+            <h2 className="font-heading text-[clamp(1.125rem,1.8vw,1.5rem)] font-semibold leading-relaxed text-[var(--color-text-secondary)]">
               Dados sob controle.
             </h2>
             <p className="mt-4 max-w-xl text-base leading-relaxed text-[var(--color-text-secondary)]">
@@ -786,8 +815,8 @@ function TrustAndFaqSection() {
             className="pointer-events-none absolute -top-3 -right-3 h-10 w-10 select-none"
           />
           <div className="border-b border-[var(--color-border)] p-5 sm:p-6">
-            <p className="text-sm font-semibold text-[var(--color-brand-blue-dark)]">FAQ</p>
-            <h2 className="mt-3 font-heading text-[clamp(2rem,4vw,3.5rem)] font-bold leading-tight text-[var(--color-text-primary)]">
+            <p className="mb-1 font-heading text-[clamp(2rem,4vw,3.5rem)] font-bold leading-tight text-[var(--color-brand-green)]">FAQ</p>
+            <h2 className="font-heading text-[clamp(1.125rem,1.8vw,1.5rem)] font-semibold leading-relaxed text-[var(--color-text-secondary)]">
               Perguntas frequentes.
             </h2>
           </div>
@@ -844,19 +873,14 @@ function FinalCta() {
 
 function LandingFooter() {
   return (
-    <footer id="landing-footer" className="border-t border-[var(--color-border)] px-4 py-10 sm:px-6 lg:px-8">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 text-sm text-[var(--color-text-secondary)] sm:flex-row sm:items-start sm:justify-between">
+    <footer id="landing-footer" className="border-t border-[var(--color-brand-blue-dark)] bg-[var(--color-brand-blue)] px-4 py-10 sm:px-6 lg:px-8">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 text-sm text-[#10151C] sm:flex-row sm:items-start sm:justify-between">
         <div className="flex items-center gap-3">
-          <Image
-            src={moicoPng}
-            alt=""
-            sizes="40px"
-            className="h-10 w-10 shrink-0 rounded-full object-cover sm:h-14 sm:w-14"
-          />
+          <MoFooter size={80} className="h-20 w-20 shrink-0 rounded-full sm:h-28 sm:w-28" />
           <div className="min-w-0">
-            <p className="font-heading text-base font-bold text-[var(--color-text-primary)]">
+            <p className="font-heading text-base font-bold">
               Moneda
-              <span className="ml-1.5 text-xs font-normal text-[var(--color-text-secondary)]">
+              <span className="ml-1.5 text-xs font-normal">
                 - feito com carinho e dedicação
               </span>
             </p>
@@ -867,17 +891,17 @@ function LandingFooter() {
             href="https://api.whatsapp.com/send/?phone=5511991333769&text&type=phone_number&app_absent=0"
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-2 text-left font-semibold text-[var(--color-text-primary)] underline-offset-2 transition-colors hover:text-[var(--color-brand-blue-dark)] hover:underline sm:justify-end"
+            className="inline-flex items-center gap-2 text-left font-semibold underline-offset-2 transition-colors hover:opacity-70 hover:underline sm:justify-end"
           >
-            <WhatsappLogo size={16} weight="bold" className="text-[var(--color-brand-green)]" aria-hidden />
+            <WhatsappLogo size={16} weight="bold" aria-hidden />
             <span>(+55) 1199133-3769</span>
           </a>
           <div className="flex items-center gap-2 sm:justify-end">
-            <Buildings size={16} weight="bold" className="text-[var(--color-brand-green)]" aria-hidden />
+            <Buildings size={16} weight="bold" aria-hidden />
             <span>CNPJ 47.932.528/0001-62</span>
           </div>
           <address className="flex items-start gap-2 not-italic leading-relaxed sm:justify-end">
-            <MapPin size={16} weight="bold" className="mt-0.5 shrink-0 text-[var(--color-brand-green)]" aria-hidden />
+            <MapPin size={16} weight="bold" className="mt-0.5 shrink-0" aria-hidden />
             <span>
               Av. Francisco Nóbrega Barbosa, 301, Apto 81 A<br />
               Parques Alves de Lima
