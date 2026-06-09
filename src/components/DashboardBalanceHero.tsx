@@ -167,10 +167,10 @@ export default function DashboardBalanceHero({
               <div className="mt-5 flex flex-col gap-2.5 sm:flex-row">
                 <Link
                   href={`/feed?period=${period}`}
-                  className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-full bg-[var(--color-success)] px-4 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-80"
+                  className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-full bg-[#B7CCE4] px-4 py-2.5 text-sm font-bold text-[#16324A] transition-colors hover:bg-[#A8BDDB]"
                 >
                   Ver onde estourou
-                  <span aria-hidden>→</span>
+                  <span aria-hidden className="opacity-60">→</span>
                 </Link>
                 <Link
                   href="/perfil/ganhos"

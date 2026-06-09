@@ -167,23 +167,21 @@ export default async function DashboardPage({
         </section>
 
         <section
-          className="themed-card mb-4 grid grid-cols-2 gap-1.5 rounded-[14px] bg-white p-2 animate-fade-up delay-3"
+          className="themed-card mb-4 grid grid-cols-2 gap-4 rounded-[14px] bg-white p-2 animate-fade-up delay-3 md:grid-cols-[1.1fr_1.1fr_0.9fr]"
           aria-label="Resumo financeiro do ciclo"
         >
           {compactMetrics.map((item, index) => (
             <div
               key={item.label}
-              className={`min-w-0 rounded-[10px] px-2 py-2 text-center ${index === 2 ? 'col-span-2' : ''}`}
+              className={`min-w-0 rounded-[10px] px-2 py-2 text-left ${index === 2 ? 'col-span-2 md:col-span-1' : ''}`}
             >
-              <div className="mb-0.5 flex items-center justify-center gap-1 text-[var(--color-text-tertiary)]">
+              <div className="mb-1 flex items-center justify-start gap-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--color-text-tertiary)]">
                 {index === 0 && <Icon name="Wallet" size={14} />}
                 {index === 1 && <Icon name="TrendDown" size={14} />}
                 {index === 2 && <Icon name="TrendUp" size={14} />}
-                <p className="text-[10px] font-semibold uppercase tracking-[0.04em]">
-                  {item.label}
-                </p>
+                <p>{item.label}</p>
               </div>
-              <p className="mt-0.5 whitespace-nowrap text-sm font-extrabold tabular-nums text-[var(--color-text-primary)] min-[390px]:text-base">
+              <p className="whitespace-nowrap text-base font-bold leading-none tabular-nums text-[var(--color-text-primary)]">
                 {item.value}
               </p>
             </div>
