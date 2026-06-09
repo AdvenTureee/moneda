@@ -14,6 +14,7 @@ import {
   CreditCard,
   Devices,
   Eye,
+  HandPointing,
   ListBullets,
   LockKey,
   MapPin,
@@ -655,11 +656,8 @@ function PreviewCarousel() {
   const { isDark } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
-  const [dragOffset, setDragOffset] = useState(0);
-  const dragStartX = useRef(0);
-  const dragging = useRef(false);
-  const autoPlayRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const indexRef = useRef(0);
+  const [hasInteracted, setHasInteracted] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -678,80 +676,111 @@ function PreviewCarousel() {
   );
 
   const goTo = useCallback((index: number) => {
-    const total = screenshots.length;
-    const next = ((index % total) + total) % total;
-    indexRef.current = next;
-    setActiveIndex(next);
+    const boundedIndex = Math.max(0, Math.min(index, screenshots.length - 1));
+    setActiveIndex(boundedIndex);
   }, [screenshots.length]);
 
-  useEffect(() => {
-    autoPlayRef.current = setInterval(() => goTo(indexRef.current + 1), 6000);
-    return () => {
-      if (autoPlayRef.current) clearInterval(autoPlayRef.current);
-    };
-  }, [goTo]);
+  const handleDragStart = () => {
+    if (!hasInteracted) setHasInteracted(true);
+  };
 
-  const handleDragStart = useCallback((clientX: number) => {
-    if (autoPlayRef.current) clearInterval(autoPlayRef.current);
-    dragStartX.current = clientX;
-    dragging.current = true;
-    setDragOffset(0);
-  }, []);
+  const handleDragEnd = (event: any, info: any) => {
+    const swipeThreshold = 30;
+    const velocityThreshold = 150;
 
-  const handleDragMove = useCallback((clientX: number) => {
-    if (!dragging.current) return;
-    setDragOffset(clientX - dragStartX.current);
-  }, []);
+    const offset = info.offset.x;
+    const velocity = info.velocity.x;
 
-  const handleDragEnd = useCallback(() => {
-    dragging.current = false;
-    setDragOffset((offset) => {
-      if (offset < -30) goTo(indexRef.current + 1);
-      else if (offset > 30) goTo(indexRef.current - 1);
-      return 0;
-    });
-  }, [goTo]);
+    if (offset < -swipeThreshold || velocity < -velocityThreshold) {
+      if (activeIndex < screenshots.length - 1) {
+        goTo(activeIndex + 1);
+      } else {
+        goTo(activeIndex);
+      }
+    } else if (offset > swipeThreshold || velocity > velocityThreshold) {
+      if (activeIndex > 0) {
+        goTo(activeIndex - 1);
+      } else {
+        goTo(activeIndex);
+      }
+    } else {
+      goTo(activeIndex);
+    }
+  };
 
   return (
     <div
-      className={`overflow-hidden select-none transition-opacity duration-700 ${mounted ? 'opacity-100' : 'opacity-0'}`}
-      onMouseDown={(e) => handleDragStart(e.clientX)}
-      onMouseMove={(e) => handleDragMove(e.clientX)}
-      onMouseUp={handleDragEnd}
-      onMouseLeave={handleDragEnd}
-      onTouchStart={(e) => handleDragStart(e.touches[0].clientX)}
-      onTouchMove={(e) => handleDragMove(e.touches[0].clientX)}
-      onTouchEnd={handleDragEnd}
+      ref={containerRef}
+      className={`relative overflow-hidden select-none transition-opacity duration-700 ${mounted ? 'opacity-100' : 'opacity-0'}`}
     >
-      <div
-        className="flex"
-        style={{
-          transform: `translateX(calc(-${activeIndex * 100}% + ${dragging.current ? dragOffset : 0}px))`,
-          transition: dragging.current ? 'none' : 'transform 600ms cubic-bezier(0.16, 1, 0.3, 1)',
-        }}
+      {!hasInteracted && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-[var(--color-bg)]/20 backdrop-blur-[1px] pointer-events-none"
+        >
+          <div className="flex flex-col items-center gap-2 rounded-xl bg-[var(--color-surface)]/90 px-4 py-3 shadow-[var(--shadow-card-soft)] border border-[var(--color-border)]">
+            <motion.div
+              animate={{
+                x: [-24, 24, -24],
+                scale: [1, 0.95, 1],
+              }}
+              transition={{
+                duration: 2.2,
+                repeat: Infinity,
+                ease: 'easeInOut',
+              }}
+              className="text-[var(--color-brand-blue)]"
+            >
+              <HandPointing size={32} weight="fill" />
+            </motion.div>
+            <span className="text-xs font-semibold tracking-wide text-[var(--color-text-secondary)]">
+              Arraste para o lado
+            </span>
+          </div>
+        </motion.div>
+      )}
+
+      <motion.div
+        className="flex cursor-grab active:cursor-grabbing select-none"
+        drag="x"
+        dragDirectionLock
+        dragConstraints={{ left: 0, right: 0 }}
+        dragElastic={0.15}
+        dragTransition={{ bounceStiffness: 600, bounceDamping: 25 }}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+        animate={{ x: `-${activeIndex * 100}%` }}
+        transition={{ type: 'spring', stiffness: 350, damping: 28 }}
       >
         {screenshots.map((img) => (
-          <div key={img.src} className="min-w-0 shrink-0 grow-0 basis-full px-1">
-            <Surface className="overflow-hidden p-0">
+          <div
+            key={img.src}
+            className="min-w-0 shrink-0 grow-0 basis-full px-1 select-none"
+            draggable="false"
+          >
+            <Surface className="overflow-hidden p-0 select-none">
               <Image
                 src={img.src}
                 alt={img.alt}
                 width={1200}
                 height={800}
-                className="pointer-events-none h-auto w-full object-cover"
+                className="pointer-events-none h-auto w-full object-cover select-none"
                 priority
+                draggable="false"
               />
             </Surface>
           </div>
         ))}
-      </div>
+      </motion.div>
 
       <div className="mt-4 flex items-center justify-center gap-2">
         {screenshots.map((_, index) => (
           <button
             key={index}
             type="button"
-            onClick={() => { if (autoPlayRef.current) clearInterval(autoPlayRef.current); goTo(index); }}
+            onClick={() => { setHasInteracted(true); goTo(index); }}
             className={`h-2 rounded-full transition-all duration-300 ${
               index === activeIndex
                 ? 'w-6 bg-[var(--color-brand-blue)]'
