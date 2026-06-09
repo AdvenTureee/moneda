@@ -19,6 +19,7 @@ import {
   LockKey,
   MapPin,
   Moon,
+  Plus,
   Receipt,
   ShieldCheck,
   Sparkle,
@@ -31,6 +32,7 @@ import {
 import { useTheme } from '@/components/ThemeProvider';
 import TrackedMascot from '@/components/TrackedMascot';
 import MoFooter from '@/components/MoFooter';
+import MoSkate from './MoSkate';
 
 interface HomeLandingProps {
   whatsappUrl: string;
@@ -247,8 +249,8 @@ function CtaButton({ large = false, children = 'Criar conta no web app' }: { lar
         large ? 'min-h-14 px-6 text-base' : 'min-h-11 px-5 text-sm'
       }`}
     >
+      <Plus size={18} weight="bold" aria-hidden />
       {children}
-      <ArrowRight size={18} weight="bold" aria-hidden />
     </motion.a>
   );
 }
@@ -409,7 +411,7 @@ function HeroSection() {
           <motion.h1
             variants={fadeUp}
             transition={{ duration: 0.3, ease: easeOut }}
-            className="mt-4 font-heading text-[clamp(2.75rem,6vw,4.5rem)] font-bold leading-tight text-[var(--color-text-primary)]"
+            className="mt-4 font-heading text-[clamp(2.75rem,6vw,4.5rem)] font-bold leading-[1.05] text-[var(--color-text-primary)]"
           >
             Seu dinheiro claro, sem planilha.
           </motion.h1>
@@ -430,8 +432,8 @@ function HeroSection() {
               href="#produto"
               className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full px-5 text-sm font-semibold text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-alt)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)] focus-visible:ring-offset-2"
             >
+              <Eye size={18} weight="bold" aria-hidden />
               Ver produto
-              <ArrowRight size={18} weight="bold" aria-hidden />
             </a>
           </motion.div>
         </motion.div>
@@ -590,6 +592,11 @@ function ProductSection() {
               </div>
             ))}
           </div>
+          <MoSkate
+            variant="happy"
+            size={88}
+            className="pointer-events-none absolute -bottom-[6px] right-12 select-none"
+          />
         </Surface>
       </div>
     </Section>
@@ -910,7 +917,7 @@ function LandingFooter() {
             <p className="font-heading text-base font-bold">
               Moneda
               <span className="ml-1.5 text-xs font-normal">
-                - feito com carinho e dedicação
+                - feito com carinho e dedicação.
               </span>
             </p>
           </div>
