@@ -1,64 +1,113 @@
 'use client';
 
-import { useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
+import { useState, type ComponentType, type ReactNode } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 import {
   ArrowRight,
-  CaretLeft,
-  CaretRight,
+  CaretDown,
+  ChartBar,
+  ChartPieSlice,
+  CreditCard,
+  ListBullets,
+  LockKey,
+  Receipt,
+  ShieldCheck,
+  Trash,
   WhatsappLogo,
 } from '@phosphor-icons/react';
-import Mo from '@/components/Mo';
 import { BubbleBackground } from '@/components/animate-ui/components/backgrounds/bubble';
-import { MotionCarousel } from '@/components/animate-ui/components/community/motion-carousel';
+import moicoPng from '../../../moico-png.png';
 
 interface HomeLandingProps {
   whatsappUrl: string;
 }
 
-type BandTone = 'plain' | 'blue' | 'green' | 'warm' | 'ink';
+type IconComponent = ComponentType<{
+  size?: number;
+  weight?: 'thin' | 'light' | 'regular' | 'bold' | 'fill' | 'duotone';
+  className?: string;
+  'aria-hidden'?: boolean;
+}>;
+
+const easeOut = [0.22, 1, 0.36, 1] as const;
 
 const fadeUp = {
-  hidden: { opacity: 0, y: 18 },
+  hidden: { opacity: 0, y: 22 },
   show: { opacity: 1, y: 0 },
 };
 
+const staggerGroup = {
+  hidden: {},
+  show: {
+    transition: { staggerChildren: 0.08 },
+  },
+};
+
+const backgroundColors = {
+  first: '168,197,224',
+  second: '91,191,142',
+  third: '255,255,255',
+  fourth: '240,168,85',
+  fifth: '248,249,251',
+  sixth: '122,174,207',
+};
+
 const categories = [
-  { color: '#5BBF8E', cells: 22 },
-  { color: '#A8C5E0', cells: 16 },
-  { color: '#F0A855', cells: 13 },
-  { color: '#9CA3AF', cells: 9 },
+  { color: '#5BBF8E', amount: 22 },
+  { color: '#A8C5E0', amount: 16 },
+  { color: '#F0A855', amount: 13 },
+  { color: '#9CA3AF', amount: 9 },
 ];
 
 const feedItems = [
-  { emoji: 'food', title: 'Almoço no centro', meta: 'Alimentação, PIX, hoje', amount: 'R$ 42,00', color: '#5BBF8E' },
-  { emoji: 'car', title: 'Uber para reunião', meta: 'Transporte, crédito, ontem', amount: 'R$ 28,90', color: '#A8C5E0' },
-  { emoji: 'cart', title: 'Mercado da semana', meta: 'Mercado, débito, sexta', amount: 'R$ 186,40', color: '#F0A855' },
+  {
+    icon: Receipt,
+    title: 'Almoço no centro',
+    meta: 'Alimentação, PIX, hoje',
+    amount: 'R$ 42,00',
+    color: '#5BBF8E',
+  },
+  {
+    icon: CreditCard,
+    title: 'Uber para reunião',
+    meta: 'Transporte, crédito, ontem',
+    amount: 'R$ 28,90',
+    color: '#A8C5E0',
+  },
+  {
+    icon: ListBullets,
+    title: 'Mercado da semana',
+    meta: 'Mercado, débito, sexta',
+    amount: 'R$ 186,40',
+    color: '#F0A855',
+  },
 ];
 
-const openMoji = {
-  chat: '1F4AC',
-  phone: '1F4F2',
-  receipt: '1F9FE',
-  chart: '1F4CA',
-  card: '1F4B3',
-  lock: '1F510',
-  food: '1F374',
-  cart: '1F6D2',
-  car: '1F697',
-} as const;
+const flowSteps = [
+  {
+    icon: WhatsappLogo,
+    title: 'Você manda uma frase',
+    text: '“gastei 42 no almoço” já basta para começar.',
+  },
+  {
+    icon: Receipt,
+    title: 'O Moneda registra',
+    text: 'Valor, categoria, data e contexto entram no feed.',
+  },
+  {
+    icon: ChartBar,
+    title: 'A Mo explica o mês',
+    text: 'Você entende padrões sem abrir uma planilha.',
+  },
+];
 
-type OpenMojiName = keyof typeof openMoji;
-
-const bubbleColors = {
-  first: '168,197,224',
-  second: '91,191,142',
-  third: '122,174,207',
-  fourth: '240,168,85',
-  fifth: '255,255,255',
-  sixth: '63,168,118',
-};
+const trustItems = [
+  { icon: ShieldCheck, text: 'Privacidade tratada como parte do produto, não como rodapé.' },
+  { icon: LockKey, text: 'Dados sensíveis protegidos desde o primeiro registro.' },
+  { icon: Trash, text: 'Você pode revisar preferências e apagar seus dados pelo perfil.' },
+];
 
 const faqs = [
   {
@@ -70,8 +119,8 @@ const faqs = [
     a: 'Não. A Mo mostra padrões e explica o mês com clareza, sem bronca e sem culpa.',
   },
   {
-    q: 'O chat da home chama a API?',
-    a: 'Não. Aqui ele é só uma demonstração visual. A conversa real fica dentro do produto.',
+    q: 'O que a demonstração da home mostra?',
+    a: 'Ela mostra o tipo de conversa e leitura que o Moneda entrega dentro do produto.',
   },
   {
     q: 'Posso apagar meus dados?',
@@ -79,15 +128,13 @@ const faqs = [
   },
 ];
 
-function Band({
+function Section({
   id,
-  tone = 'plain',
   children,
   className = '',
 }: {
   id?: string;
-  tone?: BandTone;
-  children: React.ReactNode;
+  children: ReactNode;
   className?: string;
 }) {
   return (
@@ -96,86 +143,124 @@ function Band({
       variants={fadeUp}
       initial="hidden"
       whileInView="show"
-      viewport={{ once: true, margin: '-80px' }}
-      transition={{ duration: 0.34, ease: [0.22, 1, 0.36, 1] }}
-      className={`home-band home-band--${tone} relative overflow-hidden ${className}`}
+      viewport={{ once: true, margin: '-120px' }}
+      transition={{ duration: 0.4, ease: easeOut }}
+      className={`home-band relative ${className}`}
     >
-      <div className="relative z-[1] mx-auto w-full max-w-6xl px-4 py-16 sm:px-6 lg:px-8">
+      <div className="relative z-[1] mx-auto w-full max-w-6xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
         {children}
       </div>
     </motion.section>
   );
 }
 
+function SectionTitle({
+  eyebrow,
+  title,
+  children,
+  align = 'left',
+}: {
+  eyebrow?: string;
+  title: string;
+  children?: ReactNode;
+  align?: 'left' | 'center';
+}) {
+  return (
+    <div className={align === 'center' ? 'mx-auto max-w-4xl text-center' : 'max-w-3xl'}>
+      {eyebrow && (
+        <p className="mb-4 inline-flex rounded-full bg-[var(--color-surface)] px-3 py-1.5 text-sm font-extrabold text-[var(--color-brand-blue-dark)]">
+          {eyebrow}
+        </p>
+      )}
+      <h2 className="text-balance font-heading text-[clamp(2.5rem,5vw,4.75rem)] font-extrabold leading-[0.98] text-[var(--color-text-primary)]">
+        {title}
+      </h2>
+      {children && (
+        <p className={`mt-5 text-lg leading-relaxed text-[var(--color-text-secondary)] ${align === 'center' ? 'mx-auto max-w-2xl' : 'max-w-2xl'}`}>
+          {children}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function IconBadge({
+  icon: Icon,
+  tone = 'blue',
+  size = 'md',
+}: {
+  icon: IconComponent;
+  tone?: 'blue' | 'green' | 'warm' | 'ink';
+  size?: 'sm' | 'md' | 'lg';
+}) {
+  const toneClass = {
+    blue: 'bg-[color-mix(in_srgb,var(--color-brand-blue)_22%,var(--color-surface))] text-[var(--color-brand-blue-dark)]',
+    green: 'bg-[color-mix(in_srgb,var(--color-brand-green)_16%,var(--color-surface))] text-[var(--color-brand-green-dark)]',
+    warm: 'bg-[color-mix(in_srgb,var(--color-warning)_17%,var(--color-surface))] text-[#A6651B]',
+    ink: 'bg-[color-mix(in_srgb,var(--color-text-primary)_7%,var(--color-surface))] text-[var(--color-text-primary)]',
+  }[tone];
+  const sizeClass = {
+    sm: 'h-10 w-10 rounded-[10px]',
+    md: 'h-12 w-12 rounded-[12px]',
+    lg: 'h-14 w-14 rounded-[14px]',
+  }[size];
+
+  return (
+    <span className={`grid shrink-0 place-items-center ${sizeClass} ${toneClass}`}>
+      <Icon size={size === 'lg' ? 28 : 23} weight="bold" aria-hidden />
+    </span>
+  );
+}
+
 function CtaButton({ whatsappUrl, large = false }: { whatsappUrl: string; large?: boolean }) {
   const external = /^https?:\/\//.test(whatsappUrl);
+
   return (
-    <a
+    <motion.a
       href={whatsappUrl}
       target={external ? '_blank' : undefined}
       rel={external ? 'noreferrer' : undefined}
-      className={`inline-flex items-center justify-center gap-2 rounded-full bg-[var(--color-brand-blue)] font-bold text-[#102033] transition-[background-color,transform] duration-150 hover:bg-[var(--color-brand-blue-dark)] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-blue)] focus-visible:ring-offset-2 ${
-        large ? 'min-h-14 px-6 text-base' : 'min-h-12 px-5 text-sm'
+      whileHover={{ scale: 1.015 }}
+      whileTap={{ scale: 0.985 }}
+      transition={{ duration: 0.16, ease: easeOut }}
+      className={`inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full bg-[var(--color-brand-blue)] font-extrabold text-[#102033] transition-colors duration-200 hover:bg-[var(--color-brand-blue-dark)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-blue)] focus-visible:ring-offset-2 ${
+        large ? 'min-h-14 min-w-[232px] px-7 text-base' : 'min-h-12 px-5 text-sm'
       }`}
     >
       <WhatsappLogo size={20} weight="bold" />
       Começar pelo WhatsApp
-    </a>
+    </motion.a>
   );
 }
 
-function TextLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <p className="text-sm font-bold text-[var(--color-brand-green-dark)]">
-      {children}
-    </p>
-  );
-}
-
-function OpenMojiIcon({
-  name,
-  size = 28,
-  label,
-  className = '',
-}: {
-  name: OpenMojiName;
-  size?: number;
-  label?: string;
-  className?: string;
-}) {
-  return (
-    <img
-      src={`/openmoji/${openMoji[name]}.svg`}
-      width={size}
-      height={size}
-      alt={label ?? ''}
-      aria-hidden={label ? undefined : true}
-      loading="lazy"
-      decoding="async"
-      className={`inline-block shrink-0 ${className}`.trim()}
-    />
-  );
-}
-
-function MiniWaffle() {
+function MiniWaffle({ compact = false }: { compact?: boolean }) {
+  const reduceMotion = useReducedMotion();
   const cells = [
-    ...Array.from({ length: 22 }, (_, i) => ({ color: categories[0].color, id: `a-${i}` })),
-    ...Array.from({ length: 16 }, (_, i) => ({ color: categories[1].color, id: `b-${i}` })),
-    ...Array.from({ length: 13 }, (_, i) => ({ color: categories[2].color, id: `c-${i}` })),
-    ...Array.from({ length: 9 }, (_, i) => ({ color: categories[3].color, id: `d-${i}` })),
-    ...Array.from({ length: 40 }, (_, i) => ({ color: 'var(--color-surface-alt)', id: `e-${i}` })),
+    ...categories.flatMap((category, categoryIndex) =>
+      Array.from({ length: category.amount }, (_, index) => ({
+        color: category.color,
+        id: `${categoryIndex}-${index}`,
+      }))
+    ),
+    ...Array.from({ length: 40 }, (_, index) => ({
+      color: 'var(--color-surface-alt)',
+      id: `empty-${index}`,
+    })),
   ];
 
   return (
-    <div className="grid grid-cols-10 gap-1" aria-label="Distribuição de gastos por categoria">
+    <div
+      className={`grid grid-cols-10 ${compact ? 'gap-0.5' : 'gap-1'}`}
+      aria-label="Distribuição de gastos por categoria"
+    >
       {cells.map((cell, index) => (
         <motion.span
           key={cell.id}
-          initial={{ scale: 0.72, opacity: 0.55 }}
-          whileInView={{ scale: 1, opacity: 1 }}
+          initial={reduceMotion ? false : { scale: 0.82, opacity: 0.58 }}
+          whileInView={reduceMotion ? undefined : { scale: 1, opacity: 1 }}
           viewport={{ once: true }}
-          transition={{ delay: Math.min(index * 0.004, 0.24), duration: 0.16 }}
-          className="aspect-square rounded-[4px]"
+          transition={{ delay: Math.min(index * 0.003, 0.18), duration: 0.18, ease: easeOut }}
+          className={compact ? 'aspect-square rounded-[3px]' : 'aspect-square rounded-[4px]'}
           style={{ background: cell.color }}
         />
       ))}
@@ -184,16 +269,18 @@ function MiniWaffle() {
 }
 
 function MiniHistogram() {
+  const reduceMotion = useReducedMotion();
   const bars = [34, 58, 25, 44, 72, 88, 51];
+
   return (
     <div className="flex h-24 items-end gap-2" aria-label="Histograma semanal de gastos">
       {bars.map((height, index) => (
         <motion.span
           key={`${height}-${index}`}
-          initial={{ height: 8 }}
-          whileInView={{ height }}
+          initial={reduceMotion ? false : { height: 10, opacity: 0.72 }}
+          whileInView={reduceMotion ? undefined : { height, opacity: 1 }}
           viewport={{ once: true }}
-          transition={{ delay: index * 0.035, duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ delay: index * 0.035, duration: 0.28, ease: easeOut }}
           className="w-full rounded-t-md bg-[var(--color-brand-blue)]"
         />
       ))}
@@ -201,398 +288,375 @@ function MiniHistogram() {
   );
 }
 
-function PhoneMock({ compact = false }: { compact?: boolean }) {
+function ChatStage() {
   return (
-    <div className="mx-auto w-full max-w-[380px] rounded-[22px] border border-[color-mix(in_srgb,var(--color-border)_76%,transparent)] bg-[var(--color-surface)] p-3">
-      <div className="rounded-[16px] bg-[var(--color-surface-alt)] p-3">
-        <div className="mb-3 flex items-center justify-between border-b border-[var(--color-border)] pb-3">
-          <div>
-            <p className="text-sm font-extrabold text-[var(--color-text-primary)]">Mo</p>
-            <p className="text-xs text-[var(--color-success)]">sua CFO pessoal</p>
+    <div className="relative mx-auto grid w-full max-w-[620px] gap-5 lg:min-h-[520px] lg:place-items-center">
+      <motion.div
+        initial={{ opacity: 0, y: 26, rotate: -2 }}
+        animate={{ opacity: 1, y: 0, rotate: -2 }}
+        transition={{ duration: 0.48, ease: easeOut, delay: 0.08 }}
+        className="relative z-[2] mx-auto w-[min(68vw,280px)] sm:w-[min(44vw,320px)] lg:absolute lg:left-0 lg:top-10 lg:w-[360px] lg:max-w-[42%]"
+      >
+        <Image
+          src={moicoPng}
+          alt="Mo, mascote do Moneda"
+          priority
+          loading="eager"
+          sizes="(max-width: 640px) 68vw, (max-width: 1024px) 320px, 360px"
+          className="h-auto w-full drop-shadow-[0_18px_22px_rgba(26,29,35,0.16)]"
+        />
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 24, scale: 0.985 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.5, ease: easeOut, delay: 0.14 }}
+        className="relative z-[1] w-full rounded-[16px] bg-[var(--color-surface)] p-4 shadow-[var(--shadow-md)] sm:mx-auto sm:max-w-[520px] lg:ml-auto lg:mr-0 lg:mt-24 lg:w-[78%]"
+      >
+        <div className="mb-4 flex items-center justify-between border-b border-[var(--color-border)] pb-3">
+          <div className="flex items-center gap-2">
+            <span className="grid h-9 w-9 place-items-center rounded-full bg-[var(--color-brand-blue)] text-sm font-black text-[#102033]">
+              Mo
+            </span>
+            <div>
+              <p className="text-sm font-extrabold text-[var(--color-text-primary)]">Mo no WhatsApp</p>
+              <p className="text-xs text-[var(--color-text-secondary)]">registro em segundos</p>
+            </div>
           </div>
-          <span className="rounded-full bg-[var(--color-surface)] px-3 py-1 text-xs font-bold text-[var(--color-text-secondary)]">
-            WhatsApp
-          </span>
+          <WhatsappLogo size={22} weight="bold" className="text-[var(--color-brand-green-dark)]" aria-hidden />
         </div>
         <div className="space-y-3">
-          <div className="ml-auto max-w-[78%] rounded-[14px] rounded-br-[5px] bg-[var(--color-brand-green)] px-3 py-2 text-sm font-semibold text-white">
+          <div className="ml-auto max-w-[72%] rounded-[14px] rounded-br-[5px] bg-[var(--color-brand-green)] px-4 py-3 text-sm font-semibold text-white">
             gastei 42 no almoço
           </div>
-          <div className="max-w-[86%] rounded-[14px] rounded-bl-[5px] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-text-primary)]">
-            Pronto. Registrei R$ 42,00 em alimentação.
+          <div className="max-w-[82%] rounded-[14px] rounded-bl-[5px] bg-[var(--color-surface-alt)] px-4 py-3 text-sm leading-relaxed text-[var(--color-text-primary)]">
+            Registrei R$ 42,00 em alimentação. Hoje você está dentro do previsto.
           </div>
-          {!compact && (
-            <div className="max-w-[86%] rounded-[14px] rounded-bl-[5px] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-text-secondary)]">
-              Isso te deixa em 38% do limite da semana.
-            </div>
-          )}
+          <div className="max-w-[88%] rounded-[14px] rounded-bl-[5px] bg-[var(--color-surface-alt)] px-4 py-3 text-sm leading-relaxed text-[var(--color-text-secondary)]">
+            O padrão da semana ainda pesa mais na sexta. Quer ver no app?
+          </div>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }
 
-function HeroVisual() {
+function FeaturePills() {
+  const items = [
+    { icon: WhatsappLogo, label: 'WhatsApp primeiro' },
+    { icon: ChartPieSlice, label: 'Insights claros' },
+    { icon: ShieldCheck, label: 'Privacidade' },
+  ];
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: 18 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
-      className="grid gap-4"
+      variants={fadeUp}
+      transition={{ duration: 0.42, ease: easeOut }}
+      className="mt-9 grid gap-2.5 text-sm sm:grid-cols-3 sm:gap-3"
     >
-      <PhoneMock />
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="rounded-[16px] border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
-          <p className="mb-3 text-sm font-bold text-[var(--color-text-primary)]">Categorias</p>
-          <MiniWaffle />
+      {items.map((item) => (
+        <div
+          key={item.label}
+          className="flex min-h-12 items-center gap-2 rounded-[14px] bg-[var(--color-surface)] px-3 py-2 shadow-[0_10px_24px_rgba(26,29,35,0.04)]"
+        >
+          <item.icon size={18} weight="bold" className="shrink-0" aria-hidden />
+          <span className="font-bold leading-tight text-[var(--color-text-primary)]">{item.label}</span>
         </div>
-        <div className="rounded-[16px] border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
-          <p className="mb-3 text-sm font-bold text-[var(--color-text-primary)]">Sextas pesam mais</p>
-          <MiniHistogram />
-        </div>
-      </div>
+      ))}
     </motion.div>
   );
 }
 
-function ProblemAndSolution() {
-  const items = [
-    { emoji: 'receipt', title: 'Registrar é leve', text: 'Você manda uma frase. O Moneda organiza valor, data e categoria.' },
-    { emoji: 'chart', title: 'Os gráficos explicam', text: 'Waffle, histograma e feed mostram onde o dinheiro concentra.' },
-    { emoji: 'chat', title: 'Sem culpa', text: 'A Mo fala como uma assistente: direta, simples e sem julgamento.' },
-  ];
-
+function HeroSection({ whatsappUrl }: { whatsappUrl: string }) {
   return (
-    <Band tone="plain">
-      <div className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
-        <div>
-          <TextLabel>O problema</TextLabel>
-          <h2 className="mt-3 max-w-xl text-2xl font-heading font-bold text-[var(--color-text-primary)] sm:text-3xl">
-            Apps de finanças costumam pedir mais energia do que a rotina permite.
-          </h2>
-        </div>
-        <div className="grid gap-3">
-          {items.map((item) => (
-            <div key={item.title} className="flex gap-4 rounded-[14px] border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--color-surface-alt)] text-[var(--color-brand-blue-dark)]">
-                <OpenMojiIcon name={item.emoji as OpenMojiName} size={24} />
-              </span>
-              <div>
-                <h3 className="font-heading text-base font-bold text-[var(--color-text-primary)]">{item.title}</h3>
-                <p className="mt-1 text-sm leading-relaxed text-[var(--color-text-secondary)]">{item.text}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </Band>
-  );
-}
-
-function HowItWorksSection() {
-  const steps = [
-    { emoji: 'phone', title: 'Você manda um gasto', text: 'Exemplo: “gastei 42 no almoço”.' },
-    { emoji: 'receipt', title: 'O Moneda organiza', text: 'Categoria, data, forma de pagamento e feed ficam prontos.' },
-    { emoji: 'chat', title: 'A Mo explica', text: 'Você recebe uma leitura simples do que mudou no mês.' },
-  ];
-
-  return (
-    <Band id="como-funciona" tone="blue">
-      <div className="mx-auto max-w-3xl text-center">
-        <TextLabel>Como funciona</TextLabel>
-        <h2 className="mt-3 text-2xl font-heading font-bold text-[var(--color-text-primary)] sm:text-3xl">
-          Três passos. Nenhuma planilha.
-        </h2>
-      </div>
-      <MotionCarousel
-        className="mx-auto mt-8 max-w-5xl"
-        slides={steps.map((step, index) => (
-          <article
-            key={step.title}
-            className="flex min-h-[245px] flex-col justify-between rounded-[16px] border border-[color-mix(in_srgb,var(--color-border)_72%,transparent)] bg-[color-mix(in_srgb,var(--color-surface)_88%,transparent)] p-5 shadow-[var(--shadow-card-soft)] backdrop-blur-sm"
+    <section className="home-band home-band--hero relative">
+      <div className="relative z-[1] mx-auto grid min-h-[calc(100dvh-76px)] w-full max-w-6xl items-center gap-10 px-4 pb-16 pt-8 sm:px-6 lg:grid-cols-[0.86fr_1.14fr] lg:px-8">
+        <motion.div
+          variants={staggerGroup}
+          initial="hidden"
+          animate="show"
+          className="max-w-2xl"
+        >
+          <motion.p
+            variants={fadeUp}
+            transition={{ duration: 0.34, ease: easeOut }}
+            className="text-lg font-extrabold text-[var(--color-brand-blue-dark)]"
           >
-            <div>
-              <div className="flex items-center justify-between">
-                <span className="grid h-14 w-14 place-items-center rounded-[14px] bg-[var(--color-surface-alt)]">
-                  <OpenMojiIcon name={step.emoji as OpenMojiName} size={34} />
-                </span>
-                <span className="text-sm font-extrabold tabular-nums text-[var(--color-brand-green-dark)]">
-                  {String(index + 1).padStart(2, '0')}
-                </span>
-              </div>
-              <h3 className="mt-5 text-xl font-heading font-bold text-[var(--color-text-primary)]">{step.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-[var(--color-text-secondary)]">{step.text}</p>
-            </div>
-            <div className="mt-6 h-1.5 rounded-full bg-[var(--color-surface-alt)]">
-              <div
-                className="h-full rounded-full bg-[var(--color-brand-green)]"
-                style={{ width: `${((index + 1) / steps.length) * 100}%` }}
-              />
-            </div>
-          </article>
-        ))}
-        renderControls={({ scrollSnaps, selectedIndex, scrollPrev, scrollNext, scrollTo, canScrollPrev, canScrollNext }) => (
-          <div className="mt-5 flex items-center justify-center gap-3">
-            <button
-              type="button"
-              onClick={scrollPrev}
-              disabled={!canScrollPrev}
-              className="grid h-11 w-11 place-items-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-primary)] transition disabled:opacity-40"
-              aria-label="Passo anterior"
+            Moneda vive no WhatsApp.
+          </motion.p>
+          <motion.h1
+            variants={fadeUp}
+            transition={{ duration: 0.44, ease: easeOut }}
+            className="mt-5 text-balance font-heading text-[clamp(3.25rem,7vw,6rem)] font-extrabold leading-[0.95] text-[var(--color-text-primary)]"
+          >
+            Seu dinheiro, finalmente claro.
+          </motion.h1>
+          <motion.p
+            variants={fadeUp}
+            transition={{ duration: 0.42, ease: easeOut }}
+            className="mt-6 max-w-xl text-xl leading-relaxed text-[var(--color-text-secondary)]"
+          >
+            Registre gastos por mensagem e veja a Mo explicar o mês sem planilha, culpa ou relatório difícil de ler.
+          </motion.p>
+          <motion.div
+            variants={fadeUp}
+            transition={{ duration: 0.42, ease: easeOut }}
+            className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center"
+          >
+            <CtaButton whatsappUrl={whatsappUrl} large />
+            <a
+              href="#como-funciona"
+              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full px-5 text-sm font-bold text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-alt)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-blue)] focus-visible:ring-offset-2"
             >
-              <CaretLeft size={18} weight="bold" />
-            </button>
-            <div className="flex items-center gap-2">
-              {scrollSnaps.map((_, index) => (
-                <button
-                  key={index}
-                  type="button"
-                  onClick={() => scrollTo(index)}
-                  className={`h-2.5 rounded-full transition-all ${
-                    selectedIndex === index
-                      ? 'w-8 bg-[var(--color-brand-green)]'
-                      : 'w-2.5 bg-[color-mix(in_srgb,var(--color-text-tertiary)_42%,transparent)]'
-                  }`}
-                  aria-label={`Ir para o passo ${index + 1}`}
-                  aria-current={selectedIndex === index ? 'step' : undefined}
-                />
-              ))}
-            </div>
-            <button
-              type="button"
-              onClick={scrollNext}
-              disabled={!canScrollNext}
-              className="grid h-11 w-11 place-items-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-primary)] transition disabled:opacity-40"
-              aria-label="Próximo passo"
-            >
-              <CaretRight size={18} weight="bold" />
-            </button>
-          </div>
-        )}
-      />
-    </Band>
+              Ver como funciona
+              <ArrowRight size={18} weight="bold" aria-hidden />
+            </a>
+          </motion.div>
+          <FeaturePills />
+        </motion.div>
+
+        <ChatStage />
+      </div>
+    </section>
   );
 }
 
-function AnalyticsSection() {
+function TurnSection() {
   return (
-    <Band tone="green">
-      <div className="grid gap-10 lg:grid-cols-[0.85fr_1.15fr] lg:items-center">
-        <div>
-          <TextLabel>Clareza visual</TextLabel>
-          <h2 className="mt-3 text-2xl font-heading font-bold text-[var(--color-text-primary)] sm:text-3xl">
-            Veja o mês sem decifrar extrato.
-          </h2>
-          <p className="mt-4 max-w-lg text-base leading-relaxed text-[var(--color-text-secondary)]">
-            O Moneda junta conversa, gráficos e linha do tempo para você entender o que aconteceu em poucos segundos.
-          </p>
-        </div>
-        <div className="grid gap-4 md:grid-cols-2">
-          <div className="rounded-[16px] border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
-            <h3 className="font-heading text-base font-bold text-[var(--color-text-primary)]">Onde concentra</h3>
-            <p className="mt-1 text-sm text-[var(--color-text-secondary)]">Alimentação e entrega já são 38% do mês.</p>
-            <div className="mx-auto mt-5 max-w-[230px]"><MiniWaffle /></div>
-          </div>
-          <div className="rounded-[16px] border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
-            <h3 className="font-heading text-base font-bold text-[var(--color-text-primary)]">Quando pesa</h3>
-            <p className="mt-1 text-sm text-[var(--color-text-secondary)]">Os maiores saltos aparecem às sextas.</p>
-            <div className="mt-8"><MiniHistogram /></div>
-          </div>
-        </div>
-      </div>
-    </Band>
-  );
-}
+    <Section className="home-band--solid">
+      <div className="grid gap-10 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
+        <SectionTitle
+          title="Pare de cadastrar gasto. Converse com ele."
+        >
+          O Moneda começa no momento em que o dinheiro sai. A interface vem depois, para revisar o mês com calma.
+        </SectionTitle>
 
-function FeedSection() {
-  return (
-    <Band tone="warm">
-      <div className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
-        <div>
-          <TextLabel>Feed de gastos</TextLabel>
-          <h2 className="mt-3 text-2xl font-heading font-bold text-[var(--color-text-primary)] sm:text-3xl">
-            Uma linha do tempo limpa para revisar o mês.
-          </h2>
-          <p className="mt-4 max-w-lg text-base leading-relaxed text-[var(--color-text-secondary)]">
-            Categoria à esquerda, valor à direita, contexto no meio. O suficiente para conferir sem se perder.
-          </p>
-        </div>
-        <div className="rounded-[16px] border border-[var(--color-border)] bg-[var(--color-surface)] p-3">
-          {feedItems.map((item) => (
-            <div key={item.title} className="flex items-center gap-3 rounded-[12px] p-3 transition-colors hover:bg-[var(--color-surface-alt)]">
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full" style={{ backgroundColor: `${item.color}20`, color: item.color }}>
-                <OpenMojiIcon name={item.emoji as OpenMojiName} size={25} />
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-bold text-[var(--color-text-primary)]">{item.title}</p>
-                <p className="truncate text-xs text-[var(--color-text-secondary)]">{item.meta}</p>
-              </div>
-              <p className="shrink-0 text-sm font-extrabold tabular-nums text-[var(--color-error)]">-{item.amount}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </Band>
-  );
-}
-
-function ChatDemoSection() {
-  return (
-    <Band tone="ink">
-      <div className="mx-auto max-w-2xl text-center">
-        <TextLabel>Demo do chat</TextLabel>
-        <h2 className="mt-3 text-2xl font-heading font-bold text-[var(--color-text-primary)] sm:text-3xl">
-          A Mo aparece quando a conversa precisa de rosto.
-        </h2>
-        <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
-          Nesta home, deixamos a mascote concentrada no chat para a página respirar melhor.
-        </p>
-      </div>
-      <div className="mx-auto mt-8 max-w-2xl rounded-[18px] border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
-        <div className="mb-4 flex items-center gap-3 border-b border-[var(--color-border)] pb-4">
-          <Mo portrait size={42} variant="happy" />
-          <div>
-            <p className="font-heading font-bold text-[var(--color-text-primary)]">Mo, sua CFO pessoal</p>
-            <p className="text-xs text-[var(--color-text-secondary)]">demonstração visual</p>
-          </div>
-        </div>
-        <div className="space-y-3">
-          <div className="ml-auto max-w-[78%] rounded-[14px] rounded-br-[5px] bg-[var(--color-brand-blue)] px-4 py-3 text-sm font-semibold text-[#102033]">
-            Por que meu dinheiro acabou tão rápido?
-          </div>
-          <div className="max-w-[86%] rounded-[14px] rounded-bl-[5px] bg-[var(--color-surface-alt)] px-4 py-3 text-sm leading-relaxed text-[var(--color-text-primary)]">
-            Seu maior salto veio em delivery e transporte no fim de semana. Parece um padrão de sexta, não um problema do mês inteiro.
-          </div>
-        </div>
-      </div>
-    </Band>
-  );
-}
-
-function StartSection({ whatsappUrl }: { whatsappUrl: string }) {
-  return (
-    <Band tone="plain">
-      <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
-        <div>
-          <TextLabel>Comece em 60 segundos</TextLabel>
-          <h2 className="mt-3 text-2xl font-heading font-bold text-[var(--color-text-primary)] sm:text-3xl">
-            Abra o WhatsApp, mande uma frase e veja o primeiro registro.
-          </h2>
-        </div>
-        <div className="grid gap-3">
+        <motion.div
+          variants={staggerGroup}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true, margin: '-80px' }}
+          className="grid gap-4"
+        >
           {[
-            { emoji: 'phone', label: 'Clique no botão' },
-            { emoji: 'chat', label: 'Abra a conversa' },
-            { emoji: 'card', label: 'Mande “Quero organizar meu mês”' },
-            { emoji: 'receipt', label: 'Registre o primeiro gasto' },
-          ].map((step) => (
-            <div key={step.label} className="flex items-center gap-3 rounded-[14px] border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
-              <OpenMojiIcon name={step.emoji as OpenMojiName} size={24} />
-              <p className="text-sm font-semibold text-[var(--color-text-primary)]">{step.label}</p>
-            </div>
+            {
+              title: 'Registro sem formulário',
+              text: 'Uma frase resolve valor, data e categoria.',
+              icon: Receipt,
+              tone: 'blue' as const,
+            },
+            {
+              title: 'Dados com leitura humana',
+              text: 'A Mo transforma números em explicação curta.',
+              icon: ChartPieSlice,
+              tone: 'warm' as const,
+            },
+            {
+              title: 'Sem bronca financeira',
+              text: 'O tom é de clareza, não de cobrança.',
+              icon: ShieldCheck,
+              tone: 'green' as const,
+            },
+          ].map((item) => (
+            <motion.article
+              key={item.title}
+              variants={fadeUp}
+              transition={{ duration: 0.34, ease: easeOut }}
+              className="flex gap-4 rounded-[16px] bg-[var(--color-surface)] p-5"
+            >
+              <IconBadge icon={item.icon} tone={item.tone} />
+              <div>
+                <h3 className="font-heading text-xl font-extrabold text-[var(--color-text-primary)]">{item.title}</h3>
+                <p className="mt-1 text-base leading-relaxed text-[var(--color-text-secondary)]">{item.text}</p>
+              </div>
+            </motion.article>
           ))}
-          <div className="pt-2"><CtaButton whatsappUrl={whatsappUrl} /></div>
-        </div>
+        </motion.div>
       </div>
-    </Band>
+    </Section>
   );
 }
 
-function TrustAndFaq() {
-  const [open, setOpen] = useState(0);
-  const trustItems = [
-    { title: 'Criptografia de dados sensíveis', text: 'A camada de segurança existe porque gasto pessoal é informação íntima.' },
-    { title: 'Privacidade por padrão', text: 'O Moneda usa seus dados para organizar gastos e gerar insights, não para complicar sua vida.' },
-    { title: 'Controle do usuário', text: 'Você pode revisar configurações de privacidade e apagar seus dados pelo perfil.' },
-  ];
-
+function FlowSection() {
   return (
-    <Band tone="ink" className="home-band--crypto">
-      <div className="grid gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-start">
-        <div className="relative overflow-hidden rounded-[18px] border border-[color-mix(in_srgb,var(--color-brand-green)_32%,var(--color-border))] bg-[color-mix(in_srgb,var(--color-surface)_90%,transparent)] p-6 shadow-[var(--shadow-card-soft)] backdrop-blur-sm sm:p-8">
-          <div className="absolute right-4 top-4 h-28 w-28 rounded-full bg-[color-mix(in_srgb,var(--color-brand-green)_18%,transparent)] blur-2xl" />
-          <div className="relative">
-            <div className="mb-7 grid h-24 w-24 place-items-center rounded-[18px] bg-[color-mix(in_srgb,var(--color-brand-green)_14%,var(--color-surface))] shadow-[0_18px_34px_color-mix(in_srgb,var(--color-brand-green)_18%,transparent)]">
-              <OpenMojiIcon name="lock" size={62} label="Cadeado com chave" />
+    <Section id="como-funciona" className="home-band--flow">
+      <SectionTitle align="center" title="Três mensagens mentais a menos.">
+        O fluxo foi desenhado para a rotina real: pagar, mandar, entender.
+      </SectionTitle>
+
+      <div className="mt-12 grid gap-4 lg:grid-cols-3">
+        {flowSteps.map((step, index) => (
+          <motion.article
+            key={step.title}
+            variants={fadeUp}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, margin: '-80px' }}
+            transition={{ duration: 0.36, ease: easeOut, delay: index * 0.05 }}
+            className="relative min-h-[260px] rounded-[16px] bg-[var(--color-surface)] p-6"
+          >
+            <div className="mb-8 flex items-center justify-between">
+              <IconBadge icon={step.icon} tone={index === 0 ? 'green' : index === 1 ? 'blue' : 'warm'} size="lg" />
+              <span className="text-5xl font-heading font-extrabold tabular-nums text-[color-mix(in_srgb,var(--color-brand-blue)_32%,transparent)]">
+                {index + 1}
+              </span>
             </div>
-            <TextLabel>Criptografia</TextLabel>
-            <h2 className="mt-3 max-w-2xl text-4xl font-heading font-extrabold leading-[1.04] text-[var(--color-text-primary)] sm:text-5xl">
-              Seu dinheiro merece uma conversa protegida.
-            </h2>
-            <p className="mt-5 max-w-xl text-base leading-relaxed text-[var(--color-text-secondary)] sm:text-lg">
-              O Moneda trata dados sensíveis com cuidado desde a primeira mensagem. Clareza financeira não precisa custar privacidade.
-            </p>
-          </div>
-        </div>
+            <h3 className="max-w-xs font-heading text-2xl font-extrabold leading-tight text-[var(--color-text-primary)]">
+              {step.title}
+            </h3>
+            <p className="mt-4 text-base leading-relaxed text-[var(--color-text-secondary)]">{step.text}</p>
+          </motion.article>
+        ))}
+      </div>
+    </Section>
+  );
+}
+
+function ClaritySection() {
+  return (
+    <Section className="home-band--clarity">
+      <div className="grid gap-10 lg:grid-cols-[0.78fr_1.22fr] lg:items-center">
+        <SectionTitle title="O app vira a mesa limpa do seu dinheiro.">
+          Gráficos, feed e conversa aparecem juntos, para você revisar o mês sem decifrar extrato.
+        </SectionTitle>
 
         <div className="grid gap-4">
-          {trustItems.map((item) => (
-            <div
-              key={item.title}
-              className="rounded-[16px] border border-[color-mix(in_srgb,var(--color-border)_72%,transparent)] bg-[color-mix(in_srgb,var(--color-surface)_86%,transparent)] p-5 backdrop-blur-sm"
-            >
-              <h3 className="font-heading text-base font-bold text-[var(--color-text-primary)]">{item.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-[var(--color-text-secondary)]">{item.text}</p>
+          <div className="grid gap-4 rounded-[16px] bg-[var(--color-surface)] p-5 md:grid-cols-[0.9fr_1.1fr]">
+            <div className="rounded-[12px] bg-[var(--color-surface-alt)] p-4">
+              <div className="mb-4 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <ChartPieSlice size={20} weight="bold" className="text-[var(--color-brand-blue-dark)]" aria-hidden />
+                  <h3 className="font-heading text-base font-extrabold text-[var(--color-text-primary)]">Onde concentra</h3>
+                </div>
+                <span className="text-sm font-extrabold tabular-nums text-[var(--color-brand-green-dark)]">38%</span>
+              </div>
+              <MiniWaffle />
             </div>
-          ))}
+            <div className="rounded-[12px] bg-[var(--color-surface-alt)] p-4">
+              <div className="mb-5 flex items-center gap-2">
+                <ChartBar size={20} weight="bold" className="text-[var(--color-brand-blue-dark)]" aria-hidden />
+                <h3 className="font-heading text-base font-extrabold text-[var(--color-text-primary)]">Quando pesa</h3>
+              </div>
+              <MiniHistogram />
+            </div>
+          </div>
+
+          <div className="rounded-[16px] bg-[var(--color-surface)] p-3">
+            {feedItems.map((item) => (
+              <motion.div
+                key={item.title}
+                whileHover={{ scale: 1.006 }}
+                transition={{ duration: 0.16, ease: easeOut }}
+                className="flex items-center gap-3 rounded-[12px] p-3 transition-colors hover:bg-[var(--color-surface-alt)]"
+              >
+                <span
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
+                  style={{ backgroundColor: `${item.color}22`, color: item.color }}
+                >
+                  <item.icon size={22} weight="bold" aria-hidden />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-bold text-[var(--color-text-primary)]">{item.title}</p>
+                  <p className="truncate text-xs text-[var(--color-text-secondary)]">{item.meta}</p>
+                </div>
+                <p className="shrink-0 text-sm font-extrabold tabular-nums text-[var(--color-error)]">
+                  -{item.amount}
+                </p>
+              </motion.div>
+            ))}
+          </div>
         </div>
       </div>
+    </Section>
+  );
+}
 
-      <div className="mt-10 grid gap-6 lg:grid-cols-[0.72fr_1.28fr] lg:items-start">
-        <div>
-          <TextLabel>Perguntas frequentes</TextLabel>
-          <h2 className="mt-3 max-w-sm text-2xl font-heading font-bold text-[var(--color-text-primary)] sm:text-3xl">
-            O básico, sem enrolar.
+function TrustSection({ whatsappUrl }: { whatsappUrl: string }) {
+  const [open, setOpen] = useState(0);
+
+  return (
+    <Section className="home-band--final">
+      <div className="grid gap-10 lg:grid-cols-[0.95fr_1.05fr] lg:items-start">
+        <div className="rounded-[16px] bg-[var(--color-surface)] p-6 sm:p-8">
+          <IconBadge icon={LockKey} tone="green" size="lg" />
+          <h2 className="mt-6 text-balance font-heading text-[clamp(2.5rem,5vw,4.75rem)] font-extrabold leading-[0.98] text-[var(--color-text-primary)]">
+            Seu dinheiro merece uma conversa protegida.
           </h2>
+          <div className="mt-7 grid gap-4">
+            {trustItems.map((item) => (
+              <div key={item.text} className="flex gap-3 text-base leading-relaxed text-[var(--color-text-secondary)]">
+                <item.icon size={22} weight="bold" className="mt-0.5 shrink-0 text-[var(--color-brand-green-dark)]" aria-hidden />
+                <span>{item.text}</span>
+              </div>
+            ))}
+          </div>
         </div>
-        <div className="divide-y divide-[var(--color-border)] rounded-[16px] border border-[color-mix(in_srgb,var(--color-border)_72%,transparent)] bg-[color-mix(in_srgb,var(--color-surface)_88%,transparent)] backdrop-blur-sm">
+
+        <div className="overflow-hidden rounded-[16px] bg-[var(--color-surface)]">
+          <div className="border-b border-[var(--color-border)] p-5">
+            <div className="flex items-center gap-3">
+              <Image
+                src={moicoPng}
+                alt=""
+                sizes="44px"
+                className="h-11 w-11 rounded-full object-contain"
+              />
+              <div>
+                <h3 className="font-heading text-xl font-extrabold text-[var(--color-text-primary)]">
+                  Perguntas que a Mo responde
+                </h3>
+                <p className="text-sm text-[var(--color-text-secondary)]">Diretas, curtas e sem enrolar.</p>
+              </div>
+            </div>
+          </div>
           {faqs.map((faq, index) => (
-            <div key={faq.q}>
+            <div
+              key={faq.q}
+              className={index === 0 ? '' : 'border-t border-[var(--color-border)]'}
+            >
               <button
                 type="button"
                 onClick={() => setOpen(open === index ? -1 : index)}
-                className="flex min-h-14 w-full items-center gap-3 px-4 py-4 text-left"
+                className="flex min-h-14 w-full items-center gap-3 px-5 py-4 text-left"
                 aria-expanded={open === index}
               >
                 <span className="flex-1 font-bold text-[var(--color-text-primary)]">{faq.q}</span>
-                <ArrowRight size={17} className={`shrink-0 text-[var(--color-text-tertiary)] transition-transform ${open === index ? 'rotate-90' : ''}`} />
+                <CaretDown
+                  size={17}
+                  weight="bold"
+                  className={`shrink-0 text-[var(--color-text-tertiary)] transition-transform ${
+                    open === index ? 'rotate-180' : ''
+                  }`}
+                  aria-hidden
+                />
               </button>
               {open === index && (
-                <p className="px-4 pb-4 text-sm leading-relaxed text-[var(--color-text-secondary)]">{faq.a}</p>
+                <motion.p
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.18, ease: easeOut }}
+                  className="px-5 pb-5 text-sm leading-relaxed text-[var(--color-text-secondary)]"
+                >
+                  {faq.a}
+                </motion.p>
               )}
             </div>
           ))}
         </div>
       </div>
-    </Band>
-  );
-}
 
-function FinalCta({ whatsappUrl }: { whatsappUrl: string }) {
-  return (
-    <Band tone="green">
-      <div className="mx-auto max-w-3xl text-center">
-        <h2 className="text-2xl font-heading font-bold text-[var(--color-text-primary)] sm:text-3xl">
-          Pronto para entender para onde seu dinheiro está indo?
+      <div className="mx-auto mt-16 max-w-4xl text-center">
+        <h2 className="text-balance font-heading text-[clamp(2.5rem,5vw,4.75rem)] font-extrabold leading-[0.98] text-[var(--color-text-primary)]">
+          Comece pela mensagem que você já sabe mandar.
         </h2>
-        <p className="mx-auto mt-3 max-w-xl text-base text-[var(--color-text-secondary)]">
-          Comece pelo canal que você já usa todos os dias.
+        <p className="mx-auto mt-5 max-w-xl text-lg text-[var(--color-text-secondary)]">
+          O primeiro registro leva menos tempo do que abrir uma planilha.
         </p>
-        <div className="mt-7"><CtaButton whatsappUrl={whatsappUrl} large /></div>
-        <p className="mt-6 text-xs text-[var(--color-text-tertiary)]">
-          Emojis por{' '}
-          <a
-            href="https://openmoji.org/"
-            target="_blank"
-            rel="noreferrer"
-            className="font-semibold text-[var(--color-text-secondary)] underline-offset-2 hover:underline"
-          >
-            OpenMoji
-          </a>
-          , CC BY-SA 4.0.
-        </p>
+        <div className="mt-8">
+          <CtaButton whatsappUrl={whatsappUrl} large />
+        </div>
       </div>
-    </Band>
+    </Section>
   );
 }
 
@@ -600,73 +664,44 @@ export default function HomeLanding({ whatsappUrl }: HomeLandingProps) {
   return (
     <main className="relative min-h-dvh overflow-x-clip bg-[var(--color-bg)] text-[var(--color-text-primary)]">
       <BubbleBackground
-        colors={bubbleColors}
-        className="fixed inset-0 z-0 opacity-40"
+        colors={backgroundColors}
+        className="fixed inset-0 z-0 opacity-[0.18]"
       />
+      <div className="pointer-events-none fixed inset-0 z-0 bg-[linear-gradient(180deg,color-mix(in_srgb,var(--color-bg)_94%,transparent)_0%,color-mix(in_srgb,var(--color-bg)_84%,transparent)_46%,var(--color-bg)_100%)]" />
+
       <header className="relative z-10 mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-5 sm:px-6 lg:px-8">
         <Link href="/" className="flex items-center gap-2 font-heading text-xl font-extrabold text-[var(--color-text-primary)]">
-          <span className="grid h-8 w-8 place-items-center rounded-full bg-[var(--color-brand-green)] text-sm font-black text-white">M</span>
+          <Image
+            src={moicoPng}
+            alt=""
+            sizes="40px"
+            className="h-9 w-9 rounded-full object-contain sm:h-10 sm:w-10"
+          />
           Moneda
         </Link>
         <nav className="flex items-center gap-2">
-          <Link href="/login" className="rounded-full px-4 py-2 text-sm font-bold text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-alt)] hover:text-[var(--color-text-primary)]">
+          <Link
+            href="/login"
+            className="rounded-full px-4 py-2 text-sm font-bold text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-alt)] hover:text-[var(--color-text-primary)]"
+          >
             Entrar
           </Link>
-          <Link href="/signup" className="rounded-full bg-[var(--color-brand-green)] px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-[var(--color-brand-green-dark)]">
+          <Link
+            href="/signup"
+            className="rounded-full bg-[var(--color-surface)] px-4 py-2 text-sm font-bold text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-alt)]"
+          >
             Criar conta
           </Link>
         </nav>
       </header>
 
-      <section className="home-band home-band--hero relative overflow-hidden">
-        <BubbleBackground
-          interactive
-          colors={bubbleColors}
-          className="absolute inset-0 z-0 opacity-55"
-        />
-        <div className="relative z-[1] mx-auto grid min-h-[calc(100dvh-76px)] w-full max-w-6xl items-center gap-10 px-4 pb-14 pt-8 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:px-8">
-          <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.36 }}>
-            <TextLabel>Controle financeiro no WhatsApp</TextLabel>
-            <h1 className="mt-5 max-w-2xl text-4xl font-heading font-extrabold leading-[1.04] text-[var(--color-text-primary)] sm:text-5xl lg:text-6xl">
-              Seu dinheiro, finalmente claro.
-            </h1>
-            <p className="mt-5 max-w-xl text-lg leading-relaxed text-[var(--color-text-secondary)]">
-              Registre gastos por mensagem e veja o mês explicado com calma. Sem planilha, sem julgamento.
-            </p>
-            <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
-              <CtaButton whatsappUrl={whatsappUrl} large />
-              <a href="#como-funciona" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full px-5 text-sm font-bold text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-alt)]">
-                Ver como funciona
-                <ArrowRight size={18} weight="bold" />
-              </a>
-            </div>
-            <div className="mt-8 flex flex-wrap gap-3 text-sm">
-              {[
-                ['phone', 'WhatsApp primeiro'],
-                ['chart', 'Insights claros'],
-                ['chat', 'Sem julgamento'],
-              ].map(([emoji, label]) => {
-                return (
-                  <div key={label as string} className="inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2">
-                    <OpenMojiIcon name={emoji as OpenMojiName} size={20} />
-                    <span className="font-bold text-[var(--color-text-primary)]">{label as string}</span>
-                  </div>
-                );
-              })}
-            </div>
-          </motion.div>
-          <HeroVisual />
-        </div>
-      </section>
-
-      <ProblemAndSolution />
-      <HowItWorksSection />
-      <AnalyticsSection />
-      <FeedSection />
-      <ChatDemoSection />
-      <StartSection whatsappUrl={whatsappUrl} />
-      <TrustAndFaq />
-      <FinalCta whatsappUrl={whatsappUrl} />
+      <div className="relative z-[1]">
+        <HeroSection whatsappUrl={whatsappUrl} />
+        <TurnSection />
+        <FlowSection />
+        <ClaritySection />
+        <TrustSection whatsappUrl={whatsappUrl} />
+      </div>
     </main>
   );
 }

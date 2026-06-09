@@ -140,73 +140,63 @@ body {
 .home-band::before {
   content: '';
   position: absolute;
-  inset: 0;
+  inset: -56px 0;
   z-index: 0;
-  opacity: 0.58;
+  opacity: var(--home-layer-opacity, 0.34);
   pointer-events: none;
   background:
-    linear-gradient(180deg, transparent 0%, var(--home-wash, transparent) 42%, transparent 100%),
-    radial-gradient(ellipse at 18% 28%, var(--home-orb-a, rgba(168, 197, 224, 0.14)), transparent 44%),
-    radial-gradient(ellipse at 82% 72%, var(--home-orb-b, rgba(91, 191, 142, 0.1)), transparent 48%);
+    linear-gradient(180deg, transparent 0%, var(--home-wash, transparent) 48%, transparent 100%),
+    radial-gradient(ellipse at 16% 34%, var(--home-orb-a, transparent), transparent 58%),
+    radial-gradient(ellipse at 86% 68%, var(--home-orb-b, transparent), transparent 62%);
   transform: translate3d(0, 0, 0);
-  animation: home-band-drift 22s cubic-bezier(0.22, 1, 0.36, 1) infinite alternate both;
 }
 
 .home-band--hero {
+  --home-layer-opacity: 0.48;
   --home-wash: color-mix(in srgb, var(--color-brand-blue) 8%, transparent);
-  --home-orb-a: rgba(168, 197, 224, 0.12);
-  --home-orb-b: rgba(91, 191, 142, 0.1);
+  --home-orb-a: color-mix(in srgb, var(--color-brand-blue) 16%, transparent);
+  --home-orb-b: color-mix(in srgb, var(--color-warning) 8%, transparent);
   background:
-    linear-gradient(180deg, var(--color-bg), color-mix(in srgb, var(--color-brand-blue) 6%, var(--color-bg) 94%) 58%, transparent);
+    linear-gradient(180deg, var(--color-bg) 0%, color-mix(in srgb, var(--color-brand-blue) 5%, var(--color-bg) 95%) 56%, transparent 100%);
 }
 
-.home-band--plain {
-  --home-wash: color-mix(in srgb, var(--color-surface) 38%, transparent);
-  --home-orb-a: rgba(168, 197, 224, 0.07);
-  --home-orb-b: rgba(91, 191, 142, 0.06);
+.home-band--solid {
+  --home-layer-opacity: 0.28;
+  --home-wash: color-mix(in srgb, var(--color-surface) 26%, transparent);
+  --home-orb-a: color-mix(in srgb, var(--color-brand-blue) 7%, transparent);
+  --home-orb-b: color-mix(in srgb, var(--color-warning) 5%, transparent);
+  background:
+    linear-gradient(180deg, transparent 0%, color-mix(in srgb, var(--color-surface) 46%, transparent) 50%, transparent 100%);
+}
+
+.home-band--flow {
+  --home-layer-opacity: 0.34;
+  --home-wash: color-mix(in srgb, var(--color-brand-blue) 6%, transparent);
+  --home-orb-a: color-mix(in srgb, var(--color-brand-blue) 9%, transparent);
+  --home-orb-b: color-mix(in srgb, var(--color-brand-green) 5%, transparent);
   background: transparent;
 }
 
-.home-band--blue {
-  --home-wash: color-mix(in srgb, var(--color-brand-blue) 8%, transparent);
-  --home-orb-a: rgba(168, 197, 224, 0.13);
-  --home-orb-b: rgba(255, 255, 255, 0.28);
-  background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--color-brand-blue) 6%, var(--color-bg) 94%) 46%, transparent);
+.home-band--clarity {
+  --home-layer-opacity: 0.36;
+  --home-wash: color-mix(in srgb, var(--color-warning) 4%, transparent);
+  --home-orb-a: color-mix(in srgb, var(--color-warning) 7%, transparent);
+  --home-orb-b: color-mix(in srgb, var(--color-brand-blue) 8%, transparent);
+  background:
+    linear-gradient(180deg, transparent 0%, color-mix(in srgb, var(--color-brand-blue) 3%, var(--color-bg) 97%) 50%, transparent 100%);
 }
 
-.home-band--green {
-  --home-wash: color-mix(in srgb, var(--color-brand-green) 7%, transparent);
-  --home-orb-a: rgba(91, 191, 142, 0.1);
-  --home-orb-b: rgba(168, 197, 224, 0.08);
-  background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--color-brand-green) 5%, var(--color-bg) 95%) 48%, transparent);
+.home-band--final {
+  --home-layer-opacity: 0.34;
+  --home-wash: color-mix(in srgb, var(--color-brand-green) 6%, transparent);
+  --home-orb-a: color-mix(in srgb, var(--color-brand-green) 8%, transparent);
+  --home-orb-b: color-mix(in srgb, var(--color-brand-blue) 6%, transparent);
+  background: transparent;
 }
 
-.home-band--warm {
-  --home-wash: color-mix(in srgb, var(--color-warning) 6%, transparent);
-  --home-orb-a: rgba(240, 168, 85, 0.08);
-  --home-orb-b: rgba(168, 197, 224, 0.08);
-  background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--color-warning) 4%, var(--color-bg) 96%) 50%, transparent);
-}
-
-.home-band--ink {
-  --home-wash: color-mix(in srgb, var(--color-text-primary) 3%, transparent);
-  --home-orb-a: rgba(168, 197, 224, 0.08);
-  --home-orb-b: rgba(91, 191, 142, 0.08);
-  background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--color-text-primary) 3%, var(--color-bg) 97%) 50%, transparent);
-}
-
-.home-band--crypto {
-  --home-wash: color-mix(in srgb, var(--color-brand-green) 10%, transparent);
-  --home-orb-a: rgba(91, 191, 142, 0.14);
-  --home-orb-b: rgba(168, 197, 224, 0.1);
-}
-
-@keyframes home-band-drift {
-  from {
-    transform: translate3d(-0.8%, -0.6%, 0) scale(1);
-  }
-  to {
-    transform: translate3d(0.8%, 0.6%, 0) scale(1.018);
+@media (prefers-reduced-motion: reduce) {
+  .home-band::before {
+    transform: none;
   }
 }
 
