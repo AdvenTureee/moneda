@@ -6,10 +6,12 @@ import { useState, type ComponentType, type ReactNode } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import {
   ArrowRight,
+  Brain,
   CaretDown,
   ChartBar,
   ChartPieSlice,
   CreditCard,
+  Devices,
   ListBullets,
   LockKey,
   Moon,
@@ -116,20 +118,20 @@ const trustItems = [
 
 const availableFeatures = [
   {
-    icon: Receipt,
-    title: 'Adicionar gastos',
-    text: 'Registre despesas com valor, categoria e data.',
+    icon: Devices,
+    title: 'Acesse de qualquer lugar',
+    text: 'Entre pelo celular ou computador e continue de onde parou.',
     tone: 'blue' as const,
   },
   {
     icon: Wallet,
-    title: 'Adicionar ganhos',
-    text: 'Acompanhe entradas para entender o mês inteiro.',
+    title: 'Gastos e ganhos no mesmo lugar',
+    text: 'Organize entradas e saídas para entender o mês inteiro.',
     tone: 'green' as const,
   },
   {
     icon: UploadSimple,
-    title: 'Upload de comprovantes',
+    title: 'Comprovantes anexados',
     text: 'Guarde recibos e imagens junto do lançamento.',
     tone: 'warm' as const,
   },
@@ -140,10 +142,11 @@ const availableFeatures = [
     tone: 'blue' as const,
   },
   {
-    icon: ListBullets,
-    title: 'Feed e categorias organizadas',
-    text: 'Revise tudo em uma linha do tempo clara.',
-    tone: 'ink' as const,
+    icon: Brain,
+    title: 'IA da Mo para perguntar',
+    text: 'Tire dúvidas financeiras e peça explicações sobre seus gastos e insights.',
+    tone: 'green' as const,
+    featured: true,
   },
 ];
 
@@ -443,7 +446,7 @@ function HeroSection() {
             transition={{ duration: 0.44, ease: easeOut }}
             className="mt-5 text-balance font-heading text-[clamp(3.25rem,7vw,6rem)] font-extrabold leading-[0.95] text-[var(--color-text-primary)]"
           >
-            Seu dinheiro, finalmente claro.
+            Seu dinheiro finalmente claro.
           </motion.h1>
           <motion.p
             variants={fadeUp}
@@ -492,13 +495,13 @@ function AvailableAppSection() {
         >
           <div>
             <p className="inline-flex rounded-full bg-[color-mix(in_srgb,var(--color-brand-green)_16%,var(--color-surface))] px-3 py-1.5 text-sm font-extrabold text-[var(--color-brand-green-dark)]">
-              App disponível agora
+              Web app disponível agora
             </p>
             <h2 className="mt-5 max-w-xl text-balance font-heading text-[clamp(2.35rem,4vw,4.25rem)] font-extrabold leading-[0.98] text-[var(--color-text-primary)]">
-              O app já está pronto para organizar seu dinheiro.
+              Seu dinheiro claro no celular ou no computador.
             </h2>
             <p className="mt-5 max-w-xl text-lg leading-relaxed text-[var(--color-text-secondary)]">
-              Enquanto o Moneda WhatsApp está em desenvolvimento, você já pode usar o app para registrar, revisar e entender sua vida financeira.
+              Enquanto o Moneda WhatsApp está em desenvolvimento, o web app já permite registrar gastos, ganhos, comprovantes e conversar com a IA da Mo sobre sua vida financeira.
             </p>
           </div>
 
@@ -509,7 +512,7 @@ function AvailableAppSection() {
             transition={{ duration: 0.16, ease: easeOut }}
             className="mt-8 inline-flex min-h-13 w-full items-center justify-center gap-2 rounded-full bg-[var(--color-brand-green)] px-6 text-sm font-extrabold text-white transition-colors hover:bg-[var(--color-brand-green-dark)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-green)] focus-visible:ring-offset-2 sm:w-auto"
           >
-            Entrar no app agora
+            Entrar no web app agora
             <ArrowRight size={18} weight="bold" aria-hidden />
           </motion.a>
         </motion.div>
@@ -523,11 +526,11 @@ function AvailableAppSection() {
               key={feature.title}
               variants={fadeUp}
               transition={{ duration: 0.34, ease: easeOut, delay: index * 0.03 }}
-              className={`flex min-h-[132px] gap-3 rounded-[14px] border border-[color-mix(in_srgb,var(--color-border)_70%,transparent)] bg-[var(--color-surface-alt)] p-4 ${
-                index === availableFeatures.length - 1 ? 'sm:col-span-2 lg:col-span-1' : ''
+              className={`flex min-h-[148px] gap-4 rounded-[14px] border border-[color-mix(in_srgb,var(--color-border)_70%,transparent)] bg-[var(--color-surface-alt)] p-4 ${
+                feature.featured ? 'sm:col-span-2 lg:col-span-1 lg:bg-[color-mix(in_srgb,var(--color-brand-green)_8%,var(--color-surface-alt))]' : ''
               }`}
             >
-              <IconBadge icon={feature.icon} tone={feature.tone} size="sm" />
+              <IconBadge icon={feature.icon} tone={feature.tone} size="lg" />
               <div>
                 <h3 className="font-heading text-lg font-extrabold leading-tight text-[var(--color-text-primary)]">
                   {feature.title}
@@ -783,6 +786,30 @@ function TrustSection() {
   );
 }
 
+function LandingFooter() {
+  return (
+    <footer className="relative z-[1] border-t border-[color-mix(in_srgb,var(--color-border)_70%,transparent)] px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 text-sm text-[var(--color-text-secondary)] sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2 font-heading text-lg font-extrabold text-[var(--color-text-primary)]">
+          <Image
+            src={moicoPng}
+            alt=""
+            sizes="32px"
+            className="h-8 w-8 rounded-full object-contain"
+          />
+          Moneda
+        </div>
+        <div className="grid gap-1 sm:text-right">
+          <p>CNPJ 47.932.528/0001-62</p>
+          <address className="not-italic">
+            Av Francisco Nobrega Barbosa, 301, Apto 81 A - Parques Alves de Lima
+          </address>
+        </div>
+      </div>
+    </footer>
+  );
+}
+
 export default function HomeLanding({ whatsappUrl }: HomeLandingProps) {
   void whatsappUrl;
 
@@ -829,6 +856,7 @@ export default function HomeLanding({ whatsappUrl }: HomeLandingProps) {
         <ClaritySection />
         <TrustSection />
       </div>
+      <LandingFooter />
     </main>
   );
 }

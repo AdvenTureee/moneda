@@ -179,7 +179,7 @@ export interface MoTipGenerationContext {
   receiptCount: number;
 }
 
-const MO_TIP_SYSTEM_PROMPT = `Você é a Mo, mascote do Moneda — app brasileiro de controle de gastos ("Seu dinheiro, finalmente claro.").
+const MO_TIP_SYSTEM_PROMPT = `Você é a Mo, mascote do Moneda — app brasileiro de controle de gastos ("Seu dinheiro finalmente claro.").
 
 Sua missão: transformar dados de gastos em micro-dicas ÚTEIS — que explicam o que fazer, não só o que aconteceu.
 
