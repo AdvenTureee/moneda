@@ -6,6 +6,7 @@ import { ArrowsClockwise, Eye, Paperclip, Trash, X } from '@phosphor-icons/react
 import Icon from '@/components/Icon';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import DatePicker from '@/components/DatePicker';
+import ReceiptViewerModal from '@/components/ReceiptViewerModal';
 import { useToast } from '@/components/ToastProvider';
 import { formatCurrency } from '@/lib/utils';
 import { toLocalDateInput, todayLocalDate, currentTimeHHmm, timeHHmmFromDate, localDateTimeToIso } from '@/lib/date';
@@ -56,6 +57,7 @@ export default function AddExpenseModal({
   const [categoriesExpanded, setCategoriesExpanded] = useState(false);
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [receiptBusy, setReceiptBusy] = useState(false);
+  const [receiptPreviewUrl, setReceiptPreviewUrl] = useState<string | null>(null);
   const [saveBusy, setSaveBusy] = useState(false);
   const { data: categories } = useCategories();
   const { showToast } = useToast();
@@ -227,7 +229,7 @@ export default function AddExpenseModal({
       const res = await fetch(`/api/expenses/receipt?expenseId=${editExpense.id}`);
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.url) throw new Error(data.error ?? 'Não foi possível abrir.');
-      window.open(data.url, '_blank', 'noopener,noreferrer');
+      setReceiptPreviewUrl(data.url);
     } catch (error) {
       showToast('error', error instanceof Error ? error.message : 'Erro ao abrir comprovante');
     } finally {
@@ -754,6 +756,14 @@ export default function AddExpenseModal({
         variant="danger"
         onConfirm={finishClose}
         onCancel={() => setConfirmDiscard(false)}
+      />
+      <ReceiptViewerModal
+        isOpen={receiptPreviewUrl !== null}
+        onClose={() => setReceiptPreviewUrl(null)}
+        url={receiptPreviewUrl}
+        fileName={editExpense?.receipt?.fileName ?? 'Comprovante'}
+        mimeType={editExpense?.receipt?.mimeType ?? 'application/octet-stream'}
+        sizeBytes={editExpense?.receipt?.sizeBytes}
       />
     </div>,
     document.body

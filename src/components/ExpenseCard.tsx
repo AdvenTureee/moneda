@@ -389,6 +389,7 @@ export default function ExpenseCard({
         url={receiptPreviewUrl}
         fileName={expense.receipt?.fileName ?? 'Comprovante'}
         mimeType={expense.receipt?.mimeType ?? 'application/octet-stream'}
+        sizeBytes={expense.receipt?.sizeBytes}
       />
     </>
   );
