@@ -74,6 +74,9 @@ export default async function DashboardPage({
   const totalBudgetCents = budgets.reduce((sum, b) => sum + b.amountCents, 0);
   const BUDGET_CENTS = monthlyBudgetCents > 0 ? monthlyBudgetCents : totalBudgetCents;
   const remaining = BUDGET_CENTS + monthlyIncomeTotalCents - metrics.totalSpent;
+  const budgetTotal = BUDGET_CENTS;
+  const expensesTotal = metrics.totalSpent;
+  const incomeTotal = monthlyIncomeTotalCents;
   const compactMetrics = [
     { label: 'Orçamento', value: formatCurrency(BUDGET_CENTS) },
     { label: 'Gasto', value: formatCurrency(metrics.totalSpent) },
@@ -157,25 +160,30 @@ export default async function DashboardPage({
           </div>
         </header>
 
-        <DashboardBalanceHero remaining={remaining} period={period} displayName={fullName} />
+        <DashboardBalanceHero budgetTotal={budgetTotal} expensesTotal={expensesTotal} incomeTotal={incomeTotal} period={period} displayName={fullName} />
 
         <section className="mb-3 animate-fade-up delay-2" aria-label="Ciclo financeiro">
           <MonthPicker value={period} closingDay={billingClosingDay} fullWidth />
         </section>
 
         <section
-          className="themed-card mb-4 grid grid-cols-3 gap-1.5 rounded-[14px] bg-white p-2 animate-fade-up delay-3"
+          className="themed-card mb-4 grid grid-cols-2 gap-1.5 rounded-[14px] bg-white p-2 animate-fade-up delay-3"
           aria-label="Resumo financeiro do ciclo"
         >
-          {compactMetrics.map((item) => (
+          {compactMetrics.map((item, index) => (
             <div
               key={item.label}
-              className="min-w-0 rounded-[10px] px-2 py-2 text-left"
+              className={`min-w-0 rounded-[10px] px-2 py-2 text-center ${index === 2 ? 'col-span-2' : ''}`}
             >
-              <p className="truncate text-[10px] font-semibold uppercase tracking-[0.04em] text-[var(--color-text-tertiary)]">
-                {item.label}
-              </p>
-              <p className="mt-1 truncate text-sm font-extrabold tabular-nums text-[var(--color-text-primary)] min-[390px]:text-base">
+              <div className="mb-0.5 flex items-center justify-center gap-1 text-[var(--color-text-tertiary)]">
+                {index === 0 && <Icon name="Wallet" size={14} />}
+                {index === 1 && <Icon name="TrendDown" size={14} />}
+                {index === 2 && <Icon name="TrendUp" size={14} />}
+                <p className="text-[10px] font-semibold uppercase tracking-[0.04em]">
+                  {item.label}
+                </p>
+              </div>
+              <p className="mt-0.5 whitespace-nowrap text-sm font-extrabold tabular-nums text-[var(--color-text-primary)] min-[390px]:text-base">
                 {item.value}
               </p>
             </div>

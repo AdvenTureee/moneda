@@ -42,6 +42,11 @@
   --app-bg-rgb: 248 249 251;
   color-scheme: light;
 
+  --color-success: #5BBF8E;
+  --color-success-bg: #EEF9F4;
+  --color-warning: #F0A855;
+  --color-warning-bg: #FEF6EB;
+
   --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.06);
   --shadow-card-soft: 0 2px 8px rgba(0, 0, 0, 0.04);
   --shadow-overlay: 0 8px 32px rgba(0, 0, 0, 0.12);

@@ -8,15 +8,37 @@ import { getSessionGreeting } from '@/data/moTips';
 import { formatCurrency } from '@/lib/utils';
 
 interface DashboardBalanceHeroProps {
-  remaining: number;
+  budgetTotal: number;
+  expensesTotal: number;
+  incomeTotal: number;
   period: string;
   displayName?: string | null;
 }
 
+type BudgetState = 'healthy' | 'warning' | 'overBudget' | 'recovered';
+
 const MO_SPEAKING_MS = 500;
 
+function StatusBadge({ label, variant = 'warning' }: { label: string; variant?: 'warning' | 'success' }) {
+  const isWarning = variant === 'warning';
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ring-1 ring-inset ${
+        isWarning
+          ? 'bg-[var(--color-warning-bg)] text-[var(--color-warning)] ring-[color-mix(in_srgb,var(--color-warning)_20%,transparent)]'
+          : 'bg-[var(--color-success-bg)] text-[var(--color-success)] ring-[color-mix(in_srgb,var(--color-success)_20%,transparent)]'
+      }`}
+    >
+      <span className="select-none" aria-hidden="true">●</span>
+      {label}
+    </span>
+  );
+}
+
 export default function DashboardBalanceHero({
-  remaining,
+  budgetTotal,
+  expensesTotal,
+  incomeTotal,
   period,
   displayName,
 }: DashboardBalanceHeroProps) {
@@ -25,8 +47,19 @@ export default function DashboardBalanceHero({
   const [tipAdvanceToken, setTipAdvanceToken] = useState(0);
   const [moSpeaking, setMoSpeaking] = useState(false);
   const speakingTimerRef = useRef<number | null>(null);
-  const isNegative = remaining < 0;
   const sessionGreeting = useMemo(() => getSessionGreeting(displayName), [displayName]);
+
+  const remaining = budgetTotal - expensesTotal;
+  const effectiveBalance = budgetTotal + incomeTotal - expensesTotal;
+  const percentUsed = budgetTotal > 0 ? (expensesTotal / budgetTotal) * 100 : 0;
+
+  const budgetState: BudgetState = remaining < 0 && effectiveBalance < 0
+    ? 'overBudget'
+    : remaining < 0 && effectiveBalance >= 0
+      ? 'recovered'
+      : percentUsed >= 80
+        ? 'warning'
+        : 'healthy';
 
   useEffect(() => {
     const key = 'moneda:mo-session-greeting-shown';
@@ -59,40 +92,123 @@ export default function DashboardBalanceHero({
   }
 
   return (
-    <section className="mb-4 animate-fade-up delay-1" aria-label="Dinheiro restante">
+    <section className="mb-4 animate-fade-up delay-1" aria-label="Status do orçamento">
       <div className="dashboard-balance-hero relative grid items-end gap-2 overflow-visible rounded-[18px] py-1">
-        <div className="relative z-10 min-w-0 pb-2 pt-8">
-          <p className="mb-1 text-xs font-medium text-[#6B7280]">
-            Dinheiro restante
-          </p>
-          <p
-            className={`font-extrabold tabular-nums leading-none ${
-              isNegative
-                ? 'text-[34px] min-[390px]:text-[38px]'
-                : 'text-[36px] min-[390px]:text-[40px]'
-            }`}
-            style={{ color: isNegative ? 'var(--color-error)' : 'var(--color-text-primary)' }}
-            aria-label={
-              isNegative
-                ? `Estourou em ${formatCurrency(Math.abs(remaining))}`
-                : `Restante: ${formatCurrency(remaining)}`
-            }
-          >
-            {isNegative ? 'Estourou!' : formatCurrency(remaining)}
-          </p>
-          {isNegative && (
-            <div className="mt-2 space-y-2">
-              <p className="text-xs font-medium text-[#E07070]">
-                -{formatCurrency(Math.abs(remaining))}
+        <div className={`relative z-10 min-w-0 ${budgetState === 'overBudget' ? '' : 'pb-2'} pt-8`}>
+          {budgetState === 'healthy' && (
+            <>
+              <p className="mb-1 text-xs font-medium text-[#6B7280]">
+                Dinheiro restante
               </p>
-              <Link
-                href="/perfil/ganhos"
-                className="inline-flex min-h-9 items-center gap-1.5 rounded-full bg-[#FDF0F0] px-3.5 py-2 text-xs font-bold text-[#B14C4C] transition-colors hover:bg-[#F8E4E4]"
-                aria-label="Cadastrar ganho para abater o estouro"
+              <p
+                className="text-[36px] min-[390px]:text-[40px] font-extrabold tabular-nums leading-none text-[var(--color-text-primary)]"
+                aria-label={`Restante: ${formatCurrency(remaining)}`}
               >
-                Cadastrar ganho
-                <span aria-hidden>›</span>
-              </Link>
+                {formatCurrency(remaining)}
+              </p>
+              <p className="mt-3 max-w-[30ch] text-sm leading-relaxed text-[var(--color-text-secondary)]">
+                Você ainda tem margem neste mês.
+              </p>
+              <div className="mt-4">
+                <Link
+                  href={`/feed?period=${period}`}
+                  className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-full bg-[var(--color-brand-blue)] px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-[var(--color-brand-blue-dark)]"
+                >
+                  Ver gastos do mês
+                  <span aria-hidden>→</span>
+                </Link>
+              </div>
+            </>
+          )}
+
+          {budgetState === 'warning' && (
+            <div>
+              <p className="mb-1 text-xs font-medium text-[#6B7280]">
+                Dinheiro restante
+              </p>
+              <p
+                className="text-[36px] min-[390px]:text-[40px] font-extrabold tabular-nums leading-none text-[var(--color-text-primary)]"
+                aria-label={`Restante: ${formatCurrency(remaining)}`}
+              >
+                {formatCurrency(remaining)}
+              </p>
+              <div className="mt-3">
+                <StatusBadge label="Cuidado — orçamento próximo do limite" />
+              </div>
+              <p className="mt-3 max-w-[30ch] text-sm leading-relaxed text-[var(--color-text-secondary)]">
+                Seus extras estão encostando na meta.
+              </p>
+              <div className="mt-4">
+                <Link
+                  href={`/feed?period=${period}`}
+                  className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-full bg-[var(--color-brand-blue)] px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-[var(--color-brand-blue-dark)]"
+                >
+                  Revisar gastos
+                  <span aria-hidden>→</span>
+                </Link>
+              </div>
+            </div>
+          )}
+
+          {budgetState === 'overBudget' && (
+            <div>
+              <p className="mb-1 text-xs font-medium text-[#6B7280]">
+                Orçamento do mês
+              </p>
+              <p className="text-[24px] min-[390px]:text-[28px] font-extrabold tabular-nums leading-none text-[var(--color-warning)]">
+                {formatCurrency(Math.abs(remaining))}
+              </p>
+              <div className="mt-3">
+                <StatusBadge label="Acima do orçamento" />
+              </div>
+              <p className="mt-4 max-w-[30ch] text-sm leading-relaxed text-[var(--color-text-secondary)]">
+                Seus gastos passaram da meta. Veja onde ajustar ou registre uma entrada.
+              </p>
+              <div className="mt-5 flex flex-col gap-2.5 sm:flex-row">
+                <Link
+                  href={`/feed?period=${period}`}
+                  className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-full bg-[var(--color-success)] px-4 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-80"
+                >
+                  Ver onde estourou
+                  <span aria-hidden>→</span>
+                </Link>
+                <Link
+                  href="/perfil/ganhos"
+                  className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-full bg-transparent px-4 py-2.5 text-sm font-medium text-[var(--color-text-tertiary)] transition-colors hover:text-[var(--color-text-primary)]"
+                  aria-label="Cadastrar ganho para abater o estouro"
+                >
+                  Cadastrar ganho
+                </Link>
+              </div>
+            </div>
+          )}
+
+          {budgetState === 'recovered' && (
+            <div>
+              <p className="mb-1 text-xs font-medium text-[#6B7280]">
+                Saldo do mês
+              </p>
+              <p
+                className="text-[36px] min-[390px]:text-[40px] font-extrabold tabular-nums leading-none text-[var(--color-success)]"
+                aria-label={`Saldo: ${formatCurrency(effectiveBalance)}`}
+              >
+                {formatCurrency(effectiveBalance)}
+              </p>
+              <div className="mt-3">
+                <StatusBadge label="Orçamento reequilibrado" variant="success" />
+              </div>
+              <p className="mt-3 max-w-[30ch] text-sm leading-relaxed text-[var(--color-text-secondary)]">
+                A entrada ajudou a compensar o excesso deste mês.
+              </p>
+              <div className="mt-4">
+                <Link
+                  href={`/feed?period=${period}`}
+                  className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-full bg-[var(--color-brand-blue)] px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-[var(--color-brand-blue-dark)]"
+                >
+                  Ver impacto da entrada
+                  <span aria-hidden>→</span>
+                </Link>
+              </div>
             </div>
           )}
         </div>
@@ -123,8 +239,8 @@ export default function DashboardBalanceHero({
             aria-label="Mostrar dica da Mo"
           >
             <TrackedMascot
-              variant={isNegative ? 'sad' : 'happy'}
-              size={94}
+              variant={budgetState === 'healthy' || budgetState === 'recovered' ? 'happy' : 'idle'}
+              size={budgetState === 'overBudget' ? 60 : 94}
               speaking={moSpeaking}
               className="dashboard-balance-hero__mo drop-shadow-[0_10px_18px_rgba(15,23,42,0.16)]"
             />
