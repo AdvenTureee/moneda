@@ -725,7 +725,7 @@ function PreviewCarousel() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-[var(--color-bg)]/20 backdrop-blur-[1px] pointer-events-none"
+          className="absolute top-0 left-0 right-0 h-[calc(100%-3rem)] z-20 flex flex-col items-center justify-center bg-[var(--color-bg)]/20 backdrop-blur-[1px] pointer-events-none"
         >
           <div className="flex flex-col items-center gap-2 rounded-xl bg-[var(--color-surface)]/90 px-4 py-3 shadow-[var(--shadow-card-soft)] border border-[var(--color-border)]">
             <motion.div
@@ -782,20 +782,30 @@ function PreviewCarousel() {
         ))}
       </motion.div>
 
-      <div className="mt-4 flex items-center justify-center gap-2">
-        {screenshots.map((_, index) => (
-          <button
-            key={index}
-            type="button"
-            onClick={() => { setHasInteracted(true); goTo(index); }}
-            className={`h-2 rounded-full transition-all duration-300 ${
-              index === activeIndex
-                ? 'w-6 bg-[var(--color-brand-blue)]'
-                : 'w-2 bg-[var(--color-border)]'
-            }`}
-            aria-label={`Ir para slide ${index + 1}`}
-          />
-        ))}
+      <div className="mt-5 flex items-center justify-center gap-2.5 relative z-30">
+        {screenshots.map((_, index) => {
+          const isActive = index === activeIndex;
+          return (
+            <motion.button
+              key={index}
+              type="button"
+              onClick={() => { setHasInteracted(true); goTo(index); }}
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              animate={{
+                width: isActive ? 28 : 12,
+                height: 12,
+              }}
+              transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+              className={`rounded-full shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-blue)] ${
+                isActive
+                  ? 'bg-[var(--color-brand-blue)]'
+                  : 'bg-[var(--color-border)] hover:bg-[var(--color-text-tertiary)]'
+              }`}
+              aria-label={`Ir para slide ${index + 1}`}
+            />
+          );
+        })}
       </div>
     </div>
   );
