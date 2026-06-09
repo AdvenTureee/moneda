@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { DM_Sans, Epilogue } from 'next/font/google';
+import NextTopLoader from 'nextjs-toploader';
 import PWARegistrar from '@/components/PWARegistrar';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import './globals.css';
@@ -76,6 +77,7 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className="bg-[#F8F9FB] min-h-full antialiased font-body">
+        <NextTopLoader color="#5BBF8E" height={3} showSpinner={false} />
         <ThemeProvider>
           <PWARegistrar />
           {children}

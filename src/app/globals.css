@@ -2178,6 +2178,24 @@ body, .font-body {
 .delay-8 { animation-delay: 640ms; }
 .delay-9 { animation-delay: 720ms; }
 
+.app-shell .animate-fade-up,
+.app-shell .animate-fade-in,
+.app-shell .animate-scale-in {
+  animation-duration: 90ms;
+}
+
+.app-shell .delay-1,
+.app-shell .delay-2,
+.app-shell .delay-3,
+.app-shell .delay-4,
+.app-shell .delay-5,
+.app-shell .delay-6,
+.app-shell .delay-7,
+.app-shell .delay-8,
+.app-shell .delay-9 {
+  animation-delay: 0ms;
+}
+
 @media (max-width: 768px), (pointer: coarse) {
   .animate-fade-up,
   .animate-fade-in,
