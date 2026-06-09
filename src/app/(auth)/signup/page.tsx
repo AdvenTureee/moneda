@@ -27,9 +27,7 @@ export default function SignupPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -39,6 +37,7 @@ export default function SignupPage() {
   const [passwordFocusCount, setPasswordFocusCount] = useState(0);
   const { setEyesClosed } = useAuthMascot();
   const passwordIsStrong = isStrongPassword(password);
+  const isPasswordInputFocused = passwordFocusCount > 0;
 
   function handlePasswordFocus() {
     setPasswordFocusCount((count) => count + 1);
@@ -64,11 +63,6 @@ export default function SignupPage() {
 
     if (!passwordIsStrong) {
       setError(PASSWORD_REQUIREMENTS_LABEL);
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setError('As senhas não conferem.');
       return;
     }
 
@@ -145,15 +139,10 @@ export default function SignupPage() {
           <p className="text-sm text-[#6B7280] leading-relaxed">
             Enviamos um link de confirmação para{' '}
             <span className="font-semibold text-[#1A1D23]">{email}</span>.
-            Clique no link para ativar sua conta.
-          </p>
-          <p className="text-sm text-[#9CA3AF] mt-3">
-            Não recebeu? Verifique a pasta de spam.
           </p>
           <Link
             href="/login"
-            className="mt-6 inline-block w-full py-3 rounded-[12px] text-sm font-semibold text-white text-center bg-[#5BBF8E] hover:bg-[#4AA77C] active:bg-[#3FA876] transition-colors duration-150"
-            style={{ boxShadow: '0 4px 14px rgba(91, 191, 142, 0.3)' }}
+            className="mt-6 inline-block w-full py-3 rounded-[12px] text-sm font-semibold text-white text-center bg-[#5BBF8E]"
           >
             Ir para o login
           </Link>
@@ -174,9 +163,9 @@ export default function SignupPage() {
           </button>
 
           <div className="flex items-center gap-3 mb-4">
-            <div className="flex-1 h-px bg-[#E5E7EB]" />
+            <div className="flex-1 border-t border-[#E5E7EB]" />
             <span className="text-xs text-[#9CA3AF]">ou</span>
-            <div className="flex-1 h-px bg-[#E5E7EB]" />
+            <div className="flex-1 border-t border-[#E5E7EB]" />
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-3.5">
@@ -188,12 +177,11 @@ export default function SignupPage() {
               <input
                 id="name"
                 type="text"
-                autoComplete="name"
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Seu nome"
-                className="w-full px-3.5 py-2.5 rounded-[10px] bg-[#F8F9FB] border border-[#E5E7EB] text-sm text-[#1A1D23] placeholder:text-[#9CA3AF] outline-none focus:border-[#A8C5E0] transition-colors"
+                className="w-full px-3.5 py-2.5 rounded-[10px] bg-[#F8F9FB] border border-[#E5E7EB] text-sm text-[#1A1D23] outline-none focus:border-[#A8C5E0] transition-colors"
               />
               </div>
 
@@ -204,129 +192,102 @@ export default function SignupPage() {
               <input
                 id="email"
                 type="email"
-                autoComplete="email"
-                inputMode="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="seu@email.com"
-                className="w-full px-3.5 py-2.5 rounded-[10px] bg-[#F8F9FB] border border-[#E5E7EB] text-sm text-[#1A1D23] placeholder:text-[#9CA3AF] outline-none focus:border-[#A8C5E0] transition-colors"
+                className="w-full px-3.5 py-2.5 rounded-[10px] bg-[#F8F9FB] border border-[#E5E7EB] text-sm text-[#1A1D23] outline-none focus:border-[#A8C5E0] transition-colors"
               />
               </div>
             </div>
 
-            <div className="grid gap-3.5 sm:grid-cols-2">
-              <div>
-                <label htmlFor="password" className="block text-xs font-medium text-[#6B7280] mb-1.5">
-                  Senha
-                </label>
-                <div className="relative">
-                  <input
-                    id="password"
-                    type={showPassword ? 'text' : 'password'}
-                    autoComplete="new-password"
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    onFocus={handlePasswordFocus}
-                    onBlur={handlePasswordBlur}
-                    placeholder="Mín. 8 caracteres"
-                    className="w-full px-3.5 py-2.5 pr-10 rounded-[10px] bg-[#F8F9FB] border border-[#E5E7EB] text-sm text-[#1A1D23] placeholder:text-[#9CA3AF] outline-none focus:border-[#A8C5E0] transition-colors"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((show) => !show)}
-                    className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-[#6B7280] transition-colors hover:bg-[#EEF2F7] hover:text-[#1A1D23] dark:text-[#CBD5E1] dark:hover:bg-white/10 dark:hover:text-[#F5F7FA]"
-                    aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
-                  >
-                    {showPassword ? <EyeSlash size={17} weight="bold" /> : <Eye size={17} weight="bold" />}
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <label htmlFor="confirmPassword" className="block text-xs font-medium text-[#6B7280] mb-1.5">
-                  Confirmar senha
-                </label>
-                <div className="relative">
-                  <input
-                    id="confirmPassword"
-                    type={showConfirmPassword ? 'text' : 'password'}
-                    autoComplete="new-password"
-                    required
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    onFocus={handlePasswordFocus}
-                    onBlur={handlePasswordBlur}
-                    placeholder="Repita a senha"
-                    className="w-full px-3.5 py-2.5 pr-10 rounded-[10px] bg-[#F8F9FB] border border-[#E5E7EB] text-sm text-[#1A1D23] placeholder:text-[#9CA3AF] outline-none focus:border-[#A8C5E0] transition-colors"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword((show) => !show)}
-                    className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-[#6B7280] transition-colors hover:bg-[#EEF2F7] hover:text-[#1A1D23] dark:text-[#CBD5E1] dark:hover:bg-white/10 dark:hover:text-[#F5F7FA]"
-                    aria-label={showConfirmPassword ? 'Ocultar confirmação de senha' : 'Mostrar confirmação de senha'}
-                  >
-                    {showConfirmPassword ? <EyeSlash size={17} weight="bold" /> : <Eye size={17} weight="bold" />}
-                  </button>
-                </div>
+            <div>
+              <label htmlFor="password" className="block text-xs font-medium text-[#6B7280] mb-1.5">
+                Senha
+              </label>
+              <div className="relative">
+                <input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  onFocus={handlePasswordFocus}
+                  onBlur={handlePasswordBlur}
+                  placeholder="Mín. 8 caracteres"
+                  className="w-full px-3.5 py-2.5 pr-10 rounded-[10px] bg-[#F8F9FB] border border-[#E5E7EB] text-sm text-[#1A1D23] outline-none focus:border-[#A8C5E0] transition-colors"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((show) => !show)}
+                  className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-[#6B7280] hover:text-[#1A1D23]"
+                >
+                  {showPassword ? <EyeSlash size={17} weight="bold" /> : <Eye size={17} weight="bold" />}
+                </button>
               </div>
             </div>
 
-            <p className={`text-xs font-medium ${password.length > 0 && !passwordIsStrong ? 'text-[#E07070]' : 'text-[#6B7280]'}`}>
-              {PASSWORD_REQUIREMENTS_LABEL}
-            </p>
+            {(isPasswordInputFocused || (password.length > 0 && !passwordIsStrong)) && (
+              <p className={`text-[11px] leading-relaxed transition-colors duration-150 ${password.length > 0 && !passwordIsStrong ? 'text-[#E07070] font-medium' : 'text-[#9CA3AF]'}`}>
+                A senha precisa ter pelo menos 8 caracteres, uma letra maiúscula, um número e um caractere especial.
+              </p>
+            )}
 
             {error && (
-              <p className="text-xs font-medium text-[#E07070]" role="alert">
+              <p className="text-xs font-medium text-[#E07070] pt-1" role="alert">
                 {error}
               </p>
             )}
 
-            <label className="flex items-start gap-2.5 rounded-[12px] border border-[#E5E7EB] bg-[#F8F9FB] p-3">
+            {/* BLOCO DE TERMOS CORRIGIDO — CENTRALIZADO E ENCAIXADO PERFEITAMENTE */}
+            <div className="flex items-center justify-center gap-3 bg-[#F8F9FB] rounded-[10px] px-3.5 py-2.5 border border-[#E5E7EB] select-none">
               <input
+                id="terms-checkbox"
                 type="checkbox"
                 checked={termsAccepted}
                 onChange={(e) => setTermsAccepted(e.target.checked)}
-                className="mt-0.5 h-4 w-4 shrink-0 accent-[#5BBF8E]"
+                className="h-5 w-5 shrink-0 rounded-md border-[#CBD5E1] accent-[#5BBF8E] cursor-pointer"
               />
-              <span className="text-xs leading-relaxed text-[#6B7280]">
-                Li e aceito os{' '}
+              <label 
+                htmlFor="terms-checkbox" 
+                className="text-xs leading-relaxed text-[#6B7280] cursor-pointer text-center"
+              >
+                Aceito os{' '}
                 <button
                   type="button"
-                  onClick={() => setTermsModalOpen(true)}
-                  className="font-semibold text-[#5BBF8E] underline-offset-2 hover:underline"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setTermsModalOpen(true);
+                  }}
+                  className="inline-block font-bold text-[#5BBF8E] underline-offset-2 hover:underline focus:outline-none"
                 >
                   Termos de Uso e a Política de Proteção de Dados
                 </button>
-                .
-              </span>
-            </label>
+              </label>
+            </div>
 
+            {/* BOTÃO PRINCIPAL DE CADASTRO */}
             <button
               type="submit"
               disabled={loading || googleLoading || !passwordIsStrong}
-              className="w-full py-3 rounded-[12px] text-sm font-semibold text-white bg-[#5BBF8E] hover:bg-[#4AA77C] active:bg-[#3FA876] transition-colors duration-150 active:scale-[0.99] disabled:opacity-60 disabled:cursor-not-allowed"
-              style={{ boxShadow: '0 4px 14px rgba(91, 191, 142, 0.3)' }}
+              className="w-full py-3 rounded-[12px] text-sm font-semibold text-white bg-[#5BBF8E] hover:bg-[#4AA77C] transition-colors"
             >
               {loading ? 'Criando conta…' : 'Criar conta com email'}
             </button>
           </form>
 
-          <div className="mt-4 rounded-[14px] border border-[#A8C5E0]/35 bg-[#A8C5E0]/10 p-2">
-            <Link
-              href="/login"
-              className="flex min-h-12 items-center justify-center gap-2 rounded-[10px] text-sm font-semibold text-[#DCEBFA] transition-colors hover:bg-[#A8C5E0]/14 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A8C5E0]"
-            >
-              Já tem conta?
-              <span className="font-extrabold text-[#A8C5E0]">Entrar</span>
-              <ArrowRight size={17} weight="bold" aria-hidden />
-            </Link>
+          {/* NOVO LINK DE RETORNO AO LOGIN — LIMPO, CENTRALIZADO E ELEGANTE */}
+          <div className="mt-6 pt-4 border-t border-[#E5E7EB] text-center">
+            <p className="text-sm text-[#6B7280]">
+              Já tem uma conta?{' '}
+              <Link href="/login" className="inline-flex items-center gap-1 font-bold text-[#5BBF8E] hover:text-[#4AA77C]">
+                Entrar
+                <ArrowRight size={14} weight="bold" className="mt-0.5" />
+              </Link>
+            </p>
           </div>
-          <TermsModal
-            isOpen={termsModalOpen}
-            onClose={() => setTermsModalOpen(false)}
-          />
+
+          <TermsModal isOpen={termsModalOpen} onClose={() => setTermsModalOpen(false)} />
         </>
       )}
     </div>
