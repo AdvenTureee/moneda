@@ -5,21 +5,10 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
   ArrowRight,
-  Bank,
-  ChartBar,
-  ChatCircleText,
-  CheckCircle,
-  FileText,
-  LockKey,
-  NotePencil,
   ShieldCheck,
-  Sparkle,
-  TrendUp,
-  WarningCircle,
   WhatsappLogo,
 } from '@phosphor-icons/react';
 import Mo from '@/components/Mo';
-import Icon from '@/components/Icon';
 
 interface HomeLandingProps {
   whatsappUrl: string;
@@ -40,10 +29,24 @@ const categories = [
 ];
 
 const feedItems = [
-  { icon: 'Hamburger', title: 'Almoço no centro', meta: 'Alimentação, PIX, hoje', amount: 'R$ 42,00', color: '#5BBF8E' },
-  { icon: 'Car', title: 'Uber para reunião', meta: 'Transporte, crédito, ontem', amount: 'R$ 28,90', color: '#A8C5E0' },
-  { icon: 'ShoppingBag', title: 'Mercado da semana', meta: 'Mercado, débito, sexta', amount: 'R$ 186,40', color: '#F0A855' },
+  { emoji: 'food', title: 'Almoço no centro', meta: 'Alimentação, PIX, hoje', amount: 'R$ 42,00', color: '#5BBF8E' },
+  { emoji: 'car', title: 'Uber para reunião', meta: 'Transporte, crédito, ontem', amount: 'R$ 28,90', color: '#A8C5E0' },
+  { emoji: 'cart', title: 'Mercado da semana', meta: 'Mercado, débito, sexta', amount: 'R$ 186,40', color: '#F0A855' },
 ];
+
+const openMoji = {
+  chat: '1F4AC',
+  phone: '1F4F2',
+  receipt: '1F9FE',
+  chart: '1F4CA',
+  card: '1F4B3',
+  lock: '1F510',
+  food: '1F374',
+  cart: '1F6D2',
+  car: '1F697',
+} as const;
+
+type OpenMojiName = keyof typeof openMoji;
 
 const faqs = [
   {
@@ -114,6 +117,31 @@ function TextLabel({ children }: { children: React.ReactNode }) {
     <p className="text-sm font-bold text-[var(--color-brand-green-dark)]">
       {children}
     </p>
+  );
+}
+
+function OpenMojiIcon({
+  name,
+  size = 28,
+  label,
+  className = '',
+}: {
+  name: OpenMojiName;
+  size?: number;
+  label?: string;
+  className?: string;
+}) {
+  return (
+    <img
+      src={`/openmoji/${openMoji[name]}.svg`}
+      width={size}
+      height={size}
+      alt={label ?? ''}
+      aria-hidden={label ? undefined : true}
+      loading="lazy"
+      decoding="async"
+      className={`inline-block shrink-0 ${className}`.trim()}
+    />
   );
 }
 
@@ -217,9 +245,9 @@ function HeroVisual() {
 
 function ProblemAndSolution() {
   const items = [
-    { icon: NotePencil, title: 'Registrar é leve', text: 'Você manda uma frase. O Moneda organiza valor, data e categoria.' },
-    { icon: ChartBar, title: 'Os gráficos explicam', text: 'Waffle, histograma e feed mostram onde o dinheiro concentra.' },
-    { icon: WarningCircle, title: 'Sem culpa', text: 'A Mo fala como uma assistente: direta, simples e sem julgamento.' },
+    { emoji: 'receipt', title: 'Registrar é leve', text: 'Você manda uma frase. O Moneda organiza valor, data e categoria.' },
+    { emoji: 'chart', title: 'Os gráficos explicam', text: 'Waffle, histograma e feed mostram onde o dinheiro concentra.' },
+    { emoji: 'chat', title: 'Sem culpa', text: 'A Mo fala como uma assistente: direta, simples e sem julgamento.' },
   ];
 
   return (
@@ -235,7 +263,7 @@ function ProblemAndSolution() {
           {items.map((item) => (
             <div key={item.title} className="flex gap-4 rounded-[14px] border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
               <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--color-surface-alt)] text-[var(--color-brand-blue-dark)]">
-                <item.icon size={21} weight="bold" />
+                <OpenMojiIcon name={item.emoji as OpenMojiName} size={24} />
               </span>
               <div>
                 <h3 className="font-heading text-base font-bold text-[var(--color-text-primary)]">{item.title}</h3>
@@ -251,9 +279,9 @@ function ProblemAndSolution() {
 
 function HowItWorksSection() {
   const steps = [
-    ['Você manda um gasto', 'Exemplo: “gastei 42 no almoço”.'],
-    ['O Moneda organiza', 'Categoria, data, forma de pagamento e feed ficam prontos.'],
-    ['A Mo explica', 'Você recebe uma leitura simples do que mudou no mês.'],
+    { emoji: 'phone', title: 'Você manda um gasto', text: 'Exemplo: “gastei 42 no almoço”.' },
+    { emoji: 'receipt', title: 'O Moneda organiza', text: 'Categoria, data, forma de pagamento e feed ficam prontos.' },
+    { emoji: 'chat', title: 'A Mo explica', text: 'Você recebe uma leitura simples do que mudou no mês.' },
   ];
 
   return (
@@ -265,13 +293,16 @@ function HowItWorksSection() {
         </h2>
       </div>
       <div className="mt-8 grid gap-4 md:grid-cols-3">
-        {steps.map(([title, text], index) => (
-          <div key={title} className="rounded-[16px] border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
-            <span className="text-sm font-extrabold tabular-nums text-[var(--color-brand-green-dark)]">
-              {String(index + 1).padStart(2, '0')}
-            </span>
-            <h3 className="mt-4 text-lg font-heading font-bold text-[var(--color-text-primary)]">{title}</h3>
-            <p className="mt-2 text-sm leading-relaxed text-[var(--color-text-secondary)]">{text}</p>
+        {steps.map((step, index) => (
+          <div key={step.title} className="rounded-[16px] border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
+            <div className="flex items-center justify-between">
+              <OpenMojiIcon name={step.emoji as OpenMojiName} size={34} />
+              <span className="text-sm font-extrabold tabular-nums text-[var(--color-brand-green-dark)]">
+                {String(index + 1).padStart(2, '0')}
+              </span>
+            </div>
+            <h3 className="mt-4 text-lg font-heading font-bold text-[var(--color-text-primary)]">{step.title}</h3>
+            <p className="mt-2 text-sm leading-relaxed text-[var(--color-text-secondary)]">{step.text}</p>
           </div>
         ))}
       </div>
@@ -326,7 +357,7 @@ function FeedSection() {
           {feedItems.map((item) => (
             <div key={item.title} className="flex items-center gap-3 rounded-[12px] p-3 transition-colors hover:bg-[var(--color-surface-alt)]">
               <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full" style={{ backgroundColor: `${item.color}20`, color: item.color }}>
-                <Icon name={item.icon} size={20} />
+                <OpenMojiIcon name={item.emoji as OpenMojiName} size={25} />
               </span>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-bold text-[var(--color-text-primary)]">{item.title}</p>
@@ -385,10 +416,15 @@ function StartSection({ whatsappUrl }: { whatsappUrl: string }) {
           </h2>
         </div>
         <div className="grid gap-3">
-          {['Clique no botão', 'Abra a conversa', 'Mande “Quero organizar meu mês”', 'Registre o primeiro gasto'].map((step) => (
-            <div key={step} className="flex items-center gap-3 rounded-[14px] border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
-              <CheckCircle size={22} weight="fill" className="shrink-0 text-[var(--color-brand-green)]" />
-              <p className="text-sm font-semibold text-[var(--color-text-primary)]">{step}</p>
+          {[
+            { emoji: 'phone', label: 'Clique no botão' },
+            { emoji: 'chat', label: 'Abra a conversa' },
+            { emoji: 'card', label: 'Mande “Quero organizar meu mês”' },
+            { emoji: 'receipt', label: 'Registre o primeiro gasto' },
+          ].map((step) => (
+            <div key={step.label} className="flex items-center gap-3 rounded-[14px] border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+              <OpenMojiIcon name={step.emoji as OpenMojiName} size={24} />
+              <p className="text-sm font-semibold text-[var(--color-text-primary)]">{step.label}</p>
             </div>
           ))}
           <div className="pt-2"><CtaButton whatsappUrl={whatsappUrl} /></div>
@@ -410,14 +446,18 @@ function TrustAndFaq() {
           </h2>
           <div className="mt-6 space-y-4">
             {[
-              ['Criptografia', 'Dados sensíveis tratados com camada de segurança.'],
-              ['Uso interno', 'Informações usadas para organizar gastos e gerar insights.'],
-              ['Exclusão de conta', 'Você pode apagar seus dados pelo perfil.'],
-            ].map(([title, text]) => (
-              <div key={title} className="flex gap-3">
-                <ShieldCheck size={22} weight="fill" className="mt-0.5 shrink-0 text-[var(--color-brand-green)]" />
+              { title: 'Criptografia', text: 'Dados sensíveis tratados com camada de segurança.', emoji: 'lock' },
+              { title: 'Uso interno', text: 'Informações usadas para organizar gastos e gerar insights.' },
+              { title: 'Exclusão de conta', text: 'Você pode apagar seus dados pelo perfil.' },
+            ].map((item) => (
+              <div key={item.title} className="flex gap-3">
+                {item.emoji ? (
+                  <OpenMojiIcon name={item.emoji as OpenMojiName} size={24} className="mt-0.5" />
+                ) : (
+                  <ShieldCheck size={22} weight="fill" className="mt-0.5 shrink-0 text-[var(--color-brand-green)]" />
+                )}
                 <p className="text-sm leading-relaxed text-[var(--color-text-secondary)]">
-                  <span className="font-bold text-[var(--color-text-primary)]">{title}:</span> {text}
+                  <span className="font-bold text-[var(--color-text-primary)]">{item.title}:</span> {item.text}
                 </p>
               </div>
             ))}
@@ -457,6 +497,18 @@ function FinalCta({ whatsappUrl }: { whatsappUrl: string }) {
           Comece pelo canal que você já usa todos os dias.
         </p>
         <div className="mt-7"><CtaButton whatsappUrl={whatsappUrl} large /></div>
+        <p className="mt-6 text-xs text-[var(--color-text-tertiary)]">
+          Emojis por{' '}
+          <a
+            href="https://openmoji.org/"
+            target="_blank"
+            rel="noreferrer"
+            className="font-semibold text-[var(--color-text-secondary)] underline-offset-2 hover:underline"
+          >
+            OpenMoji
+          </a>
+          , CC BY-SA 4.0.
+        </p>
       </div>
     </Band>
   );
@@ -499,14 +551,13 @@ export default function HomeLanding({ whatsappUrl }: HomeLandingProps) {
             </div>
             <div className="mt-8 flex flex-wrap gap-3 text-sm">
               {[
-                [ChatCircleText, 'WhatsApp primeiro'],
-                [TrendUp, 'Insights claros'],
-                [Bank, 'Sem julgamento'],
-              ].map(([ItemIcon, label]) => {
-                const TypedIcon = ItemIcon as typeof ChatCircleText;
+                ['phone', 'WhatsApp primeiro'],
+                ['chart', 'Insights claros'],
+                ['chat', 'Sem julgamento'],
+              ].map(([emoji, label]) => {
                 return (
                   <div key={label as string} className="inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2">
-                    <TypedIcon size={18} weight="bold" className="text-[var(--color-brand-green)]" />
+                    <OpenMojiIcon name={emoji as OpenMojiName} size={20} />
                     <span className="font-bold text-[var(--color-text-primary)]">{label as string}</span>
                   </div>
                 );
