@@ -212,6 +212,8 @@ interface FeedViewProps {
 
 function FeedPageInner({ billingClosingDay }: FeedViewProps) {
   const searchParams = useSearchParams();
+  const focusParam = searchParams.get('focus');
+  const periodParam = searchParams.get('period');
   const { showToast } = useToast();
   const router = useRouter();
   const dateFilters = useMemo(() => buildDateFilters(billingClosingDay), [billingClosingDay]);
@@ -245,6 +247,16 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
 
     const range = rangeFromSearchParams(new URLSearchParams(searchParams.toString()));
     if (range) setDateRange(range);
+
+    if (focusParam === 'overspend' && periodParam) {
+      const cycle = getBillingCycleForPeriod(periodParam, billingClosingDay);
+      setDateRange({
+        from: cycle.start.toISOString(),
+        to: cycle.end.toISOString(),
+        presetId: 'custom',
+      });
+    }
+
     setFiltersHydrated(true);
     // Run only on initial mount; further filter changes come from the controls.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -275,6 +287,8 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [deletingExpense, setDeletingExpense] = useState<Expense | null>(null);
   const [selectedInstallmentExpense, setSelectedInstallmentExpense] = useState<Expense | null>(null);
+  const [showOverspendNotice, setShowOverspendNotice] = useState(true);
+  const [noticeExiting, setNoticeExiting] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const requestSeqRef = useRef(0);
 
@@ -458,6 +472,20 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
     },
   ];
 
+  const topCategories = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const exp of filtered) {
+      map.set(exp.category, (map.get(exp.category) ?? 0) + exp.amount);
+    }
+    return Array.from(map.entries())
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 3)
+      .map(([id, total]) => {
+        const cat = categories.find((c) => c.id === id);
+        return { id, name: cat?.name ?? id, icon: cat?.icon ?? 'Package', total };
+      });
+  }, [filtered, categories]);
+
   const clearFilters = useCallback(() => {
     startUiTransition(() => {
       setDateRange(buildPreset(DEFAULT_DATE_PRESET, billingClosingDay));
@@ -545,11 +573,49 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
     <>
       <div className="max-w-lg mx-auto px-4 pb-24 [scrollbar-gutter:stable]">
         {/* Header */}
-        <header className="py-6 animate-fade-up delay-0">
-          <h1 className="text-2xl font-heading text-[#1A1D23]">Feed de Gastos</h1>
+        <header className="pt-6 pb-2 animate-fade-up delay-0">
+          <h1 className="text-2xl font-heading text-[var(--color-text-primary)]">Feed de Gastos</h1>
         </header>
 
-        <div className="themed-card bg-white rounded-[14px] p-2.5 space-y-2.5 mb-5 animate-fade-up delay-1">
+        {focusParam === 'overspend' && showOverspendNotice && topCategories.length > 0 && (
+          <div
+            className={`relative mb-4 rounded-xl bg-[var(--color-warning-bg)] px-3 pb-3 pt-2.5 ring-1 ring-inset ring-[color-mix(in_srgb,var(--color-warning)_18%,transparent)] ${
+              noticeExiting ? 'animate-fade-down' : 'animate-fade-up delay-1'
+            }`}
+            onAnimationEnd={() => {
+              if (noticeExiting) {
+                setShowOverspendNotice(false);
+                setNoticeExiting(false);
+              }
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => setNoticeExiting(true)}
+              className="absolute right-2 top-2 grid size-5 place-items-center rounded-full text-[var(--color-warning)] opacity-60 transition-opacity hover:opacity-100"
+              aria-label="Fechar aviso"
+            >
+              <X size={14} weight="bold" />
+            </button>
+            <div className="mb-2 flex items-center gap-1.5 pr-6">
+              <span className="size-1.5 rounded-full bg-[var(--color-warning)]" aria-hidden />
+              <p className="text-xs font-semibold text-[var(--color-warning)]">Acima do orçamento</p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {topCategories.map((cat) => (
+                <span
+                  key={cat.id}
+                  className="inline-flex items-center gap-1 rounded-full bg-white/70 px-2.5 py-1 text-xs font-semibold text-[var(--color-text-primary)] dark:bg-white/8"
+                >
+                  <span>{cat.name}</span>
+                  <span className="tabular-nums text-[var(--color-text-secondary)]">{formatCurrency(cat.total)}</span>
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="themed-card bg-white rounded-[14px] p-2.5 space-y-2.5 mb-5 animate-fade-up delay-2">
           <div className="relative grid grid-cols-2 overflow-hidden rounded-[12px] bg-[#F4F6FA] p-0.5 dark:bg-white/6" role="tablist" aria-label="Visão do feed">
             <span
               className={`absolute bottom-0.5 top-0.5 w-[calc(50%-2px)] rounded-[10px] bg-[#EEF9F4] shadow-sm transition-transform duration-200 ease-out dark:bg-[#5BBF8E]/14 ${

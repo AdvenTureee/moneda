@@ -2095,6 +2095,17 @@ body, .font-body {
   }
 }
 
+@keyframes fade-down {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+
 @keyframes fade-in {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -2157,6 +2168,10 @@ body, .font-body {
 
 .animate-fade-up {
   animation: fade-up 0.5s ease-out both;
+}
+
+.animate-fade-down {
+  animation: fade-down 0.3s ease-out both;
 }
 
 .animate-fade-in {

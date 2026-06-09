@@ -166,7 +166,7 @@ export default function DashboardBalanceHero({
               </p>
               <div className="mt-5 flex flex-col gap-2.5 sm:flex-row">
                 <Link
-                  href={`/feed?period=${period}`}
+                  href={`/feed?period=${period}&focus=overspend`}
                   className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-full bg-[#B7CCE4] px-4 py-2.5 text-sm font-bold text-[#16324A] transition-colors hover:bg-[#A8BDDB]"
                 >
                   Ver onde estourou
