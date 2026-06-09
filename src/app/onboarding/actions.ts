@@ -225,7 +225,7 @@ export async function completeOnboardingAction(
       });
     }
 
-    revalidatePath('/');
+    revalidatePath('/app');
     revalidatePath('/perfil');
     return { ok: true };
   } catch (err: unknown) {

@@ -21,5 +21,5 @@ export function setStoredDashboardPeriod(period: string) {
 
 export function dashboardHrefWithStoredPeriod(): string {
   const period = getStoredDashboardPeriod();
-  return period ? `/?period=${encodeURIComponent(period)}` : '/';
+  return period ? `/app?period=${encodeURIComponent(period)}` : '/app';
 }

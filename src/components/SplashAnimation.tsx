@@ -27,7 +27,7 @@ export default function SplashAnimation({
           Moneda
         </p>
         <p className="text-sm text-[#6B7280] mt-1 text-center">
-          Seu dinheiro, finalmente claro.
+          Seu dinheiro finalmente claro.
         </p>
       </div>
     </div>

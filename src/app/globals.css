@@ -132,6 +132,74 @@ body {
   overscroll-behavior-x: none;
 }
 
+.home-band {
+  isolation: isolate;
+  position: relative;
+}
+
+.home-band::before {
+  content: '';
+  position: absolute;
+  inset: -56px 0;
+  z-index: 0;
+  opacity: var(--home-layer-opacity, 0.34);
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, transparent 0%, var(--home-wash, transparent) 48%, transparent 100%),
+    radial-gradient(ellipse at 16% 34%, var(--home-orb-a, transparent), transparent 58%),
+    radial-gradient(ellipse at 86% 68%, var(--home-orb-b, transparent), transparent 62%);
+  transform: translate3d(0, 0, 0);
+}
+
+.home-band--hero {
+  --home-layer-opacity: 0.48;
+  --home-wash: color-mix(in srgb, var(--color-brand-blue) 8%, transparent);
+  --home-orb-a: color-mix(in srgb, var(--color-brand-blue) 16%, transparent);
+  --home-orb-b: color-mix(in srgb, var(--color-warning) 8%, transparent);
+  background:
+    linear-gradient(180deg, var(--color-bg) 0%, color-mix(in srgb, var(--color-brand-blue) 5%, var(--color-bg) 95%) 56%, transparent 100%);
+}
+
+.home-band--solid {
+  --home-layer-opacity: 0.28;
+  --home-wash: color-mix(in srgb, var(--color-surface) 26%, transparent);
+  --home-orb-a: color-mix(in srgb, var(--color-brand-blue) 7%, transparent);
+  --home-orb-b: color-mix(in srgb, var(--color-warning) 5%, transparent);
+  background:
+    linear-gradient(180deg, transparent 0%, color-mix(in srgb, var(--color-surface) 46%, transparent) 50%, transparent 100%);
+}
+
+.home-band--flow {
+  --home-layer-opacity: 0.34;
+  --home-wash: color-mix(in srgb, var(--color-brand-blue) 6%, transparent);
+  --home-orb-a: color-mix(in srgb, var(--color-brand-blue) 9%, transparent);
+  --home-orb-b: color-mix(in srgb, var(--color-brand-green) 5%, transparent);
+  background: transparent;
+}
+
+.home-band--clarity {
+  --home-layer-opacity: 0.36;
+  --home-wash: color-mix(in srgb, var(--color-warning) 4%, transparent);
+  --home-orb-a: color-mix(in srgb, var(--color-warning) 7%, transparent);
+  --home-orb-b: color-mix(in srgb, var(--color-brand-blue) 8%, transparent);
+  background:
+    linear-gradient(180deg, transparent 0%, color-mix(in srgb, var(--color-brand-blue) 3%, var(--color-bg) 97%) 50%, transparent 100%);
+}
+
+.home-band--final {
+  --home-layer-opacity: 0.34;
+  --home-wash: color-mix(in srgb, var(--color-brand-green) 6%, transparent);
+  --home-orb-a: color-mix(in srgb, var(--color-brand-green) 8%, transparent);
+  --home-orb-b: color-mix(in srgb, var(--color-brand-blue) 6%, transparent);
+  background: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-band::before {
+    transform: none;
+  }
+}
+
 ::view-transition-old(root),
 ::view-transition-new(root) {
   animation-duration: 300ms;

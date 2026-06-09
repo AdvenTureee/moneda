@@ -301,7 +301,7 @@ export default function OnboardingView({ defaultCategories, firstName }: Onboard
         setError(result.error);
         return;
       }
-      router.push('/');
+      router.push('/app');
       router.refresh();
     });
   }

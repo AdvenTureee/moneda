@@ -110,7 +110,7 @@ export default function SignupPage() {
     }
 
     await fetch('/api/pii/sync-profile', { method: 'POST' }).catch(() => null);
-    router.push('/');
+    router.push('/app');
     router.refresh();
   }
 

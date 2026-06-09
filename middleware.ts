@@ -42,13 +42,15 @@ export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const isAuthCallback = pathname.startsWith('/auth/callback');
   const isPasswordRecovery = pathname === '/redefinir-senha';
+  const isHomeRoute = pathname === '/';
   const isAuthRoute =
     pathname === '/login' ||
     pathname === '/signup' ||
     pathname.startsWith('/auth/') ||
     isPasswordRecovery;
+  const isPublicRoute = isHomeRoute || isAuthRoute;
 
-  if (!user && !isAuthRoute) {
+  if (!user && !isPublicRoute) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
     return withPrivateNoStore(NextResponse.redirect(url));
@@ -56,7 +58,7 @@ export async function middleware(request: NextRequest) {
 
   if (user && isAuthRoute && !isAuthCallback) {
     const url = request.nextUrl.clone();
-    url.pathname = '/';
+    url.pathname = '/app';
     return withPrivateNoStore(NextResponse.redirect(url));
   }
 

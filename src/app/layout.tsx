@@ -18,7 +18,7 @@ const epilogue = Epilogue({
 });
 
 export const metadata: Metadata = {
-  title: 'Moneda - Seu dinheiro, finalmente claro.',
+  title: 'Moneda - Seu dinheiro finalmente claro.',
   description: 'Controle seus gastos de forma simples e sem julgamentos.',
   manifest: '/manifest.json',
   applicationName: 'Moneda',
