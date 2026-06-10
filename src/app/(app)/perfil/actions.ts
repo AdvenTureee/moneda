@@ -298,6 +298,11 @@ export async function confirmEmailChangeOtp(formData: FormData): Promise<ActionR
     return { ok: false, error: 'Código expirado. Solicite um novo.' };
   }
 
+  if (pending.attempts >= 5) {
+    await admin.from('pending_email_changes').delete().eq('user_id', user.id);
+    return { ok: false, error: 'Muitas tentativas inválidas. Solicite um novo código.' };
+  }
+
   // Verifica OTP com Supabase
   const { error: verifyError } = await createAnonClient().auth.verifyOtp({
     email: newEmail,
@@ -306,6 +311,10 @@ export async function confirmEmailChangeOtp(formData: FormData): Promise<ActionR
   });
   if (verifyError) {
     console.error('[confirmEmailChangeOtp:verify]', verifyError);
+    await admin.from('pending_email_changes').update({ attempts: pending.attempts + 1 }).eq('user_id', user.id);
+    if (verifyError.message?.includes('expired')) {
+      return { ok: false, error: 'Código expirado. Solicite um novo.' };
+    }
     return { ok: false, error: 'Código inválido. Verifique e tente novamente.' };
   }
 

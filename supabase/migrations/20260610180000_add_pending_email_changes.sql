@@ -2,6 +2,7 @@ create table if not exists public.pending_email_changes (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
   new_email text not null,
+  attempts int not null default 0,
   expires_at timestamptz not null,
   created_at timestamptz not null default now()
 );

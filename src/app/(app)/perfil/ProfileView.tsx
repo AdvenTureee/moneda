@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, useTransition, useRef } from 'react';
+import { useState, useTransition, useRef, useEffect } from 'react';
 import {
   SignOut,
   PencilSimple,
@@ -32,6 +32,7 @@ import {
   signOut,
   type ActionResult,
 } from './actions';
+import { isValidEmail } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
 import { useTheme } from '@/components/ThemeProvider';
 
@@ -106,6 +107,8 @@ export default function ProfileView({
   const [otpStep, setOtpStep] = useState(false);
   const [otpEmail, setOtpEmail] = useState('');
   const [otpValue, setOtpValue] = useState('');
+  const [otpExpiresAt, setOtpExpiresAt] = useState(0);
+  const [otpTimer, setOtpTimer] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
   const { showToast } = useToast();
   const [savingName, startSaveName] = useTransition();
@@ -168,6 +171,10 @@ export default function ProfileView({
       setEditingEmail(false);
       return;
     }
+    if (!isValidEmail(trimmed)) {
+      showToast('error', 'Informe um email válido.');
+      return;
+    }
     const fd = new FormData();
     fd.set('email', trimmed);
     if (hasPassword) {
@@ -179,6 +186,7 @@ export default function ProfileView({
       if (result.ok) {
         setOtpEmail(trimmed);
         setOtpStep(true);
+        setOtpExpiresAt(Date.now() + 10 * 60 * 1000);
         setEditingEmail(false);
       }
       setCurrentPassword('');
@@ -191,14 +199,36 @@ export default function ProfileView({
     fd.set('otp', otpValue);
     startSaveOtp(async () => {
       const result = await confirmEmailChangeOtp(fd);
-      applyResult(result);
       if (result.ok) {
         setOtpStep(false);
         setOtpValue('');
         setOtpEmail('');
+        setOtpTimer('');
+      } else {
+        setOtpValue('');
       }
+      applyResult(result);
     });
   }
+
+  useEffect(() => {
+    if (!otpStep || !otpExpiresAt) return;
+    const tick = () => {
+      const left = Math.max(0, Math.floor((otpExpiresAt - Date.now()) / 1000));
+      if (left <= 0) {
+        setOtpTimer('Expirado');
+        setOtpExpiresAt(0);
+        setOtpValue('');
+        return;
+      }
+      const min = String(Math.floor(left / 60)).padStart(2, '0');
+      const sec = String(left % 60).padStart(2, '0');
+      setOtpTimer(`${min}:${sec}`);
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [otpStep, otpExpiresAt]);
 
   async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -337,21 +367,6 @@ export default function ProfileView({
                 onChange={(e) => {
                   const digits = e.target.value.replace(/\D/g, '').slice(0, 6);
                   setOtpValue(digits);
-                  if (digits.length === 6) {
-                    // Auto-submete quando 6 dígitos são preenchidos
-                    const fd = new FormData();
-                    fd.set('email', otpEmail);
-                    fd.set('otp', digits);
-                    startSaveOtp(async () => {
-                      const result = await confirmEmailChangeOtp(fd);
-                      applyResult(result);
-                      if (result.ok) {
-                        setOtpStep(false);
-                        setOtpValue('');
-                        setOtpEmail('');
-                      }
-                    });
-                  }
                 }}
                 autoFocus
                 disabled={savingOtp}
@@ -386,24 +401,33 @@ export default function ProfileView({
                 <X size={18} />
               </button>
             </div>
-            <button
-              type="button"
-              onClick={() => {
-                const fd = new FormData();
-                fd.set('email', otpEmail);
-                if (hasPassword) {
-                  fd.set('currentPassword', currentPassword);
-                }
-                startSaveEmail(async () => {
-                  const result = await sendEmailChangeOtp(fd);
-                  applyResult(result);
-                });
-              }}
-              disabled={savingEmail || savingOtp}
-              className="mt-2 text-xs font-semibold text-[#A8C5E0] hover:text-[#7AAECF] transition-colors disabled:opacity-60"
-            >
-              {savingEmail ? 'Reenviando…' : 'Reenviar código'}
-            </button>
+            <div className="mt-3 flex items-center justify-between gap-2">
+              <span className={`text-xs font-semibold ${otpTimer === 'Expirado' ? 'text-red-500' : 'text-[#6B7280]'}`}>
+                {otpTimer ? `Código expira em ${otpTimer}` : 'Aguardando código…'}
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  const fd = new FormData();
+                  fd.set('email', otpEmail);
+                  if (hasPassword) {
+                    fd.set('currentPassword', currentPassword);
+                  }
+                  startSaveEmail(async () => {
+                    const result = await sendEmailChangeOtp(fd);
+                    if (result.ok) {
+                      setOtpExpiresAt(Date.now() + 10 * 60 * 1000);
+                      setOtpValue('');
+                    }
+                    applyResult(result);
+                  });
+                }}
+                disabled={savingEmail || savingOtp}
+                className="text-xs font-semibold text-[#A8C5E0] hover:text-[#7AAECF] transition-colors disabled:opacity-60"
+              >
+                {savingEmail ? 'Reenviando…' : 'Reenviar código'}
+              </button>
+            </div>
           </div>
         ) : editingEmail && (
           <div className="mt-4 space-y-3">

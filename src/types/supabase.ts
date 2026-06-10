@@ -362,6 +362,7 @@ export type Database = {
       }
       pending_email_changes: {
         Row: {
+          attempts: number
           created_at: string
           expires_at: string
           id: string
@@ -369,6 +370,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          attempts?: number
           created_at?: string
           expires_at: string
           id?: string
@@ -376,6 +378,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          attempts?: number
           created_at?: string
           expires_at?: string
           id?: string
