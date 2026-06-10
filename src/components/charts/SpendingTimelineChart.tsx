@@ -72,7 +72,7 @@ function plannedForMode(
   count: number,
   data: SpendingTimelineData,
 ): number {
-  if (mode === 'year') return bucket.planned ?? data.annualPlanned / Math.max(count, 1);
+  if (mode === 'year') return 0;
   if (mode === 'month') return data.monthlyPlanned / Math.max(count, 1);
   return data.monthlyPlanned / Math.max(data.month.length, 1) / 24;
 }
@@ -84,6 +84,12 @@ function plannedCeilingForMode(
   if (mode === 'year') return 0;
   if (mode === 'month') return data.monthlyPlanned;
   return data.monthlyPlanned / Math.max(data.month.length, 1);
+}
+
+function yearAverage(points: Array<{ spentCumulative: number }>): number {
+  const monthsWithSpending = points.filter((point) => point.spentCumulative > 0);
+  if (monthsWithSpending.length === 0) return 0;
+  return monthsWithSpending.reduce((sum, point) => sum + point.spentCumulative, 0) / monthsWithSpending.length;
 }
 
 function buildPath(points: Point[], key: 'ySpent' | 'yPlanned'): string {
@@ -169,12 +175,21 @@ export default function SpendingTimelineChart({ data }: SpendingTimelineChartPro
       };
     });
 
-    const spentMax = Math.max(...prepared.map((p) => p.spentCumulative), 0);
-    const plannedMax = Math.max(...prepared.map((p) => p.plannedCumulative), 0);
+    const averageMonthlySpent = mode === 'year' ? yearAverage(prepared) : 0;
+    const normalized = mode === 'year'
+      ? prepared.map((point) => ({
+          ...point,
+          plannedAmount: averageMonthlySpent,
+          plannedCumulative: averageMonthlySpent,
+        }))
+      : prepared;
+
+    const spentMax = Math.max(...normalized.map((p) => p.spentCumulative), 0);
+    const plannedMax = Math.max(...normalized.map((p) => p.plannedCumulative), 0);
     const max = chartCeiling(Math.max(fixedPlannedCeiling, spentMax, plannedMax));
 
-    return prepared.map((point, index) => {
-      const x = PAD.left + (prepared.length === 1 ? chartW / 2 : (index / (prepared.length - 1)) * chartW);
+    return normalized.map((point, index) => {
+      const x = PAD.left + (normalized.length === 1 ? chartW / 2 : (index / (normalized.length - 1)) * chartW);
       const spentRatio = Math.min(point.spentCumulative / max, 1);
       const plannedRatio = Math.min(point.plannedCumulative / max, 1);
       return {
@@ -197,8 +212,9 @@ export default function SpendingTimelineChart({ data }: SpendingTimelineChartPro
   const plannedPath = buildPath(points, 'yPlanned');
   const hasSpending = points.some((p) => p.spentCumulative > 0);
   const plannedTotal = mode === 'year'
-    ? points.reduce((sum, point) => sum + point.plannedAmount, 0)
+    ? yearAverage(points)
     : points.at(-1)?.plannedCumulative ?? 0;
+  const plannedLabel = mode === 'year' ? 'Média' : 'Planejado';
 
   const tickIndexes = useMemo(() => {
     if (points.length <= 8) return points.map((p) => p.index);
@@ -224,10 +240,10 @@ export default function SpendingTimelineChart({ data }: SpendingTimelineChartPro
     <div ref={containerRef}>
       <ChartCard
         title={modeTitle(mode)}
-        ariaLabel={mode === 'year' ? 'Comparativo de gasto por ciclo e teto planejado' : 'Comparativo de gasto acumulado e planejado'}
+        ariaLabel={mode === 'year' ? 'Comparativo de gasto mensal e média mensal' : 'Comparativo de gasto acumulado e planejado'}
         headerRight={
           <span className="text-xs text-[#6B7280]">
-            Planejado:{' '}
+            {plannedLabel}:{' '}
             <span className="font-semibold text-[#1A1D23] tabular-nums">
               {formatCurrency(Math.round(plannedTotal))}
             </span>
@@ -279,7 +295,7 @@ export default function SpendingTimelineChart({ data }: SpendingTimelineChartPro
               preserveAspectRatio="none"
               style={{ overflow: 'visible' }}
               role="img"
-              aria-label={mode === 'year' ? 'Linhas de gasto mensal e teto planejado' : 'Linhas acumuladas de gasto e valor planejado'}
+              aria-label={mode === 'year' ? 'Linhas de gasto mensal e média mensal' : 'Linhas acumuladas de gasto e valor planejado'}
             >
               {[0.25, 0.5, 0.75, 1].map((f) => (
                 <line
@@ -342,7 +358,11 @@ export default function SpendingTimelineChart({ data }: SpendingTimelineChartPro
                     }}
                     onClick={() => setSelectedPointIndex(point.index)}
                   >
-                    <title>{`${point.label}: gasto ${formatCurrency(Math.round(point.spentCumulative))}, planejado ${formatCurrency(Math.round(point.plannedCumulative))}`}</title>
+                    <title>
+                      {mode === 'year'
+                        ? `${point.label}: gasto ${formatCurrency(Math.round(point.spentCumulative))}, média ${formatCurrency(Math.round(point.plannedCumulative))}`
+                        : `${point.label}: gasto ${formatCurrency(Math.round(point.spentCumulative))}, planejado ${formatCurrency(Math.round(point.plannedCumulative))}`}
+                    </title>
                   </rect>
                 </g>
               ))}
@@ -365,7 +385,7 @@ export default function SpendingTimelineChart({ data }: SpendingTimelineChartPro
               </span>
               <span className="inline-flex items-center gap-1.5">
                 <span className="h-0.5 w-5 rounded-full bg-[#5BBF8E]" />
-                Planejado
+                {mode === 'year' ? 'Média mensal' : 'Planejado'}
               </span>
             </div>
 
@@ -442,15 +462,19 @@ function SpendingTimelineDetailModal({
     window.setTimeout(onClose, 180);
   };
 
-  const difference = selected.plannedCumulative - selected.spentCumulative;
+  const difference = mode === 'year'
+    ? selected.spentCumulative - selected.plannedCumulative
+    : selected.plannedCumulative - selected.spentCumulative;
   const isOverPlan = difference < 0;
+  const isAboveAverage = mode === 'year' && difference > 0;
   const periodLabel = mode === 'month' ? dateLabel(selected.key) : selected.label;
   const totalSpent = mode === 'year'
     ? points.reduce((sum, point) => sum + point.spent, 0)
     : points.at(-1)?.spentCumulative ?? 0;
   const totalPlanned = mode === 'year'
-    ? points.reduce((sum, point) => sum + point.plannedAmount, 0)
+    ? yearAverage(points)
     : points.at(-1)?.plannedCumulative ?? 0;
+  const referenceLabel = mode === 'year' ? 'Média' : 'Planejado';
 
   return createPortal(
     <div
@@ -461,14 +485,14 @@ function SpendingTimelineDetailModal({
       }}
     >
       <div
-        className="modal-panel-pop themed-card flex w-full max-w-md flex-col overflow-hidden rounded-[22px] bg-white"
+        className="modal-panel-pop themed-card flex w-full max-w-lg flex-col overflow-hidden rounded-[22px] bg-white"
         style={{ maxHeight: 'min(82dvh, 640px)', boxShadow: 'var(--shadow-overlay)' }}
         role="dialog"
         aria-modal
         aria-label={`Detalhes de ${title}`}
       >
-        <div className="flex shrink-0 items-start gap-3 border-b border-[color-mix(in_srgb,var(--color-border)_74%,transparent)] px-5 pb-4 pt-5">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--chart-primary)_24%,var(--color-surface)_76%)]">
+        <div className="flex shrink-0 items-start gap-3 border-b border-[color-mix(in_srgb,var(--color-border)_74%,transparent)] px-4 pb-4 pt-5 min-[420px]:px-5">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--chart-primary)_24%,var(--color-surface)_76%)] min-[420px]:h-11 min-[420px]:w-11">
             <span className="h-2.5 w-2.5 rounded-full bg-[var(--chart-primary-strong)] shadow-[0_0_0_6px_color-mix(in_srgb,var(--chart-primary)_22%,transparent)]" />
           </div>
           <div className="min-w-0 flex-1">
@@ -479,7 +503,9 @@ function SpendingTimelineDetailModal({
               {periodLabel}
             </h3>
             <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
-              Total do gráfico: {formatCurrency(Math.round(totalSpent))} em gastos de {formatCurrency(Math.round(totalPlanned))} planejados
+              {mode === 'year'
+                ? `Total do ano: ${formatCurrency(Math.round(totalSpent))}. Média mensal: ${formatCurrency(Math.round(totalPlanned))}.`
+                : `Total do gráfico: ${formatCurrency(Math.round(totalSpent))} em gastos de ${formatCurrency(Math.round(totalPlanned))} planejados`}
             </p>
           </div>
           <button
@@ -492,14 +518,14 @@ function SpendingTimelineDetailModal({
           </button>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-4">
-          <div className="grid grid-cols-1 gap-2.5 min-[380px]:grid-cols-3">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 min-[420px]:px-5">
+          <div className="grid grid-cols-1 gap-2.5 min-[430px]:grid-cols-3">
             <MetricPill label="Gasto" value={formatCurrency(Math.round(selected.spentCumulative))} color="var(--chart-primary-strong)" />
-            <MetricPill label="Planejado" value={formatCurrency(Math.round(selected.plannedCumulative))} color="var(--chart-success)" />
+            <MetricPill label={referenceLabel} value={formatCurrency(Math.round(selected.plannedCumulative))} color="var(--chart-success)" />
             <MetricPill
-              label={isOverPlan ? 'Acima' : 'Restante'}
+              label={mode === 'year' ? (isAboveAverage ? 'Acima média' : 'Abaixo média') : (isOverPlan ? 'Acima' : 'Restante')}
               value={signedCurrency(difference)}
-              color={isOverPlan ? 'var(--color-error)' : 'var(--color-success)'}
+              color={mode === 'year' ? (isAboveAverage ? 'var(--color-warning)' : 'var(--color-success)') : (isOverPlan ? 'var(--color-error)' : 'var(--color-success)')}
             />
           </div>
 
@@ -507,14 +533,16 @@ function SpendingTimelineDetailModal({
             <p className="text-[11px] font-bold uppercase tracking-[0.06em] text-[var(--color-text-tertiary)]">
               Neste período
             </p>
-            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-[var(--color-text-secondary)]">
-              <span className="inline-flex items-center gap-1.5 tabular-nums">
+            <div className="mt-2 grid gap-2 text-sm text-[var(--color-text-secondary)] min-[430px]:grid-cols-2">
+              <span className="inline-flex min-w-0 items-center gap-1.5 tabular-nums">
                 <span className="h-1.5 w-1.5 rounded-full bg-[var(--chart-primary-strong)]" />
-                Gasto: <strong className="text-[var(--color-text-primary)]">{formatCurrency(Math.round(selected.spent))}</strong>
+                <span>Gasto:</span>
+                <strong className="min-w-0 break-words text-[var(--color-text-primary)]">{formatCurrency(Math.round(selected.spent))}</strong>
               </span>
-              <span className="inline-flex items-center gap-1.5 tabular-nums">
+              <span className="inline-flex min-w-0 items-center gap-1.5 tabular-nums">
                 <span className="h-1.5 w-1.5 rounded-full bg-[var(--chart-success)]" />
-                Planejado: <strong className="text-[var(--color-text-primary)]">{formatCurrency(Math.round(selected.plannedAmount))}</strong>
+                <span>{referenceLabel}:</span>
+                <strong className="min-w-0 break-words text-[var(--color-text-primary)]">{formatCurrency(Math.round(selected.plannedAmount))}</strong>
               </span>
             </div>
           </div>
@@ -529,7 +557,7 @@ function SpendingTimelineDetailModal({
                 </span>
                 <span className="inline-flex items-center gap-1.5">
                   <span className="h-1.5 w-1.5 rounded-full bg-[var(--chart-success)]" />
-                  Planejado
+                  {mode === 'year' ? 'Média' : 'Planejado'}
                 </span>
               </div>
             </div>
@@ -537,7 +565,10 @@ function SpendingTimelineDetailModal({
             <div className="max-h-[280px] space-y-2 overflow-y-auto pr-1">
               {points.map((point) => {
                 const active = point.index === selected.index;
-                const rowDifference = point.plannedCumulative - point.spentCumulative;
+                const rowDifference = mode === 'year'
+                  ? point.spentCumulative - point.plannedCumulative
+                  : point.plannedCumulative - point.spentCumulative;
+                const rowIsAboveAverage = mode === 'year' && rowDifference > 0;
                 return (
                   <div
                     key={point.key}
@@ -553,17 +584,21 @@ function SpendingTimelineDetailModal({
                       </p>
                       <p
                         className="text-xs font-bold tabular-nums"
-                        style={{ color: rowDifference < 0 ? 'var(--color-error)' : 'var(--color-success)' }}
+                        style={{
+                          color: mode === 'year'
+                            ? (rowIsAboveAverage ? 'var(--color-warning)' : 'var(--color-success)')
+                            : (rowDifference < 0 ? 'var(--color-error)' : 'var(--color-success)'),
+                        }}
                       >
                         {signedCurrency(rowDifference)}
                       </p>
                     </div>
-                    <div className="mt-2 grid grid-cols-2 gap-2 text-[11px] text-[var(--color-text-secondary)]">
-                      <span className="tabular-nums">
+                    <div className="mt-2 grid grid-cols-1 gap-1.5 text-[11px] text-[var(--color-text-secondary)] min-[430px]:grid-cols-2">
+                      <span className="min-w-0 tabular-nums">
                         Gasto: <strong className="text-[var(--color-text-primary)]">{formatCurrency(Math.round(point.spentCumulative))}</strong>
                       </span>
-                      <span className="tabular-nums">
-                        Planejado: <strong className="text-[var(--color-text-primary)]">{formatCurrency(Math.round(point.plannedCumulative))}</strong>
+                      <span className="min-w-0 tabular-nums">
+                        {referenceLabel}: <strong className="text-[var(--color-text-primary)]">{formatCurrency(Math.round(point.plannedCumulative))}</strong>
                       </span>
                     </div>
                   </div>
@@ -580,14 +615,14 @@ function SpendingTimelineDetailModal({
 
 function MetricPill({ label, value, color }: { label: string; value: string; color: string }) {
   return (
-    <div className="rounded-[14px] border border-[color-mix(in_srgb,var(--color-border)_70%,transparent)] bg-[var(--color-surface-alt)] p-3">
+    <div className="min-w-0 rounded-[14px] border border-[color-mix(in_srgb,var(--color-border)_70%,transparent)] bg-[var(--color-surface-alt)] p-3">
       <div className="mb-2 flex items-center gap-1.5">
         <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: color }} />
         <p className="text-[11px] font-bold uppercase tracking-[0.06em] text-[var(--color-text-tertiary)]">
           {label}
         </p>
       </div>
-      <p className="truncate text-sm font-extrabold tabular-nums text-[var(--color-text-primary)]">
+      <p className="break-words text-[clamp(1rem,4.5vw,1.25rem)] font-extrabold leading-tight tabular-nums text-[var(--color-text-primary)]">
         {value}
       </p>
     </div>

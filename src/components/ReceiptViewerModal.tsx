@@ -1,6 +1,6 @@
 'use client';
 
-import { type PointerEvent, type TouchEvent, type WheelEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { type PointerEvent, type TouchEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
   ArrowSquareOut,
@@ -41,13 +41,14 @@ type SheetGestureState = {
 const MIN_ZOOM = 1;
 const MAX_ZOOM = 4;
 const ZOOM_STEP = 0.25;
+const WHEEL_ZOOM_SENSITIVITY = 0.0022;
+const MAX_WHEEL_DELTA = 80;
 const DOUBLE_TAP_MS = 280;
 const DOUBLE_TAP_MAX_DISTANCE = 28;
 const GESTURE_LOCK_DISTANCE = 12;
 const SWIPE_CLOSE_DISTANCE = 80;
 const SWIPE_CLOSE_VELOCITY = 0.65;
 const RECEIPT_HINT_KEY = 'moneda:receipt-gesture-hint-seen';
-const IMAGE_BASE_SIZE = 'min(100%, calc(100dvh - 170px))';
 
 interface ReceiptViewerModalProps {
   isOpen: boolean;
@@ -79,14 +80,18 @@ export default function ReceiptViewerModal({
   const [sheetDragY, setSheetDragY] = useState(0);
   const [isSheetDragging, setIsSheetDragging] = useState(false);
   const [showGestureHint, setShowGestureHint] = useState(false);
+  const [showZoomControls, setShowZoomControls] = useState(false);
   const [imageAspectRatio, setImageAspectRatio] = useState<number | null>(null);
   const previewViewportRef = useRef<HTMLDivElement | null>(null);
   const panStateRef = useRef<PanState | null>(null);
   const sheetGestureRef = useRef<SheetGestureState | null>(null);
+  const zoomControlsTimerRef = useRef<number | null>(null);
   const pinchDistanceRef = useRef<number | null>(null);
   const isPinchingRef = useRef(false);
   const lastTapRef = useRef<{ time: number; x: number; y: number } | null>(null);
   const suppressClickUntilRef = useRef(0);
+  const isImage = mimeType.startsWith('image/');
+  const isPdf = mimeType === 'application/pdf';
 
   useEffect(() => setMounted(true), []);
 
@@ -110,6 +115,10 @@ export default function ReceiptViewerModal({
     setSheetDragY(0);
     setIsSheetDragging(false);
     sheetGestureRef.current = null;
+    if (zoomControlsTimerRef.current) {
+      window.clearTimeout(zoomControlsTimerRef.current);
+      zoomControlsTimerRef.current = null;
+    }
     window.setTimeout(onClose, 180);
   }, [onClose]);
 
@@ -121,6 +130,7 @@ export default function ReceiptViewerModal({
       setIsPanning(false);
       setSheetDragY(0);
       setIsSheetDragging(false);
+      setShowZoomControls(false);
       setImageAspectRatio(null);
       panStateRef.current = null;
       sheetGestureRef.current = null;
@@ -142,6 +152,7 @@ export default function ReceiptViewerModal({
     setIsPanning(false);
     setSheetDragY(0);
     setIsSheetDragging(false);
+    setShowZoomControls(false);
     setImageAspectRatio(null);
     panStateRef.current = null;
     sheetGestureRef.current = null;
@@ -179,12 +190,29 @@ export default function ReceiptViewerModal({
     };
   }, [isOpen, mimeType, sizeBytes, url]);
 
+  const revealZoomControls = useCallback(() => {
+    setShowZoomControls(true);
+    if (zoomControlsTimerRef.current) window.clearTimeout(zoomControlsTimerRef.current);
+    zoomControlsTimerRef.current = window.setTimeout(() => {
+      setShowZoomControls(false);
+      zoomControlsTimerRef.current = null;
+    }, 1800);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (zoomControlsTimerRef.current) window.clearTimeout(zoomControlsTimerRef.current);
+    };
+  }, []);
+
   const changeZoom = useCallback((nextZoom: number | ((currentZoom: number) => number)) => {
     setZoom((currentZoom) => {
       const value = typeof nextZoom === 'function' ? nextZoom(currentZoom) : nextZoom;
-      return clamp(value, MIN_ZOOM, MAX_ZOOM);
+      const clamped = clamp(value, MIN_ZOOM, MAX_ZOOM);
+      if (Math.abs(clamped - currentZoom) > 0.001) revealZoomControls();
+      return clamped;
     });
-  }, []);
+  }, [revealZoomControls]);
 
   const zoomIn = useCallback(() => changeZoom((currentZoom) => currentZoom + ZOOM_STEP), [changeZoom]);
   const zoomOut = useCallback(() => changeZoom((currentZoom) => currentZoom - ZOOM_STEP), [changeZoom]);
@@ -275,11 +303,22 @@ export default function ReceiptViewerModal({
     return () => window.removeEventListener('keydown', onKey);
   }, [changeZoom, isOpen, mimeType, requestClose, zoomIn, zoomOut]);
 
-  const handlePreviewWheel = useCallback((event: WheelEvent<HTMLDivElement>) => {
+  const handlePreviewWheel = useCallback((event: globalThis.WheelEvent) => {
     if (!event.ctrlKey && !event.metaKey) return;
     event.preventDefault();
-    changeZoom((currentZoom) => currentZoom + (event.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP));
+    const normalizedDelta = clamp(event.deltaY, -MAX_WHEEL_DELTA, MAX_WHEEL_DELTA);
+    changeZoom((currentZoom) => currentZoom * Math.exp(-normalizedDelta * WHEEL_ZOOM_SENSITIVITY));
   }, [changeZoom]);
+
+  useEffect(() => {
+    if (!isOpen || !isImage || !previewAsset) return;
+
+    const viewport = previewViewportRef.current;
+    if (!viewport) return;
+
+    viewport.addEventListener('wheel', handlePreviewWheel, { passive: false });
+    return () => viewport.removeEventListener('wheel', handlePreviewWheel);
+  }, [handlePreviewWheel, isImage, isOpen, previewAsset]);
 
   const handlePreviewPointerDown = useCallback((event: PointerEvent<HTMLDivElement>) => {
     if (isPinchingRef.current || (zoom <= MIN_ZOOM && !event.ctrlKey && !event.metaKey)) return;
@@ -347,7 +386,6 @@ export default function ReceiptViewerModal({
   const handlePreviewTouchMove = useCallback((event: TouchEvent<HTMLDivElement>) => {
     if (event.touches.length !== 2) return;
 
-    event.preventDefault();
     const distance = getTouchDistance(event.touches);
     const previousDistance = pinchDistanceRef.current;
     pinchDistanceRef.current = distance;
@@ -466,8 +504,6 @@ export default function ReceiptViewerModal({
 
   if (!mounted || !shouldRender || !url) return null;
 
-  const isImage = mimeType.startsWith('image/');
-  const isPdf = mimeType === 'application/pdf';
   const progressPercent = downloadProgress?.total
     ? Math.min(100, Math.round((downloadProgress.loaded / downloadProgress.total) * 100))
     : null;
@@ -494,7 +530,7 @@ export default function ReceiptViewerModal({
       }}
     >
       <section
-        className="modal-panel-pop flex h-full max-h-[88dvh] w-full max-w-3xl flex-col overflow-hidden rounded-[18px] bg-white shadow-2xl"
+        className="modal-panel-pop flex h-full max-h-[88dvh] w-full max-w-3xl flex-col overflow-hidden rounded-[18px] bg-[var(--color-surface)] shadow-2xl"
         style={{
           transform: sheetDragY > 0 ? `translateY(${sheetDragY}px)` : undefined,
           transition: isSheetDragging ? 'none' : undefined,
@@ -507,77 +543,52 @@ export default function ReceiptViewerModal({
         onPointerUp={stopSheetGesture}
         onPointerCancel={cancelSheetGesture}
       >
-        <header className="flex shrink-0 items-center gap-3 border-b border-[#E5E7EB] px-4 py-3">
+        <header className="flex shrink-0 items-center gap-3 border-b border-[var(--color-border)] px-4 py-3">
           <div className="flex min-w-0 flex-1 items-center gap-2">
             <FileText size={18} className="shrink-0 text-[#7AAECF]" />
             <div className="min-w-0">
-              <h2 className="truncate text-sm font-semibold text-[#1A1D23]">Comprovante</h2>
-              <p className="truncate text-xs text-[#6B7280]">{fileName}</p>
+              <h2 className="truncate text-sm font-semibold text-[var(--color-text-primary)]">Comprovante</h2>
+              <p className="truncate text-xs text-[var(--color-text-secondary)]">{fileName}</p>
             </div>
           </div>
           <a
             href={url}
             target="_blank"
             rel="noreferrer"
-            className="gesture-icon-button flex h-9 w-9 items-center justify-center rounded-full hover:bg-[#F1F3F7]"
+            className="gesture-icon-button flex h-9 w-9 items-center justify-center rounded-full text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-alt)]"
             aria-label="Abrir em nova aba"
           >
-            <ArrowSquareOut size={18} className="text-[#6B7280]" />
+            <ArrowSquareOut size={18} />
           </a>
-          {isImage && (
-            <div className="flex shrink-0 items-center rounded-full bg-[#F6F7FA] p-0.5">
-              <button
-                type="button"
-                onClick={zoomOut}
-                disabled={zoom <= MIN_ZOOM}
-                className="gesture-icon-button flex h-8 w-8 items-center justify-center rounded-full hover:bg-white disabled:cursor-not-allowed disabled:opacity-45"
-                aria-label="Diminuir zoom"
-              >
-                <MagnifyingGlassMinus size={17} className="text-[#6B7280]" />
-              </button>
-              <span className="min-w-10 px-1 text-center text-[11px] font-semibold tabular-nums text-[#6B7280]">
-                {Math.round(zoom * 100)}%
-              </span>
-              <button
-                type="button"
-                onClick={zoomIn}
-                disabled={zoom >= MAX_ZOOM}
-                className="gesture-icon-button flex h-8 w-8 items-center justify-center rounded-full hover:bg-white disabled:cursor-not-allowed disabled:opacity-45"
-                aria-label="Aumentar zoom"
-              >
-                <MagnifyingGlassPlus size={17} className="text-[#6B7280]" />
-              </button>
-            </div>
-          )}
           <button
             type="button"
             onClick={downloadReceipt}
             disabled={downloadProgress !== null || previewProgress !== null}
-            className="gesture-icon-button flex h-9 w-9 items-center justify-center rounded-full hover:bg-[#F1F3F7] disabled:cursor-not-allowed disabled:opacity-50"
+            className="gesture-icon-button flex h-9 w-9 items-center justify-center rounded-full text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-alt)] disabled:cursor-not-allowed disabled:opacity-50"
             aria-label="Baixar comprovante"
             aria-busy={downloadProgress !== null || previewProgress !== null}
           >
-            <DownloadSimple size={18} className="text-[#6B7280]" />
+            <DownloadSimple size={18} />
           </button>
           <button
             type="button"
             onClick={requestClose}
-            className="gesture-icon-button flex h-9 w-9 items-center justify-center rounded-full hover:bg-[#F1F3F7]"
+            className="gesture-icon-button flex h-9 w-9 items-center justify-center rounded-full text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-alt)]"
             aria-label="Fechar"
           >
-            <X size={18} className="text-[#6B7280]" />
+            <X size={18} />
           </button>
         </header>
         {(downloadProgress || downloadError) && (
-          <div className="shrink-0 border-b border-[#E5E7EB] bg-white px-4 py-2">
+          <div className="shrink-0 border-b border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2">
             {downloadProgress ? (
               <>
-                <div className="flex items-center justify-between gap-3 text-xs font-semibold text-[#6B7280]">
+                <div className="flex items-center justify-between gap-3 text-xs font-semibold text-[var(--color-text-secondary)]">
                   <span>Baixando comprovante</span>
                   <span className="tabular-nums">{progressLabel}</span>
                 </div>
                 <div
-                  className="mt-2 h-1.5 overflow-hidden rounded-full bg-[#EEF2F7]"
+                  className="mt-2 h-1.5 overflow-hidden rounded-full bg-[var(--color-surface-alt)]"
                   role="progressbar"
                   aria-label="Progresso do download do comprovante"
                   aria-valuemin={0}
@@ -599,9 +610,43 @@ export default function ReceiptViewerModal({
         )}
 
         <div className="relative min-h-0 flex-1 bg-[#10151C]">
-          {showGestureHint && isImage && (
+          {showGestureHint && isImage && !showZoomControls && (
             <div className="pointer-events-none absolute left-1/2 top-3 z-10 -translate-x-1/2 rounded-full bg-black/58 px-3 py-1.5 text-[11px] font-semibold text-white shadow-lg backdrop-blur">
               Pinça para ampliar · toque duplo para zoom
+            </div>
+          )}
+          {isImage && (
+            <div
+              className={`absolute left-1/2 top-3 z-20 flex -translate-x-1/2 items-center rounded-full border border-white/10 bg-[#121A24]/86 p-1 text-white shadow-[0_10px_30px_rgba(0,0,0,0.32)] backdrop-blur-xl transition-[opacity,transform] duration-150 dark:border-white/12 dark:bg-[#0B1118]/88 ${
+                showZoomControls
+                  ? 'pointer-events-auto opacity-100 translate-y-0'
+                  : 'pointer-events-none -translate-y-1 opacity-0'
+              }`}
+              aria-hidden={!showZoomControls}
+            >
+              <button
+                type="button"
+                onClick={zoomOut}
+                disabled={zoom <= MIN_ZOOM}
+                className="gesture-icon-button flex h-9 w-9 items-center justify-center rounded-full text-white/82 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-35"
+                aria-label="Diminuir zoom"
+                tabIndex={showZoomControls ? 0 : -1}
+              >
+                <MagnifyingGlassMinus size={18} />
+              </button>
+              <span className="min-w-14 px-1 text-center text-xs font-bold tabular-nums text-white/88">
+                {Math.round(zoom * 100)}%
+              </span>
+              <button
+                type="button"
+                onClick={zoomIn}
+                disabled={zoom >= MAX_ZOOM}
+                className="gesture-icon-button flex h-9 w-9 items-center justify-center rounded-full text-white/82 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-35"
+                aria-label="Aumentar zoom"
+                tabIndex={showZoomControls ? 0 : -1}
+              >
+                <MagnifyingGlassPlus size={18} />
+              </button>
             </div>
           )}
           {previewProgress ? (
@@ -639,21 +684,20 @@ export default function ReceiptViewerModal({
               className={`h-full overflow-auto overscroll-contain p-3 ${
                 isPanning ? 'cursor-grabbing' : 'cursor-grab'
               }`}
-              style={{ touchAction: zoom > MIN_ZOOM ? 'none' : 'pan-y pinch-zoom' }}
+              style={{ touchAction: 'none' }}
               onPointerDown={handlePreviewPointerDown}
               onPointerMove={handlePreviewPointerMove}
               onPointerUp={stopPreviewPan}
               onPointerCancel={stopPreviewPan}
               onPointerLeave={stopPreviewPan}
               onClick={handlePreviewClick}
-              onWheel={handlePreviewWheel}
               onTouchStart={handlePreviewTouchStart}
               onTouchMove={handlePreviewTouchMove}
               onTouchEnd={handlePreviewTouchEnd}
               onTouchCancel={handlePreviewTouchEnd}
             >
               <div
-                className="grid min-h-full min-w-full place-items-center"
+                className="grid h-full min-h-full min-w-full place-items-center"
                 style={{
                   padding: zoom > MIN_ZOOM ? '32px' : 0,
                 }}
@@ -663,10 +707,10 @@ export default function ReceiptViewerModal({
                   style={{
                     aspectRatio: imageAspectRatio ?? 1,
                     height: imageAspectRatio && imageAspectRatio < 1
-                      ? `calc(${IMAGE_BASE_SIZE} * ${zoom})`
+                      ? `${zoom * 100}%`
                       : 'auto',
                     width: !imageAspectRatio || imageAspectRatio >= 1
-                      ? `calc(${IMAGE_BASE_SIZE} * ${zoom})`
+                      ? `${zoom * 100}%`
                       : 'auto',
                   }}
                 >

@@ -173,7 +173,7 @@ export default function DashboardBalanceHero({
                   <span aria-hidden className="opacity-60">→</span>
                 </Link>
                 <Link
-                  href="/perfil/ganhos"
+                  href="/perfil/ganhos?modal=add"
                   className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-full bg-transparent px-4 py-2.5 text-sm font-medium text-[var(--color-text-tertiary)] transition-colors hover:text-[var(--color-text-primary)]"
                   aria-label="Cadastrar ganho para abater o estouro"
                 >

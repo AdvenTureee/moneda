@@ -496,6 +496,7 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
       setActivePaymentMethod(null);
       setSearchInput('');
       setDebouncedSearch('');
+      setFiltersOpen(false);
     });
   }, [billingClosingDay]);
 
@@ -504,14 +505,21 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
     setFiltersOpen(true);
   }, []);
 
+  const selectFilterAndClose = useCallback((selectFilter: () => void) => {
+    startUiTransition(() => {
+      selectFilter();
+      setFiltersOpen(false);
+    });
+  }, []);
+
   const applyCustomDateRange = useCallback(() => {
     const from = parseDateInputToIso(customFrom, false);
     const to = parseDateInputToIso(customTo, true);
     if (!from || !to) return;
-    startUiTransition(() => {
+    selectFilterAndClose(() => {
       setDateRange({ from, to, presetId: 'custom' });
     });
-  }, [customFrom, customTo]);
+  }, [customFrom, customTo, selectFilterAndClose]);
 
   const handleViewChange = useCallback((nextView: FeedView) => {
     if (nextView === activeView) return;
@@ -569,6 +577,7 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
 
   const showInitialSkeleton = loading && !hasLoadedExpenses;
   const showRefreshing = loading && hasLoadedExpenses;
+  const showFeedProgress = loading;
 
   return (
     <>
@@ -778,7 +787,7 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
                           <button
                             key={item.id}
                             type="button"
-                            onClick={() => startUiTransition(() => setDateRange(item.range))}
+                            onClick={() => selectFilterAndClose(() => setDateRange(item.range))}
                             className={`date-range-option flex min-h-12 w-full items-center justify-between gap-3 rounded-[11px] px-3 text-left transition-colors ${
                               selected ? 'date-range-option--selected' : ''
                             }`}
@@ -806,7 +815,7 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
                             <button
                               key={item.id}
                               type="button"
-                              onClick={() => startUiTransition(() => setDateRange(item.range))}
+                              onClick={() => selectFilterAndClose(() => setDateRange(item.range))}
                               className={`date-range-option flex min-h-11 w-full items-center justify-between gap-3 rounded-[11px] px-3 text-left transition-colors ${
                                 selected ? 'date-range-option--selected' : ''
                               }`}
@@ -831,7 +840,7 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
                           <button
                             key={item.id}
                             type="button"
-                            onClick={() => startUiTransition(() => setDateRange(item.range))}
+                            onClick={() => selectFilterAndClose(() => setDateRange(item.range))}
                             className={`date-range-option min-h-11 rounded-[11px] px-3 text-left text-sm font-semibold transition-colors ${
                               selected ? 'date-range-option--selected' : ''
                             }`}
@@ -886,7 +895,7 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
                   <div className="space-y-1" role="tabpanel" aria-label="Filtro de categoria">
                     <button
                       type="button"
-                      onClick={() => startUiTransition(() => setActiveCategory(null))}
+                      onClick={() => selectFilterAndClose(() => setActiveCategory(null))}
                       className={`date-range-option flex min-h-11 w-full items-center gap-2 rounded-[11px] px-3 text-left text-sm font-semibold transition-colors ${
                         activeCategory === null ? 'date-range-option--selected' : ''
                       }`}
@@ -898,7 +907,7 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
                       <button
                         key={category.id}
                         type="button"
-                        onClick={() => startUiTransition(() => {
+                        onClick={() => selectFilterAndClose(() => {
                           setActiveCategory((prev) => (prev === category.id ? null : category.id));
                         })}
                         className={`date-range-option flex min-h-11 w-full items-center gap-2 rounded-[11px] px-3 text-left text-sm font-semibold transition-colors ${
@@ -916,7 +925,7 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
                   <div className="grid grid-cols-2 gap-1.5" role="tabpanel" aria-label="Filtro de método de pagamento">
                     <button
                       type="button"
-                      onClick={() => startUiTransition(() => setActivePaymentMethod(null))}
+                      onClick={() => selectFilterAndClose(() => setActivePaymentMethod(null))}
                       className={`date-range-option flex min-h-11 items-center gap-2 rounded-[11px] px-3 text-left text-sm font-semibold transition-colors ${
                         activePaymentMethod === null ? 'date-range-option--selected' : ''
                       }`}
@@ -931,7 +940,7 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
                           <button
                             key={method.value}
                             type="button"
-                            onClick={() => startUiTransition(() => {
+                            onClick={() => selectFilterAndClose(() => {
                               setActivePaymentMethod((prev) => (prev === method.value ? null : method.value));
                             })}
                             className={`date-range-option flex min-h-11 items-center gap-2 rounded-[11px] px-3 text-left text-sm font-semibold transition-colors ${
@@ -953,10 +962,10 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
         )}
 
         <div
-          className={`feed-progress-slot ${showRefreshing && !showInitialSkeleton ? 'feed-progress-slot--active' : ''}`}
-          aria-hidden={!showRefreshing || showInitialSkeleton}
+          className={`feed-progress-slot ${showFeedProgress ? 'feed-progress-slot--active' : ''}`}
+          aria-hidden={!showFeedProgress}
         >
-          <div className="feed-progress" role="presentation">
+          <div className="feed-progress" role="progressbar" aria-label="Carregando gastos">
             <div className="feed-progress__track">
               <span className="feed-progress__bar" />
             </div>
