@@ -354,7 +354,7 @@ export default function ProfileView({
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-bold text-[#1A1D23]">Código enviado</p>
                 <p className="mt-1 text-xs leading-relaxed text-[#6B7280]">
-                  Digite o código de 6 dígitos enviado para <strong className="font-semibold text-[#1A1D23]">{otpEmail}</strong>.
+                  Digite o código enviado para <strong className="font-semibold text-[#1A1D23]">{otpEmail}</strong>.
                 </p>
               </div>
             </div>
@@ -362,22 +362,22 @@ export default function ProfileView({
               <input
                 type="tel"
                 inputMode="numeric"
-                maxLength={6}
+                maxLength={8}
                 value={otpValue}
                 onChange={(e) => {
-                  const digits = e.target.value.replace(/\D/g, '').slice(0, 6);
+                  const digits = e.target.value.replace(/\D/g, '').slice(0, 8);
                   setOtpValue(digits);
                 }}
                 autoFocus
                 disabled={savingOtp}
                 className="themed-field flex-1 px-3 py-3 rounded-[10px] bg-white border border-[#E5E7EB] text-center text-lg font-bold tracking-[0.3em] text-[#1A1D23] outline-none focus:border-[#A8C5E0] transition-colors placeholder:text-[#9CA3AF]"
-                placeholder="000000"
+                placeholder="00000000"
                 aria-label="Código de verificação"
               />
               <button
                 type="button"
                 onClick={handleConfirmOtp}
-                disabled={savingOtp || otpValue.length !== 6}
+                disabled={savingOtp || otpValue.length < 6 || otpValue.length > 8}
                 className="w-10 h-10 rounded-[10px] flex items-center justify-center text-white disabled:opacity-60 bg-[#5BBF8E]"
                 aria-label="Confirmar código"
               >
