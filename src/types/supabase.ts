@@ -360,6 +360,30 @@ export type Database = {
         }
         Relationships: []
       }
+      pending_email_changes: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          new_email: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          id?: string
+          new_email: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          new_email?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null

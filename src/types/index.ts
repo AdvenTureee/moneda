@@ -140,6 +140,14 @@ export interface Budget {
   updated_at: Date;
 }
 
+export interface PendingEmailChange {
+  id: string;
+  userId: string;
+  newEmail: string;
+  expiresAt: Date;
+  createdAt: Date;
+}
+
 export interface BudgetInput {
   userId: string;
   categoryId: string;

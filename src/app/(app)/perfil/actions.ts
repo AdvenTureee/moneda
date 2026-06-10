@@ -182,7 +182,7 @@ export async function updateBillingClosingDay(formData: FormData): Promise<Actio
   return { ok: true, message: `Fechamento atualizado para dia ${raw}.` };
 }
 
-export async function updateEmail(formData: FormData): Promise<ActionResult> {
+export async function sendEmailChangeOtp(formData: FormData): Promise<ActionResult> {
   const raw = formData.get('email');
   const email = typeof raw === 'string' ? raw.trim().toLowerCase() : '';
 
@@ -197,7 +197,7 @@ export async function updateEmail(formData: FormData): Promise<ActionResult> {
     return { ok: false, error: 'Este já é o seu email atual.' };
   }
 
-  // Se o usuário tem senha, exige re-autenticação antes de permitir a troca
+  // Re-autenticação se tem senha
   let hasPassword = false;
   if (isSupabaseEnabled()) {
     const admin = createServiceClient();
@@ -218,29 +218,142 @@ export async function updateEmail(formData: FormData): Promise<ActionResult> {
       password: currentPassword,
     });
     if (verifyError) {
-      console.error('[updateEmail:verify]', verifyError);
+      console.error('[sendEmailChangeOtp:verify]', verifyError);
       return { ok: false, error: 'Senha atual incorreta.' };
     }
   }
 
-  const h = await headers();
-  const host = h.get('x-forwarded-host') ?? h.get('host');
-  const proto = h.get('x-forwarded-proto') ?? 'https';
-  const origin = host ? `${proto}://${host}` : '';
+  if (isSupabaseEnabled()) {
+    const admin = createServiceClient();
+    // Remove pending anterior se houver
+    await admin.from('pending_email_changes').delete().eq('user_id', user.id);
 
-  const { error } = await supabase.auth.updateUser(
-    { email },
-    { emailRedirectTo: origin ? `${origin}/auth/callback?next=/perfil` : undefined },
-  );
-  if (error) {
-    console.error('[updateEmail]', error);
-    return { ok: false, error: 'Não foi possível solicitar a troca de email. Tente novamente.' };
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+    const { error: insertError } = await admin.from('pending_email_changes').insert({
+      user_id: user.id,
+      new_email: email,
+      expires_at: expiresAt,
+    });
+    if (insertError) {
+      console.error('[sendEmailChangeOtp:insert]', insertError);
+      return { ok: false, error: 'Erro interno. Tente novamente.' };
+    }
+
+    // Envia OTP via Supabase Auth usando o template de email customizado
+    const { error: otpError } = await createAnonClient().auth.signInWithOtp({
+      email,
+      options: { shouldCreateUser: true },
+    });
+    if (otpError) {
+      console.error('[sendEmailChangeOtp:otp]', otpError);
+      return { ok: false, error: 'Não foi possível enviar o código. Verifique o email e tente novamente.' };
+    }
+
+    return { ok: true, message: `Enviamos um código de 6 dígitos para ${email}.` };
   }
 
-  return {
-    ok: true,
-    message: `Enviamos links de confirmação para ${email} e para ${user.email}. Clique nos dois para concluir.`,
-  };
+  // Fallback sem Supabase: simula sucesso para desenvolvimento
+  return { ok: true, message: `Modo dev: código 123456 enviado para ${email}.` };
+}
+
+export async function confirmEmailChangeOtp(formData: FormData): Promise<ActionResult> {
+  const rawEmail = formData.get('email');
+  const rawOtp = formData.get('otp');
+  const newEmail = typeof rawEmail === 'string' ? rawEmail.trim().toLowerCase() : '';
+  const otp = typeof rawOtp === 'string' ? rawOtp.trim() : '';
+
+  if (!newEmail || !otp) {
+    return { ok: false, error: 'Informe o código recebido por email.' };
+  }
+
+  const supabase = await createSessionClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: 'Sessão expirada. Entre novamente.' };
+
+  if (!isSupabaseEnabled()) {
+    // Fallback dev: aceita 123456
+    if (otp !== '123456') {
+      return { ok: false, error: 'Código inválido.' };
+    }
+    return { ok: true, message: 'Email alterado com sucesso (modo dev).' };
+  }
+
+  const admin = createServiceClient();
+
+  // Verifica pending
+  const { data: pending, error: pendingError } = await admin
+    .from('pending_email_changes')
+    .select('*')
+    .eq('user_id', user.id)
+    .maybeSingle();
+  if (pendingError || !pending) {
+    console.error('[confirmEmailChangeOtp:pending]', pendingError);
+    return { ok: false, error: 'Nenhuma solicitação de troca encontrada. Solicite um novo código.' };
+  }
+  if (pending.new_email !== newEmail) {
+    return { ok: false, error: 'Email não corresponde à solicitação. Solicite um novo código.' };
+  }
+  if (new Date(pending.expires_at) < new Date()) {
+    await admin.from('pending_email_changes').delete().eq('user_id', user.id);
+    return { ok: false, error: 'Código expirado. Solicite um novo.' };
+  }
+
+  // Verifica OTP com Supabase
+  const { error: verifyError } = await createAnonClient().auth.verifyOtp({
+    email: newEmail,
+    token: otp,
+    type: 'email',
+  });
+  if (verifyError) {
+    console.error('[confirmEmailChangeOtp:verify]', verifyError);
+    return { ok: false, error: 'Código inválido. Verifique e tente novamente.' };
+  }
+
+  // Remove temp user criado pelo signInWithOtp (se existir)
+  try {
+    const { data: { users } } = await admin.auth.admin.listUsers();
+    const tempUser = users.find((u) => u.email === newEmail && u.id !== user.id);
+    if (tempUser) {
+      await admin.auth.admin.deleteUser(tempUser.id);
+    }
+  } catch (e) {
+    console.error('[confirmEmailChangeOtp:cleanup]', e);
+  }
+
+  // Atualiza email do usuário via Admin API
+  const { error: updateError } = await admin.auth.admin.updateUserById(user.id, {
+    email: newEmail,
+  });
+  if (updateError) {
+    console.error('[confirmEmailChangeOtp:update]', updateError);
+    return { ok: false, error: 'Não foi possível alterar o email. Tente novamente.' };
+  }
+
+  // Sincroniza PII na tabela profiles
+  try {
+    const name = user.user_metadata?.name as string | undefined;
+    const profileUpdate = buildProfileIdentityPiiUpdate({
+      name: name ?? '',
+      email: newEmail,
+    });
+    const { error: profileError } = await admin
+      .from('profiles')
+      .update(profileUpdate)
+      .eq('id', user.id);
+    if (profileError) {
+      console.error('[confirmEmailChangeOtp:pii]', profileError);
+    }
+  } catch (e) {
+    console.error('[confirmEmailChangeOtp:pii]', e);
+  }
+
+  // Limpa pending
+  await admin.from('pending_email_changes').delete().eq('user_id', user.id);
+
+  revalidatePath('/perfil');
+  revalidateTag(cacheTags.profile(user.id), { expire: 0 });
+
+  return { ok: true, message: 'Email alterado com sucesso.' };
 }
 
 export async function updateNotificationPrefs(formData: FormData): Promise<ActionResult> {
