@@ -12,6 +12,7 @@ import type { ExpenseInput } from '@/types';
 
 const WHATSAPP_PROMPT_DISMISSED_KEY = 'moneda:whatsapp-phone-prompt-dismissed';
 const AUTHENTICATED_PREFETCH_ROUTES = [
+  '/app',
   '/feed',
   '/feed',
   '/insights',

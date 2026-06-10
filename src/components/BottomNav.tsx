@@ -17,7 +17,7 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { label: 'Dashboard', icon: House, href: '/feed' },
+  { label: 'Dashboard', icon: House, href: '/app' },
   { label: 'Feed', icon: List, href: '/feed' },
   { label: 'Adicionar', icon: PlusCircle, href: '#add', isAction: true },
   { label: 'Insights', icon: Sparkle, href: '/insights' },
@@ -65,7 +65,7 @@ interface BottomNavProps {
 export default function BottomNav({ onAddExpense }: BottomNavProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const [dashboardHref, setDashboardHref] = useState('/feed');
+  const [dashboardHref, setDashboardHref] = useState('/app');
   const shouldResetScrollRef = useRef(false);
   const previousPathnameRef = useRef(pathname);
   const resetScrollTimeoutRef = useRef<number | null>(null);
@@ -142,9 +142,9 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
             );
           }
 
-          const href = item.href === '/feed' ? dashboardHref : item.href;
-          const isActive = item.href === '/feed'
-            ? pathname === '/feed'
+          const href = item.href === '/app' ? dashboardHref : item.href;
+          const isActive = item.href === '/app'
+            ? pathname === '/app'
             : pathname.startsWith(item.href);
           const isSamePath = pathname === item.href;
 
