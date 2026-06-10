@@ -4,7 +4,10 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import Link, { useLinkStatus } from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { House, List, PlusCircle, Sparkle, User } from '@phosphor-icons/react';
-import { DASHBOARD_PERIOD_CHANGED_EVENT } from '@/lib/navigationState';
+import {
+  DASHBOARD_PERIOD_CHANGED_EVENT,
+  dashboardHrefWithStoredPeriod,
+} from '@/lib/navigationState';
 
 interface NavItem {
   label: string;
