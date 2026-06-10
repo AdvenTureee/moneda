@@ -28,6 +28,8 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [forgotLoading, setForgotLoading] = useState(false);
+  const [lastForgotAttempt, setLastForgotAttempt] = useState(0);
+  const [lastLoginAttempt, setLastLoginAttempt] = useState(0);
   const { setEyesClosed } = useAuthMascot();
 
   useEffect(() => {
@@ -48,6 +50,12 @@ export default function LoginPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
+    const now = Date.now();
+    if (now - lastLoginAttempt < 1000) {
+      setError('Aguarde um momento antes de tentar novamente.');
+      return;
+    }
+    setLastLoginAttempt(now);
     setLoading(true);
 
     const supabase = createClient();
@@ -66,6 +74,12 @@ export default function LoginPage() {
   async function handleForgotPassword() {
     setError('');
     setInfo('');
+    const now = Date.now();
+    if (now - lastForgotAttempt < 30000) {
+      setError('Aguarde 30 segundos entre cada pedido de redefinição.');
+      return;
+    }
+    setLastForgotAttempt(now);
     const target = email.trim();
     if (!target) {
       setError('Informe seu email acima para receber o link de redefinição.');
@@ -79,10 +93,8 @@ export default function LoginPage() {
     setForgotLoading(false);
     if (resetError) {
       console.error('[forgotPassword]', resetError);
-      setError('Não foi possível enviar o email. Tente novamente.');
-      return;
     }
-    setInfo(`Enviamos um link de redefinição para ${target}. Verifique sua caixa de entrada.`);
+    setInfo('Se uma conta estiver cadastrada, você receberá um email de redefinição de senha.');
   }
 
   async function handleGoogleLogin() {

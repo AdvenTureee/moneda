@@ -92,7 +92,7 @@ export default function SignupPage() {
 
     if (authError) {
       console.error('[signup]', authError);
-      setError(authError.message);
+      setError('Não foi possível criar sua conta. Tente novamente.');
       setLoading(false);
       return;
     }
@@ -137,8 +137,7 @@ export default function SignupPage() {
           </div>
           <h1 className="text-xl font-heading text-[#1A1D23] mb-2">Verifique seu email</h1>
           <p className="text-sm text-[#6B7280] leading-relaxed">
-            Enviamos um link de confirmação para{' '}
-            <span className="font-semibold text-[#1A1D23]">{email}</span>.
+            Se o email não estiver cadastrado, você receberá um link de confirmação.
           </p>
           <Link
             href="/login"
