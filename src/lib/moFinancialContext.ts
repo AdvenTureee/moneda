@@ -7,7 +7,7 @@ import { getLatestInsight } from '@/lib/insights';
 import { getMonthlyBudgetCents } from '@/lib/monthlyBudget';
 import { buildAnalyticalSignals } from '@/lib/moTipsAnalysis';
 import { detectSpendingAlerts, type MoTipGenerationContext } from '@/lib/groq';
-import { createSessionClient, isSupabaseEnabled } from '@/lib/supabase/server';
+import { createServiceClient, isSupabaseEnabled } from '@/lib/supabase/server';
 import { decryptProfilePii, getDisplayNameFromUser } from '@/lib/security/profilePii';
 import { formatCurrency } from '@/lib/utils';
 import { getBillingClosingDay } from '@/lib/profiles';
@@ -42,7 +42,7 @@ function shiftPeriod(period: string, monthsBack: number): string {
 async function resolveFirstName(user: User): Promise<string | undefined> {
   let fullName = getDisplayNameFromUser(user);
   if (isSupabaseEnabled()) {
-    const db = await createSessionClient();
+    const db = createServiceClient();
     const { data: profile } = await db
       .from('profiles')
       .select(

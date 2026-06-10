@@ -1,5 +1,5 @@
 import { unstable_cache } from 'next/cache';
-import { createSessionClient, isSupabaseEnabled } from '@/lib/supabase/server';
+import { createServiceClient, isSupabaseEnabled } from '@/lib/supabase/server';
 import { cacheTags } from '@/lib/cache';
 import { normalizeBillingClosingDay } from '@/lib/billingCycle';
 
@@ -19,7 +19,7 @@ export interface ProfilePreferences {
 
 async function isUserOnboardedImpl(userId: string): Promise<boolean> {
   if (!isSupabaseEnabled()) return true;
-  const supabase = await createSessionClient();
+  const supabase = createServiceClient();
   const { data } = await supabase
     .from('profiles')
     .select('onboarded')
@@ -49,7 +49,7 @@ async function getProfileGateStatusImpl(userId: string): Promise<ProfileGateStat
     };
   }
 
-  const supabase = await createSessionClient();
+  const supabase = createServiceClient();
   const { data } = await supabase
     .from('profiles')
     .select('onboarded,terms_accepted_at,terms_version,phone,phone_hash,phone_ciphertext')
@@ -85,7 +85,7 @@ async function getProfilePreferencesImpl(userId: string): Promise<ProfilePrefere
     };
   }
 
-  const supabase = await createSessionClient();
+  const supabase = createServiceClient();
   const { data } = await supabase
     .from('profiles')
     .select('currency,billing_closing_day,has_password,notification_prefs' as never)
@@ -123,7 +123,7 @@ export async function getProfilePreferences(userId: string): Promise<ProfilePref
 
 async function getBillingClosingDayImpl(userId: string): Promise<number | null> {
   if (!isSupabaseEnabled()) return null;
-  const supabase = await createSessionClient();
+  const supabase = createServiceClient();
   const { data } = await supabase
     .from('profiles')
     .select('billing_closing_day')

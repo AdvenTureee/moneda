@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { createSessionClient } from '@/lib/supabase/server';
+import { createServiceClient, createSessionClient } from '@/lib/supabase/server';
 import { v4 as uuidv4 } from 'uuid';
 import sharp from 'sharp';
 import { noStoreJson } from '@/lib/http';
@@ -73,7 +73,8 @@ export async function POST(req: NextRequest) {
     const fileName = `${uuidv4()}.${ext}`;
     const filePath = `avatars/${user.id}/${fileName}`;
 
-    const { error: uploadError } = await session.storage
+    const admin = createServiceClient();
+    const { error: uploadError } = await admin.storage
       .from('fotos_perfil')
       .upload(filePath, imageData, {
         contentType: outputType,
@@ -84,7 +85,7 @@ export async function POST(req: NextRequest) {
       return noStoreJson({ error: 'Falha ao fazer upload.' }, { status: 500 });
     }
 
-    const { data: signedUrlData, error: signedUrlError } = await session.storage
+    const { data: signedUrlData, error: signedUrlError } = await admin.storage
       .from('fotos_perfil')
       .createSignedUrl(filePath, 31536000);
 

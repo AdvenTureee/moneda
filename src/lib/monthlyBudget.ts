@@ -1,5 +1,5 @@
 import { unstable_cache } from 'next/cache';
-import { createSessionClient, isSupabaseEnabled } from '@/lib/supabase/server';
+import { createServiceClient, isSupabaseEnabled } from '@/lib/supabase/server';
 import { cacheTags } from '@/lib/cache';
 
 /**
@@ -16,7 +16,7 @@ async function getMonthlyBudgetCentsImpl(
 ): Promise<number> {
   if (!isSupabaseEnabled()) return 0;
 
-  const db = await createSessionClient();
+  const db = createServiceClient();
 
   const { data: profile } = await db
     .from('profiles')

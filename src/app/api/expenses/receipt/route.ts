@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { revalidateTag } from 'next/cache';
 import { v4 as uuidv4 } from 'uuid';
-import { createSessionClient, isSupabaseEnabled } from '@/lib/supabase/server';
+import { createServiceClient, createSessionClient, isSupabaseEnabled } from '@/lib/supabase/server';
 import { cacheTags } from '@/lib/cache';
 import { noStoreJson } from '@/lib/http';
 
@@ -39,7 +39,7 @@ async function getCurrentUser() {
   return user;
 }
 
-async function getOwnedExpense(db: Awaited<ReturnType<typeof createSessionClient>>, expenseId: string, userId: string) {
+async function getOwnedExpense(db: ReturnType<typeof createServiceClient>, expenseId: string, userId: string) {
   const { data, error } = await db
     .from('expenses')
     .select('id,user_id,receipt_path')
@@ -65,14 +65,14 @@ export async function GET(req: NextRequest) {
     return noStoreJson({ error: 'expenseId é obrigatório.' }, { status: 422 });
   }
 
-  const db = await createSessionClient();
-  const expense = await getOwnedExpense(db, expenseId, user.id);
+  const admin = createServiceClient();
+  const expense = await getOwnedExpense(admin, expenseId, user.id);
   if (!expense) return noStoreJson({ error: 'Gasto não encontrado.' }, { status: 404 });
   if (!expense.receipt_path) {
     return noStoreJson({ error: 'Nenhum comprovante anexado.' }, { status: 404 });
   }
 
-  const { data, error } = await db.storage
+  const { data, error } = await admin.storage
     .from(BUCKET)
     .createSignedUrl(expense.receipt_path, 60 * 10);
 
@@ -103,15 +103,15 @@ export async function POST(req: NextRequest) {
     return noStoreJson({ error: 'Formato de comprovante não permitido.' }, { status: 415 });
   }
 
-  const db = await createSessionClient();
-  const expense = await getOwnedExpense(db, expenseId, user.id);
+  const admin = createServiceClient();
+  const expense = await getOwnedExpense(admin, expenseId, user.id);
   if (!expense) return noStoreJson({ error: 'Gasto não encontrado.' }, { status: 404 });
 
   const ext = MIME_TO_EXT[file.type] ?? 'bin';
   const path = `${user.id}/${expenseId}/${uuidv4()}.${ext}`;
   const buffer = new Uint8Array(await file.arrayBuffer());
 
-  const { error: uploadError } = await db.storage
+  const { error: uploadError } = await admin.storage
     .from(BUCKET)
     .upload(path, buffer, {
       contentType: file.type,
@@ -122,7 +122,7 @@ export async function POST(req: NextRequest) {
     return noStoreJson({ error: 'Falha ao anexar comprovante.' }, { status: 500 });
   }
 
-  const { error: updateError } = await db
+  const { error: updateError } = await admin
     .from('expenses')
     .update({
       receipt_path: path,
@@ -135,12 +135,12 @@ export async function POST(req: NextRequest) {
     .eq('user_id', user.id);
 
   if (updateError) {
-    await db.storage.from(BUCKET).remove([path]);
+    await admin.storage.from(BUCKET).remove([path]);
     return noStoreJson({ error: 'Upload feito, mas não foi possível vincular.' }, { status: 500 });
   }
 
   if (expense.receipt_path) {
-    await db.storage.from(BUCKET).remove([expense.receipt_path]);
+    await admin.storage.from(BUCKET).remove([expense.receipt_path]);
   }
 
   invalidateExpenseCaches(user.id);
@@ -160,11 +160,11 @@ export async function DELETE(req: NextRequest) {
     return noStoreJson({ error: 'expenseId é obrigatório.' }, { status: 422 });
   }
 
-  const db = await createSessionClient();
-  const expense = await getOwnedExpense(db, expenseId, user.id);
+  const admin = createServiceClient();
+  const expense = await getOwnedExpense(admin, expenseId, user.id);
   if (!expense) return noStoreJson({ error: 'Gasto não encontrado.' }, { status: 404 });
 
-  const { error: updateError } = await db
+  const { error: updateError } = await admin
     .from('expenses')
     .update({
       receipt_path: null,
@@ -177,7 +177,7 @@ export async function DELETE(req: NextRequest) {
     .eq('user_id', user.id);
 
   if (updateError) return noStoreJson({ error: 'Não foi possível remover.' }, { status: 500 });
-  if (expense.receipt_path) await db.storage.from(BUCKET).remove([expense.receipt_path]);
+  if (expense.receipt_path) await admin.storage.from(BUCKET).remove([expense.receipt_path]);
 
   invalidateExpenseCaches(user.id);
   return noStoreJson({ ok: true });
