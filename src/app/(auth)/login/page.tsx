@@ -29,7 +29,6 @@ export default function LoginPage() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [forgotLoading, setForgotLoading] = useState(false);
   const [lastForgotAttempt, setLastForgotAttempt] = useState(0);
-  const [lastLoginAttempt, setLastLoginAttempt] = useState(0);
   const { setEyesClosed } = useAuthMascot();
 
   useEffect(() => {
@@ -50,12 +49,6 @@ export default function LoginPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
-    const now = Date.now();
-    if (now - lastLoginAttempt < 1000) {
-      setError('Aguarde um momento antes de tentar novamente.');
-      return;
-    }
-    setLastLoginAttempt(now);
     setLoading(true);
 
     const supabase = createClient();
