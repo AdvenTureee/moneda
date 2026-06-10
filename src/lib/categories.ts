@@ -1,7 +1,7 @@
 import { unstable_cache } from 'next/cache';
 import type { Category } from '@/types';
 import type { Database } from '@/types/supabase';
-import { createServiceClient, isSupabaseEnabled } from '@/lib/supabase/server';
+import { createSessionClient, isSupabaseEnabled } from '@/lib/supabase/server';
 import { CATEGORIES, addUserCategory, updateUserCategory, deleteUserCategory, getUserCategories } from '@/data/mock';
 import { cacheTags } from '@/lib/cache';
 
@@ -27,7 +27,7 @@ async function getCategoriesFromDB(
   userId: string,
   _opts: { applyHasPetGate: boolean },
 ): Promise<CategoryWithMeta[]> {
-  const db = createServiceClient();
+  const db = await createSessionClient();
   const { data, error } = await db
     .from('categories')
     .select('*')
@@ -98,7 +98,7 @@ export async function createCategory(
   input: { id: string; name: string; icon: string; color: string; keywords: string[] }
 ): Promise<Category> {
   if (isSupabaseEnabled()) {
-    const db = createServiceClient();
+    const db = await createSessionClient();
     const insert: CategoryInsert = {
       id: input.id,
       user_id: userId,
@@ -125,7 +125,7 @@ export async function updateCategory(
   input: { name?: string; icon?: string; color?: string; keywords?: string[] }
 ): Promise<Category> {
   if (isSupabaseEnabled()) {
-    const db = createServiceClient();
+    const db = await createSessionClient();
     const { data, error } = await db
       .from('categories')
       .update(input)
@@ -144,7 +144,7 @@ export async function updateCategory(
 
 export async function deleteCategory(userId: string, id: string): Promise<void> {
   if (isSupabaseEnabled()) {
-    const db = createServiceClient();
+    const db = await createSessionClient();
     const { error } = await db.from('categories').delete().eq('id', id).eq('user_id', userId);
     if (error) throw new Error(`deleteCategory: ${error.message}`);
     return;
@@ -162,7 +162,7 @@ export async function getCategoriesByIds(
   const unique = Array.from(new Set(ids));
 
   if (isSupabaseEnabled()) {
-    const db = createServiceClient();
+    const db = await createSessionClient();
     const { data, error } = await db
       .from('categories')
       .select('*')
@@ -180,7 +180,7 @@ export async function getCategoriesByIds(
 
 export async function getCategoryExpenseCount(userId: string, categoryId: string): Promise<number> {
   if (isSupabaseEnabled()) {
-    const db = createServiceClient();
+    const db = await createSessionClient();
     const { count, error } = await db
       .from('expenses')
       .select('*', { count: 'exact', head: true })

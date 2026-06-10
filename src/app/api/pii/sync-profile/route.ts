@@ -8,7 +8,6 @@ import {
   getDisplayNameFromUser,
 } from '@/lib/security/profilePii';
 import {
-  createServiceClient,
   createSessionClient,
   isSupabaseEnabled,
 } from '@/lib/supabase/server';
@@ -24,8 +23,7 @@ export async function POST() {
     return noStoreJson({ ok: false, error: 'Sessão expirada.' }, { status: 401 });
   }
 
-  const admin = createServiceClient();
-  const { data: profile } = await admin
+  const { data: profile } = await session
     .from('profiles')
     .select('terms_accepted_at, terms_version')
     .eq('id', user.id)
@@ -55,7 +53,7 @@ export async function POST() {
     );
   }
 
-  const { error } = await admin
+  const { error } = await session
     .from('profiles')
     .update(piiUpdate)
     .eq('id', user.id);

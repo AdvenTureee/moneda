@@ -3,7 +3,6 @@
 import { revalidatePath, revalidateTag } from 'next/cache';
 import {
   createSessionClient,
-  createServiceClient,
   isSupabaseEnabled,
 } from '@/lib/supabase/server';
 import { cacheTags } from '@/lib/cache';
@@ -99,12 +98,11 @@ export async function completeOnboardingAction(
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return { ok: false, error: 'Sessão expirada. Entre novamente.' };
       const userId = user.id;
-      const admin = createServiceClient();
       const normalizedWhatsappPhone = normalizeWhatsappPhone(payload.whatsappPhone);
 
       // 1. Profile fields (incluindo o flag `onboarded` — fica em profiles
       //    porque user_metadata é sobrescrito a cada login OAuth).
-      const { error: profileError } = await admin
+      const { error: profileError } = await supabase
         .from('profiles')
         .update({
           monthly_budget_cents: payload.monthlyBudgetCents || null,
@@ -135,7 +133,7 @@ export async function completeOnboardingAction(
           is_default: false,
           sort_order: 1000 + i,
         }));
-        const { error: catError } = await admin.from('categories').insert(inserts);
+        const { error: catError } = await supabase.from('categories').insert(inserts);
         if (catError) {
           console.error('[completeOnboarding] custom categories:', catError);
           return { ok: false, error: 'Não foi possível criar suas categorias.' };

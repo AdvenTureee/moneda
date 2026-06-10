@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { createSessionClient, createServiceClient, isSupabaseEnabled } from '@/lib/supabase/server';
+import { createSessionClient, isSupabaseEnabled } from '@/lib/supabase/server';
 import { generateMonthlySummary, detectSpendingAlerts } from '@/lib/groq';
 import { getExpenses } from '@/lib/expenses';
 import { getCategories } from '@/lib/categories';
@@ -70,8 +70,7 @@ export async function POST(req: NextRequest) {
     // Persist insight in Supabase if enabled
     let insightId: string | null = null;
     if (isSupabaseEnabled()) {
-      const admin = createServiceClient();
-      const { data } = await admin.from('ai_insights').upsert(
+      const { data } = await session.from('ai_insights').upsert(
         {
           user_id: user.id,
           type: 'monthly_summary',

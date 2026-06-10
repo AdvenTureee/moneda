@@ -18,7 +18,7 @@ import { getNullableBillingClosingDay, getProfileGateStatus } from '@/lib/profil
 import { decryptProfilePii, getDisplayNameFromUser } from '@/lib/security/profilePii';
 import { formatCurrency } from '@/lib/utils';
 import { getCurrentBillingPeriod, normalizeBillingClosingDay } from '@/lib/billingCycle';
-import { createServiceClient, createSessionClient, isSupabaseEnabled } from '@/lib/supabase/server';
+import { createSessionClient, isSupabaseEnabled } from '@/lib/supabase/server';
 import BillingClosingDayPrompt from '@/components/BillingClosingDayPrompt';
 import { TERMS_VERSION } from '@/lib/legal';
 
@@ -87,8 +87,7 @@ export default async function DashboardPage({
   // Custom personalized AI Welcome message if no insight exists yet.
   let fullName = getDisplayNameFromUser(user);
   if (isSupabaseEnabled()) {
-    const admin = createServiceClient();
-    const { data: profile } = await admin
+    const { data: profile } = await supabase
       .from('profiles')
       .select('name_ciphertext,name_iv,name_tag,email_ciphertext,email_iv,email_tag,phone_ciphertext,phone_iv,phone_tag')
       .eq('id', user.id)

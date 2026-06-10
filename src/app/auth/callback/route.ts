@@ -3,7 +3,6 @@ import { createServerClient } from '@supabase/ssr';
 import { revalidateTag } from 'next/cache';
 import { cacheTags } from '@/lib/cache';
 import { TERMS_VERSION } from '@/lib/legal';
-import { createServiceClient } from '@/lib/supabase/server';
 import {
   buildProfileIdentityPiiUpdate,
   buildProfilePhonePiiUpdate,
@@ -71,8 +70,7 @@ export async function GET(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   if (user) {
     try {
-      const admin = createServiceClient();
-      const { data: profile } = await admin
+      const { data: profile } = await supabase
         .from('profiles')
         .select('terms_accepted_at, terms_version')
         .eq('id', user.id)
@@ -98,7 +96,7 @@ export async function GET(request: NextRequest) {
         }
 
         if (Object.keys(profileUpdate).length > 0) {
-          const { error: profileError } = await admin
+          const { error: profileError } = await supabase
             .from('profiles')
             .update(profileUpdate)
             .eq('id', user.id);

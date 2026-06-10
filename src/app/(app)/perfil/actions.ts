@@ -45,8 +45,7 @@ export async function updateDisplayName(formData: FormData): Promise<ActionResul
 
   if (isSupabaseEnabled()) {
     try {
-      const admin = createServiceClient();
-      const { error: profileError } = await admin
+      const { error: profileError } = await supabase
         .from('profiles')
         .update({
           ...buildProfileIdentityPiiUpdate({
@@ -88,8 +87,7 @@ export async function updateWhatsappPhone(rawPhone: string | null): Promise<Acti
   if (!user) return { ok: false, error: 'Sessão expirada. Entre novamente.' };
 
   try {
-    const admin = createServiceClient();
-    const { error } = await admin
+    const { error } = await supabase
       .from('profiles')
       .update(buildProfilePhonePiiUpdate(normalizedPhone))
       .eq('id', user.id);
@@ -135,8 +133,7 @@ export async function updateCurrency(formData: FormData): Promise<ActionResult> 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: 'Sessão expirada. Entre novamente.' };
 
-  const admin = createServiceClient();
-  const { error } = await admin
+  const { error } = await supabase
     .from('profiles')
     .update({ currency: raw })
     .eq('id', user.id);
@@ -165,8 +162,7 @@ export async function updateBillingClosingDay(formData: FormData): Promise<Actio
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: 'Sessão expirada. Entre novamente.' };
 
-  const admin = createServiceClient();
-  const { error } = await admin
+  const { error } = await supabase
     .from('profiles')
     .update({ billing_closing_day: normalizeBillingClosingDay(raw) })
     .eq('id', user.id);
@@ -200,8 +196,7 @@ export async function sendEmailChangeOtp(formData: FormData): Promise<ActionResu
   // Re-autenticação se tem senha
   let hasPassword = false;
   if (isSupabaseEnabled()) {
-    const admin = createServiceClient();
-    const { data } = await admin
+    const { data } = await supabase
       .from('profiles')
       .select('has_password')
       .eq('id', user.id)
@@ -225,6 +220,17 @@ export async function sendEmailChangeOtp(formData: FormData): Promise<ActionResu
 
   if (isSupabaseEnabled()) {
     const admin = createServiceClient();
+
+    // Rate limit: max 3 solicitações por user a cada 10 min
+    const tenMinAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+    const { data: recentReqs, count: recentCount } = await admin
+      .from('pending_email_changes')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .gte('created_at', tenMinAgo);
+    if (recentCount && recentCount >= 3) {
+      return { ok: false, error: 'Muitas tentativas. Aguarde 10 minutos.' };
+    }
 
     await admin.from('pending_email_changes').delete().eq('user_id', user.id);
 
@@ -373,7 +379,7 @@ export async function confirmEmailChangeOtp(formData: FormData): Promise<ActionR
       name: name ?? '',
       email: newEmail,
     });
-    const { error: profileError } = await admin
+    const { error: profileError } = await supabase
       .from('profiles')
       .update(profileUpdate)
       .eq('id', user.id);
@@ -382,6 +388,20 @@ export async function confirmEmailChangeOtp(formData: FormData): Promise<ActionR
     }
   } catch (e) {
     console.error('[confirmEmailChangeOtp:pii]', e);
+  }
+
+  // Desvincula Google se tiver senha (evita conta Frankenstein)
+  try {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('has_password')
+      .eq('id', user.id)
+      .maybeSingle();
+    if (profile?.has_password) {
+      await supabase.rpc('unlink_google_identity');
+    }
+  } catch (e) {
+    console.error('[confirmEmailChangeOtp:unlink]', e);
   }
 
   // Limpa pending
@@ -408,8 +428,7 @@ export async function updateNotificationPrefs(formData: FormData): Promise<Actio
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: 'Sessão expirada. Entre novamente.' };
 
-  const admin = createServiceClient();
-  const { error } = await admin
+  const { error } = await supabase
     .from('profiles')
     .update({ notification_prefs: prefs } as never)
     .eq('id', user.id);
@@ -438,8 +457,7 @@ export async function setInitialPassword(formData: FormData): Promise<ActionResu
 
   let profileHasPassword: boolean | null = null;
   if (isSupabaseEnabled()) {
-    const admin = createServiceClient();
-    const { data } = await admin
+    const { data } = await supabase
       .from('profiles')
       .select('has_password')
       .eq('id', user.id)
@@ -455,8 +473,7 @@ export async function setInitialPassword(formData: FormData): Promise<ActionResu
   }
 
   if (isSupabaseEnabled()) {
-    const admin = createServiceClient();
-    const { error: profileError } = await admin
+    const { error: profileError } = await supabase
       .from('profiles')
       .update({ has_password: true })
       .eq('id', user.id);

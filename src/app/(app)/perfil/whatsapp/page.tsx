@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { createServiceClient, createSessionClient, isSupabaseEnabled } from '@/lib/supabase/server';
+import { createSessionClient, isSupabaseEnabled } from '@/lib/supabase/server';
 import { decryptProfilePii } from '@/lib/security/profilePii';
 import WhatsAppPhoneForm from './WhatsAppPhoneForm';
 
@@ -12,8 +12,7 @@ export default async function WhatsAppPage() {
   let updatedAt: string | null = null;
 
   if (isSupabaseEnabled()) {
-    const admin = createServiceClient();
-    const { data } = await admin
+    const { data } = await supabase
       .from('profiles')
       .select('phone,phone_ciphertext,phone_iv,phone_tag,updated_at')
       .eq('id', user.id)

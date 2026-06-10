@@ -1,7 +1,6 @@
 import { redirect } from 'next/navigation';
 import {
   createSessionClient,
-  createServiceClient,
   isSupabaseEnabled,
 } from '@/lib/supabase/server';
 import { getCategories } from '@/lib/categories';
@@ -23,8 +22,7 @@ export default async function OnboardingPage() {
 
     // If already onboarded (per profiles.onboarded), don't trap them here.
     // Não usamos user_metadata porque provedores OAuth sobrescrevem a cada login.
-    const admin = createServiceClient();
-    const { data: profile } = await admin
+    const { data: profile } = await supabase
       .from('profiles')
       .select('onboarded,terms_accepted_at,terms_version,name_ciphertext,name_iv,name_tag,email_ciphertext,email_iv,email_tag,phone_ciphertext,phone_iv,phone_tag')
       .eq('id', userId)

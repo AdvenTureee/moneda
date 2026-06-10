@@ -1,6 +1,6 @@
 import type { Income, IncomeInput } from '@/types';
 import type { Database } from '@/types/supabase';
-import { createServiceClient, isSupabaseEnabled } from '@/lib/supabase/server';
+import { createSessionClient, isSupabaseEnabled } from '@/lib/supabase/server';
 import { generateId } from '@/lib/utils';
 import { unstable_cache } from 'next/cache';
 import { cacheTags } from '@/lib/cache';
@@ -30,7 +30,7 @@ function rowToIncome(row: IncomesRow): Income {
 
 export async function getIncomes(userId: string): Promise<Income[]> {
   if (isSupabaseEnabled()) {
-    const db = createServiceClient();
+    const db = await createSessionClient();
     const { data, error } = await db
       .from('incomes')
       .select('*')
@@ -54,7 +54,7 @@ async function getMonthlyIncomeTotalCentsImpl(
   const cycle = getBillingCycleForPeriod(period, closingDay);
 
   if (isSupabaseEnabled()) {
-    const db = createServiceClient();
+    const db = await createSessionClient();
     const { data, error } = await db
       .from('incomes')
       .select('amount_cents')
@@ -96,7 +96,7 @@ export async function createIncome(input: IncomeInput): Promise<Income> {
   }
 
   if (isSupabaseEnabled()) {
-    const db = createServiceClient();
+    const db = await createSessionClient();
     const insert: IncomesInsert = {
       user_id: input.userId,
       amount_cents: input.amount,
@@ -140,7 +140,7 @@ export async function updateIncome(id: string, userId: string, input: IncomeInpu
   }
 
   if (isSupabaseEnabled()) {
-    const db = createServiceClient();
+    const db = await createSessionClient();
     const update: IncomesUpdate = {
       amount_cents: input.amount,
       description: input.description,
@@ -188,7 +188,7 @@ export async function updateIncome(id: string, userId: string, input: IncomeInpu
 
 export async function deleteIncome(id: string, userId: string): Promise<void> {
   if (isSupabaseEnabled()) {
-    const db = createServiceClient();
+    const db = await createSessionClient();
     const { error } = await db
       .from('incomes')
       .update({ deleted_at: new Date().toISOString() })

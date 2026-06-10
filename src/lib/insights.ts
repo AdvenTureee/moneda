@@ -1,7 +1,7 @@
 import { unstable_cache } from 'next/cache';
 import type { AIInsight } from '@/types';
 import type { Database } from '@/types/supabase';
-import { createServiceClient, isSupabaseEnabled } from '@/lib/supabase/server';
+import { createSessionClient, isSupabaseEnabled } from '@/lib/supabase/server';
 import { cacheTags } from '@/lib/cache';
 
 type AIInsightRow = Database['public']['Tables']['ai_insights']['Row'];
@@ -21,7 +21,7 @@ function rowToAIInsight(row: AIInsightRow): AIInsight {
 
 async function getLatestInsightImpl(userId: string, period: string): Promise<AIInsight | null> {
   if (isSupabaseEnabled()) {
-    const db = createServiceClient();
+    const db = await createSessionClient();
     const { data, error } = await db
       .from('ai_insights')
       .select('*')
@@ -63,7 +63,7 @@ async function getUserInsightsImpl(
   options?: { type?: AIInsight['type']; period?: string },
 ): Promise<AIInsight[]> {
   if (isSupabaseEnabled()) {
-    const db = createServiceClient();
+    const db = await createSessionClient();
     let query = db
       .from('ai_insights')
       .select('*')

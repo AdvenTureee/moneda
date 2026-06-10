@@ -82,9 +82,7 @@ export async function saveCategoryBudgetsAction(
       userId = user.id;
 
       if (monthlyBudgetCents !== undefined) {
-        const { createServiceClient } = await import('@/lib/supabase/server');
-        const admin = createServiceClient();
-        const { error } = await admin
+        const { error } = await supabase
           .from('profiles')
           .update({ monthly_budget_cents: monthlyBudgetCents || null })
           .eq('id', userId);

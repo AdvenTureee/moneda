@@ -8,7 +8,6 @@ import {
   getDisplayNameFromUser,
 } from '@/lib/security/profilePii';
 import {
-  createServiceClient,
   createSessionClient,
   isSupabaseEnabled,
 } from '@/lib/supabase/server';
@@ -25,7 +24,6 @@ export async function POST() {
     return noStoreJson({ ok: false, error: 'Sessao expirada.' }, { status: 401 });
   }
 
-  const admin = createServiceClient();
   const acceptedAt = new Date().toISOString();
   const profileUpdate: Database['public']['Tables']['profiles']['Update'] = {
     terms_accepted_at: acceptedAt,
@@ -46,7 +44,7 @@ export async function POST() {
     console.error('[terms:accept] PII sync skipped: crypto env unavailable');
   }
 
-  const { error } = await admin
+  const { error } = await session
     .from('profiles')
     .update(profileUpdate)
     .eq('id', user.id);

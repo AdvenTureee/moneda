@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { createSessionClient, createServiceClient, isSupabaseEnabled } from '@/lib/supabase/server';
+import { createSessionClient, isSupabaseEnabled } from '@/lib/supabase/server';
 import { getProfilePreferences } from '@/lib/profiles';
 import { decryptProfilePii, getDisplayNameFromUser } from '@/lib/security/profilePii';
 import { resolveUserHasPassword } from '@/lib/auth/password';
@@ -24,8 +24,7 @@ export default async function ProfileLoader() {
     billingClosingDay = preferences.billingClosingDay;
     profileHasPassword = preferences.hasPassword;
 
-    const admin = createServiceClient();
-    const { data } = await admin
+    const { data } = await supabase
       .from('profiles')
       .select('name_ciphertext,name_iv,name_tag,email_ciphertext,email_iv,email_tag,phone_ciphertext,phone_iv,phone_tag')
       .eq('id', user.id)

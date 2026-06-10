@@ -1,7 +1,7 @@
 import { unstable_cache } from 'next/cache';
 import type { Budget, BudgetInput } from '@/types';
 import type { Database } from '@/types/supabase';
-import { createServiceClient, isSupabaseEnabled } from '@/lib/supabase/server';
+import { createSessionClient, isSupabaseEnabled } from '@/lib/supabase/server';
 import { generateId } from '@/lib/utils';
 import { cacheTags } from '@/lib/cache';
 
@@ -24,7 +24,7 @@ function rowToBudget(row: BudgetsRow): Budget {
 
 async function getBudgetsImpl(userId: string, period: string): Promise<Budget[]> {
   if (isSupabaseEnabled()) {
-    const db = createServiceClient();
+    const db = await createSessionClient();
     const { data, error } = await db
       .from('budgets')
       .select('*')
@@ -58,7 +58,7 @@ export async function getBudgets(userId: string, period: string): Promise<Budget
 
 export async function upsertBudget(input: BudgetInput): Promise<Budget> {
   if (isSupabaseEnabled()) {
-    const db = createServiceClient();
+    const db = await createSessionClient();
     
     // We try to upsert. Note: since the unique key is (user_id, category_id, period) in the database:
     const { data, error } = await db

@@ -1,7 +1,7 @@
 import { unstable_cache } from 'next/cache';
 import type { Category, Expense, ExpenseFilters, ExpenseInput, ExpensePaymentMethod, DashboardMetrics, SpendingTimelineBucket, SpendingTimelineData } from '@/types';
 import type { Database, Json } from '@/types/supabase';
-import { createServiceClient, isSupabaseEnabled } from '@/lib/supabase/server';
+import { createSessionClient, isSupabaseEnabled } from '@/lib/supabase/server';
 import { getCategories, getCategoriesByIds } from '@/lib/categories';
 import { getBudgets } from '@/lib/budgets';
 import { cacheTags } from '@/lib/cache';
@@ -271,7 +271,7 @@ function periodFromExpenseFilters(filters: ExpenseFilters): string {
 }
 
 async function ensureExpenseSeriesMaterialized(userId: string, throughPeriod: string): Promise<void> {
-  const db = createServiceClient();
+  const db = await createSessionClient();
   const closingDay = await getBillingClosingDay(userId);
   const [throughY, throughM] = throughPeriod.split('-').map(Number);
   const throughEnd = new Date(throughY, throughM, 0, 23, 59, 59).toISOString();
@@ -388,7 +388,7 @@ export function filterRecentExpenses(expenses: Expense[]): Expense[] {
 // Supabase implementations
 // ---------------------------------------------------------------------------
 async function getExpensesFromDB(filters: ExpenseFilters): Promise<Expense[]> {
-  const db = createServiceClient();
+  const db = await createSessionClient();
   if (!filters.userId) {
     throw new Error('userId é obrigatório para buscar despesas do banco');
   }
@@ -430,7 +430,7 @@ async function getExpensesFromDB(filters: ExpenseFilters): Promise<Expense[]> {
 }
 
 async function createExpenseInDB(input: ExpenseInput): Promise<Expense> {
-  const db = createServiceClient();
+  const db = await createSessionClient();
   if (!input.userId) {
     throw new Error('userId é obrigatório para cadastrar despesa');
   }
@@ -490,7 +490,7 @@ async function createExpenseInDB(input: ExpenseInput): Promise<Expense> {
 }
 
 async function getExpenseByIdFromDB(id: string): Promise<Expense | null> {
-  const db = createServiceClient();
+  const db = await createSessionClient();
   const { data, error } = await db
     .from('expenses')
     .select('*')
@@ -506,7 +506,7 @@ async function getDashboardMetricsFromDBViaRPC(
   userId: string,
   period: string,
 ): Promise<DashboardMetrics | null> {
-  const db = createServiceClient();
+  const db = await createSessionClient();
   await ensureExpenseSeriesMaterialized(userId, period);
 
   const { data: raw, error } = await (db as any).rpc('get_dashboard_page', {
@@ -616,7 +616,7 @@ async function getDashboardMetricsFromDBViaQuery(
   period: string,
   closingDay: number,
 ): Promise<DashboardMetrics> {
-  const db = createServiceClient();
+  const db = await createSessionClient();
   await ensureExpenseSeriesMaterialized(userId, period);
   const cycle = getBillingCycleForPeriod(period, closingDay);
 
@@ -802,7 +802,7 @@ async function convertExistingExpenseToSeries(
   existing: ExpensesRow,
   input: Partial<ExpenseInput>,
 ): Promise<Expense | null> {
-  const db = createServiceClient();
+  const db = await createSessionClient();
   const next: ExpenseInput = {
     userId: existing.user_id,
     amount: input.amount ?? existing.amount_cents,
@@ -857,7 +857,7 @@ async function updateExpenseSeriesFromOccurrence(
   existing: ExpensesRow,
   input: Partial<ExpenseInput>,
 ): Promise<Expense> {
-  const db = createServiceClient();
+  const db = await createSessionClient();
   const occurrenceIndex = existing.series_occurrence_index ?? 1;
   const seriesId = existing.series_id;
   if (!seriesId) throw new Error('Série não encontrada para o gasto.');
@@ -971,7 +971,7 @@ async function updateExpenseSeriesFromOccurrence(
 }
 
 async function updateExpenseInDB(id: string, input: Partial<ExpenseInput>): Promise<Expense> {
-  const db = createServiceClient();
+  const db = await createSessionClient();
   const { data: existingData, error: existingError } = await db
     .from('expenses')
     .select('*')
@@ -1003,7 +1003,7 @@ async function updateExpenseInDB(id: string, input: Partial<ExpenseInput>): Prom
 }
 
 async function deleteExpenseFromDB(id: string): Promise<void> {
-  const db = createServiceClient();
+  const db = await createSessionClient();
   const { data: existing } = await db
     .from('expenses')
     .select('id,receipt_path,series_id,series_occurrence_index,occurred_at')
@@ -1198,7 +1198,7 @@ async function getMonthlyTotalsFromDB(
   months: number,
   closingDay: number,
 ): Promise<MonthlyTotal[]> {
-  const db = createServiceClient();
+  const db = await createSessionClient();
   await ensureExpenseSeriesMaterialized(userId, endPeriod);
   const startPeriod = shiftPeriod(endPeriod, months - 1);
   const startCycle = getBillingCycleForPeriod(startPeriod, closingDay);
@@ -1322,7 +1322,7 @@ async function getSpendingTimelineFromDB(
   period: string,
   closingDay: number,
 ): Promise<SpendingTimelineData> {
-  const db = createServiceClient();
+  const db = await createSessionClient();
   const [year, month] = period.split('-').map(Number);
   await ensureExpenseSeriesMaterialized(userId, `${year}-12`);
   const yearStart = getBillingCycleForPeriod(`${year}-01`, closingDay).start;

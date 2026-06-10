@@ -564,6 +564,7 @@ export type Database = {
     Functions: {
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
+      unlink_google_identity: { Args: never; Returns: void }
     }
     Enums: {
       [_ in never]: never
