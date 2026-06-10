@@ -226,16 +226,24 @@ export async function sendEmailChangeOtp(formData: FormData): Promise<ActionResu
   if (isSupabaseEnabled()) {
     const admin = createServiceClient();
 
-    // Remove pending anterior se houver
     await admin.from('pending_email_changes').delete().eq('user_id', user.id);
 
-    // Cria temp user manualmente para que signInWithOtp use o template
-    // "Magic Link" (com {{ .Token }} = código de 6 dígitos) em vez de
-    // "Confirm signup". Se já existir um temp user para esse email, reusa.
-    const { data: { users } } = await admin.auth.admin.listUsers();
-    const existingTemp = users?.find(u => u.email === email && u.id !== user.id);
-    if (!existingTemp) {
-      const { error: createError } = await admin.auth.admin.createUser({
+    // Verifica se o email já pertence a outro usuário real (não temp)
+    let tempUserId: string | null = null;
+    if (email !== user.email) {
+      const { data: allUsers } = await admin.auth.admin.listUsers();
+      const existing = allUsers.users?.find(u => u.email === email);
+      if (existing && existing.id !== user.id) {
+        if (!existing.user_metadata?.temp_email_change) {
+          return { ok: false, error: 'Este email já está em uso.' };
+        }
+        tempUserId = existing.id;
+      }
+    }
+
+    // Cria temp user se não existir
+    if (!tempUserId) {
+      const { data, error: createError } = await admin.auth.admin.createUser({
         email,
         email_confirm: true,
         user_metadata: { temp_email_change: true },
@@ -244,9 +252,8 @@ export async function sendEmailChangeOtp(formData: FormData): Promise<ActionResu
         console.error('[sendEmailChangeOtp:createUser]', createError);
         return { ok: false, error: 'Erro interno. Tente novamente.' };
       }
+      tempUserId = data.user?.id ?? null;
     }
-
-    const newTempCreated = !existingTemp;
 
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
     const { error: insertError } = await admin.from('pending_email_changes').insert({
@@ -256,15 +263,10 @@ export async function sendEmailChangeOtp(formData: FormData): Promise<ActionResu
     });
     if (insertError) {
       console.error('[sendEmailChangeOtp:insert]', insertError);
-      if (newTempCreated) {
-        const { data } = await admin.auth.admin.listUsers();
-        const created = data.users?.find(u => u.email === email && u.id !== user.id);
-        if (created) await admin.auth.admin.deleteUser(created.id).catch(() => {});
-      }
+      if (tempUserId) await admin.auth.admin.deleteUser(tempUserId).catch(() => {});
       return { ok: false, error: 'Erro interno. Tente novamente.' };
     }
 
-    // Envia OTP via Supabase Auth — usuário já existe, então usa Magic Link
     const { error: otpError } = await createAnonClient().auth.signInWithOtp({
       email,
       options: { shouldCreateUser: false },
@@ -272,9 +274,7 @@ export async function sendEmailChangeOtp(formData: FormData): Promise<ActionResu
     if (otpError) {
       console.error('[sendEmailChangeOtp:otp]', otpError);
       try {
-        const { data } = await admin.auth.admin.listUsers();
-        const created = data.users?.find(u => u.email === email && u.id !== user.id);
-        if (created) await admin.auth.admin.deleteUser(created.id);
+        if (tempUserId) await admin.auth.admin.deleteUser(tempUserId);
         await admin.from('pending_email_changes').delete().eq('user_id', user.id);
       } catch { /* cleanup best-effort */ }
       return { ok: false, error: 'Não foi possível enviar o código. Verifique o email e tente novamente.' };
@@ -349,13 +349,13 @@ export async function confirmEmailChangeOtp(formData: FormData): Promise<ActionR
     return { ok: false, error: 'Código inválido. Verifique e tente novamente.' };
   }
 
-  // Remove temp user criado pelo signInWithOtp (se existir)
+  // Remove temp user (marcado com temp_email_change)
   try {
-    const { data: { users } } = await admin.auth.admin.listUsers();
-    const tempUser = users.find((u) => u.email === newEmail && u.id !== user.id);
-    if (tempUser) {
-      await admin.auth.admin.deleteUser(tempUser.id);
-    }
+    const { data: allUsers } = await admin.auth.admin.listUsers();
+    const temp = allUsers.users?.find(
+      u => u.email === newEmail && u.id !== user.id && u.user_metadata?.temp_email_change
+    );
+    if (temp) await admin.auth.admin.deleteUser(temp.id);
   } catch (e) {
     console.error('[confirmEmailChangeOtp:cleanup]', e);
   }
