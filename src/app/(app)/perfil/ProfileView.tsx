@@ -317,7 +317,7 @@ export default function ProfileView({
                   </li>
                 </ul>
                 <p className="mt-2 text-xs leading-relaxed text-[#6B7280]">
-                  Clique nos dois links para concluir a troca.
+                  Clique nos dois links para concluir a troca. Verifique sua caixa de entrada ou spam.
                 </p>
               </div>
             </div>

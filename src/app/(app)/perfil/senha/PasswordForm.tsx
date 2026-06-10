@@ -86,7 +86,7 @@ export default function PasswordForm({ email, hasPassword, isRecovery }: Passwor
             <div className="min-w-0">
               <p className="text-sm font-bold text-[#1A1D23]">Alterar senha</p>
               <p className="mt-0.5 text-xs leading-relaxed text-[#6B7280]">
-                Enviaremos um link de redefinição para {email || 'seu email'}.
+                Enviaremos um link de redefinição para {email || 'seu email'}. Verifique sua caixa de entrada ou spam.
               </p>
             </div>
           </div>

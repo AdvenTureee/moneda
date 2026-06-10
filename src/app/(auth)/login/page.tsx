@@ -87,7 +87,7 @@ export default function LoginPage() {
     if (resetError) {
       console.error('[forgotPassword]', resetError);
     }
-    setInfo('Se uma conta estiver cadastrada, você receberá um email de redefinição de senha.');
+    setInfo('Se uma conta estiver cadastrada, você receberá um email de redefinição de senha. Verifique sua caixa de entrada ou spam.');
   }
 
   async function handleGoogleLogin() {
