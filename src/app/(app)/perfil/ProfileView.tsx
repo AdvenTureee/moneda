@@ -175,8 +175,8 @@ export default function ProfileView({
       if (result.ok) {
         setPendingEmail(trimmed);
         setEditingEmail(false);
-        setCurrentPassword('');
       }
+      setCurrentPassword('');
     });
   }
 
@@ -345,7 +345,7 @@ export default function ProfileView({
               <button
                 type="button"
                 onClick={handleSaveEmail}
-                disabled={savingEmail || (!draftEmail.trim() && hasPassword && !currentPassword)}
+                disabled={savingEmail || !draftEmail.trim() || (hasPassword && !currentPassword.trim())}
                 className="w-10 h-10 rounded-[10px] flex items-center justify-center text-white disabled:opacity-60 bg-[#5BBF8E]"
                 aria-label="Confirmar troca de email"
               >
@@ -375,6 +375,12 @@ export default function ProfileView({
                 placeholder="Digite sua senha atual para confirmar"
                 className="themed-field w-full px-3 py-2 rounded-[10px] bg-[#F8F9FB] border border-[#E5E7EB] text-sm text-[#1A1D23] outline-none focus:border-[#A8C5E0] transition-colors placeholder:text-[#9CA3AF]"
               />
+            )}
+            {hasPassword && currentPassword.trim() && !draftEmail.trim() && (
+              <p className="text-xs text-[#E07070]">Informe um email para troca.</p>
+            )}
+            {hasPassword && draftEmail.trim() && !currentPassword.trim() && (
+              <p className="text-xs text-[#E07070]">Digite sua senha atual para confirmar.</p>
             )}
           </div>
         )}
