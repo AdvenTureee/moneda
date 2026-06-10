@@ -238,7 +238,7 @@ function IconBadge({ icon: Icon }: { icon: IconComponent }) {
   );
 }
 
-function CtaButton({ large = false, children = 'Criar conta no web app' }: { large?: boolean; children?: ReactNode }) {
+function CtaButton({ large = false, children = 'Criar conta' }: { large?: boolean; children?: ReactNode }) {
   return (
     <motion.a
       href="/signup"
