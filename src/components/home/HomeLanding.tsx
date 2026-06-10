@@ -490,7 +490,7 @@ function FloatingSummary() {
         }
       }
 
-      if (current) setActiveSection(current);
+      setActiveSection(current);
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -509,7 +509,7 @@ function FloatingSummary() {
     return () => observer.disconnect();
   }, []);
 
-  const hide = !mounted || footerVisible ? 'opacity-0 pointer-events-none' : 'opacity-100';
+  const hide = !mounted || !activeSection || footerVisible ? 'opacity-0 pointer-events-none' : 'opacity-100';
 
   return (
     <>
