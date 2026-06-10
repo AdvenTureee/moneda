@@ -71,6 +71,14 @@ When working on any Supabase task that touches auth, RLS, views, storage, or use
 
 For any security concern not covered above, fetch the Supabase product security index: `https://supabase.com/docs/guides/security/product-security.md`
 
+**7. Auth flows — common traps.**
+Beyond RLS and API security, Supabase Auth has subtle footguns:
+
+- **`redirectTo` must match Redirect URLs.** Supabase silently falls back to the Site URL when `redirectTo` is not in the allowed list. Always use wildcard entries (`https://dominio/**`) instead of enumerating specific paths — otherwise new flows (e.g. adding OAuth later) will break without warning.
+- **Password reset is a hybrid auth state.** The user arrives at `/redefinir-senha` without a session (code not yet exchanged). After `exchangeCodeForSession`, they _have_ a session but still need to stay on the same page. If Next.js middleware treats `/redefinir-senha` as an auth route (`isAuthRoute`), the user gets redirected to the app before they can set a new password. Solution: keep `/redefinir-senha` in `isPublicRoute` but **outside** `isAuthRoute` so authenticated users are not redirected away.
+- **User enumeration is 100% the app's responsibility.** Supabase returns clear errors like `"User already registered"` (signup) and distinguishes `"Invalid login credentials"` from `"Email not confirmed"` (login). The app must sanitize every auth error before showing it to the user. Always use generic messages like `"Email ou senha incorretos."` and `"Se uma conta estiver cadastrada, você receberá um email de redefinição."` regardless of the actual Supabase error.
+- **Client-side rate limiting is UX-only.** Setting `disabled` on buttons or enforcing delays in the browser does nothing against attackers. Real rate protection comes from Supabase's server-side auth rate limiting. Only add client-side throttling for legitimate UX reasons (e.g. preventing accidental double-send of password reset emails).
+
 ## Supabase CLI
 
 Always discover commands via `--help` — never guess. The CLI structure changes between versions.
