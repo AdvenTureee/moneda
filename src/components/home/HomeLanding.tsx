@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType, type ReactNode } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion, useReducedMotion, AnimatePresence } from 'framer-motion';
 import {
   ArrowRight,
   Brain,
@@ -410,9 +410,9 @@ function HeroSection() {
   useEffect(() => { setMounted(true); }, []);
 
   return (
-    <section className="px-4 pb-10 pt-12 sm:px-6 sm:pb-14 sm:pt-16 lg:px-8">
-      <div className={`transition-opacity duration-500 ${mounted ? 'opacity-100' : 'opacity-0'}`}>
-        <div className="mx-auto grid w-full max-w-6xl items-center gap-10 lg:grid-cols-[0.95fr_1.05fr]">
+    <section className="flex min-h-[calc(100vh-80px)] items-center px-4 pb-10 pt-12 sm:px-6 sm:pb-12 sm:pt-16 lg:px-8">
+      <div className={`w-full transition-opacity duration-500 ${mounted ? 'opacity-100' : 'opacity-0'}`}>
+        <div className="mx-auto grid w-full max-w-7xl items-center gap-12 lg:grid-cols-[1fr_1.2fr]">
         <motion.div
           variants={staggerGroup}
           initial={reduceMotion ? false : 'hidden'}
@@ -429,14 +429,14 @@ function HeroSection() {
           <motion.h1
             variants={fadeUp}
             transition={{ duration: 0.3, ease: easeOut }}
-            className="mt-4 font-heading text-[clamp(2.75rem,6vw,4.5rem)] font-bold leading-[1.05] text-[var(--color-text-primary)]"
+            className="mt-4 font-heading text-[clamp(2.75rem,6vw,5rem)] font-bold leading-[1.05] text-[var(--color-text-primary)]"
           >
             Seu dinheiro claro, sem planilha.
           </motion.h1>
           <motion.p
             variants={fadeUp}
             transition={{ duration: 0.3, ease: easeOut }}
-            className="mt-5 max-w-xl text-base leading-relaxed text-[var(--color-text-secondary)]"
+            className="mt-5 max-w-xl text-lg leading-relaxed text-[var(--color-text-secondary)]"
           >
              Registre o mês no web app e pergunte para a Mo o que mudou, onde pesou e onde ajustar.
           </motion.p>
@@ -456,7 +456,7 @@ function HeroSection() {
           </motion.div>
         </motion.div>
 
-        <ProductMock compact />
+        <ProductMock />
         </div>
       </div>
     </section>
@@ -1020,6 +1020,54 @@ function LandingFooter() {
   );
 }
 
+function ScrollHint() {
+  const reduceMotion = useReducedMotion();
+  const [showHint, setShowHint] = useState(true);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 100) {
+        if (showHint) setShowHint(false);
+      } else {
+        if (!showHint) setShowHint(true);
+      }
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [showHint]);
+
+  return (
+    <AnimatePresence>
+      {showHint && (
+        <motion.div
+          className="fixed bottom-6 left-1/2 z-40 -translate-x-1/2 flex cursor-pointer flex-col items-center gap-1.5"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 10 }}
+          transition={{ duration: 0.3 }}
+          onClick={() => window.scrollBy({ top: window.innerHeight * 0.8, behavior: 'smooth' })}
+          aria-label="Rolar para baixo"
+        >
+          <motion.div
+            animate={
+              reduceMotion
+                ? {}
+                : {
+                    y: [0, 8, 0],
+                    transition: { duration: 1.5, repeat: Infinity, ease: 'easeInOut' },
+                  }
+            }
+            className="grid h-10 w-10 place-items-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-tertiary)] shadow-[var(--shadow-card-soft)] transition-colors hover:border-[var(--color-brand-blue)] hover:text-[var(--color-brand-blue)]"
+          >
+            <CaretDown size={20} weight="bold" />
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
 export default function HomeLanding({ whatsappUrl }: HomeLandingProps) {
   void whatsappUrl;
 
@@ -1028,6 +1076,7 @@ export default function HomeLanding({ whatsappUrl }: HomeLandingProps) {
       <Header />
       <HeroSection />
       <FloatingSummary />
+      <ScrollHint />
       <PreviewSection />
       <CycleSection />
       <ProductSection />
