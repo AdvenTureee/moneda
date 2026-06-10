@@ -135,7 +135,7 @@ export default function WhatsAppPhoneForm({
           type="button"
           onClick={handleSave}
           disabled={saving || hasInvalidPhone || !hasChanges}
-          className="flex items-center justify-center gap-2 rounded-full bg-[#5BBF8E] py-4 text-sm font-bold text-white transition-colors duration-150 hover:bg-[#4AA77C] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+          className="gesture-button-primary flex items-center justify-center gap-2 rounded-full bg-[#5BBF8E] py-4 text-sm font-bold text-white transition-colors duration-150 hover:bg-[#4AA77C] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
           style={{ boxShadow: '0 6px 20px rgba(91, 191, 142, 0.35)' }}
         >
           {saving ? (
@@ -154,7 +154,7 @@ export default function WhatsAppPhoneForm({
           type="button"
           onClick={handleClear}
           disabled={saving || !savedPhone}
-          className="flex h-12 w-12 items-center justify-center rounded-full border border-[#E5E7EB] text-[#B14C4C] transition-colors hover:bg-[#FDF0F0] disabled:cursor-not-allowed disabled:opacity-40"
+          className="gesture-icon-button flex h-12 w-12 items-center justify-center rounded-full border border-[#E5E7EB] text-[#B14C4C] transition-colors hover:bg-[#FDF0F0] disabled:cursor-not-allowed disabled:opacity-40"
           aria-label="Remover telefone"
         >
           <Trash size={17} weight="bold" />

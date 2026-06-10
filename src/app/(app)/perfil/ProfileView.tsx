@@ -600,7 +600,7 @@ export default function ProfileView({
               <Link
                 href={anyBusy ? '/perfil' : '/perfil/excluir-conta'}
                 aria-disabled={anyBusy}
-                className="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-[12px] bg-[#C94F4F] px-4 text-sm font-bold text-white transition-colors hover:bg-[#B94545] aria-disabled:pointer-events-none aria-disabled:opacity-60 dark:bg-[#A84E4E] dark:hover:bg-[#B95B5B]"
+                className="gesture-button-danger inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-[12px] bg-[#C94F4F] px-4 text-sm font-bold text-white transition-colors hover:bg-[#B94545] aria-disabled:pointer-events-none aria-disabled:opacity-60 dark:bg-[#A84E4E] dark:hover:bg-[#B95B5B]"
               >
                 <Trash size={16} weight="bold" />
                 Excluir conta

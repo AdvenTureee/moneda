@@ -266,7 +266,7 @@ export default function CategoriesView() {
                       type="button"
                       onClick={() => handleDelete(cat.id)}
                       disabled={saving}
-                      className="flex-1 py-2.5 rounded-[10px] text-xs font-bold text-white bg-[#E07070] disabled:opacity-60"
+                      className="gesture-button-danger flex-1 py-2.5 rounded-[10px] text-xs font-bold text-white bg-[#E07070] disabled:opacity-60"
                     >
                       {saving ? 'Excluindo…' : 'Confirmar exclusão'}
                     </button>
@@ -274,7 +274,7 @@ export default function CategoriesView() {
                       type="button"
                       onClick={() => setDeletingId(null)}
                       disabled={saving}
-                      className="px-5 py-2.5 rounded-[10px] text-xs font-bold text-[#6B7280] border border-[#E5E7EB] disabled:opacity-60"
+                      className="gesture-button px-5 py-2.5 rounded-[10px] text-xs font-bold text-[#6B7280] border border-[#E5E7EB] disabled:opacity-60"
                     >
                       Cancelar
                     </button>
@@ -382,7 +382,7 @@ export default function CategoriesView() {
                     type="button"
                     onClick={handleSave}
                     disabled={!isFormValid || saving}
-                    className="flex-1 py-2.5 rounded-[10px] text-sm font-bold text-white bg-[#5BBF8E] disabled:opacity-40 transition-opacity"
+                    className="gesture-button-primary flex-1 py-2.5 rounded-[10px] text-sm font-bold text-white bg-[#5BBF8E] disabled:opacity-40 transition-opacity"
                   >
                     {saving ? 'Salvando…' : creating ? 'Criar categoria' : 'Salvar'}
                   </button>
@@ -391,7 +391,7 @@ export default function CategoriesView() {
                   type="button"
                   onClick={cancelEdit}
                   disabled={saving}
-                  className={`${readOnly ? 'flex-1' : 'px-5'} py-2.5 rounded-[10px] text-sm font-bold text-[#6B7280] border border-[#E5E7EB] disabled:opacity-60`}
+                  className={`gesture-button ${readOnly ? 'flex-1' : 'px-5'} py-2.5 rounded-[10px] text-sm font-bold text-[#6B7280] border border-[#E5E7EB] disabled:opacity-60`}
                 >
                   {readOnly ? 'Fechar' : 'Cancelar'}
                 </button>
@@ -400,7 +400,7 @@ export default function CategoriesView() {
                     type="button"
                     onClick={() => { setDeletingId(editingId); setEditingId(null); }}
                     disabled={saving}
-                    className="px-3 py-2.5 rounded-[10px] text-sm font-bold text-[#E07070] border border-[#F4D7D7] hover:bg-[#FDF0F0] transition-colors disabled:opacity-60"
+                    className="gesture-icon-button px-3 py-2.5 rounded-[10px] text-sm font-bold text-[#E07070] border border-[#F4D7D7] hover:bg-[#FDF0F0] transition-colors disabled:opacity-60"
                     aria-label="Excluir categoria"
                   >
                     <Trash size={16} />

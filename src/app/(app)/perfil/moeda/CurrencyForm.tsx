@@ -89,7 +89,7 @@ export default function CurrencyForm({ initialCurrency }: CurrencyFormProps) {
         type="button"
         onClick={handleSave}
         disabled={saving || selected === initialCurrency}
-        className="w-full py-3 rounded-[12px] text-sm font-semibold text-white bg-[#5BBF8E] hover:bg-[#4AA77C] active:bg-[#3FA876] transition-colors duration-150 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed animate-fade-up delay-2"
+        className="gesture-button-primary w-full py-3 rounded-[12px] text-sm font-semibold text-white bg-[#5BBF8E] hover:bg-[#4AA77C] active:bg-[#3FA876] transition-colors duration-150 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed animate-fade-up delay-2"
         style={{ boxShadow: '0 4px 14px rgba(91, 191, 142, 0.3)' }}
       >
         {saving ? 'Salvando…' : 'Salvar'}

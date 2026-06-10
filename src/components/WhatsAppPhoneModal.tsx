@@ -126,7 +126,7 @@ export default function WhatsAppPhoneModal({
               type="button"
               onClick={onLater}
               disabled={pending}
-              className="flex-1 rounded-full bg-[#F1F3F7] py-3 text-sm font-semibold text-[#6B7280] transition-colors hover:bg-[#E5E7EB] active:scale-[0.98] disabled:opacity-50"
+              className="gesture-button flex-1 rounded-full bg-[#F1F3F7] py-3 text-sm font-semibold text-[#6B7280] transition-colors hover:bg-[#E5E7EB] active:scale-[0.98] disabled:opacity-50"
             >
               Agora não
             </button>
@@ -134,7 +134,7 @@ export default function WhatsAppPhoneModal({
               type="button"
               onClick={save}
               disabled={!normalizedPhone || pending || hasInvalidPhone}
-              className="flex-1 rounded-full bg-[#5BBF8E] py-3 text-sm font-semibold text-white transition-colors hover:bg-[#4AA77C] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+              className="gesture-button-primary flex-1 rounded-full bg-[#5BBF8E] py-3 text-sm font-semibold text-white transition-colors hover:bg-[#4AA77C] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
             >
               {pending ? 'Salvando...' : 'Salvar'}
             </button>

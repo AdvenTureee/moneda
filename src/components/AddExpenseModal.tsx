@@ -419,7 +419,7 @@ export default function AddExpenseModal({
           <button
             onClick={finishClose}
             aria-label="Fechar"
-            className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-[#F1F3F7] transition-colors"
+            className="gesture-icon-button flex items-center justify-center w-8 h-8 rounded-full hover:bg-[#F1F3F7] transition-colors"
           >
             <X size={18} className="text-[#6B7280]" />
           </button>
@@ -646,7 +646,7 @@ export default function AddExpenseModal({
               <button
                 type="button"
                 onClick={() => receiptInputRef.current?.click()}
-                className="flex min-w-0 flex-1 items-center gap-2 rounded-[8px] px-2 py-1.5 text-left transition-colors hover:bg-[#F8F9FB]"
+                className="gesture-button flex min-w-0 flex-1 items-center gap-2 rounded-[8px] px-2 py-1.5 text-left transition-colors hover:bg-[#F8F9FB]"
               >
                 <Paperclip size={17} className="shrink-0 text-[#7AAECF]" />
                 <span className="min-w-0 flex-1 truncate text-sm font-medium text-[#1A1D23]">
@@ -658,7 +658,7 @@ export default function AddExpenseModal({
                   type="button"
                   onClick={openExistingReceipt}
                   disabled={receiptBusy}
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] bg-[#EEF9F4] text-[#5BBF8E] transition-colors hover:bg-[#DDF4EA] disabled:opacity-50"
+                  className="gesture-icon-button flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] bg-[#EEF9F4] text-[#5BBF8E] transition-colors hover:bg-[#DDF4EA] disabled:opacity-50"
                   aria-label="Ver comprovante"
                 >
                   <Eye size={16} />
@@ -672,7 +672,7 @@ export default function AddExpenseModal({
                     else removeExistingReceipt();
                   }}
                   disabled={receiptBusy}
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] bg-[#FDF0F0] text-[#E07070] transition-colors hover:bg-[#FBE2E2] disabled:opacity-50"
+                  className="gesture-icon-button flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] bg-[#FDF0F0] text-[#E07070] transition-colors hover:bg-[#FBE2E2] disabled:opacity-50"
                   aria-label="Remover comprovante"
                 >
                   <Trash size={16} />
@@ -721,7 +721,7 @@ export default function AddExpenseModal({
           <button
             onClick={handleSave}
             disabled={amountCents <= 0 || !selectedCategory || saveBusy || !hasValidInstallments}
-            className="w-full rounded-full py-4 text-[15px] font-semibold text-white transition-all duration-75 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
+            className="gesture-button-primary w-full rounded-full py-4 text-[15px] font-semibold text-white transition-all duration-75 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
             style={{
               background:
                 amountCents > 0 && selectedCategory && hasValidInstallments ? '#5BBF8E' : '#9CA3AF',

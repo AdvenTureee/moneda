@@ -893,6 +893,52 @@ html[data-theme="dark"] .expense-action-separator {
   touch-action: manipulation;
 }
 
+.gesture-button,
+.gesture-icon-button,
+.gesture-button-primary,
+.gesture-button-danger {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  user-select: none;
+  transition:
+    transform 120ms cubic-bezier(0.22, 1, 0.36, 1),
+    filter 150ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 170ms cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 150ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 150ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 150ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.gesture-button:active:not(:disabled),
+.gesture-button-primary:active:not(:disabled),
+.gesture-button-danger:active:not(:disabled) {
+  transform: scale(0.975);
+}
+
+.gesture-icon-button:active:not(:disabled) {
+  transform: scale(0.92);
+}
+
+.gesture-button-primary:not(:disabled):hover,
+.gesture-button-danger:not(:disabled):hover {
+  filter: brightness(1.04);
+}
+
+.gesture-button:focus-visible,
+.gesture-icon-button:focus-visible,
+.gesture-button-primary:focus-visible,
+.gesture-button-danger:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+.gesture-button:disabled,
+.gesture-icon-button:disabled,
+.gesture-button-primary:disabled,
+.gesture-button-danger:disabled {
+  transform: none;
+}
+
 .bottom-nav-indicator {
   left: 50%;
   width: 20px;

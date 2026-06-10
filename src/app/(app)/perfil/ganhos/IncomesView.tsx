@@ -271,7 +271,7 @@ export default function IncomesView({ initialIncomes }: IncomesViewProps) {
         <button
           type="button"
           onClick={openAddModal}
-          className="w-full flex items-center justify-center gap-2 py-3 rounded-[12px] text-sm font-semibold text-[#A8C5E0] border border-dashed border-[#D1D9E6] hover:border-[#A8C5E0] hover:bg-[#F8F9FB] transition-colors"
+          className="gesture-button w-full flex items-center justify-center gap-2 py-3 rounded-[12px] text-sm font-semibold text-[#A8C5E0] border border-dashed border-[#D1D9E6] hover:border-[#A8C5E0] hover:bg-[#F8F9FB] transition-colors"
         >
           <Plus size={18} />
           Adicionar ganho
@@ -539,7 +539,7 @@ export default function IncomesView({ initialIncomes }: IncomesViewProps) {
                 <button
                   type="submit"
                   disabled={isSaving || amountCents <= 0 || !description.trim()}
-                  className="w-full bg-[#5BBF8E] hover:bg-[#4AA77C] active:bg-[#3FA876] text-white font-bold py-3.5 rounded-full transition-colors duration-150 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="gesture-button-primary w-full bg-[#5BBF8E] hover:bg-[#4AA77C] active:bg-[#3FA876] text-white font-bold py-3.5 rounded-full transition-colors duration-150 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   style={{ boxShadow: '0 6px 20px rgba(91, 191, 142, 0.35)' }}
                 >
                   {isSaving ? (

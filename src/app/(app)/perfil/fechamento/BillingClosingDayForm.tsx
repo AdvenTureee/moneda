@@ -108,7 +108,7 @@ export default function BillingClosingDayForm({
           type="button"
           onClick={handleSave}
           disabled={saving || !dirty}
-          className="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-[#5BBF8E] py-4 text-sm font-bold text-white transition-colors hover:bg-[#4AA77C] disabled:cursor-not-allowed disabled:opacity-40"
+          className="gesture-button-primary mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-[#5BBF8E] py-4 text-sm font-bold text-white transition-colors hover:bg-[#4AA77C] disabled:cursor-not-allowed disabled:opacity-40"
           style={{ boxShadow: '0 6px 20px rgba(91, 191, 142, 0.35)' }}
         >
           {saving ? (

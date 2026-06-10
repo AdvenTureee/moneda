@@ -134,7 +134,7 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
                 type="button"
                 onClick={() => onAddExpense?.()}
                 aria-label="Adicionar gasto"
-                className="bottom-nav-action justify-self-center flex flex-col items-center justify-center h-[68px] w-[68px] rounded-full bg-[#5BBF8E] text-white -mt-6 touch-manipulation active:scale-90 transition-transform duration-75"
+                className="gesture-icon-button bottom-nav-action justify-self-center flex flex-col items-center justify-center h-[68px] w-[68px] rounded-full bg-[#5BBF8E] text-white -mt-6 touch-manipulation active:scale-90 transition-transform duration-75"
                 style={{ boxShadow: 'var(--shadow-nav-action)' }}
               >
                 <item.icon size={32} />

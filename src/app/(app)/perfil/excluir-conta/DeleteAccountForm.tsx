@@ -151,7 +151,7 @@ export default function DeleteAccountForm({ confirmationName }: DeleteAccountFor
             type="button"
             onClick={handleDelete}
             disabled={deleting || !canDelete}
-            className="flex flex-1 items-center justify-center gap-2 rounded-[12px] bg-[#C94F4F] py-3 text-sm font-bold text-white transition-colors hover:bg-[#B94545] disabled:cursor-not-allowed disabled:opacity-40 dark:bg-[#A84E4E] dark:hover:bg-[#B95B5B]"
+            className="gesture-button-danger flex flex-1 items-center justify-center gap-2 rounded-[12px] bg-[#C94F4F] py-3 text-sm font-bold text-white transition-colors hover:bg-[#B94545] disabled:cursor-not-allowed disabled:opacity-40 dark:bg-[#A84E4E] dark:hover:bg-[#B95B5B]"
           >
             {deleting ? (
               <>
@@ -168,7 +168,7 @@ export default function DeleteAccountForm({ confirmationName }: DeleteAccountFor
           <Link
             href="/perfil"
             aria-disabled={deleting}
-            className="inline-flex items-center justify-center gap-2 rounded-[12px] border border-[#E5E7EB] px-5 py-3 text-sm font-bold text-[#6B7280] transition-colors hover:bg-[#F8F9FB] aria-disabled:pointer-events-none aria-disabled:opacity-60"
+            className="gesture-button inline-flex items-center justify-center gap-2 rounded-[12px] border border-[#E5E7EB] px-5 py-3 text-sm font-bold text-[#6B7280] transition-colors hover:bg-[#F8F9FB] aria-disabled:pointer-events-none aria-disabled:opacity-60"
           >
             <X size={16} weight="bold" />
             Cancelar

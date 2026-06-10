@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import NextTopLoader from 'nextjs-toploader';
+import ModalScrollLock from '@/components/ModalScrollLock';
 import PWARegistrar from '@/components/PWARegistrar';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import './globals.css';
@@ -72,6 +73,7 @@ export default function RootLayout({
       </head>
       <body className="min-h-full bg-[var(--color-bg)] antialiased font-body">
         <NextTopLoader color="#A8C5E0" height={3} showSpinner={false} />
+        <ModalScrollLock />
         <ThemeProvider>
           <PWARegistrar />
           {children}

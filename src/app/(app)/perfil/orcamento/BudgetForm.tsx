@@ -314,7 +314,7 @@ export default function BudgetForm({
           <button
             onClick={handleSaveAll}
             disabled={saving || !hasChanges}
-            className="flex w-full items-center justify-center gap-2 rounded-full bg-[#5BBF8E] py-4 font-bold text-white transition-colors duration-150 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+            className="gesture-button-primary flex w-full items-center justify-center gap-2 rounded-full bg-[#5BBF8E] py-4 font-bold text-white transition-colors duration-150 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
             style={{ boxShadow: '0 6px 20px rgba(91, 191, 142, 0.35)' }}
           >
             {saving ? (

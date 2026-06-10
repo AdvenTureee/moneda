@@ -62,9 +62,9 @@ export default function ExpenseCard({
       : paymentLabel;
   const shouldShowMenu = Boolean(expense.receipt || onReceiptChanged || hasCardActions || onViewInstallments);
   const menuItemClass =
-    'expense-action-item group flex min-h-10 w-full items-center gap-3 rounded-[11px] px-3.5 text-left text-sm font-medium transition-[background,color,transform] duration-150 active:scale-[0.985] disabled:opacity-50';
+    'gesture-button expense-action-item group flex min-h-10 w-full items-center gap-3 rounded-[11px] px-3.5 text-left text-sm font-medium transition-[background,color,transform] duration-150 active:scale-[0.985] disabled:opacity-50';
   const menuItemDangerClass =
-    'expense-action-item expense-action-item--danger group flex min-h-10 w-full items-center gap-3 rounded-[11px] px-3.5 text-left text-sm font-medium transition-[background,color,transform] duration-150 active:scale-[0.985] disabled:opacity-50';
+    'gesture-button-danger expense-action-item expense-action-item--danger group flex min-h-10 w-full items-center gap-3 rounded-[11px] px-3.5 text-left text-sm font-medium transition-[background,color,transform] duration-150 active:scale-[0.985] disabled:opacity-50';
   const menuIconClass = 'expense-action-icon shrink-0 transition-colors';
   const menuDangerIconClass = 'expense-action-danger-icon shrink-0 transition-colors';
 
@@ -269,7 +269,7 @@ export default function ExpenseCard({
           type="button"
           onClick={openActionMenu}
           disabled={receiptBusy}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#F1F3F7]/70 text-[#6B7280] transition-colors hover:bg-[#E9EDF3] active:scale-95 disabled:opacity-50 dark:bg-white/8 dark:text-[#CBD5E1] dark:hover:bg-white/12"
+          className="gesture-icon-button flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#F1F3F7]/70 text-[#6B7280] transition-colors hover:bg-[#E9EDF3] active:scale-95 disabled:opacity-50 dark:bg-white/8 dark:text-[#CBD5E1] dark:hover:bg-white/12"
           aria-label="Mais opções do gasto"
           aria-haspopup="menu"
           aria-expanded={menuOpen}
