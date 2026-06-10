@@ -225,8 +225,28 @@ export async function sendEmailChangeOtp(formData: FormData): Promise<ActionResu
 
   if (isSupabaseEnabled()) {
     const admin = createServiceClient();
+
     // Remove pending anterior se houver
     await admin.from('pending_email_changes').delete().eq('user_id', user.id);
+
+    // Cria temp user manualmente para que signInWithOtp use o template
+    // "Magic Link" (com {{ .Token }} = código de 6 dígitos) em vez de
+    // "Confirm signup". Se já existir um temp user para esse email, reusa.
+    const { data: { users } } = await admin.auth.admin.listUsers();
+    const existingTemp = users?.find(u => u.email === email && u.id !== user.id);
+    if (!existingTemp) {
+      const { error: createError } = await admin.auth.admin.createUser({
+        email,
+        email_confirm: true,
+        user_metadata: { temp_email_change: true },
+      });
+      if (createError) {
+        console.error('[sendEmailChangeOtp:createUser]', createError);
+        return { ok: false, error: 'Erro interno. Tente novamente.' };
+      }
+    }
+
+    const newTempCreated = !existingTemp;
 
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
     const { error: insertError } = await admin.from('pending_email_changes').insert({
@@ -236,16 +256,27 @@ export async function sendEmailChangeOtp(formData: FormData): Promise<ActionResu
     });
     if (insertError) {
       console.error('[sendEmailChangeOtp:insert]', insertError);
+      if (newTempCreated) {
+        const { data } = await admin.auth.admin.listUsers();
+        const created = data.users?.find(u => u.email === email && u.id !== user.id);
+        if (created) await admin.auth.admin.deleteUser(created.id).catch(() => {});
+      }
       return { ok: false, error: 'Erro interno. Tente novamente.' };
     }
 
-    // Envia OTP via Supabase Auth usando o template de email customizado
+    // Envia OTP via Supabase Auth — usuário já existe, então usa Magic Link
     const { error: otpError } = await createAnonClient().auth.signInWithOtp({
       email,
-      options: { shouldCreateUser: true },
+      options: { shouldCreateUser: false },
     });
     if (otpError) {
       console.error('[sendEmailChangeOtp:otp]', otpError);
+      try {
+        const { data } = await admin.auth.admin.listUsers();
+        const created = data.users?.find(u => u.email === email && u.id !== user.id);
+        if (created) await admin.auth.admin.deleteUser(created.id);
+        await admin.from('pending_email_changes').delete().eq('user_id', user.id);
+      } catch { /* cleanup best-effort */ }
       return { ok: false, error: 'Não foi possível enviar o código. Verifique o email e tente novamente.' };
     }
 
