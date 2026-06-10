@@ -46,9 +46,8 @@ export async function middleware(request: NextRequest) {
   const isAuthRoute =
     pathname === '/login' ||
     pathname === '/signup' ||
-    pathname.startsWith('/auth/') ||
-    isPasswordRecovery;
-  const isPublicRoute = isHomeRoute || isAuthRoute;
+    pathname.startsWith('/auth/');
+  const isPublicRoute = isHomeRoute || isAuthRoute || isPasswordRecovery;
 
   if (!user && !isPublicRoute) {
     const url = request.nextUrl.clone();
