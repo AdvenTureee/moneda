@@ -293,7 +293,7 @@ function ProductMock({ compact = false }: { compact?: boolean }) {
         <div className="rounded-xl bg-[var(--color-surface-alt)] p-4">
             <p className="text-sm text-[var(--color-text-secondary)]">Orçamento do mês</p>
           <div className="mt-2 flex items-end justify-between gap-4">
-            <p className="text-2xl font-bold tabular-nums text-[var(--color-text-primary)]">R$ 1.224,63</p>
+            <p className="text-2xl font-bold tabular-nums text-[var(--color-text-primary)]">R$ 1.225,67</p>
             <span className="rounded-full bg-[var(--color-warning-bg)] px-3 py-1 text-xs font-bold text-[var(--color-warning)]">
               acima
             </span>
@@ -345,13 +345,14 @@ function ProductMock({ compact = false }: { compact?: boolean }) {
           </div>
         </div>
       </div>
+
     </Surface>
   );
 }
 
 function Header() {
   return (
-    <header className="sticky top-0 z-30 border-b border-[var(--color-border)] bg-[var(--color-bg)]">
+    <header className="sticky top-0 z-50 border-b border-[var(--color-border)] bg-[var(--color-bg)]">
       <div className="mx-auto grid min-h-16 w-full max-w-6xl grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 py-3 sm:px-6 lg:px-8">
         <div className="flex items-center justify-self-start">
           <ThemeToggleButton />
@@ -452,35 +453,32 @@ function FloatingSummary() {
 
   useEffect(() => { setMounted(true); }, []);
 
-  const countRef = useRef(0);
-
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) {
-            countRef.current += 1;
-            const id = entry.target.id === 'faq' ? 'privacidade' : entry.target.id;
-            setActiveSection(id);
-          } else {
-            countRef.current -= 1;
-            if (countRef.current <= 0) {
-              countRef.current = 0;
-              setActiveSection('');
-            }
+    const sectionIds = ['visualizacao', 'produto', 'como-funciona', 'privacidade', 'faq'];
+
+    const handleScroll = () => {
+      if (window.scrollY < 200) {
+        setActiveSection('');
+        return;
+      }
+
+      let current = '';
+      for (const id of sectionIds) {
+        const el = document.getElementById(id);
+        if (el) {
+          const rect = el.getBoundingClientRect();
+          if (rect.top <= window.innerHeight * 0.4) {
+            current = id === 'faq' ? 'privacidade' : id;
           }
         }
-      },
-      { rootMargin: '-40% 0px -55% 0px' },
-    );
+      }
 
-    const ids = [...summaryItems.map((i) => i.href.replace('#', '')), 'faq'];
-    [...new Set(ids)].forEach((id) => {
-      const el = document.getElementById(id);
-      if (el) observer.observe(el);
-    });
+      if (current) setActiveSection(current);
+    };
 
-    return () => observer.disconnect();
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   useEffect(() => {
@@ -488,29 +486,23 @@ function FloatingSummary() {
     if (!el) return;
     const observer = new IntersectionObserver(
       ([entry]) => setFooterVisible(entry.isIntersecting),
-      { threshold: 0 },
+      { threshold: 0 }
     );
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
 
-  const hide = !mounted || footerVisible || !activeSection ? 'opacity-0 pointer-events-none' : 'opacity-100';
+  const hide = !mounted || footerVisible ? 'opacity-0 pointer-events-none' : 'opacity-100';
 
   return (
     <>
-      {/* MENU MOBILE COM FADE NAS EXTREMIDADES E SEM LINHAS */}
+      {/* MENU MOBILE: Limpo, sem fade estranho */}
       <nav
         aria-label="Navegação rápida"
         className={`fixed bottom-3 left-1/2 z-50 -translate-x-1/2 w-auto max-w-[90vw] transition-opacity duration-300 md:hidden ${hide}`}
       >
-        <div className="relative rounded-full bg-[var(--color-bg)]/60 backdrop-blur-md px-4 py-1.5 shadow-[var(--shadow-card-soft)]">
-          <div
-            className="flex items-center gap-2 overflow-x-auto no-scrollbar scroll-smooth whitespace-nowrap"
-            style={{ 
-              maskImage: 'linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%)', 
-              WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%)' 
-            }}
-          >
+        <div className="relative rounded-full bg-[var(--color-bg)]/80 backdrop-blur-md px-4 py-1.5 shadow-[var(--shadow-card-soft)] border border-[var(--color-border)]">
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar scroll-smooth whitespace-nowrap">
             {summaryItems.map((item) => {
               const sectionId = item.href.replace('#', '');
               const isActive = activeSection === sectionId;
@@ -533,7 +525,7 @@ function FloatingSummary() {
         </div>
       </nav>
 
-      {/* MENU DESKTOP (LATERAL) */}
+      {/* MENU DESKTOP */}
       <nav
         aria-label="Navegação rápida"
         className={`fixed left-6 top-1/2 z-50 hidden -translate-y-1/2 transition-opacity duration-300 md:block ${hide}`}
@@ -592,11 +584,6 @@ function ProductSection() {
               </div>
             ))}
           </div>
-          <MoSkate
-            variant="happy"
-            size={88}
-            className="pointer-events-none absolute -bottom-[6px] right-12 select-none"
-          />
         </Surface>
       </div>
     </Section>
@@ -610,7 +597,12 @@ function ExplainSection() {
         O Moneda junta registro, leitura e pergunta em uma rotina só.
       </SectionTitle>
 
-      <Surface className="mt-8 p-4 sm:p-5">
+      <Surface className="relative mt-12 sm:mt-16 p-4 sm:p-5">
+        <MoSkate
+          variant="happy"
+          size={88}
+          className="pointer-events-none absolute -top-[82px] right-2 sm:right-8 select-none"
+        />
         <div className="grid gap-0 divide-y divide-[var(--color-border)] md:grid-cols-3 md:divide-x md:divide-y-0">
           {ideas.map((item, index) => (
             <div key={item.title} className="p-4 first:pt-0 last:pb-0 md:py-0 md:first:pl-0 md:last:pr-0">
@@ -692,8 +684,8 @@ function PreviewCarousel() {
   };
 
   const handleDragEnd = (event: any, info: any) => {
-    const swipeThreshold = 30;
-    const velocityThreshold = 150;
+    const swipeThreshold = 40;
+    const velocityThreshold = 200;
 
     const offset = info.offset.x;
     const velocity = info.velocity.x;
@@ -754,12 +746,12 @@ function PreviewCarousel() {
         drag="x"
         dragDirectionLock
         dragConstraints={{ left: 0, right: 0 }}
-        dragElastic={0.15}
-        dragTransition={{ bounceStiffness: 600, bounceDamping: 25 }}
+        dragElastic={1}
+        dragTransition={{ bounceStiffness: 400, bounceDamping: 25 }}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
         animate={{ x: `-${activeIndex * 100}%` }}
-        transition={{ type: 'spring', stiffness: 350, damping: 28 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
       >
         {screenshots.map((img) => (
           <div
@@ -782,7 +774,7 @@ function PreviewCarousel() {
         ))}
       </motion.div>
 
-      <div className="mt-5 flex items-center justify-center gap-2.5 relative z-30">
+      <div className="mt-5 flex items-center justify-center gap-2.5 relative z-10 pointer-events-none">
         {screenshots.map((_, index) => {
           const isActive = index === activeIndex;
           return (
