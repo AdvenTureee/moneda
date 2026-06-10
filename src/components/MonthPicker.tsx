@@ -117,7 +117,7 @@ export default function MonthPicker({
   function pick(period: string) {
     closeMenu();
     setStoredDashboardPeriod(period);
-      router.push(`/app?period=${period}`);
+      router.push(`/feed?period=${period}`);
     router.refresh();
   }
 

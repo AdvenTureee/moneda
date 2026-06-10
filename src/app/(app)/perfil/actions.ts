@@ -171,7 +171,7 @@ export async function updateBillingClosingDay(formData: FormData): Promise<Actio
     return { ok: false, error: 'Não foi possível salvar o fechamento.' };
   }
 
-  revalidatePath('/app');
+  revalidatePath('/feed');
   revalidatePath('/perfil');
   revalidatePath('/perfil/fechamento');
   for (const tag of allUserTags(user.id)) revalidateTag(tag, { expire: 0 });

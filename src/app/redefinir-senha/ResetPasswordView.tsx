@@ -74,7 +74,7 @@ export default function ResetPasswordView() {
       setMessage(result.message ?? 'Senha atualizada.');
       setNewPassword('');
       setConfirmPassword('');
-      router.push('/app');
+      router.push('/feed');
       router.refresh();
     });
   }

@@ -223,7 +223,7 @@ export async function completeOnboardingAction(
       });
     }
 
-    revalidatePath('/app');
+    revalidatePath('/feed');
     revalidatePath('/perfil');
     return { ok: true };
   } catch (err: unknown) {

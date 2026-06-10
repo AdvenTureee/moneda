@@ -28,10 +28,10 @@ export default async function OnboardingPage() {
       .eq('id', userId)
       .single();
     if (!profile?.terms_accepted_at || profile.terms_version !== TERMS_VERSION) {
-      redirect('/app');
+      redirect('/feed');
     }
     if (profile?.onboarded === true) {
-      redirect('/app');
+      redirect('/feed');
     }
 
     const fullName = profile

@@ -4,10 +4,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import Link, { useLinkStatus } from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { House, List, PlusCircle, Sparkle, User } from '@phosphor-icons/react';
-import {
-  DASHBOARD_PERIOD_CHANGED_EVENT,
-  dashboardHrefWithStoredPeriod,
-} from '@/lib/navigationState';
+import { DASHBOARD_PERIOD_CHANGED_EVENT } from '@/lib/navigationState';
 
 interface NavItem {
   label: string;
@@ -17,7 +14,7 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { label: 'Dashboard', icon: House, href: '/app' },
+  { label: 'Dashboard', icon: House, href: '/feed' },
   { label: 'Feed', icon: List, href: '/feed' },
   { label: 'Adicionar', icon: PlusCircle, href: '#add', isAction: true },
   { label: 'Insights', icon: Sparkle, href: '/insights' },
@@ -65,7 +62,7 @@ interface BottomNavProps {
 export default function BottomNav({ onAddExpense }: BottomNavProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const [dashboardHref, setDashboardHref] = useState('/app');
+  const [dashboardHref, setDashboardHref] = useState('/feed');
   const shouldResetScrollRef = useRef(false);
   const previousPathnameRef = useRef(pathname);
   const resetScrollTimeoutRef = useRef<number | null>(null);
@@ -142,9 +139,9 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
             );
           }
 
-          const href = item.href === '/app' ? dashboardHref : item.href;
-          const isActive = item.href === '/app'
-            ? pathname === '/app'
+          const href = item.href === '/feed' ? dashboardHref : item.href;
+          const isActive = item.href === '/feed'
+            ? pathname === '/feed'
             : pathname.startsWith(item.href);
           const isSamePath = pathname === item.href;
 

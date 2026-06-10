@@ -57,7 +57,7 @@ export async function middleware(request: NextRequest) {
 
   if (user && isAuthRoute && !isAuthCallback) {
     const url = request.nextUrl.clone();
-    url.pathname = '/app';
+    url.pathname = '/feed';
     return withPrivateNoStore(NextResponse.redirect(url));
   }
 
