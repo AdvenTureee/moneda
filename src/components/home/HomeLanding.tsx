@@ -14,6 +14,7 @@ import {
   CreditCard,
   Devices,
   Eye,
+  Fire,
   HandPointing,
   ListBullets,
   LockKey,
@@ -61,12 +62,18 @@ const staggerGroup = {
 
 const summaryItems = [
   { label: 'Visualização', href: '#visualizacao', icon: Eye },
+  { label: 'Ciclo', href: '#ciclo', icon: CreditCard },
   { label: 'Produto', href: '#produto', icon: CreditCard },
   { label: 'Como funciona', href: '#como-funciona', icon: ListBullets },
   { label: 'Privacidade & FAQ', href: '#privacidade', icon: ShieldCheck },
 ];
 
 const featureRows = [
+  {
+    icon: WhatsappLogo,
+    title: 'Lançamento pelo WhatsApp',
+    text: 'Em breve, registre gastos por mensagem no momento em que acontecem.',
+  },
   {
     icon: Devices,
     title: 'Use pelo navegador',
@@ -88,6 +95,16 @@ const featureRows = [
     text: 'Entenda onde pesou e o que mudou no mês.',
   },
 ];
+
+const cycleHighlight = {
+  icon: CreditCard,
+  tag: 'Métrica',
+  title: 'Seu mês começa no fechamento da fatura.',
+  mantra: 'Moneda mede o ciclo, não o calendário.',
+  text: 'O gasto entra no período que realmente pesa: a próxima fatura.',
+  cycleStart: 'Fecha dia 10',
+  cycleEnd: 'Ciclo 10 a 09',
+};
 
 const ideas = [
   {
@@ -454,7 +471,7 @@ function FloatingSummary() {
   useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
-    const sectionIds = ['visualizacao', 'produto', 'como-funciona', 'privacidade', 'faq'];
+    const sectionIds = ['visualizacao', 'ciclo', 'produto', 'como-funciona', 'privacidade', 'faq'];
 
     const handleScroll = () => {
       if (window.scrollY < 200) {
@@ -819,6 +836,58 @@ function PreviewSection() {
   );
 }
 
+function CycleSection() {
+  const item = cycleHighlight;
+
+  return (
+    <Section id="ciclo">
+      <SectionTitle align="center" eyebrow="Ciclo" title="A métrica principal do Moneda.">
+        O app organiza o mês financeiro pelo fechamento da fatura, porque é ali que o gasto realmente aparece.
+      </SectionTitle>
+
+      <Surface className="relative mx-auto mt-8 max-w-4xl border-[color-mix(in_srgb,var(--color-warning)_38%,var(--color-border))] bg-[color-mix(in_srgb,var(--color-surface-alt)_34%,var(--color-surface))] p-5 sm:p-6">
+        <Fire
+          size={44}
+          weight="fill"
+          className="pointer-events-none absolute -top-7 -right-1 rotate-12 text-[var(--color-warning)] sm:right-3"
+          aria-hidden
+        />
+        <div className="flex items-start justify-between gap-4">
+          <IconBadge icon={item.icon} />
+          <span className="rounded-full bg-[var(--color-surface-alt)] px-3 py-1 text-xs font-bold text-[var(--color-brand-blue-dark)]">
+            {item.tag}
+          </span>
+        </div>
+        <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_0.85fr] lg:items-end">
+          <div>
+            <h3 className="text-xl font-bold leading-snug text-[var(--color-text-primary)] sm:text-2xl">
+              {item.title}
+            </h3>
+            <p className="mt-4 font-heading text-[clamp(1.75rem,4vw,2.75rem)] font-bold leading-tight text-[var(--color-text-primary)]">
+              {item.mantra}
+            </p>
+            <p className="mt-4 max-w-2xl text-base leading-relaxed text-[var(--color-text-secondary)]">
+              {item.text}
+            </p>
+          </div>
+
+          <div className="rounded-xl bg-[var(--color-surface)] p-4">
+            <div className="flex items-center justify-between gap-3 text-sm font-bold text-[var(--color-text-secondary)]">
+              <span>{item.cycleStart}</span>
+              <span>{item.cycleEnd}</span>
+            </div>
+            <div className="mt-4 flex items-center gap-3" aria-hidden>
+              <span className="h-3 w-3 rounded-full bg-[var(--color-warning)]" />
+              <span className="h-px flex-1 bg-[color-mix(in_srgb,var(--color-warning)_45%,var(--color-border))]" />
+              <span className="h-3 w-3 rounded-full bg-[var(--color-brand-blue)]" />
+            </div>
+          </div>
+        </div>
+      </Surface>
+    </Section>
+  );
+}
+
 function TrustAndFaqSection() {
   const [open, setOpen] = useState(0);
 
@@ -960,6 +1029,7 @@ export default function HomeLanding({ whatsappUrl }: HomeLandingProps) {
       <HeroSection />
       <FloatingSummary />
       <PreviewSection />
+      <CycleSection />
       <ProductSection />
       <ExplainSection />
       <FlowSection />
