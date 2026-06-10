@@ -3,7 +3,7 @@
 import { redirect } from 'next/navigation';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { headers } from 'next/headers';
-import { createSessionClient, createServiceClient, isSupabaseEnabled } from '@/lib/supabase/server';
+import { createAnonClient, createSessionClient, createServiceClient, isSupabaseEnabled } from '@/lib/supabase/server';
 import { allUserTags, cacheTags } from '@/lib/cache';
 import { PASSWORD_REQUIREMENTS_LABEL, isStrongPassword } from '@/lib/password';
 import {
@@ -197,6 +197,32 @@ export async function updateEmail(formData: FormData): Promise<ActionResult> {
     return { ok: false, error: 'Este já é o seu email atual.' };
   }
 
+  // Se o usuário tem senha, exige re-autenticação antes de permitir a troca
+  let hasPassword = false;
+  if (isSupabaseEnabled()) {
+    const admin = createServiceClient();
+    const { data } = await admin
+      .from('profiles')
+      .select('has_password')
+      .eq('id', user.id)
+      .maybeSingle();
+    if (typeof data?.has_password === 'boolean') hasPassword = data.has_password;
+  }
+  if (hasPassword) {
+    const currentPassword = formData.get('currentPassword');
+    if (typeof currentPassword !== 'string' || !currentPassword) {
+      return { ok: false, error: 'Informe sua senha atual para trocar o email.' };
+    }
+    const { error: verifyError } = await createAnonClient().auth.signInWithPassword({
+      email: user.email!,
+      password: currentPassword,
+    });
+    if (verifyError) {
+      console.error('[updateEmail:verify]', verifyError);
+      return { ok: false, error: 'Senha atual incorreta.' };
+    }
+  }
+
   const h = await headers();
   const host = h.get('x-forwarded-host') ?? h.get('host');
   const proto = h.get('x-forwarded-proto') ?? 'https';
@@ -213,7 +239,7 @@ export async function updateEmail(formData: FormData): Promise<ActionResult> {
 
   return {
     ok: true,
-    message: `Enviamos um link de confirmação para ${email} e para ${user.email}. Clique nos dois para concluir a troca.`,
+    message: `Enviamos links de confirmação para ${email} e para ${user.email}. Clique nos dois para concluir.`,
   };
 }
 

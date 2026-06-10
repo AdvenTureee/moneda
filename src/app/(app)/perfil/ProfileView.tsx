@@ -21,6 +21,7 @@ import {
   LockKey,
   WhatsappLogo,
   CalendarBlank,
+  Envelope,
 } from '@phosphor-icons/react';
 import { useToast } from '@/components/ToastProvider';
 import PageHeader from '@/components/PageHeader';
@@ -101,6 +102,8 @@ export default function ProfileView({
   const [editing, setEditing] = useState(false);
   const [editingEmail, setEditingEmail] = useState(false);
   const [draftEmail, setDraftEmail] = useState(email);
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
+  const [currentPassword, setCurrentPassword] = useState('');
   const { showToast } = useToast();
   const [savingName, startSaveName] = useTransition();
   const [savingEmail, startSaveEmail] = useTransition();
@@ -163,11 +166,16 @@ export default function ProfileView({
     }
     const fd = new FormData();
     fd.set('email', trimmed);
+    if (hasPassword) {
+      fd.set('currentPassword', currentPassword);
+    }
     startSaveEmail(async () => {
       const result = await updateEmail(fd);
       applyResult(result);
       if (result.ok) {
+        setPendingEmail(trimmed);
         setEditingEmail(false);
+        setCurrentPassword('');
       }
     });
   }
@@ -270,7 +278,7 @@ export default function ProfileView({
             </div>
             <div className="flex items-center justify-between gap-2 mt-0.5">
               <p className="text-sm text-[#6B7280] truncate">{email}</p>
-              {!editingEmail && (
+              {!editingEmail && !pendingEmail && (
                 <button
                   type="button"
                   onClick={() => {
@@ -287,39 +295,87 @@ export default function ProfileView({
           </div>
         </div>
 
-        {editingEmail && (
-          <div className="mt-4 flex items-center gap-2">
-            <input
-              type="email"
-              value={draftEmail}
-              onChange={(e) => setDraftEmail(e.target.value)}
-              autoComplete="email"
-              autoFocus
-              disabled={savingEmail}
-              className="themed-field flex-1 px-3 py-2 rounded-[10px] bg-[#F8F9FB] border border-[#E5E7EB] text-sm text-[#1A1D23] outline-none focus:border-[#A8C5E0] transition-colors"
-              placeholder="novo@email.com"
-            />
+        {pendingEmail ? (
+          <div className="mt-4 rounded-[14px] border border-[#E5E7EB] bg-[#F8F9FB] p-4">
+            <div className="flex items-start gap-3">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#EBF3FE] text-[#3B82F6]">
+                <Envelope size={16} weight="bold" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-bold text-[#1A1D23]">Confirmação pendente</p>
+                <p className="mt-1 text-xs leading-relaxed text-[#6B7280]">
+                  Enviamos links de confirmação para os dois emails:
+                </p>
+                <ul className="mt-1.5 space-y-1">
+                  <li className="flex items-center gap-1.5 text-xs font-semibold text-[#1A1D23]">
+                    <span className="h-1.5 w-1.5 rounded-full bg-[#5BBF8E]" />
+                    {pendingEmail}
+                  </li>
+                  <li className="flex items-center gap-1.5 text-xs font-semibold text-[#1A1D23]">
+                    <span className="h-1.5 w-1.5 rounded-full bg-[#A8C5E0]" />
+                    {email}
+                  </li>
+                </ul>
+                <p className="mt-2 text-xs leading-relaxed text-[#6B7280]">
+                  Clique nos dois links para concluir a troca.
+                </p>
+              </div>
+            </div>
             <button
               type="button"
-              onClick={handleSaveEmail}
-              disabled={savingEmail}
-              className="w-10 h-10 rounded-[10px] flex items-center justify-center text-white disabled:opacity-60 bg-[#5BBF8E]"
-              aria-label="Confirmar troca de email"
+              onClick={() => setPendingEmail(null)}
+              className="mt-3 w-full rounded-[10px] border border-[#E5E7EB] bg-white py-2.5 text-xs font-bold text-[#6B7280] transition-colors hover:bg-[#F1F3F7]"
             >
-              <Check size={18} />
+              Fechar
             </button>
-            <button
-              type="button"
-              onClick={() => {
-                setEditingEmail(false);
-                setDraftEmail(email);
-              }}
-              disabled={savingEmail}
-              className="w-10 h-10 rounded-[10px] flex items-center justify-center text-[#6B7280] border border-[#E5E7EB] disabled:opacity-60"
-              aria-label="Cancelar"
-            >
-              <X size={18} />
-            </button>
+          </div>
+        ) : editingEmail && (
+          <div className="mt-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <input
+                type="email"
+                value={draftEmail}
+                onChange={(e) => setDraftEmail(e.target.value)}
+                autoComplete="email"
+                autoFocus
+                disabled={savingEmail}
+                className="themed-field flex-1 px-3 py-2 rounded-[10px] bg-[#F8F9FB] border border-[#E5E7EB] text-sm text-[#1A1D23] outline-none focus:border-[#A8C5E0] transition-colors"
+                placeholder="novo@email.com"
+              />
+              <button
+                type="button"
+                onClick={handleSaveEmail}
+                disabled={savingEmail || (!draftEmail.trim() && hasPassword && !currentPassword)}
+                className="w-10 h-10 rounded-[10px] flex items-center justify-center text-white disabled:opacity-60 bg-[#5BBF8E]"
+                aria-label="Confirmar troca de email"
+              >
+                <Check size={18} />
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingEmail(false);
+                  setDraftEmail(email);
+                  setCurrentPassword('');
+                }}
+                disabled={savingEmail}
+                className="w-10 h-10 rounded-[10px] flex items-center justify-center text-[#6B7280] border border-[#E5E7EB] disabled:opacity-60"
+                aria-label="Cancelar"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            {hasPassword && (
+              <input
+                type="password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                autoComplete="current-password"
+                disabled={savingEmail}
+                placeholder="Digite sua senha atual para confirmar"
+                className="themed-field w-full px-3 py-2 rounded-[10px] bg-[#F8F9FB] border border-[#E5E7EB] text-sm text-[#1A1D23] outline-none focus:border-[#A8C5E0] transition-colors placeholder:text-[#9CA3AF]"
+              />
+            )}
           </div>
         )}
 

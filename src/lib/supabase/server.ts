@@ -41,6 +41,16 @@ export function createServiceClient() {
   );
 }
 
+// Anon-key client for verification (e.g. re-authentication before email change).
+// Uses persistSession: false so it never touches cookies.
+export function createAnonClient() {
+  return createClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+    { auth: { persistSession: false } },
+  );
+}
+
 export function isSupabaseEnabled(): boolean {
   return Boolean(
     process.env.NEXT_PUBLIC_SUPABASE_URL &&
