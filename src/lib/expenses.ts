@@ -970,12 +970,13 @@ async function updateExpenseSeriesFromOccurrence(
   return rowToExpense(data as ExpensesRow);
 }
 
-async function updateExpenseInDB(id: string, input: Partial<ExpenseInput>): Promise<Expense> {
+async function updateExpenseInDB(id: string, userId: string, input: Partial<ExpenseInput>): Promise<Expense> {
   const db = createServiceClient();
   const { data: existingData, error: existingError } = await db
     .from('expenses')
     .select('*')
     .eq('id', id)
+    .eq('user_id', userId)
     .is('deleted_at', null)
     .single();
 
@@ -995,6 +996,7 @@ async function updateExpenseInDB(id: string, input: Partial<ExpenseInput>): Prom
     .from('expenses')
     .update(buildDirectExpenseUpdates(input))
     .eq('id', id)
+    .eq('user_id', userId)
     .select()
     .single();
 
@@ -1002,12 +1004,13 @@ async function updateExpenseInDB(id: string, input: Partial<ExpenseInput>): Prom
   return rowToExpense(data as ExpensesRow);
 }
 
-async function deleteExpenseFromDB(id: string): Promise<void> {
+async function deleteExpenseFromDB(id: string, userId: string): Promise<void> {
   const db = createServiceClient();
   const { data: existing } = await db
     .from('expenses')
     .select('id,receipt_path,series_id,series_occurrence_index,occurred_at')
     .eq('id', id)
+    .eq('user_id', userId)
     .single();
 
   if (existing?.series_id) {
@@ -1050,7 +1053,8 @@ async function deleteExpenseFromDB(id: string): Promise<void> {
   const { error } = await db
     .from('expenses')
     .update({ deleted_at: new Date().toISOString() })
-    .eq('id', id);
+    .eq('id', id)
+    .eq('user_id', userId);
 
   if (error) throw new Error(`deleteExpense: ${error.message}`);
   if (existing?.receipt_path) {
@@ -1081,15 +1085,15 @@ function deleteExpenseFromMock(id: string): void {
   removeSessionExpense(id);
 }
 
-export async function updateExpense(id: string, input: Partial<ExpenseInput>): Promise<Expense> {
-  if (isSupabaseEnabled()) return updateExpenseInDB(id, input);
+export async function updateExpense(id: string, userId: string, input: Partial<ExpenseInput>): Promise<Expense> {
+  if (isSupabaseEnabled()) return updateExpenseInDB(id, userId, input);
   const result = updateExpenseFromMock(id, input);
   if (!result) throw new Error('Despesa não encontrada');
   return result;
 }
 
-export async function deleteExpense(id: string): Promise<void> {
-  if (isSupabaseEnabled()) return deleteExpenseFromDB(id);
+export async function deleteExpense(id: string, userId: string): Promise<void> {
+  if (isSupabaseEnabled()) return deleteExpenseFromDB(id, userId);
   deleteExpenseFromMock(id);
 }
 

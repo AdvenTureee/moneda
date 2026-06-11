@@ -156,7 +156,7 @@ export async function PATCH(req: NextRequest) {
   }
 
   try {
-    const expense = await updateExpense(body.id, {
+    const expense = await updateExpense(body.id, user.id, {
       amount: body.amount,
       category: body.category,
       description: body.description,
@@ -183,7 +183,7 @@ export async function DELETE(req: NextRequest) {
     return noStoreJson({ error: 'id query param is required' }, { status: 422 });
   }
 
-  await deleteExpense(id);
+  await deleteExpense(id, user.id);
   invalidateExpenseCaches(user.id);
   return noStoreJson({ ok: true });
 }

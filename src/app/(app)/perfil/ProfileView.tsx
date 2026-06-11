@@ -302,7 +302,7 @@ export default function ProfileView({
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml,image/heic,image/heif"
+              accept="image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif"
               className="hidden"
               onChange={handleFileSelect}
             />

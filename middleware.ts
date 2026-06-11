@@ -50,6 +50,11 @@ export async function middleware(request: NextRequest) {
   const isPublicRoute = isHomeRoute || isAuthRoute || isPasswordRecovery;
 
   if (!user && !isPublicRoute) {
+    if (pathname.startsWith('/api/')) {
+      return withPrivateNoStore(
+        NextResponse.json({ error: 'Unauthorized' }, { status: 401 }),
+      );
+    }
     const url = request.nextUrl.clone();
     url.pathname = '/login';
     return withPrivateNoStore(NextResponse.redirect(url));

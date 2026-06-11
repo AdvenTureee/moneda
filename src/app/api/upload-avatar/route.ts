@@ -11,7 +11,6 @@ const ALLOWED_MIME_TYPES = [
   'image/png',
   'image/webp',
   'image/gif',
-  'image/svg+xml',
   'image/heic',
   'image/heif',
 ];
@@ -21,7 +20,6 @@ const MIME_TO_EXT: Record<string, string> = {
   'image/png': 'png',
   'image/webp': 'webp',
   'image/gif': 'gif',
-  'image/svg+xml': 'svg',
   'image/heic': 'heic',
   'image/heif': 'heif',
 };
@@ -87,7 +85,7 @@ export async function POST(req: NextRequest) {
 
     const { data: signedUrlData, error: signedUrlError } = await admin.storage
       .from('fotos_perfil')
-      .createSignedUrl(filePath, 31536000);
+      .createSignedUrl(filePath, 2592000); // 30 days
 
     if (signedUrlError) {
       return noStoreJson({ error: 'Upload feito, mas erro ao gerar URL.' }, { status: 500 });
