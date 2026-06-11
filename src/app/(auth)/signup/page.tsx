@@ -104,7 +104,7 @@ export default function SignupPage() {
     }
 
     await fetch('/api/pii/sync-profile', { method: 'POST' }).catch(() => null);
-    router.push('/feed');
+    router.push('/app');
     router.refresh();
   }
 
@@ -135,9 +135,15 @@ export default function SignupPage() {
               <polyline points="20 6 9 17 4 12" />
             </svg>
           </div>
-          <h1 className="text-xl font-heading text-[#1A1D23] mb-2">Verifique seu email</h1>
+          <h1 className="text-xl font-heading text-[#1A1D23] mb-2">Confirme seu email</h1>
           <p className="text-sm text-[#6B7280] leading-relaxed">
-            Se o email não estiver cadastrado, você receberá um link de confirmação.
+            Enviamos um link de confirmação para{' '}
+            <span className="font-semibold text-[#1A1D23]">{email}</span>.
+            <br />
+            Clique nele para ativar sua conta e começar a usar o Moneda.
+          </p>
+          <p className="text-xs text-[#9CA3AF] mt-3">
+            Não recebeu? Verifique a caixa de spam.
           </p>
           <Link
             href="/login"
@@ -238,7 +244,6 @@ export default function SignupPage() {
               </p>
             )}
 
-            {/* BLOCO DE TERMOS CORRIGIDO — CENTRALIZADO E ENCAIXADO PERFEITAMENTE */}
             <div className="flex items-center justify-center gap-3 bg-[#F8F9FB] rounded-[10px] px-3.5 py-2.5 border border-[#E5E7EB] select-none">
               <input
                 id="terms-checkbox"
@@ -265,7 +270,6 @@ export default function SignupPage() {
               </label>
             </div>
 
-            {/* BOTÃO PRINCIPAL DE CADASTRO */}
             <button
               type="submit"
               disabled={loading || googleLoading || !passwordIsStrong}
@@ -275,7 +279,6 @@ export default function SignupPage() {
             </button>
           </form>
 
-          {/* NOVO LINK DE RETORNO AO LOGIN — LIMPO, CENTRALIZADO E ELEGANTE */}
           <div className="mt-6 pt-4 border-t border-[#E5E7EB] text-center">
             <p className="text-sm text-[#6B7280]">
               Já tem uma conta?{' '}
