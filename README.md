@@ -94,7 +94,7 @@ Acesse [http://localhost:3000](http://localhost:3000).
 - [x] Dashboard com gráficos e categorias
 - [x] PWA configurada
 - [x] Supabase (banco real)
-- [x] Autenticação (Clerk)
+- [x] Autenticação (Supabase)
 - [x] Deploy produção em [moneda.info](https://moneda.info)
 - [ ] Integração WhatsApp (Evolution API / WAHA)
 
