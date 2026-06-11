@@ -1,3 +1,5 @@
 # Moneda — Product Document
 
-> Ver arquivo original movido de `PRODUCT.md` na raiz.
+> Documento original completo movido para cá de `PRODUCT.md` na raiz.
+
+Aguardando conteúdo completo — abra o histórico do git para ver a versão anterior.
