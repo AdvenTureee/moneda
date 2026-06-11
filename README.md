@@ -1,36 +1,97 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Moneda 💸
 
-## Getting Started
+> Controle seus gastos pelo WhatsApp, com IA que entende português brasileiro.
 
-First, run the development server:
+Moneda é um assistente financeiro pessoal que vive no WhatsApp. Manda uma mensagem como _"almoço 35 ifood"_ e ele registra, categoriza e te dá um resumo inteligente dos seus gastos — sem planilhas, sem formulários.
+
+---
+
+## Stack
+
+| Camada | Tecnologia |
+|---|---|
+| Framework | Next.js 15 (App Router) |
+| Linguagem | TypeScript strict |
+| Estilo | Tailwind CSS |
+| Banco de dados | Supabase (Postgres) |
+| IA | Groq API (`llama-3.1-8b-instant` / `llama-3.3-70b-versatile`) |
+| WhatsApp | Evolution API / WAHA (TBD) |
+| Deploy | Vercel |
+
+---
+
+## Primeiros passos
+
+### 1. Pré-requisitos
+
+- Node.js 20+
+- `npm` ou `pnpm`
+
+### 2. Instalar dependências
+
+```bash
+npm install
+```
+
+### 3. Configurar variáveis de ambiente
+
+Copie o template e preencha as chaves:
+
+```bash
+cp .env.example .env.local
+```
+
+Variáveis obrigatórias para rodar localmente (MVP 0 usa mock — nenhuma chave de API é necessária para o modo mock):
+
+```bash
+# Modo mock — nenhuma chave necessária
+# Para ativar integrações reais, veja docs/ARCHITECTURE.md
+GROQ_API_KEY=       # Groq console: https://console.groq.com
+SUPABASE_URL=       # Dashboard Supabase
+SUPABASE_ANON_KEY=  # Dashboard Supabase
+```
+
+### 4. Rodar em desenvolvimento
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Acesse [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Documentação
 
-## Learn More
+| Documento | Descrição |
+|---|---|
+| [PRODUCT.md](docs/PRODUCT.md) | Visão de produto, personas, roadmap e métricas |
+| [ARCHITECTURE.md](docs/ARCHITECTURE.md) | Stack, estrutura de pastas, fluxos e decisões técnicas |
+| [DATABASE.md](docs/DATABASE.md) | Schema Supabase, migrations, RLS e plano de evolução |
+| [DESIGN.md](docs/DESIGN.md) | Design system, tokens, componentes e guia visual |
+| [PWA.md](docs/PWA.md) | Configuração e estratégia de PWA |
+| [MELHORIAS-GRAFICOS.md](docs/MELHORIAS-GRAFICOS.md) | Backlog de melhorias nos gráficos |
+| [ciclo-cartao-bancos-e-prompt.md](docs/ciclo-cartao-bancos-e-prompt.md) | Ciclo de cartão, bancos e prompts de IA |
+| [problemas-modo-escuro.md](docs/problemas-modo-escuro.md) | Issues conhecidos de dark mode |
+| [COMO-FAZER-LOGO.md](docs/COMO-FAZER-LOGO.md) | Guia de criação do logotipo |
+| [CRIAR-PAGINA-HOME.md](docs/CRIAR-PAGINA-HOME.md) | Especificação da landing page |
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Status do projeto
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+> **MVP 0** — Dashboard funcional com dados mock. Integração WhatsApp e Supabase planejadas para V1.
 
-## Deploy on Vercel
+- [x] Dashboard com gráficos e categorias
+- [x] Modo mock (sem banco de dados)
+- [x] PWA configurada
+- [ ] Integração WhatsApp (Evolution API / WAHA)
+- [ ] Autenticação (Clerk)
+- [ ] Supabase (banco real)
+- [ ] Deploy produção em `moneda.info`
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Licença
+
+Privado — todos os direitos reservados.
