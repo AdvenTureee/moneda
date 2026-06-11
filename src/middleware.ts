@@ -50,11 +50,16 @@ export async function middleware(request: NextRequest) {
           cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value),
           );
-          // 2. Propaga os cookies na response para o browser.
+          // 2. Recria a response propagando todos os cookies para o browser.
+          //    Não reaproveitamos supabaseResponse anterior porque os headers
+          //    já foram commitados — precisamos de uma response nova.
           supabaseResponse = NextResponse.next({ request });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options),
-          );
+          cookiesToSet.forEach(({ name, value, options }) => {
+            // @supabase/ssr@0.10.x: `options` pode ser undefined.
+            // NextResponse.cookies.set() aceita o terceiro arg como opcional,
+            // mas com strict:true precisamos do spread condicional.
+            supabaseResponse.cookies.set(name, value, options ?? {});
+          });
         },
       },
     },
@@ -91,7 +96,8 @@ export async function middleware(request: NextRequest) {
   }
 
   // Redireciona usuário autenticado que tenta acessar páginas de auth.
-  const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/cadastro');
+  const isAuthPage =
+    pathname.startsWith('/login') || pathname.startsWith('/cadastro');
   if (isAuthPage && user) {
     const appUrl = request.nextUrl.clone();
     appUrl.pathname = '/app';
@@ -110,10 +116,7 @@ export const config = {
      * - _next/image   (otimização de imagem)
      * - favicon.ico, icon.svg, robots.txt, sitemap.xml
      * - arquivos com extensão (ex: .png, .jpg, .css, .js)
-     *
-     * O padrão negativo `(?!...)` exclui essas rotas do middleware
-     * para não adicionar latência desnecessária.
      */
-    '/((?!_next/static|_next/image|favicon.ico|icon.svg|robots.txt|sitemap.xml|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|woff2?)$).*)',
+    '/((?!_next/static|_next/image|favicon\.ico|icon\.svg|robots\.txt|sitemap\.xml|.*\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|woff2?)$).*)',
   ],
 };
