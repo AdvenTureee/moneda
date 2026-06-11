@@ -62,7 +62,7 @@ export async function middleware(request: NextRequest) {
 
   if (user && isAuthRoute && !isAuthCallback) {
     const url = request.nextUrl.clone();
-    url.pathname = '/dashboard';
+    url.pathname = '/app';
     return withPrivateNoStore(NextResponse.redirect(url));
   }
 
