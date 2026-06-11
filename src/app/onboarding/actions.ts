@@ -47,7 +47,7 @@ function slugifyCategoryName(name: string): string {
   return name
     .toLowerCase()
     .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
+    .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-z0-9]+/g, '_')
     .replace(/^_+|_+$/g, '')
     .replace(/^([0-9])/, 'c$1');
@@ -118,7 +118,7 @@ export async function completeOnboardingAction(
         console.error('[completeOnboarding] profile update:', profileError);
         return { ok: false, error: 'Não foi possível salvar seu perfil.' };
       }
-      revalidateTag(cacheTags.profile(userId), { expire: 0 });
+      revalidateTag(cacheTags.profile(userId));
 
       // 2. Custom categories
       const customCategoryIdMap = new Map<string, string>();
@@ -153,8 +153,8 @@ export async function completeOnboardingAction(
           period,
           amountCents: Math.round(budget.amountCents),
         })));
-        revalidateTag(cacheTags.budgets(userId), { expire: 0 });
-        revalidateTag(cacheTags.metrics(userId), { expire: 0 });
+        revalidateTag(cacheTags.budgets(userId));
+        revalidateTag(cacheTags.metrics(userId));
       }
 
       // 4. Recurring expenses
@@ -175,9 +175,9 @@ export async function completeOnboardingAction(
           console.error('[completeOnboarding] recurring expenses:', expError);
           return { ok: false, error: 'Não foi possível salvar seus gastos recorrentes.' };
         }
-        revalidateTag(cacheTags.expenses(userId), { expire: 0 });
-        revalidateTag(cacheTags.metrics(userId), { expire: 0 });
-        revalidateTag(cacheTags.monthlyTotals(userId), { expire: 0 });
+        revalidateTag(cacheTags.expenses(userId));
+        revalidateTag(cacheTags.metrics(userId));
+        revalidateTag(cacheTags.monthlyTotals(userId));
       }
 
       // (onboarded já gravado em profiles no passo 1 — não usamos
@@ -223,7 +223,7 @@ export async function completeOnboardingAction(
       });
     }
 
-    revalidatePath('/feed');
+    revalidatePath('/app');
     revalidatePath('/perfil');
     return { ok: true };
   } catch (err: unknown) {
