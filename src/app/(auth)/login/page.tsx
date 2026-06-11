@@ -166,7 +166,7 @@ export default function LoginPage() {
               autoComplete="current-password"
               required
               value={password}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => setPassword(e.target.value)}
               onFocus={() => setEyesClosed(true)}
               onBlur={() => setEyesClosed(false)}
               placeholder="••••••••"
