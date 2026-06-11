@@ -14,9 +14,10 @@ Moneda é um assistente financeiro pessoal que vive no WhatsApp. Manda uma mensa
 | Linguagem | TypeScript strict |
 | Estilo | Tailwind CSS |
 | Banco de dados | Supabase (Postgres) |
+| Autenticação | Clerk |
 | IA | Groq API (`llama-3.1-8b-instant` / `llama-3.3-70b-versatile`) |
 | WhatsApp | Evolution API / WAHA (TBD) |
-| Deploy | Vercel |
+| Deploy | Vercel — [moneda.info](https://moneda.info) |
 
 ---
 
@@ -41,14 +42,22 @@ Copie o template e preencha as chaves:
 cp .env.example .env.local
 ```
 
-Variáveis obrigatórias para rodar localmente (MVP 0 usa mock — nenhuma chave de API é necessária para o modo mock):
-
 ```bash
-# Modo mock — nenhuma chave necessária
-# Para ativar integrações reais, veja docs/ARCHITECTURE.md
-GROQ_API_KEY=       # Groq console: https://console.groq.com
-SUPABASE_URL=       # Dashboard Supabase
-SUPABASE_ANON_KEY=  # Dashboard Supabase
+# IA — Groq
+GROQ_API_KEY=       # https://console.groq.com
+
+# Banco de dados — Supabase
+SUPABASE_URL=
+SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+
+# Autenticação — Clerk
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=
+CLERK_SECRET_KEY=
+
+# WhatsApp (quando integrado)
+EVOLUTION_API_URL=
+EVOLUTION_API_KEY=
 ```
 
 ### 4. Rodar em desenvolvimento
@@ -80,15 +89,14 @@ Acesse [http://localhost:3000](http://localhost:3000).
 
 ## Status do projeto
 
-> **MVP 0** — Dashboard funcional com dados mock. Integração WhatsApp e Supabase planejadas para V1.
+> **MVP 1** — Dashboard com banco real, autenticação e deploy em produção. Integração WhatsApp em andamento.
 
 - [x] Dashboard com gráficos e categorias
-- [x] Modo mock (sem banco de dados)
 - [x] PWA configurada
+- [x] Supabase (banco real)
+- [x] Autenticação (Clerk)
+- [x] Deploy produção em [moneda.info](https://moneda.info)
 - [ ] Integração WhatsApp (Evolution API / WAHA)
-- [ ] Autenticação (Clerk)
-- [ ] Supabase (banco real)
-- [ ] Deploy produção em `moneda.info`
 
 ---
 
