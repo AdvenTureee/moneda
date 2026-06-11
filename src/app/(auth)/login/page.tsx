@@ -60,7 +60,7 @@ export default function LoginPage() {
       return;
     }
 
-    router.push('/feed');
+    router.push('/app');
     router.refresh();
   }
 
@@ -166,7 +166,7 @@ export default function LoginPage() {
               autoComplete="current-password"
               required
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => setEmail(e.target.value)}
               onFocus={() => setEyesClosed(true)}
               onBlur={() => setEyesClosed(false)}
               placeholder="••••••••"
