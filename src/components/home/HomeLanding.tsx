@@ -15,6 +15,7 @@ import {
   Devices,
   Eye,
   Fire,
+  Gear,
   HandPointing,
   ListBullets,
   LockKey,
@@ -109,7 +110,7 @@ const cycleHighlight = {
 const ideas = [
   {
     title: 'Registre sem planilha',
-    text: 'Lance gastos e ganhos direto no web app.',
+    text: 'Lance gastos e ganhos direto no app.',
   },
   {
     title: 'Veja o mês organizado',
@@ -148,7 +149,7 @@ const trustItems = [
 const faqs = [
   {
     q: 'Preciso instalar outro app?',
-    a: 'Não. O web app funciona no navegador do celular ou computador. A experiência pelo WhatsApp está em desenvolvimento.',
+    a: 'Não. O app funciona direto no navegador do celular ou computador. A experiência pelo WhatsApp está em desenvolvimento.',
   },
   {
     q: 'A Mo julga meus gastos?',
@@ -156,7 +157,7 @@ const faqs = [
   },
   {
     q: 'O que a demonstração mostra?',
-    a: 'Ela mostra o web app disponível hoje e a direção da experiência por mensagem que vem depois.',
+    a: 'Ela mostra o app disponível hoje e a direção da experiência por mensagem que vem depois.',
   },
   {
     q: 'Posso apagar meus dados?',
@@ -301,7 +302,7 @@ function ProductMock({ compact = false }: { compact?: boolean }) {
       <div className="flex items-center gap-4 border-b border-[var(--color-border)] pb-4">
         <TrackedMascot variant="idle" size={96} />
         <div>
-          <p className="text-lg font-bold text-[var(--color-text-primary)]">Moneda Web App</p>
+          <p className="text-lg font-bold text-[var(--color-text-primary)]">Moneda App</p>
           <p className="text-sm text-[var(--color-text-secondary)]">Controle financeiro inteligente</p>
         </div>
       </div>
@@ -413,50 +414,77 @@ function HeroSection() {
     <section className="flex min-h-[calc(100vh-80px)] items-center px-4 pb-10 pt-12 sm:px-6 sm:pb-12 sm:pt-16 lg:px-8">
       <div className={`w-full transition-opacity duration-500 ${mounted ? 'opacity-100' : 'opacity-0'}`}>
         <div className="mx-auto grid w-full max-w-7xl items-center gap-12 lg:grid-cols-[1fr_1.2fr]">
-        <motion.div
-          variants={staggerGroup}
-          initial={reduceMotion ? false : 'hidden'}
-          animate="show"
-          className="max-w-2xl"
-        >
-          <motion.p
-            variants={fadeUp}
-            transition={{ duration: 0.25, ease: easeOut }}
-            className="text-sm font-semibold text-[var(--color-brand-blue-dark)]"
-          >
-            Web app disponível agora. WhatsApp em desenvolvimento.
-          </motion.p>
-          <motion.h1
-            variants={fadeUp}
-            transition={{ duration: 0.3, ease: easeOut }}
-            className="mt-4 font-heading text-[clamp(2.75rem,6vw,5rem)] font-bold leading-[1.05] text-[var(--color-text-primary)]"
-          >
-            Seu dinheiro claro, sem planilha.
-          </motion.h1>
-          <motion.p
-            variants={fadeUp}
-            transition={{ duration: 0.3, ease: easeOut }}
-            className="mt-5 max-w-xl text-lg leading-relaxed text-[var(--color-text-secondary)]"
-          >
-             Registre o mês no web app e pergunte para a Mo o que mudou, onde pesou e onde ajustar.
-          </motion.p>
           <motion.div
-            variants={fadeUp}
-            transition={{ duration: 0.3, ease: easeOut }}
-            className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center"
+            variants={staggerGroup}
+            initial={reduceMotion ? false : 'hidden'}
+            animate="show"
+            className="max-w-2xl"
           >
-            <CtaButton large />
-            <a
-              href="#produto"
-              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full px-5 text-sm font-semibold text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-alt)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)] focus-visible:ring-offset-2"
+            {/* TÍTULO PRINCIPAL */}
+            <motion.h1
+              variants={fadeUp}
+              transition={{ duration: 0.3, ease: easeOut }}
+              className="font-heading text-[clamp(2.25rem,4vw,3.75rem)] font-bold leading-[1.1] tracking-tight text-[var(--color-text-primary)] [text-wrap:balance]"
             >
-              <Eye size={18} weight="bold" aria-hidden />
-              Ver produto
-            </a>
-          </motion.div>
-        </motion.div>
+              O seu dinheiro também costuma sumir no fim do mês?
+            </motion.h1>
+            
+            {/* SUBTÍTULO OTIMIZADO */}
+            <motion.p
+              variants={fadeUp}
+              transition={{ duration: 0.3, ease: easeOut }}
+              className="mt-5 max-w-xl text-base leading-relaxed text-[var(--color-text-secondary)]"
+            >
+              Em poucos segundos você cria sua conta e começa a registrar tudo sem esforço. Depois, é só conversar com a nossa IA para entender seus hábitos de um jeito leve e sem julgamentos.
+            </motion.p>
 
-        <ProductMock />
+            {/* AVISO DE DESENVOLVIMENTO */}
+            <motion.div
+              variants={fadeUp}
+              transition={{ duration: 0.3, ease: easeOut }}
+              className="mt-5 flex items-center gap-2 text-sm font-medium text-[var(--color-text-tertiary)]"
+            >
+              <motion.div
+                animate={reduceMotion ? {} : { rotate: 360 }}
+                transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
+                className="text-[var(--color-brand-blue)]"
+              >
+                <Gear size={18} weight="fill" aria-hidden />
+              </motion.div>
+              <span>Futuramente você poderá lançar gastos pelo WhatsApp. Fique ligado!</span>
+            </motion.div>
+            
+            {/* BOTÕES: Lado a Lado */}
+            <motion.div
+              variants={fadeUp}
+              transition={{ duration: 0.3, ease: easeOut }}
+              className="mt-8 flex flex-row flex-wrap items-center justify-center gap-3 sm:justify-start"
+            >
+              <CtaButton large />
+              <a
+                href="#produto"
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full px-5 text-sm font-semibold text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-alt)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)] focus-visible:ring-offset-2"
+              >
+                <Eye size={18} weight="bold" aria-hidden />
+                Conhecer a Mo
+              </a>
+            </motion.div>
+
+            {/* TOQUE BRASILEIRO (Design de Badge Premium) */}
+            <motion.div
+              variants={fadeUp}
+              transition={{ duration: 0.3, ease: easeOut }}
+              className="mt-8 flex items-center justify-center gap-2.5 text-sm font-medium text-[var(--color-text-tertiary)] sm:justify-start"
+            >
+              <span className="flex h-6 items-center justify-center gap-[1px] rounded-[5px] border border-[var(--color-border)] bg-[var(--color-surface-alt)] px-2 text-[12px] font-black select-none shadow-sm">
+                <span className="text-[#009C3B]">B</span>
+                <span className="text-[#FFDF00]">R</span>
+              </span>
+              <span>Pensado e criado para o Brasil.</span>
+            </motion.div>
+          </motion.div>
+
+          <ProductMock />
         </div>
       </div>
     </section>
@@ -580,7 +608,7 @@ function ProductSection() {
   return (
     <Section id="produto">
       <div className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
-        <SectionTitle eyebrow="Produto" title="Controle o mês no web app.">
+        <SectionTitle eyebrow="Produto" title="Controle o mês no app.">
           Uma rotina simples para registrar entradas, saídas e comprovantes sem abrir planilha.
         </SectionTitle>
 
@@ -965,7 +993,7 @@ function FinalCta() {
     <section className="px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
       <div className="mx-auto max-w-3xl text-center">
         <h2 className="font-heading text-[clamp(2rem,4vw,3.5rem)] font-bold leading-tight text-[var(--color-text-primary)]">
-          Comece pelo web app.
+          Comece pelo app.
         </h2>
         <p className="mx-auto mt-4 max-w-xl text-base leading-relaxed text-[var(--color-text-secondary)]">
           Registre o mês, veja onde pesou e pergunte para a Mo sem abrir planilha.
