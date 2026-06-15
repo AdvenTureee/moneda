@@ -281,6 +281,7 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
   }, [dateRange]);
 
   const [allExpenses, setAllExpenses] = useState<Expense[]>([]);
+  const [loadedView, setLoadedView] = useState<FeedView>('history');
   const { data: categories } = useCategories();
   const [loading, setLoading] = useState(true);
   const [hasLoadedExpenses, setHasLoadedExpenses] = useState(false);
@@ -345,6 +346,7 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
 
   const fetchExpenses = useCallback(async () => {
     if (!filtersHydrated) return;
+    const requestedView = activeView;
     abortRef.current?.abort();
     const controller = new AbortController();
     const requestSeq = requestSeqRef.current + 1;
@@ -371,8 +373,10 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
       }
       const json = await res.json();
       setAllExpenses(json.data ?? []);
+      setLoadedView(requestedView);
     } catch (e) {
       if ((e as Error)?.name === 'AbortError') return;
+      setLoadedView(requestedView);
       setError(e instanceof Error ? e.message : 'Erro desconhecido');
     } finally {
       if (requestSeqRef.current === requestSeq) {
@@ -524,6 +528,7 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
   const handleViewChange = useCallback((nextView: FeedView) => {
     if (nextView === activeView) return;
     startUiTransition(() => {
+      setLoading(true);
       setActiveView(nextView);
     });
   }, [activeView]);
@@ -575,9 +580,11 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
     }
   }, [editingExpense, fetchExpenses, showToast]);
 
-  const showInitialSkeleton = loading && !hasLoadedExpenses;
+  const showStaleView = hasLoadedExpenses && activeView !== loadedView;
+  const showInitialSkeleton = (loading && !hasLoadedExpenses) || showStaleView;
   const showRefreshing = loading && hasLoadedExpenses;
   const showFeedProgress = loading;
+  const animateGroups = !showRefreshing && !showStaleView;
 
   return (
     <>
@@ -1041,7 +1048,7 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
                   return (
                     <section
                       key={group.dateKey}
-                      className={`mb-7 animate-fade-up delay-${Math.min(gi + 2, 8)}`}
+                      className={`mb-7 ${animateGroups ? `animate-fade-up delay-${Math.min(gi + 2, 8)}` : ''}`}
                       aria-labelledby={`feed-date-${group.dateKey}`}
                     >
                       {/* Date section header */}
