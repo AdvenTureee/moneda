@@ -1,0 +1,47 @@
+name: Security CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  security-ci:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL || 'https://example.supabase.co' }}
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_ci_placeholder' }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY || 'ci-placeholder' }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY || 'ci-placeholder' }}
+          PII_ENCRYPTION_KEY_V1: ${{ secrets.PII_ENCRYPTION_KEY_V1 || 'ci-placeholder-32-byte-key-value!!' }}
+          PII_HASH_KEY_V1: ${{ secrets.PII_HASH_KEY_V1 || 'ci-placeholder-hash-key' }}
+          APP_URL: https://www.moneda.info
+        run: npm run build
+
+      - name: Audit dependencies
+        run: npm run security:audit
+
+      - name: Secret scan
+        run: npm run security:secrets

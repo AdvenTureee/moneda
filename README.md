@@ -47,9 +47,12 @@ cp .env.example .env.local
 GROQ_API_KEY=       # https://console.groq.com
 
 # Banco de dados — Supabase
-SUPABASE_URL=
-SUPABASE_ANON_KEY=
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
+
+# App
+APP_URL=http://localhost:3000
 
 # Autenticação — Clerk
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=

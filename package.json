@@ -5,6 +5,9 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "typecheck": "tsc --noEmit",
+    "security:audit": "npm audit --audit-level=high",
+    "security:secrets": "git ls-files -z --cached --others --exclude-standard | xargs -0 secretlint",
     "test": "node --test --import jiti/register --import ./tests/test-setup.ts tests/*.test.ts",
     "start": "next start",
     "backfill:pii": "node --env-file=.env scripts/backfill-pii.mjs",
@@ -17,7 +20,7 @@
     "embla-carousel-react": "^8.6.0",
     "framer-motion": "^12.40.0",
     "groq-sdk": "^1.2.0",
-    "next": "16.2.6",
+    "next": "16.2.9",
     "nextjs-toploader": "^3.9.17",
     "react": "19.2.4",
     "react-dom": "19.2.4",
@@ -28,11 +31,16 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@secretlint/secretlint-rule-preset-recommend": "^13.0.2",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "jiti": "^2.7.0",
+    "secretlint": "^13.0.2",
     "tailwindcss": "^4",
     "typescript": "^5"
+  },
+  "overrides": {
+    "postcss": "^8.5.14"
   }
 }

@@ -3,6 +3,9 @@ import { createSessionClient } from '@/lib/supabase/server';
 import { categorizeWithAI } from '@/lib/groq';
 import { getCategories } from '@/lib/categories';
 import { noStoreJson } from '@/lib/http';
+import { consumeRateLimit } from '@/lib/rateLimit';
+
+const CATEGORIZE_LIMIT_PER_MINUTE = 30;
 
 export async function POST(req: NextRequest) {
   try {
@@ -10,6 +13,17 @@ export async function POST(req: NextRequest) {
     const { data: { user } } = await session.auth.getUser();
     if (!user) {
       return noStoreJson({ error: 'Não autenticado.' }, { status: 401 });
+    }
+
+    const rate = await consumeRateLimit({
+      key: `api:ai:categorize:${user.id}`,
+      limit: CATEGORIZE_LIMIT_PER_MINUTE,
+    });
+    if (!rate.ok) {
+      return noStoreJson(
+        { error: `Muitas tentativas. Aguarde ${rate.retryAfterSec}s e tente de novo.` },
+        { status: 429, headers: { 'Retry-After': String(rate.retryAfterSec) } },
+      );
     }
 
     if (!process.env.GROQ_API_KEY) {

@@ -4,8 +4,10 @@ import { getPersonalizedMoTips } from '@/lib/moTipsPersonal';
 import { getBillingClosingDay } from '@/lib/profiles';
 import { getCurrentBillingPeriod } from '@/lib/billingCycle';
 import { noStoreJson } from '@/lib/http';
+import { consumeRateLimit } from '@/lib/rateLimit';
 
 const PERIOD_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
+const MO_TIPS_LIMIT_PER_MINUTE = 30;
 
 export async function GET(req: NextRequest) {
   try {
@@ -15,6 +17,17 @@ export async function GET(req: NextRequest) {
     } = await session.auth.getUser();
     if (!user) {
       return noStoreJson({ error: 'Não autenticado.' }, { status: 401 });
+    }
+
+    const rate = await consumeRateLimit({
+      key: `api:ai:mo-tips:${user.id}`,
+      limit: MO_TIPS_LIMIT_PER_MINUTE,
+    });
+    if (!rate.ok) {
+      return noStoreJson(
+        { error: `Muitas tentativas. Aguarde ${rate.retryAfterSec}s e tente de novo.` },
+        { status: 429, headers: { 'Retry-After': String(rate.retryAfterSec) } },
+      );
     }
 
     const rawPeriod = req.nextUrl.searchParams.get('period');

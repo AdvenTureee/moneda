@@ -4,9 +4,12 @@ import { v4 as uuidv4 } from 'uuid';
 import { createServiceClient, createSessionClient, isSupabaseEnabled } from '@/lib/supabase/server';
 import { cacheTags } from '@/lib/cache';
 import { noStoreJson } from '@/lib/http';
+import { consumeRateLimit } from '@/lib/rateLimit';
+import { detectFileType, isDetectedMimeAllowed } from '@/lib/security/fileSignature';
 
 const BUCKET = 'expense_receipts';
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
+const RECEIPT_UPLOAD_LIMIT_PER_10_MINUTES = 30;
 const ALLOWED_MIME_TYPES = new Set([
   'image/jpeg',
   'image/png',
@@ -15,15 +18,6 @@ const ALLOWED_MIME_TYPES = new Set([
   'image/heif',
   'application/pdf',
 ]);
-
-const MIME_TO_EXT: Record<string, string> = {
-  'image/jpeg': 'jpg',
-  'image/png': 'png',
-  'image/webp': 'webp',
-  'image/heic': 'heic',
-  'image/heif': 'heif',
-  'application/pdf': 'pdf',
-};
 
 function invalidateExpenseCaches(userId: string) {
   const opts = { expire: 0 } as const;
@@ -88,6 +82,18 @@ export async function POST(req: NextRequest) {
   const user = await getCurrentUser();
   if (!user) return noStoreJson({ error: 'Unauthorized' }, { status: 401 });
 
+  const rate = await consumeRateLimit({
+    key: `api:expenses:receipt:${user.id}`,
+    limit: RECEIPT_UPLOAD_LIMIT_PER_10_MINUTES,
+    windowMs: 10 * 60 * 1000,
+  });
+  if (!rate.ok) {
+    return noStoreJson(
+      { error: `Muitos uploads em pouco tempo. Aguarde ${rate.retryAfterSec}s e tente de novo.` },
+      { status: 429, headers: { 'Retry-After': String(rate.retryAfterSec) } },
+    );
+  }
+
   const formData = await req.formData();
   const expenseId = String(formData.get('expenseId') ?? '');
   const file = formData.get('file');
@@ -99,7 +105,7 @@ export async function POST(req: NextRequest) {
   if (file.size > MAX_FILE_SIZE) {
     return noStoreJson({ error: 'Arquivo maior que 10MB.' }, { status: 413 });
   }
-  if (!ALLOWED_MIME_TYPES.has(file.type)) {
+  if (file.type && !ALLOWED_MIME_TYPES.has(file.type)) {
     return noStoreJson({ error: 'Formato de comprovante não permitido.' }, { status: 415 });
   }
 
@@ -107,14 +113,19 @@ export async function POST(req: NextRequest) {
   const expense = await getOwnedExpense(admin, expenseId, user.id);
   if (!expense) return noStoreJson({ error: 'Gasto não encontrado.' }, { status: 404 });
 
-  const ext = MIME_TO_EXT[file.type] ?? 'bin';
-  const path = `${user.id}/${expenseId}/${uuidv4()}.${ext}`;
   const buffer = new Uint8Array(await file.arrayBuffer());
+  const detected = detectFileType(buffer);
+  if (!isDetectedMimeAllowed(detected, ALLOWED_MIME_TYPES)) {
+    return noStoreJson({ error: 'Conteúdo do comprovante não é permitido.' }, { status: 415 });
+  }
+
+  const ext = detected.extension;
+  const path = `${user.id}/${expenseId}/${uuidv4()}.${ext}`;
 
   const { error: uploadError } = await admin.storage
     .from(BUCKET)
     .upload(path, buffer, {
-      contentType: file.type,
+      contentType: detected.mimeType,
       upsert: false,
     });
 
@@ -127,8 +138,8 @@ export async function POST(req: NextRequest) {
     .update({
       receipt_path: path,
       receipt_file_name: file.name || `comprovante.${ext}`,
-      receipt_mime_type: file.type,
-      receipt_size_bytes: file.size,
+      receipt_mime_type: detected.mimeType,
+      receipt_size_bytes: buffer.byteLength,
       receipt_uploaded_at: new Date().toISOString(),
     })
     .eq('id', expenseId)

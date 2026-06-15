@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
 
   // IMPORTANTE: criar a response antes do client e gravar os cookies de sessão
   // NELA, não no `request`. Caso contrário o browser nunca recebe os cookies
-  // e o próximo request volta para /login via middleware.
+  // e o próximo request volta para /login via proxy.
   const response = NextResponse.redirect(`${origin}${next}`);
 
   const supabase = createServerClient(

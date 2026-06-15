@@ -3,30 +3,19 @@ import { createServiceClient, createSessionClient } from '@/lib/supabase/server'
 import { v4 as uuidv4 } from 'uuid';
 import sharp from 'sharp';
 import { noStoreJson } from '@/lib/http';
+import { consumeRateLimit } from '@/lib/rateLimit';
+import { detectFileType, isDetectedMimeAllowed } from '@/lib/security/fileSignature';
 
 const MAX_FILE_SIZE = 7 * 1024 * 1024;
+const AVATAR_UPLOAD_LIMIT_PER_10_MINUTES = 10;
 
-const ALLOWED_MIME_TYPES = [
+const ALLOWED_MIME_TYPES = new Set([
   'image/jpeg',
   'image/png',
   'image/webp',
-  'image/gif',
   'image/heic',
   'image/heif',
-];
-
-const MIME_TO_EXT: Record<string, string> = {
-  'image/jpeg': 'jpg',
-  'image/png': 'png',
-  'image/webp': 'webp',
-  'image/gif': 'gif',
-  'image/heic': 'heic',
-  'image/heif': 'heif',
-};
-
-const SHARP_SUPPORTED = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif']);
-
-const HEIC_LIKE = new Set(['image/heic', 'image/heif']);
+]);
 
 export async function POST(req: NextRequest) {
   try {
@@ -34,6 +23,18 @@ export async function POST(req: NextRequest) {
     const { data: { user } } = await session.auth.getUser();
     if (!user) {
       return noStoreJson({ error: 'Não autenticado.' }, { status: 401 });
+    }
+
+    const rate = await consumeRateLimit({
+      key: `api:upload-avatar:${user.id}`,
+      limit: AVATAR_UPLOAD_LIMIT_PER_10_MINUTES,
+      windowMs: 10 * 60 * 1000,
+    });
+    if (!rate.ok) {
+      return noStoreJson(
+        { error: `Muitos uploads em pouco tempo. Aguarde ${rate.retryAfterSec}s e tente de novo.` },
+        { status: 429, headers: { 'Retry-After': String(rate.retryAfterSec) } },
+      );
     }
 
     const formData = await req.formData();
@@ -47,28 +48,29 @@ export async function POST(req: NextRequest) {
       return noStoreJson({ error: 'Arquivo maior que 7MB.' }, { status: 413 });
     }
 
-    if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+    if (file.type && !ALLOWED_MIME_TYPES.has(file.type)) {
       return noStoreJson({ error: 'Formato de imagem não permitido.' }, { status: 415 });
     }
 
     const arrayBuffer = await file.arrayBuffer();
-    let imageData: Buffer | Uint8Array = new Uint8Array(arrayBuffer);
-    let outputType = file.type;
-
-    if (SHARP_SUPPORTED.has(file.type)) {
-      try {
-        const pipeline = sharp(imageData).rotate();
-        imageData = HEIC_LIKE.has(file.type)
-          ? await pipeline.jpeg().toBuffer()
-          : await pipeline.toBuffer();
-        if (HEIC_LIKE.has(file.type)) outputType = 'image/jpeg';
-      } catch {
-        // keep original buffer
-      }
+    const inputBytes = new Uint8Array(arrayBuffer);
+    const detected = detectFileType(inputBytes);
+    if (!isDetectedMimeAllowed(detected, ALLOWED_MIME_TYPES)) {
+      return noStoreJson({ error: 'Conteúdo da imagem não é permitido.' }, { status: 415 });
     }
 
-    const ext = MIME_TO_EXT[outputType] ?? 'bin';
-    const fileName = `${uuidv4()}.${ext}`;
+    let imageData: Buffer;
+    try {
+      imageData = await sharp(inputBytes)
+        .rotate()
+        .webp({ quality: 82 })
+        .toBuffer();
+    } catch {
+      return noStoreJson({ error: 'Imagem inválida ou corrompida.' }, { status: 415 });
+    }
+
+    const outputType = 'image/webp';
+    const fileName = `${uuidv4()}.webp`;
     const filePath = `avatars/${user.id}/${fileName}`;
 
     const admin = createServiceClient();

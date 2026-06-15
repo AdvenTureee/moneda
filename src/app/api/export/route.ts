@@ -30,11 +30,12 @@ const SOURCE_LABELS = {
   import: 'Importação',
 } as const;
 
-function csvEscape(value: unknown): string {
+export function csvEscape(value: unknown): string {
   if (value === null || value === undefined) return '';
   const s = String(value);
-  if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
-  return s;
+  const safe = /^[=+\-@\t\r]/.test(s) ? `'${s}` : s;
+  if (/[",\n\r]/.test(safe)) return `"${safe.replace(/"/g, '""')}"`;
+  return safe;
 }
 
 function toCsvLine(values: unknown[]): string {

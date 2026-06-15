@@ -3,7 +3,7 @@ import { createSessionClient } from '@/lib/supabase/server';
 import { getCachedFinancialContextBlockForChat } from '@/lib/moFinancialContext';
 import { suggestMoChatFollowUps } from '@/lib/moChatFollowUps';
 import { buildMoChatMessages, streamMoChatReply } from '@/lib/groq';
-import { checkRateLimit, pruneRateLimitBuckets } from '@/lib/rateLimit';
+import { consumeRateLimit } from '@/lib/rateLimit';
 import { getBillingClosingDay } from '@/lib/profiles';
 import { getCurrentBillingPeriod } from '@/lib/billingCycle';
 import { SENSITIVE_RESPONSE_HEADERS } from '@/lib/http';
@@ -60,8 +60,10 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    pruneRateLimitBuckets();
-    const rate = checkRateLimit(`mo-chat:${user.id}`, CHAT_LIMIT_PER_MINUTE);
+    const rate = await consumeRateLimit({
+      key: `api:ai:chat:${user.id}`,
+      limit: CHAT_LIMIT_PER_MINUTE,
+    });
     if (!rate.ok) {
       return new Response(
         sseLine({
