@@ -80,10 +80,11 @@ async function fetchCategoriesOnce(): Promise<CategoryWithMeta[]> {
  * - `invalidate()` limpa o sessionStorage. Chamar após mutation de categoria.
  * - `refresh()` força refetch.
  */
-export function useCategories() {
+export function useCategories(initialData?: CategoryWithMeta[]) {
   const cached = readCache();
-  const [data, setData] = useState<CategoryWithMeta[]>(cached ?? []);
-  const [loading, setLoading] = useState(cached === null);
+  const seed = cached ?? initialData ?? [];
+  const [data, setData] = useState<CategoryWithMeta[]>(seed);
+  const [loading, setLoading] = useState(cached === null && !initialData);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async (force = false) => {
@@ -108,12 +109,14 @@ export function useCategories() {
   }, []);
 
   useEffect(() => {
+    if (initialData && cached === null) writeCache(initialData);
+
     // Inscreve esta instância no broadcast pra refletir refetches feitos por outras.
     const onUpdate = (next: CategoryWithMeta[]) => setData(next);
     listeners.add(onUpdate);
 
     // Se não tinha cache no mount, dispara fetch agora.
-    if (cached === null) {
+    if (cached === null && !initialData) {
       void load();
     }
 

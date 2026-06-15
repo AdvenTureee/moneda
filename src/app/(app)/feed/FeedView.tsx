@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect, useCallback, useRef, useLayoutEffect, useTransition, Suspense, type ComponentType } from 'react';
 import { createPortal } from 'react-dom';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { CalendarBlank, CreditCard, MagnifyingGlass, Tag, Wallet, X } from '@phosphor-icons/react';
 import ExpenseCard from '@/components/ExpenseCard';
 import AddExpenseModal from '@/components/AddExpenseModal';
@@ -24,7 +24,9 @@ import {
   shiftPeriod,
 } from '@/lib/billingCycle';
 import { useCategories } from '@/hooks/useCategories';
-import type { Expense, ExpenseInput, ExpensePaymentMethod } from '@/types';
+import { buildFeedQueryKey, buildFeedSearchParams, FEED_PAGE_SIZE } from '@/lib/feedQuery';
+import type { CategoryWithMeta } from '@/lib/categories';
+import type { Expense, ExpenseInput, ExpensePaymentMethod, FeedExpensesPage } from '@/types';
 
 type FilterTab = 'date' | 'category' | 'payment';
 type FeedView = 'history' | 'scheduled';
@@ -44,6 +46,8 @@ const PAYMENT_FILTERS: Array<{ value: ExpensePaymentMethod; label: string; icon:
 
 const DEFAULT_DATE_PRESET = 'current-cycle';
 const FEED_FILTERS_STORAGE_KEY = 'moneda:feed-filters:v1';
+const FEED_CACHE_STORAGE_KEY = 'moneda:feed-cache:v1';
+const FEED_CACHE_TTL_MS = 5 * 60 * 1000;
 
 interface StoredFeedFilters {
   dateRange?: DateRange;
@@ -51,6 +55,95 @@ interface StoredFeedFilters {
   activePaymentMethod?: ExpensePaymentMethod | null;
   searchInput?: string;
   activeView?: FeedView;
+}
+
+interface StoredFeedCache {
+  pages: Record<string, { ts: number; page: FeedExpensesPage }>;
+}
+
+const feedInflight = new Map<string, Promise<FeedExpensesPage>>();
+
+function rehydrateExpense(expense: Expense): Expense {
+  return {
+    ...expense,
+    createdAt: new Date(expense.createdAt),
+    receipt: expense.receipt
+      ? { ...expense.receipt, uploadedAt: new Date(expense.receipt.uploadedAt) }
+      : null,
+  };
+}
+
+function rehydrateFeedPage(page: FeedExpensesPage): FeedExpensesPage {
+  return {
+    ...page,
+    data: page.data.map(rehydrateExpense),
+  };
+}
+
+function readFeedCache(queryKey: string): FeedExpensesPage | null {
+  try {
+    const raw = window.sessionStorage.getItem(FEED_CACHE_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as StoredFeedCache;
+    const entry = parsed.pages?.[queryKey];
+    if (!entry || Date.now() - entry.ts > FEED_CACHE_TTL_MS) return null;
+    return rehydrateFeedPage(entry.page);
+  } catch {
+    return null;
+  }
+}
+
+function writeFeedCache(queryKey: string, page: FeedExpensesPage) {
+  try {
+    const raw = window.sessionStorage.getItem(FEED_CACHE_STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) as StoredFeedCache : { pages: {} };
+    parsed.pages = parsed.pages ?? {};
+    parsed.pages[queryKey] = { ts: Date.now(), page };
+    window.sessionStorage.setItem(FEED_CACHE_STORAGE_KEY, JSON.stringify(parsed));
+  } catch {
+    // Cache de UX opcional; segue sem persistência se indisponível.
+  }
+}
+
+function clearFeedCache() {
+  try {
+    window.sessionStorage.removeItem(FEED_CACHE_STORAGE_KEY);
+  } catch {}
+}
+
+async function fetchFeedPage(
+  input: {
+    category?: string | null;
+    paymentMethod?: ExpensePaymentMethod | null;
+    startDate?: string | null;
+    endDate?: string | null;
+    search?: string | null;
+    order: FeedView;
+    cursor?: string | null;
+  },
+  signal?: AbortSignal,
+): Promise<FeedExpensesPage> {
+  const params = buildFeedSearchParams({ ...input, limit: FEED_PAGE_SIZE });
+  const url = `/api/expenses?${params.toString()}`;
+  const key = url;
+  const existing = feedInflight.get(key);
+  if (existing) return existing;
+
+  const promise = fetch(url, { signal })
+    .then(async (res) => {
+      if (!res.ok) {
+        if (res.status === 401) {
+          window.location.href = '/login';
+        }
+        throw new Error('Erro ao buscar despesas');
+      }
+      return rehydrateFeedPage(await res.json() as FeedExpensesPage);
+    })
+    .finally(() => {
+      feedInflight.delete(key);
+    });
+  feedInflight.set(key, promise);
+  return promise;
 }
 
 function isPaymentMethod(value: unknown): value is ExpensePaymentMethod {
@@ -209,14 +302,15 @@ function paymentFilterLabel(method: ExpensePaymentMethod | null): string {
 
 interface FeedViewProps {
   billingClosingDay: number;
+  initialCategories: CategoryWithMeta[];
+  initialFeedPage: FeedExpensesPage;
 }
 
-function FeedPageInner({ billingClosingDay }: FeedViewProps) {
+function FeedPageInner({ billingClosingDay, initialCategories, initialFeedPage }: FeedViewProps) {
   const searchParams = useSearchParams();
   const focusParam = searchParams.get('focus');
   const periodParam = searchParams.get('period');
   const { showToast } = useToast();
-  const router = useRouter();
   const dateFilters = useMemo(() => buildDateFilters(billingClosingDay), [billingClosingDay]);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [activePaymentMethod, setActivePaymentMethod] = useState<ExpensePaymentMethod | null>(null);
@@ -280,11 +374,16 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
     setCustomTo(isoToDateInput(dateRange.to));
   }, [dateRange]);
 
-  const [allExpenses, setAllExpenses] = useState<Expense[]>([]);
-  const [loadedView, setLoadedView] = useState<FeedView>('history');
-  const { data: categories } = useCategories();
-  const [loading, setLoading] = useState(true);
-  const [hasLoadedExpenses, setHasLoadedExpenses] = useState(false);
+  const initialPage = useMemo(() => rehydrateFeedPage(initialFeedPage), [initialFeedPage]);
+  const [allExpenses, setAllExpenses] = useState<Expense[]>(() => initialPage.data);
+  const [nextCursor, setNextCursor] = useState<string | null>(() => initialPage.nextCursor);
+  const [hasMore, setHasMore] = useState(() => initialPage.hasMore);
+  const [loadedQueryKey, setLoadedQueryKey] = useState(() => initialPage.queryKey);
+  const { data: categories } = useCategories(initialCategories);
+  const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasLoadedExpenses, setHasLoadedExpenses] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [deletingExpense, setDeletingExpense] = useState<Expense | null>(null);
@@ -293,6 +392,7 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
   const [noticeExiting, setNoticeExiting] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const requestSeqRef = useRef(0);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => setMounted(true), []);
 
@@ -344,100 +444,138 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
     };
   }, [filtersOpen]);
 
-  const fetchExpenses = useCallback(async () => {
+  const currentFeedRequest = useMemo(() => ({
+    category: activeCategory,
+    paymentMethod: activePaymentMethod,
+    startDate: dateRange.from,
+    endDate: dateRange.to,
+    search: debouncedSearch.trim(),
+    order: activeView,
+    limit: FEED_PAGE_SIZE,
+  }), [activeCategory, activePaymentMethod, activeView, dateRange, debouncedSearch]);
+  const currentQueryKey = useMemo(() => buildFeedQueryKey(currentFeedRequest), [currentFeedRequest]);
+
+  const applyReplacePage = useCallback((page: FeedExpensesPage) => {
+    setAllExpenses(page.data);
+    setNextCursor(page.nextCursor);
+    setHasMore(page.hasMore);
+    setLoadedQueryKey(page.queryKey);
+    setHasLoadedExpenses(true);
+    writeFeedCache(page.queryKey, page);
+  }, []);
+
+  const appendPage = useCallback((page: FeedExpensesPage) => {
+    setAllExpenses((prev) => {
+      const seen = new Set(prev.map((expense) => expense.id));
+      const merged = [...prev, ...page.data.filter((expense) => !seen.has(expense.id))];
+      writeFeedCache(currentQueryKey, {
+        ...page,
+        data: merged,
+        count: merged.length,
+        queryKey: currentQueryKey,
+      });
+      return merged;
+    });
+    setNextCursor(page.nextCursor);
+    setHasMore(page.hasMore);
+    setLoadedQueryKey(currentQueryKey);
+  }, [currentQueryKey]);
+
+  const loadFeedPage = useCallback(async (options?: {
+    append?: boolean;
+    background?: boolean;
+    bypassCache?: boolean;
+  }) => {
     if (!filtersHydrated) return;
-    const requestedView = activeView;
-    abortRef.current?.abort();
-    const controller = new AbortController();
+
+    const append = options?.append === true;
+    const cursor = append ? nextCursor : null;
+    if (append && !cursor) return;
+
+    const cached = !append && !options?.bypassCache ? readFeedCache(currentQueryKey) : null;
+    const shouldFetchInBackground = options?.background === true || Boolean(cached);
+    const controller = append ? null : new AbortController();
     const requestSeq = requestSeqRef.current + 1;
     requestSeqRef.current = requestSeq;
-    abortRef.current = controller;
-    setLoading(true);
-    setError(null);
-    try {
-      const params = new URLSearchParams();
-      if (activeCategory) params.set('category', activeCategory);
-      if (activePaymentMethod) params.set('paymentMethod', activePaymentMethod);
-      if (debouncedSearch.trim()) params.set('search', debouncedSearch.trim());
-      if (dateRange.from) params.set('startDate', dateRange.from);
-      if (dateRange.to) params.set('endDate', dateRange.to);
-      if (activeView === 'scheduled') params.set('onlyFuture', 'true');
-      const url = `/api/expenses${params.size ? '?' + params.toString() : ''}`;
-      const res = await fetch(url, { signal: controller.signal });
-      if (!res.ok) {
-        if (res.status === 401) {
-          window.location.href = '/login';
-          return;
-        }
-        throw new Error('Erro ao buscar despesas');
+
+    if (!append) {
+      abortRef.current?.abort();
+      abortRef.current = controller;
+      if (cached) {
+        applyReplacePage(cached);
       }
-      const json = await res.json();
-      setAllExpenses(json.data ?? []);
-      setLoadedView(requestedView);
+    }
+
+    setError(null);
+    if (append) {
+      setLoadingMore(true);
+    } else if (shouldFetchInBackground) {
+      setRefreshing(true);
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
+
+    try {
+      const page = await fetchFeedPage(
+        { ...currentFeedRequest, cursor },
+        controller?.signal,
+      );
+      if (requestSeqRef.current !== requestSeq) return;
+      if (append) {
+        appendPage(page);
+      } else {
+        applyReplacePage(page);
+      }
     } catch (e) {
       if ((e as Error)?.name === 'AbortError') return;
-      setLoadedView(requestedView);
-      setError(e instanceof Error ? e.message : 'Erro desconhecido');
+      if (requestSeqRef.current === requestSeq) {
+        setError(e instanceof Error ? e.message : 'Erro desconhecido');
+      }
     } finally {
       if (requestSeqRef.current === requestSeq) {
         setHasLoadedExpenses(true);
         setLoading(false);
+        setRefreshing(false);
+        setLoadingMore(false);
         if (abortRef.current === controller) abortRef.current = null;
       }
     }
-  }, [activeCategory, activePaymentMethod, debouncedSearch, dateRange, activeView, filtersHydrated]);
+  }, [appendPage, applyReplacePage, currentFeedRequest, currentQueryKey, filtersHydrated, nextCursor]);
 
   useEffect(() => {
-    fetchExpenses();
-  }, [fetchExpenses]);
+    if (!filtersHydrated) return;
+    void loadFeedPage({ background: currentQueryKey === loadedQueryKey });
+    // Reage apenas à identidade dos filtros; o loader já captura o estado atual.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentQueryKey, filtersHydrated]);
 
   useEffect(() => {
-    const handler = (event: Event) => {
-      const expense = (event as CustomEvent<{ expense?: Expense }>).detail?.expense;
-      if (expense) {
-        setAllExpenses((prev) => {
-          const exists = prev.some((item) => item.id === expense.id);
-          return exists
-            ? prev.map((item) => (item.id === expense.id ? expense : item))
-            : [expense, ...prev];
-        });
+    const target = loadMoreRef.current;
+    if (!target || !hasMore || loadingMore || loading || refreshing) return;
+
+    const observer = new IntersectionObserver((entries) => {
+      if (entries.some((entry) => entry.isIntersecting)) {
+        void loadFeedPage({ append: true });
       }
-      fetchExpenses();
+    }, { rootMargin: '360px 0px' });
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [hasMore, loading, loadingMore, loadFeedPage, refreshing]);
+
+  useEffect(() => {
+    const handler = () => {
+      clearFeedCache();
+      void loadFeedPage({ bypassCache: true, background: true });
     };
     window.addEventListener('expense-mutated', handler);
     return () => window.removeEventListener('expense-mutated', handler);
-  }, [fetchExpenses]);
-
-  const filtered = useMemo(() => {
-    let result = allExpenses;
-
-    if (activeCategory) {
-      result = result.filter((e) => e.category === activeCategory);
-    }
-
-    if (activePaymentMethod) {
-      result = result.filter((e) => e.paymentMethod === activePaymentMethod);
-    }
-
-    if (debouncedSearch.trim()) {
-      const q = debouncedSearch.toLowerCase().trim();
-      result = result.filter(
-        (e) =>
-          e.description.toLowerCase().includes(q) ||
-          (categories.find((c) => c.id === e.category)?.name.toLowerCase().includes(q) ?? false)
-      );
-    }
-
-    return result.sort((a, b) => {
-      const aTime = new Date(a.createdAt).getTime();
-      const bTime = new Date(b.createdAt).getTime();
-      return activeView === 'scheduled' ? aTime - bTime : bTime - aTime;
-    });
-  }, [allExpenses, activeCategory, activePaymentMethod, debouncedSearch, activeView]);
+  }, [loadFeedPage]);
 
   const groups = activeView === 'scheduled'
-    ? [...groupExpensesByDate(filtered)].reverse()
-    : groupExpensesByDate(filtered);
+    ? [...groupExpensesByDate(allExpenses)].reverse()
+    : groupExpensesByDate(allExpenses);
   const categoryLabel = activeCategory
     ? categories.find((category) => category.id === activeCategory)?.name ?? 'Categoria'
     : 'Todas';
@@ -479,7 +617,7 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
 
   const topCategories = useMemo(() => {
     const map = new Map<string, number>();
-    for (const exp of filtered) {
+    for (const exp of allExpenses) {
       map.set(exp.category, (map.get(exp.category) ?? 0) + exp.amount);
     }
     return Array.from(map.entries())
@@ -489,7 +627,7 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
         const cat = categories.find((c) => c.id === id);
         return { id, name: cat?.name ?? id, icon: cat?.icon ?? 'Package', total };
       });
-  }, [filtered, categories]);
+  }, [allExpenses, categories]);
 
   const clearFilters = useCallback(() => {
     startUiTransition(() => {
@@ -551,12 +689,10 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
       window.dispatchEvent(new CustomEvent('expense-mutated', { detail: { expense: deletingExpense } }));
       setDeletingExpense(null);
       showToast('success', 'Gasto excluído com sucesso');
-      fetchExpenses();
-      router.refresh();
     } catch {
       setDeletingExpense(null);
     }
-  }, [deletingExpense, fetchExpenses, router, showToast]);
+  }, [deletingExpense, showToast]);
 
   const handleEditSave = useCallback(async (input: ExpenseInput) => {
     if (!editingExpense) return;
@@ -572,18 +708,16 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
       window.dispatchEvent(new CustomEvent('expense-mutated', { detail: { expense: data?.data } }));
       setEditingExpense(null);
       showToast('success', 'Gasto atualizado com sucesso');
-      fetchExpenses();
-      router.refresh();
       return data?.data;
     } catch {
       // ignore
     }
-  }, [editingExpense, fetchExpenses, showToast]);
+  }, [editingExpense, showToast]);
 
-  const showStaleView = hasLoadedExpenses && activeView !== loadedView;
-  const showInitialSkeleton = (loading && !hasLoadedExpenses) || showStaleView;
-  const showRefreshing = loading && hasLoadedExpenses;
-  const showFeedProgress = loading;
+  const showStaleView = hasLoadedExpenses && currentQueryKey !== loadedQueryKey;
+  const showInitialSkeleton = (loading && !hasLoadedExpenses) || (loading && showStaleView);
+  const showRefreshing = refreshing || (loading && hasLoadedExpenses);
+  const showFeedProgress = loading || refreshing || loadingMore;
   const animateGroups = !showRefreshing && !showStaleView;
 
   return (
@@ -1001,14 +1135,14 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
           {/* Content layer */}
           <div
             className="transition-opacity duration-150"
-            style={{ opacity: showInitialSkeleton ? 0 : showRefreshing ? 0.72 : 1 }}
+            style={{ opacity: showInitialSkeleton ? 0 : 1 }}
           >
             {error ? (
                 <div className="flex flex-col items-center py-16 text-center">
                   <Icon name="Warning" size={48} className="mb-4 opacity-30" />
                   <p className="text-base font-semibold text-[#B14C4C]">{error}</p>
                   <button
-                    onClick={fetchExpenses}
+                    onClick={() => loadFeedPage({ bypassCache: true })}
                     className="mt-2 px-4 py-2 bg-[#5BBF8E] hover:bg-[#4AA77C] active:bg-[#3FA876] text-white rounded-[10px] text-sm font-semibold transition-colors duration-150 active:scale-[0.98]"
                   >
                     Tentar novamente
@@ -1069,7 +1203,7 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
 
                       {/* Expense cards */}
                       <div className="space-y-2.5 border-l-2 border-[color-mix(in_srgb,var(--color-border)_72%,transparent)] pl-3">
-                        {group.items.map((expense, ei) => (
+                        {group.items.map((expense) => (
                           <div key={expense.id}>
                             <ExpenseCard
                               expense={expense}
@@ -1077,7 +1211,7 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
                               onClick={hasUpcomingInstallments(expense) ? () => handleInstallmentClick(expense) : undefined}
                               onEdit={() => setEditingExpense(expense)}
                               onDelete={() => handleDelete(expense)}
-                              onReceiptChanged={fetchExpenses}
+                              onReceiptChanged={() => loadFeedPage({ bypassCache: true, background: true })}
                               onViewInstallments={hasUpcomingInstallments(expense) ? () => handleInstallmentClick(expense) : undefined}
                             />
                           </div>
@@ -1086,6 +1220,22 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
                     </section>
                   );
                 })
+            )}
+            {!error && groups.length > 0 && (
+              <div ref={loadMoreRef} className="flex min-h-16 items-center justify-center pb-4">
+                {hasMore ? (
+                  <button
+                    type="button"
+                    onClick={() => loadFeedPage({ append: true })}
+                    disabled={loadingMore}
+                    className="rounded-full border border-[#D1D9E6] bg-white px-4 py-2 text-xs font-bold text-[#5BBF8E] transition-colors hover:bg-[#EEF9F4] disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {loadingMore ? 'Carregando...' : 'Carregar mais'}
+                  </button>
+                ) : (
+                  <span className="text-xs font-semibold text-[#9CA3AF]">Fim da lista</span>
+                )}
+              </div>
             )}
           </div>
         </div>
@@ -1120,10 +1270,14 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
   );
 }
 
-export default function FeedView({ billingClosingDay }: FeedViewProps) {
+export default function FeedView({ billingClosingDay, initialCategories, initialFeedPage }: FeedViewProps) {
   return (
     <Suspense fallback={null}>
-      <FeedPageInner billingClosingDay={billingClosingDay} />
+      <FeedPageInner
+        billingClosingDay={billingClosingDay}
+        initialCategories={initialCategories}
+        initialFeedPage={initialFeedPage}
+      />
     </Suspense>
   );
 }

@@ -1,5 +1,5 @@
 import { unstable_cache } from 'next/cache';
-import type { Category, Expense, ExpenseFilters, ExpenseInput, ExpensePaymentMethod, DashboardMetrics, SpendingTimelineBucket, SpendingTimelineData } from '@/types';
+import type { Category, Expense, ExpenseFilters, ExpenseInput, ExpensePaymentMethod, DashboardMetrics, FeedExpensesPage, SpendingTimelineBucket, SpendingTimelineData } from '@/types';
 import type { Database, Json } from '@/types/supabase';
 import { createServiceClient, isSupabaseEnabled } from '@/lib/supabase/server';
 import { getCategories, getCategoriesByIds } from '@/lib/categories';
@@ -13,6 +13,12 @@ import {
   getBillingPeriodForDate,
   shiftPeriod as shiftBillingPeriod,
 } from '@/lib/billingCycle';
+import {
+  encodeFeedCursor,
+  buildFeedQueryKey,
+  normalizeFeedLimit,
+  parseFeedCursor,
+} from '@/lib/feedQuery';
 
 type ExpensesRow = Database['public']['Tables']['expenses']['Row'];
 type ExpensesInsert = Database['public']['Tables']['expenses']['Insert'];
@@ -429,6 +435,96 @@ async function getExpensesFromDB(filters: ExpenseFilters): Promise<Expense[]> {
   return enriched.expenses;
 }
 
+function feedMaterializationPeriod(filters: ExpenseFilters): string {
+  if (filters.onlyFuture) {
+    if (filters.endDate) return periodFromIso(filters.endDate);
+    const horizon = new Date();
+    horizon.setMonth(horizon.getMonth() + 6);
+    return periodFromDate(horizon);
+  }
+  return filters.includeFuture ? periodFromExpenseFilters(filters) : currentPeriod();
+}
+
+function sanitizePostgrestOrValue(value: string): string {
+  return value.replace(/[(),]/g, ' ').trim();
+}
+
+async function getFeedExpensesPageFromDB(filters: ExpenseFilters): Promise<FeedExpensesPage> {
+  const db = createServiceClient();
+  if (!filters.userId) {
+    throw new Error('userId é obrigatório para buscar despesas do banco');
+  }
+
+  const userId = filters.userId;
+  const order = filters.order ?? (filters.onlyFuture ? 'scheduled' : 'history');
+  const ascending = order === 'scheduled';
+  const limit = normalizeFeedLimit(filters.limit);
+  await ensureExpenseSeriesMaterialized(userId, feedMaterializationPeriod(filters));
+
+  const nowIso = new Date().toISOString();
+  let query = db
+    .from('expenses')
+    .select(EXPENSE_SELECT)
+    .eq('user_id', userId)
+    .is('deleted_at', null)
+    .order('occurred_at', { ascending })
+    .order('id', { ascending })
+    .limit(limit + 1);
+
+  if (filters.category) query = query.eq('category_id', filters.category);
+  if (filters.paymentMethod) query = query.eq('payment_method', filters.paymentMethod);
+  if (filters.startDate) query = query.gte('occurred_at', filters.startDate);
+  if (filters.endDate) query = query.lte('occurred_at', filters.endDate);
+  if (order === 'scheduled') {
+    query = query.gt('occurred_at', nowIso);
+  } else if (!filters.includeFuture) {
+    query = query.lte('occurred_at', nowIso);
+  }
+
+  const search = filters.search?.trim();
+  let allCategories: Map<string, Category> | null = null;
+  if (search) {
+    const categoryList = await getCategories(userId);
+    allCategories = new Map(categoryList.map((category) => [category.id, category]));
+    const q = search.toLowerCase();
+    const categoryIds = categoryList
+      .filter((category) => category.name.toLowerCase().includes(q))
+      .map((category) => category.id);
+    const sanitized = sanitizePostgrestOrValue(search);
+    const orFilters = sanitized ? [`description.ilike.%${sanitized}%`] : [];
+    if (categoryIds.length > 0) {
+      orFilters.push(`category_id.in.(${categoryIds.join(',')})`);
+    }
+    if (orFilters.length > 0) query = query.or(orFilters.join(','));
+  }
+
+  const cursor = parseFeedCursor(filters.cursor);
+  if (cursor) {
+    const comparison = ascending
+      ? `occurred_at.gt.${cursor.occurredAt},and(occurred_at.eq.${cursor.occurredAt},id.gt.${cursor.id})`
+      : `occurred_at.lt.${cursor.occurredAt},and(occurred_at.eq.${cursor.occurredAt},id.lt.${cursor.id})`;
+    query = query.or(comparison);
+  }
+
+  const { data, error } = await query;
+  if (error) throw new Error(`getFeedExpensesPage: ${error.message}`);
+
+  const rows = (data ?? []) as ExpensesRow[];
+  const pageRows = rows.slice(0, limit);
+  const expenses = pageRows.map(rowToExpense);
+  const categories = allCategories ?? await getCategoriesByIds(userId, expenses.map((expense) => expense.category));
+  const enriched = expenses.map((expense) => attachCategoryData(expense, categories));
+  const last = enriched.at(-1);
+
+  return {
+    data: enriched,
+    count: enriched.length,
+    nextCursor: rows.length > limit && last ? encodeFeedCursor(last) : null,
+    hasMore: rows.length > limit,
+    queryKey: buildFeedQueryKey(filters),
+  };
+}
+
 async function createExpenseInDB(input: ExpenseInput): Promise<Expense> {
   const db = createServiceClient();
   if (!input.userId) {
@@ -730,6 +826,52 @@ function getExpensesFromMock(filters: ExpenseFilters): Expense[] {
   );
   if (filters.limit) expenses = expenses.slice(0, filters.limit);
   return enrichWithCategoriesFromMock(expenses).expenses;
+}
+
+function getFeedExpensesPageFromMock(filters: ExpenseFilters): FeedExpensesPage {
+  const limit = normalizeFeedLimit(filters.limit);
+  const order = filters.order ?? (filters.onlyFuture ? 'scheduled' : 'history');
+  const cursor = parseFeedCursor(filters.cursor);
+  let expenses = getExpensesFromMock({
+    ...filters,
+    limit: undefined,
+    order,
+    onlyFuture: order === 'scheduled',
+    includeFuture: order === 'scheduled',
+  });
+
+  expenses = expenses.sort((a, b) => {
+    const aTime = new Date(a.createdAt).getTime();
+    const bTime = new Date(b.createdAt).getTime();
+    if (aTime === bTime) {
+      return order === 'scheduled' ? a.id.localeCompare(b.id) : b.id.localeCompare(a.id);
+    }
+    return order === 'scheduled' ? aTime - bTime : bTime - aTime;
+  });
+
+  if (cursor) {
+    expenses = expenses.filter((expense) => {
+      const time = new Date(expense.createdAt).getTime();
+      const cursorTime = new Date(cursor.occurredAt).getTime();
+      if (time === cursorTime) {
+        return order === 'scheduled'
+          ? expense.id.localeCompare(cursor.id) > 0
+          : expense.id.localeCompare(cursor.id) < 0;
+      }
+      return order === 'scheduled' ? time > cursorTime : time < cursorTime;
+    });
+  }
+
+  const page = expenses.slice(0, limit);
+  const last = page.at(-1);
+
+  return {
+    data: page,
+    count: page.length,
+    nextCursor: expenses.length > limit && last ? encodeFeedCursor(last) : null,
+    hasMore: expenses.length > limit,
+    queryKey: buildFeedQueryKey(filters),
+  };
 }
 
 function getDashboardMetricsFromMock(userId: string, period: string, closingDay: number): DashboardMetrics {
@@ -1103,6 +1245,11 @@ export async function deleteExpense(id: string, userId: string): Promise<void> {
 export async function getExpenses(filters: ExpenseFilters): Promise<Expense[]> {
   if (isSupabaseEnabled()) return getExpensesFromDB(filters);
   return getExpensesFromMock(filters);
+}
+
+export async function getFeedExpensesPage(filters: ExpenseFilters): Promise<FeedExpensesPage> {
+  if (isSupabaseEnabled()) return getFeedExpensesPageFromDB(filters);
+  return getFeedExpensesPageFromMock(filters);
 }
 
 export async function createExpense(input: ExpenseInput): Promise<Expense> {
