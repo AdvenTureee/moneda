@@ -111,6 +111,40 @@ function clearFeedCache() {
   } catch {}
 }
 
+function expenseRenderSignature(expense: Expense): string {
+  return [
+    expense.id,
+    new Date(expense.createdAt).toISOString(),
+    expense.amount,
+    expense.category,
+    expense.description,
+    expense.paymentMethod,
+    expense.seriesId ?? '',
+    expense.seriesOccurrenceIndex ?? '',
+    expense.receipt?.path ?? '',
+    expense.receipt?.uploadedAt ? new Date(expense.receipt.uploadedAt).toISOString() : '',
+  ].join('|');
+}
+
+function feedPageMatchesCurrent(
+  page: FeedExpensesPage,
+  currentExpenses: Expense[],
+  currentHasMore: boolean,
+  currentNextCursor: string | null,
+): boolean {
+  if (page.data.length > currentExpenses.length) return false;
+  const pageMatchesCurrentPrefix = page.data.every((expense, index) =>
+    expenseRenderSignature(expense) === expenseRenderSignature(currentExpenses[index])
+  );
+  if (!pageMatchesCurrentPrefix) return false;
+  if (currentExpenses.length > page.data.length) return true;
+  return page.hasMore === currentHasMore && page.nextCursor === currentNextCursor;
+}
+
+function feedViewFromQueryKey(queryKey: string): FeedView {
+  return new URLSearchParams(queryKey).get('order') === 'scheduled' ? 'scheduled' : 'history';
+}
+
 async function fetchFeedPage(
   input: {
     category?: string | null;
@@ -381,7 +415,6 @@ function FeedPageInner({ billingClosingDay, initialCategories, initialFeedPage }
   const [loadedQueryKey, setLoadedQueryKey] = useState(() => initialPage.queryKey);
   const { data: categories } = useCategories(initialCategories);
   const [loading, setLoading] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasLoadedExpenses, setHasLoadedExpenses] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -390,11 +423,26 @@ function FeedPageInner({ billingClosingDay, initialCategories, initialFeedPage }
   const [selectedInstallmentExpense, setSelectedInstallmentExpense] = useState<Expense | null>(null);
   const [showOverspendNotice, setShowOverspendNotice] = useState(true);
   const [noticeExiting, setNoticeExiting] = useState(false);
+  const feedStateRef = useRef({
+    expenses: initialPage.data,
+    hasMore: initialPage.hasMore,
+    nextCursor: initialPage.nextCursor,
+    loadedQueryKey: initialPage.queryKey,
+  });
   const abortRef = useRef<AbortController | null>(null);
   const requestSeqRef = useRef(0);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => setMounted(true), []);
+
+  useEffect(() => {
+    feedStateRef.current = {
+      expenses: allExpenses,
+      hasMore,
+      nextCursor,
+      loadedQueryKey,
+    };
+  }, [allExpenses, hasMore, loadedQueryKey, nextCursor]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => setDebouncedSearch(searchInput), 180);
@@ -456,6 +504,12 @@ function FeedPageInner({ billingClosingDay, initialCategories, initialFeedPage }
   const currentQueryKey = useMemo(() => buildFeedQueryKey(currentFeedRequest), [currentFeedRequest]);
 
   const applyReplacePage = useCallback((page: FeedExpensesPage) => {
+    feedStateRef.current = {
+      expenses: page.data,
+      hasMore: page.hasMore,
+      nextCursor: page.nextCursor,
+      loadedQueryKey: page.queryKey,
+    };
     setAllExpenses(page.data);
     setNextCursor(page.nextCursor);
     setHasMore(page.hasMore);
@@ -468,6 +522,12 @@ function FeedPageInner({ billingClosingDay, initialCategories, initialFeedPage }
     setAllExpenses((prev) => {
       const seen = new Set(prev.map((expense) => expense.id));
       const merged = [...prev, ...page.data.filter((expense) => !seen.has(expense.id))];
+      feedStateRef.current = {
+        expenses: merged,
+        hasMore: page.hasMore,
+        nextCursor: page.nextCursor,
+        loadedQueryKey: currentQueryKey,
+      };
       writeFeedCache(currentQueryKey, {
         ...page,
         data: merged,
@@ -510,7 +570,6 @@ function FeedPageInner({ billingClosingDay, initialCategories, initialFeedPage }
     if (append) {
       setLoadingMore(true);
     } else if (shouldFetchInBackground) {
-      setRefreshing(true);
       setLoading(false);
     } else {
       setLoading(true);
@@ -524,6 +583,28 @@ function FeedPageInner({ billingClosingDay, initialCategories, initialFeedPage }
       if (requestSeqRef.current !== requestSeq) return;
       if (append) {
         appendPage(page);
+      } else if (shouldFetchInBackground && feedPageMatchesCurrent(
+        page,
+        feedStateRef.current.expenses,
+        feedStateRef.current.hasMore,
+        feedStateRef.current.nextCursor,
+      )) {
+        const currentFeedState = feedStateRef.current;
+        writeFeedCache(page.queryKey, currentFeedState.expenses.length > page.data.length
+          ? {
+              ...page,
+              data: currentFeedState.expenses,
+              count: currentFeedState.expenses.length,
+              hasMore: currentFeedState.hasMore,
+              nextCursor: currentFeedState.nextCursor,
+            }
+          : page);
+        feedStateRef.current = {
+          ...currentFeedState,
+          loadedQueryKey: page.queryKey,
+        };
+        setLoadedQueryKey(page.queryKey);
+        setHasLoadedExpenses(true);
       } else {
         applyReplacePage(page);
       }
@@ -536,7 +617,6 @@ function FeedPageInner({ billingClosingDay, initialCategories, initialFeedPage }
       if (requestSeqRef.current === requestSeq) {
         setHasLoadedExpenses(true);
         setLoading(false);
-        setRefreshing(false);
         setLoadingMore(false);
         if (abortRef.current === controller) abortRef.current = null;
       }
@@ -552,7 +632,7 @@ function FeedPageInner({ billingClosingDay, initialCategories, initialFeedPage }
 
   useEffect(() => {
     const target = loadMoreRef.current;
-    if (!target || !hasMore || loadingMore || loading || refreshing) return;
+    if (!target || !hasMore || loadingMore || loading) return;
 
     const observer = new IntersectionObserver((entries) => {
       if (entries.some((entry) => entry.isIntersecting)) {
@@ -562,7 +642,7 @@ function FeedPageInner({ billingClosingDay, initialCategories, initialFeedPage }
 
     observer.observe(target);
     return () => observer.disconnect();
-  }, [hasMore, loading, loadingMore, loadFeedPage, refreshing]);
+  }, [hasMore, loading, loadingMore, loadFeedPage]);
 
   useEffect(() => {
     const handler = () => {
@@ -573,7 +653,8 @@ function FeedPageInner({ billingClosingDay, initialCategories, initialFeedPage }
     return () => window.removeEventListener('expense-mutated', handler);
   }, [loadFeedPage]);
 
-  const groups = activeView === 'scheduled'
+  const loadedView = useMemo(() => feedViewFromQueryKey(loadedQueryKey), [loadedQueryKey]);
+  const groups = loadedView === 'scheduled'
     ? [...groupExpensesByDate(allExpenses)].reverse()
     : groupExpensesByDate(allExpenses);
   const categoryLabel = activeCategory
@@ -666,7 +747,6 @@ function FeedPageInner({ billingClosingDay, initialCategories, initialFeedPage }
   const handleViewChange = useCallback((nextView: FeedView) => {
     if (nextView === activeView) return;
     startUiTransition(() => {
-      setLoading(true);
       setActiveView(nextView);
     });
   }, [activeView]);
@@ -716,8 +796,8 @@ function FeedPageInner({ billingClosingDay, initialCategories, initialFeedPage }
 
   const showStaleView = hasLoadedExpenses && currentQueryKey !== loadedQueryKey;
   const showInitialSkeleton = (loading && !hasLoadedExpenses) || (loading && showStaleView);
-  const showRefreshing = refreshing || (loading && hasLoadedExpenses);
-  const showFeedProgress = loading || refreshing || loadingMore;
+  const showRefreshing = loading && hasLoadedExpenses;
+  const showFeedProgress = loading || loadingMore;
   const animateGroups = !showRefreshing && !showStaleView;
 
   return (
