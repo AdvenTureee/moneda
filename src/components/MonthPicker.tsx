@@ -173,7 +173,7 @@ export default function MonthPicker({
     <div className={`relative w-full ${fullWidth ? '' : 'sm:w-auto'}`}>
       <div
         ref={filterRef}
-        className={`dashboard-cycle-filter themed-card flex min-h-[54px] w-full items-center justify-between gap-3 rounded-[14px] border border-[color-mix(in_srgb,var(--color-border)_76%,transparent)] bg-[color-mix(in_srgb,var(--color-surface)_88%,transparent)] px-3.5 py-2 text-left shadow-sm outline-none transition-[border-color,background-color,box-shadow,transform] hover:border-[#A8C5E0]/70 hover:bg-[color-mix(in_srgb,var(--color-surface-alt)_72%,var(--color-surface)_28%)] active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-[#A8C5E0] focus-visible:ring-offset-1 sm:min-h-10 sm:px-3 ${
+        className={`dashboard-cycle-filter themed-card flex min-h-[58px] w-full items-center justify-between gap-3 rounded-[14px] border border-[color-mix(in_srgb,var(--color-border)_76%,transparent)] bg-[color-mix(in_srgb,var(--color-surface)_88%,transparent)] px-3.5 py-2.5 text-left shadow-sm outline-none transition-[border-color,background-color,box-shadow,transform] hover:border-[#A8C5E0]/70 hover:bg-[color-mix(in_srgb,var(--color-surface-alt)_72%,var(--color-surface)_28%)] active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-[#A8C5E0] focus-visible:ring-offset-1 sm:min-h-12 sm:px-3.5 ${
           fullWidth ? '' : 'sm:w-auto sm:min-w-[184px]'
         }`}
         aria-expanded={open}
@@ -185,14 +185,16 @@ export default function MonthPicker({
           aria-label={`Ciclo: ${currentLabel}. Clique para trocar.`}
           aria-expanded={open}
         >
-          <span className="mb-0.5 block text-[11px] font-bold leading-none text-[var(--color-text-tertiary)]">
+          <span className="mb-1 block text-[11px] font-bold leading-none text-[var(--color-text-tertiary)]">
             Ciclo financeiro
           </span>
-          <span className="block text-sm font-extrabold leading-tight text-[var(--color-text-primary)]">
-            {current.month}
-          </span>
-          <span className="mt-0.5 block truncate text-xs font-semibold leading-tight text-[var(--color-text-secondary)]">
-            {current.range}
+          <span className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
+            <span className="text-lg font-extrabold leading-none text-[var(--color-text-primary)] sm:text-base">
+              {current.month}
+            </span>
+            <span className="min-w-0 truncate text-sm font-semibold leading-tight text-[var(--color-text-secondary)] sm:text-xs">
+              {current.range}
+            </span>
           </span>
         </button>
         <span className="flex shrink-0 items-center gap-1.5">

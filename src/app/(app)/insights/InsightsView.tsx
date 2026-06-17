@@ -239,7 +239,7 @@ export default function InsightsView({
   );
 
   return (
-    <div className="max-w-lg mx-auto px-4 pb-24">
+    <div className="max-w-lg mx-auto px-4 pb-4">
       <PageHeader title="Insights" subtitle={monthName} />
 
       <MoInsightsChat period={period} expenseCount={expenseCount} />

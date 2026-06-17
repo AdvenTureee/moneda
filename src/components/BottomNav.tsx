@@ -24,6 +24,8 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Perfil', icon: User, href: '/perfil' },
 ];
 
+const NAV_TRANSITION_TIMEOUT_MS = 1200;
+
 function scrollPageToTop() {
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   window.scrollTo({
@@ -59,7 +61,9 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
   const shouldResetScrollRef = useRef(false);
   const previousPathnameRef = useRef(pathname);
   const resetScrollTimeoutRef = useRef<number | null>(null);
+  const navTransitionTimeoutRef = useRef<number | null>(null);
   const navRef = useRef<HTMLElement>(null);
+  const [transitioningHref, setTransitioningHref] = useState<string | null>(null);
 
   const prefetchRoute = useCallback(
     (href: string) => {
@@ -99,6 +103,35 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
   }, [clearPendingScrollReset, pathname]);
 
   useEffect(() => clearPendingScrollReset, [clearPendingScrollReset]);
+
+  const clearNavTransitionTimer = useCallback(() => {
+    if (navTransitionTimeoutRef.current) {
+      window.clearTimeout(navTransitionTimeoutRef.current);
+      navTransitionTimeoutRef.current = null;
+    }
+  }, []);
+
+  const clearNavTransition = useCallback(() => {
+    setTransitioningHref(null);
+    clearNavTransitionTimer();
+  }, [clearNavTransitionTimer]);
+
+  const showNavTransition = useCallback((href: string) => {
+    setTransitioningHref(href);
+    if (navTransitionTimeoutRef.current) {
+      window.clearTimeout(navTransitionTimeoutRef.current);
+    }
+    navTransitionTimeoutRef.current = window.setTimeout(() => {
+      setTransitioningHref(null);
+      navTransitionTimeoutRef.current = null;
+    }, NAV_TRANSITION_TIMEOUT_MS);
+  }, []);
+
+  useEffect(() => {
+    clearNavTransition();
+  }, [clearNavTransition, pathname]);
+
+  useEffect(() => clearNavTransitionTimer, [clearNavTransitionTimer]);
 
   useEffect(() => {
     const updateDashboardHref = () => setDashboardHref(dashboardHrefWithStoredPeriod());
@@ -141,7 +174,7 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
       className="bottom-nav"
       aria-label="Navegação principal"
     >
-      <div className="grid h-[72px] grid-cols-5 items-center px-3">
+      <div className="bottom-nav__inner">
         {NAV_ITEMS.map((item) => {
           if (item.isAction) {
             return (
@@ -150,7 +183,7 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
                 type="button"
                 onClick={() => onAddExpense?.()}
                 aria-label="Adicionar gasto"
-                className="bottom-nav-action-btn justify-self-center flex items-center justify-center h-[50px] w-[50px] rounded-full bg-[var(--color-brand-green)] text-white touch-manipulation active:scale-[0.72] active:brightness-75 active:shadow-[0_0px_0px_rgba(91,191,142,0)] hover:shadow-[0_6px_20px_rgba(91,191,142,0.5)] hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-green)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--nav-glass-bg)] transition-all duration-[200ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] shadow-[0_4px_12px_rgba(91,191,142,0.35)] will-change-transform"
+                className="bottom-nav-action-btn"
               >
                 <Plus size={28} weight="bold" />
               </button>
@@ -162,6 +195,7 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
             ? pathname === '/app'
             : pathname.startsWith(item.href);
           const isSamePath = pathname === item.href;
+          const isTransitioning = transitioningHref === href;
 
           return (
             <Link
@@ -178,22 +212,21 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
                 scrollPageToTop();
               }}
               onNavigate={() => {
+                showNavTransition(href);
                 resetTabScroll();
                 scheduleScrollReset();
               }}
               onFocus={() => prefetchRoute(href)}
-              className={`bottom-nav-link relative justify-self-center flex flex-col items-center justify-center gap-1 w-full min-w-[56px] min-h-[56px] rounded-xl touch-manipulation transition-all duration-[200ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] active:scale-[0.82] active:opacity-60 will-change-transform ${
-                isActive
-                  ? 'text-[var(--color-brand-green)] font-bold'
-                  : 'text-slate-400 dark:text-slate-400/70'
-              }`}
+              className={`bottom-nav-link ${isActive ? 'bottom-nav-link--active' : ''} ${isTransitioning ? 'bottom-nav-link--transitioning' : ''}`}
               aria-current={isActive ? 'page' : undefined}
+              aria-busy={isTransitioning || undefined}
             >
-              <item.icon size={isActive ? 26 : 24} weight={isActive ? 'fill' : 'regular'} className="transition-transform duration-150" />
-              <span className="text-[10px] font-medium tracking-wide leading-none">{item.label}</span>
-              {isActive && (
-                <span className="absolute -bottom-[2px] h-[3px] w-4 rounded-full bg-[var(--color-brand-green)] animate-fade-in" />
-              )}
+              <item.icon
+                size={isActive ? 25 : 23}
+                weight={isActive ? 'fill' : 'regular'}
+                className="bottom-nav-link__icon"
+              />
+              <span className="bottom-nav-link__label">{item.label}</span>
             </Link>
           );
         })}

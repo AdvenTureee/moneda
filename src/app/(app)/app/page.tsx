@@ -132,7 +132,7 @@ export default async function DashboardPage({
   return (
     <>
       <RefreshOnExpenseMutation />
-      <div className="mx-auto w-full max-w-lg px-4 pb-24 lg:max-w-6xl lg:px-6">
+      <div className="mx-auto w-full max-w-lg px-4 pb-4">
         <PageHeader
           title="Moneda"
           subtitle="Seu dinheiro, finalmente claro."
@@ -159,8 +159,8 @@ export default async function DashboardPage({
           className="relative z-40 min-h-[88px] pb-2 lg:min-h-[76px] lg:pb-3"
         />
 
-        <div className="lg:grid lg:grid-cols-[minmax(400px,440px)_minmax(0,1fr)] lg:items-start lg:gap-5">
-          <div className="lg:sticky lg:top-4">
+        <div>
+          <div>
             <DashboardBalanceHero budgetTotal={budgetTotal} expensesTotal={expensesTotal} incomeTotal={incomeTotal} period={period} displayName={fullName} />
 
             <section className="mb-3 animate-fade-up delay-2" aria-label="Ciclo financeiro">
@@ -168,21 +168,21 @@ export default async function DashboardPage({
             </section>
 
             <section
-              className="themed-card mb-4 grid grid-cols-2 gap-4 rounded-[14px] bg-white p-2 animate-fade-up delay-3 md:grid-cols-[1.1fr_1.1fr_0.9fr] lg:grid-cols-1"
+              className="themed-card mb-4 grid grid-cols-3 gap-1.5 rounded-[14px] bg-white p-2 animate-fade-up delay-3 min-[390px]:gap-2"
               aria-label="Resumo financeiro do ciclo"
             >
               {compactMetrics.map((item, index) => (
                 <div
                   key={item.label}
-                  className={`min-w-0 rounded-[10px] px-2 py-2 text-left ${index === 2 ? 'col-span-2 md:col-span-1 lg:col-span-1' : ''}`}
+                  className="min-w-0 rounded-[10px] px-1.5 py-2 text-left min-[390px]:px-2"
                 >
-                  <div className="mb-1 flex items-center justify-start gap-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--color-text-tertiary)]">
-                    {index === 0 && <Icon name="Wallet" size={14} />}
-                    {index === 1 && <Icon name="TrendDown" size={14} />}
-                    {index === 2 && <Icon name="TrendUp" size={14} />}
-                    <p>{item.label}</p>
+                  <div className="mb-1 flex min-w-0 items-center justify-start gap-1 text-[9px] font-semibold uppercase tracking-[0.06em] text-[var(--color-text-tertiary)] min-[390px]:gap-1.5 min-[390px]:text-[10px]">
+                    {index === 0 && <Icon name="Wallet" size={12} />}
+                    {index === 1 && <Icon name="TrendDown" size={12} />}
+                    {index === 2 && <Icon name="TrendUp" size={12} />}
+                    <p className="min-w-0 truncate">{item.label}</p>
                   </div>
-                  <p className="whitespace-nowrap text-base font-bold leading-none tabular-nums text-[var(--color-text-primary)]">
+                  <p className="whitespace-nowrap text-[13px] font-bold leading-none tabular-nums text-[var(--color-text-primary)] min-[390px]:text-sm sm:text-base">
                     {item.value}
                   </p>
                 </div>

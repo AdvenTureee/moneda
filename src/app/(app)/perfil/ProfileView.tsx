@@ -262,7 +262,7 @@ export default function ProfileView({
   const anyBusy = savingName || savingEmail || savingOtp || signingOut || uploading;
 
   return (
-    <div className="max-w-lg mx-auto px-4 pb-24">
+    <div className="max-w-lg mx-auto px-4 pb-4">
       <PageHeader title="Perfil" subtitle="Gerencie sua conta e preferências." />
 
       {/* Identity card */}
