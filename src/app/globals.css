@@ -3074,3 +3074,89 @@ html[data-theme="dark"] .landing-hero::before {
     );
   }
 }
+
+/* =============================================
+   AURA DO DASHBOARD HERO
+   Usa as variáveis do Moneda
+   ============================================= */
+
+@property --aura-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes aura-spin {
+  to { --aura-angle: 360deg; }
+}
+
+@keyframes aura-pulse {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50%       { opacity: 0.8; transform: scale(1.035); }
+}
+
+.dashboard-balance-hero {
+  position: relative;
+  isolation: isolate;
+  /* Cores padrão = estado healthy (verde-azul do Moneda) */
+  --aura-c1: var(--color-brand-blue);     /* #A8C5E0 */
+  --aura-c2: var(--color-brand-green);    /* #5BBF8E */
+}
+
+/* Aura animada atrás do card */
+.dashboard-balance-hero::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 20px;
+  z-index: -1;
+  background: conic-gradient(
+    from var(--aura-angle),
+    transparent 20%,
+    var(--aura-c1) 40%,
+    var(--aura-c2) 60%,
+    transparent 80%
+  );
+  animation:
+    aura-spin 7s linear infinite,
+    aura-pulse 3.5s ease-in-out infinite;
+  filter: blur(16px);
+  opacity: 0.6;
+}
+
+/* Fundo sólido do card (esconde o gradiente que vazaria por dentro) */
+.dashboard-balance-hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 18px;
+  z-index: -1;
+  background: var(--color-surface);
+  border: 1px solid color-mix(in srgb, var(--aura-c1) 22%, transparent);
+}
+
+/* ── Estado WARNING ─────────────────────────── */
+.dashboard-balance-hero[data-state="warning"] {
+  --aura-c1: var(--color-warning);        /* #F0A855 */
+  --aura-c2: #F5D87A;
+}
+
+/* ── Estado OVER BUDGET ─────────────────────── */
+.dashboard-balance-hero[data-state="overBudget"] {
+  --aura-c1: var(--color-error);          /* #E07070 */
+  --aura-c2: #F0A0A0;
+}
+
+/* ── Estado RECOVERED ───────────────────────── */
+.dashboard-balance-hero[data-state="recovered"] {
+  --aura-c1: var(--color-brand-green);
+  --aura-c2: var(--color-brand-blue);
+}
+
+/* ── Reduzir movimento ──────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-balance-hero::before {
+    animation: none;
+    opacity: 0.35;
+  }
+}
