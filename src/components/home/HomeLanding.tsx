@@ -576,7 +576,7 @@ function HeroSection() {
               className="mt-5 flex items-center gap-2 text-sm font-medium text-[var(--color-text-tertiary)]"
             >
               <motion.div
-                animate={reduceMotion ? {} : { rotate: 360 }}
+                animate={reduceMotion || auraPaused ? {} : { rotate: 360 }}
                 transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
                 className="text-[var(--color-brand-blue)]"
               >
