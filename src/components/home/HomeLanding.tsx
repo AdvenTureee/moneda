@@ -411,7 +411,7 @@ function HeroSection() {
   useEffect(() => { setMounted(true); }, []);
 
   return (
-    <section className="flex min-h-[calc(100vh-80px)] items-center px-4 pb-10 pt-12 sm:px-6 sm:pb-12 sm:pt-16 lg:px-8">
+    <section className="landing-hero flex min-h-[calc(100vh-80px)] items-center px-4 pb-10 pt-12 sm:px-6 sm:pb-12 sm:pt-16 lg:px-8">
       <div className={`w-full transition-opacity duration-500 ${mounted ? 'opacity-100' : 'opacity-0'}`}>
         <div className="mx-auto grid w-full max-w-7xl items-center gap-12 lg:grid-cols-[1fr_1.2fr]">
           <motion.div

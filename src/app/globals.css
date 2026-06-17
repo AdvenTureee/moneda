@@ -3003,3 +3003,74 @@ html[data-theme="dark"] .toast-body--error::before {
   outline: 2px solid rgba(255, 255, 255, 0.7);
   outline-offset: 4px;
 }
+
+/* --- Aura Animada Landing Hero --- */
+@property --lh-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes lh-aura-rotate {
+  from { --lh-angle: 0deg; }
+  to { --lh-angle: 360deg; }
+}
+
+@keyframes lh-aura-breathe {
+  0%, 100% { opacity: 0.7; transform: scale(1); }
+  50%       { opacity: 0.95;  transform: scale(1.03); }
+}
+
+.landing-hero {
+  position: relative;
+  isolation: isolate;
+}
+
+.landing-hero::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  pointer-events: none;
+  border-radius: 50%;
+  right: -5%;
+  top: 10%;
+  width: 55%;
+  height: 80%;
+  background: conic-gradient(
+    from var(--lh-angle),
+    color-mix(in srgb, var(--color-brand-blue) 60%, transparent),
+    color-mix(in srgb, var(--color-brand-green) 70%, transparent)
+  );
+  filter: blur(90px);
+  animation: 
+    lh-aura-rotate 8s linear infinite,
+    lh-aura-breathe 5s ease-in-out infinite;
+}
+
+html[data-theme="dark"] .landing-hero::before {
+  opacity: 0.55;
+  filter: blur(80px);
+}
+
+@media (max-width: 1023px) {
+  .landing-hero::before {
+    right: auto;
+    left: 50%;
+    top: 30%;
+    transform: translateX(-50%);
+    width: 90%;
+    height: 60%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-hero::before {
+    animation: none;
+    opacity: 0.3;
+    background: radial-gradient(
+      circle at center,
+      color-mix(in srgb, var(--color-brand-blue) 40%, transparent),
+      color-mix(in srgb, var(--color-brand-green) 40%, transparent)
+    );
+  }
+}
