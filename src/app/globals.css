@@ -501,7 +501,7 @@ html[data-theme="dark"] .mo-tip-bubble::before {
 }
 
 .dashboard-balance-hero {
-  --dashboard-mo-size: clamp(84px, 20vw, 112px);
+  --dashboard-mo-size: clamp(96px, 23vw, 126px);
   position: relative;
   isolation: isolate;
   overflow: visible;
@@ -513,18 +513,17 @@ html[data-theme="dark"] .mo-tip-bubble::before {
   max-width: 100%;
 }
 
-.dashboard-balance-hero__middle {
+.dashboard-balance-hero__amount-row {
   display: flex;
   min-width: 0;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  margin-top: 6px;
 }
 
 .dashboard-balance-hero__mo-zone {
   flex: 0 0 auto;
-  margin-block: -10px -8px;
+  margin-block: -34px -31px;
   z-index: 20;
 }
 
@@ -536,6 +535,7 @@ html[data-theme="dark"] .mo-tip-bubble::before {
 
 .dashboard-balance-hero__mo-button {
   pointer-events: auto;
+  transform: translateY(1px);
 }
 
 .dashboard-balance-hero__tip {
@@ -602,18 +602,17 @@ html[data-theme="dark"] .mo-tip-bubble::before {
 
 @media (max-width: 374px) {
   .dashboard-balance-hero {
-    --dashboard-mo-size: clamp(72px, 19vw, 86px);
+    --dashboard-mo-size: clamp(84px, 22vw, 102px);
     padding-top: 8px;
     padding-bottom: 7px;
   }
 
-  .dashboard-balance-hero__middle {
+  .dashboard-balance-hero__amount-row {
     gap: 8px;
-    margin-top: 5px;
   }
 
   .dashboard-balance-hero__mo-zone {
-    margin-block: -7px -6px;
+    margin-block: -28px -26px;
   }
 
   .mo-tip-bubble--overlay {
@@ -1733,7 +1732,11 @@ html[data-theme="dark"] .mo-mascot {
 .dashboard-avatar-frame {
   width: 4.625rem;
   height: 4.625rem;
+  padding: 5px;
   flex-shrink: 0;
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--color-brand-green) 8%, transparent),
+    0 10px 24px color-mix(in srgb, var(--color-brand-green) 10%, transparent);
   transition:
     transform 200ms cubic-bezier(0.22, 1, 0.36, 1),
     box-shadow 200ms cubic-bezier(0.22, 1, 0.36, 1);
@@ -3761,6 +3764,8 @@ html[data-theme="dark"] .hero-orbital {
 /* ── Bottom Nav ───── */
 
 .bottom-nav {
+  --bottom-nav-duration: 180ms;
+  --bottom-nav-ease: cubic-bezier(0.22, 1, 0.36, 1);
   position: fixed;
   bottom: calc(12px + env(safe-area-inset-bottom, 0px));
   left: 50%;
@@ -3802,9 +3807,8 @@ html[data-theme="dark"] .hero-orbital {
   font-weight: 650;
   text-decoration: none;
   transition:
-    color 150ms cubic-bezier(0.22, 1, 0.36, 1),
-    background-color 150ms cubic-bezier(0.22, 1, 0.36, 1),
-    transform 120ms cubic-bezier(0.22, 1, 0.36, 1);
+    color var(--bottom-nav-duration) var(--bottom-nav-ease),
+    transform 120ms var(--bottom-nav-ease);
 }
 
 .bottom-nav-link:hover {
@@ -3812,7 +3816,7 @@ html[data-theme="dark"] .hero-orbital {
 }
 
 .bottom-nav-link:active {
-  transform: scale(0.965);
+  transform: scale(0.97);
 }
 
 .bottom-nav-link:focus-visible,
@@ -3825,23 +3829,31 @@ html[data-theme="dark"] .hero-orbital {
   color: var(--nav-accent);
 }
 
-.bottom-nav-link__icon {
-  flex: 0 0 auto;
-  transition:
-    color 150ms cubic-bezier(0.22, 1, 0.36, 1),
-    opacity 150ms cubic-bezier(0.22, 1, 0.36, 1),
-    transform 150ms cubic-bezier(0.22, 1, 0.36, 1);
+.bottom-nav-link--transitioning {
+  color: var(--nav-accent);
 }
 
-.bottom-nav-link:active .bottom-nav-link__icon,
+.bottom-nav-link__icon {
+  flex: 0 0 auto;
+  transform-origin: center;
+  transition:
+    color var(--bottom-nav-duration) var(--bottom-nav-ease),
+    opacity var(--bottom-nav-duration) var(--bottom-nav-ease),
+    transform var(--bottom-nav-duration) var(--bottom-nav-ease);
+}
+
+.bottom-nav-link:active .bottom-nav-link__icon {
+  color: var(--nav-accent);
+  transform: scale(0.94);
+}
+
 .bottom-nav-link--active .bottom-nav-link__icon {
   color: var(--nav-accent);
-  transform: translateY(-1px);
 }
 
 .bottom-nav-link--transitioning .bottom-nav-link__icon {
   color: var(--nav-accent);
-  animation: bottom-nav-icon-pulse 720ms cubic-bezier(0.22, 1, 0.36, 1) infinite;
+  animation: bottom-nav-icon-confirm 260ms var(--bottom-nav-ease) both;
 }
 
 .bottom-nav-link__label {
@@ -3852,10 +3864,20 @@ html[data-theme="dark"] .hero-orbital {
   letter-spacing: 0;
   text-overflow: ellipsis;
   white-space: nowrap;
+  transition:
+    color var(--bottom-nav-duration) var(--bottom-nav-ease),
+    opacity var(--bottom-nav-duration) var(--bottom-nav-ease),
+    transform var(--bottom-nav-duration) var(--bottom-nav-ease);
 }
 
-.bottom-nav-link--active .bottom-nav-link__label {
+.bottom-nav-link--active .bottom-nav-link__label,
+.bottom-nav-link--transitioning .bottom-nav-link__label {
   color: var(--nav-accent);
+}
+
+.bottom-nav-link:active .bottom-nav-link__label,
+.bottom-nav-link--transitioning .bottom-nav-link__label {
+  transform: none;
 }
 
 .bottom-nav-action-btn {
@@ -3875,9 +3897,9 @@ html[data-theme="dark"] .hero-orbital {
   box-shadow: var(--shadow-nav-action);
   overflow: hidden;
   transition:
-    filter 150ms cubic-bezier(0.22, 1, 0.36, 1),
-    box-shadow 170ms cubic-bezier(0.22, 1, 0.36, 1),
-    transform 120ms cubic-bezier(0.22, 1, 0.36, 1);
+    filter var(--bottom-nav-duration) var(--bottom-nav-ease),
+    box-shadow var(--bottom-nav-duration) var(--bottom-nav-ease),
+    transform 120ms var(--bottom-nav-ease);
 }
 
 .bottom-nav-action-btn::before {
@@ -3889,13 +3911,14 @@ html[data-theme="dark"] .hero-orbital {
   opacity: 0;
   transform: scale(0.45);
   transition:
-    opacity 130ms cubic-bezier(0.22, 1, 0.36, 1),
-    transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
+    opacity 130ms var(--bottom-nav-ease),
+    transform var(--bottom-nav-duration) var(--bottom-nav-ease);
 }
 
 .bottom-nav-action-btn svg {
   position: relative;
   z-index: 1;
+  transition: transform var(--bottom-nav-duration) var(--bottom-nav-ease);
 }
 
 .bottom-nav-action-btn:hover {
@@ -3904,8 +3927,12 @@ html[data-theme="dark"] .hero-orbital {
 }
 
 .bottom-nav-action-btn:active {
-  transform: scale(0.94);
+  transform: scale(0.93);
   filter: brightness(0.98);
+}
+
+.bottom-nav-action-btn:active svg {
+  transform: rotate(90deg) scale(0.92);
 }
 
 .bottom-nav-action-btn:active::before {
@@ -3913,16 +3940,15 @@ html[data-theme="dark"] .hero-orbital {
   transform: scale(1);
 }
 
-@keyframes bottom-nav-icon-pulse {
-  0%,
-  100% {
-    opacity: 1;
-    transform: translateY(-1px) scale(1);
+@keyframes bottom-nav-icon-confirm {
+  0% {
+    opacity: 0.76;
+    transform: scale(0.94);
   }
 
-  50% {
-    opacity: 0.68;
-    transform: translateY(-2px) scale(0.94);
+  100% {
+    opacity: 1;
+    transform: scale(1);
   }
 }
 

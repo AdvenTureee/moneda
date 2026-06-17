@@ -48,24 +48,6 @@ interface HeroModel {
 
 const MO_SPEAKING_MS = 500;
 
-function StatusBadge({ label, variant = 'warning' }: { label: string; variant?: 'warning' | 'success' }) {
-  const isWarning = variant === 'warning';
-  return (
-    <span
-      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ring-1 ring-inset ${
-        isWarning
-          ? 'bg-[var(--color-warning-bg)] text-[var(--color-warning)] ring-[color-mix(in_srgb,var(--color-warning)_20%,transparent)]'
-          : 'bg-[var(--color-success-bg)] text-[var(--color-success)] ring-[color-mix(in_srgb,var(--color-success)_20%,transparent)]'
-      }`}
-    >
-      <svg width="6" height="6" viewBox="0 0 6 6" className="shrink-0" aria-hidden="true">
-        <circle cx="3" cy="3" r="3" fill="currentColor" />
-      </svg>
-      {label}
-    </span>
-  );
-}
-
 function actionIcon(icon: HeroActionIcon) {
   if (icon === 'search') return <MagnifyingGlass size={14} weight="bold" className="shrink-0 opacity-75" />;
   if (icon === 'plus') return <Plus size={14} weight="bold" className="shrink-0 opacity-80" />;
@@ -79,14 +61,18 @@ function amountToneClass(tone: HeroTone) {
 }
 
 function actionClassName(variant: HeroActionVariant, hasMultipleActions: boolean) {
-  const layout = hasMultipleActions ? 'flex flex-1' : 'inline-flex';
-  const base = `${layout} min-h-11 min-w-0 items-center justify-center gap-1.5 rounded-[14px] border px-2.5 py-2 text-center text-xs font-semibold transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)] focus-visible:ring-offset-2 min-[390px]:px-3 sm:text-sm`;
+  const layout = hasMultipleActions
+    ? variant === 'primary'
+      ? 'flex flex-[1_1_0]'
+      : 'inline-flex flex-[0_0_auto]'
+    : 'inline-flex';
+  const base = `${layout} min-h-11 min-w-0 items-center justify-center gap-1.5 rounded-[14px] px-2.5 py-2 text-center text-xs font-semibold transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)] focus-visible:ring-offset-2 min-[390px]:px-3 sm:text-sm`;
 
   if (variant === 'primary') {
-    return `${base} border-[color-mix(in_srgb,var(--color-brand-blue)_48%,var(--color-border)_52%)] bg-[color-mix(in_srgb,var(--color-brand-blue)_18%,var(--color-surface)_82%)] text-[var(--color-text-primary)] hover:bg-[color-mix(in_srgb,var(--color-brand-blue)_24%,var(--color-surface)_76%)] active:bg-[color-mix(in_srgb,var(--color-brand-blue)_30%,var(--color-surface)_70%)]`;
+    return `${base} border border-[color-mix(in_srgb,var(--color-brand-blue)_48%,var(--color-border)_52%)] bg-[color-mix(in_srgb,var(--color-brand-blue)_18%,var(--color-surface)_82%)] text-[var(--color-text-primary)] hover:bg-[color-mix(in_srgb,var(--color-brand-blue)_24%,var(--color-surface)_76%)] active:bg-[color-mix(in_srgb,var(--color-brand-blue)_30%,var(--color-surface)_70%)]`;
   }
 
-  return `${base} border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-border-focus)] hover:bg-[var(--color-surface)] hover:text-[var(--color-text-primary)] active:bg-[var(--color-surface-alt)]`;
+  return `${base} border border-transparent px-1.5 text-[var(--color-text-secondary)] hover:bg-[color-mix(in_srgb,var(--color-surface)_64%,transparent)] hover:text-[var(--color-text-primary)] active:text-[var(--color-text-primary)] min-[390px]:px-2`;
 }
 
 export default function DashboardBalanceHero({
@@ -127,7 +113,7 @@ export default function DashboardBalanceHero({
         ariaLabel: `Acima do orçamento: ${formatCurrency(Math.abs(remaining))}`,
         tone: 'warning',
         description: 'Revise os gastos acima da meta ou registre uma entrada.',
-        badge: { label: 'Acima', variant: 'warning' },
+        badge: { label: 'Acima do orçamento', variant: 'warning' },
         actions: [
           {
             href: `/feed?period=${period}&focus=overspend`,
@@ -172,7 +158,7 @@ export default function DashboardBalanceHero({
         ariaLabel: `Restante: ${formatCurrency(remaining)}`,
         tone: 'neutral',
         description: 'Revise os extras antes de passar da meta.',
-        badge: { label: 'Cuidado: orçamento próximo do limite', variant: 'warning' },
+        badge: { label: 'Cuidado', variant: 'warning' },
         actions: [
           {
             href: `/feed?period=${period}`,
@@ -260,26 +246,28 @@ export default function DashboardBalanceHero({
   }
 
   return (
-    <section className="mt-1 mb-3 animate-fade-up delay-1" aria-label="Status do orçamento">
+    <section className="mt-3 mb-3 animate-fade-up delay-1" aria-label="Status do orçamento">
       <div className="dashboard-balance-hero">
         <div className="dashboard-balance-hero__content relative z-10 min-w-0">
-          <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--color-text-tertiary)]">
+          <p className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--color-text-tertiary)]">
+            {heroModel.badge ? (
+              <span
+                className={`h-1.5 w-1.5 shrink-0 rounded-full ${
+                  heroModel.badge.variant === 'success'
+                    ? 'bg-[var(--color-success)]'
+                    : 'bg-[var(--color-warning)]'
+                }`}
+                aria-hidden
+              />
+            ) : null}
             {heroModel.label}
           </p>
-          <p
-            className={`text-[30px] font-extrabold leading-none tabular-nums min-[390px]:text-[34px] lg:text-[36px] ${amountToneClass(heroModel.tone)}`}
-            aria-label={heroModel.ariaLabel}
-          >
-            {formatCurrency(heroModel.amount)}
-          </p>
-          {heroModel.badge ? (
-            <div className="mt-1.5">
-              <StatusBadge label={heroModel.badge.label} variant={heroModel.badge.variant} />
-            </div>
-          ) : null}
-          <div className="dashboard-balance-hero__middle">
-            <p className="min-w-0 max-w-[27ch] text-sm leading-snug text-[var(--color-text-secondary)]">
-              {heroModel.description}
+          <div className="dashboard-balance-hero__amount-row">
+            <p
+              className={`min-w-0 text-[30px] font-extrabold leading-none tabular-nums min-[390px]:text-[34px] lg:text-[36px] ${amountToneClass(heroModel.tone)}`}
+              aria-label={heroModel.ariaLabel}
+            >
+              {formatCurrency(heroModel.amount)}
             </p>
             <div className="dashboard-balance-hero__mo-zone">
               <button
@@ -297,7 +285,7 @@ export default function DashboardBalanceHero({
               </button>
             </div>
           </div>
-          <div className="dashboard-balance-hero__actions mt-2 flex flex-nowrap gap-2">
+          <div className="dashboard-balance-hero__actions mt-6 flex flex-nowrap gap-2">
             {heroModel.actions.map((action) => (
               <Link
                 key={action.href}

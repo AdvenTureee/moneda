@@ -168,21 +168,21 @@ export default async function DashboardPage({
             </section>
 
             <section
-              className="themed-card mb-4 grid grid-cols-3 gap-1.5 rounded-[14px] bg-white p-2 animate-fade-up delay-3 min-[390px]:gap-2"
+              className="themed-card mb-4 grid grid-cols-3 gap-1 rounded-[14px] bg-white p-1.5 animate-fade-up delay-3 min-[390px]:gap-1.5"
               aria-label="Resumo financeiro do ciclo"
             >
               {compactMetrics.map((item, index) => (
                 <div
                   key={item.label}
-                  className="min-w-0 rounded-[10px] px-1.5 py-2 text-left min-[390px]:px-2"
+                  className="min-w-0 rounded-[10px] px-1.5 py-1.5 text-left min-[390px]:px-2"
                 >
-                  <div className="mb-1 flex min-w-0 items-center justify-start gap-1 text-[9px] font-semibold uppercase tracking-[0.06em] text-[var(--color-text-tertiary)] min-[390px]:gap-1.5 min-[390px]:text-[10px]">
-                    {index === 0 && <Icon name="Wallet" size={12} />}
-                    {index === 1 && <Icon name="TrendDown" size={12} />}
-                    {index === 2 && <Icon name="TrendUp" size={12} />}
+                  <div className="mb-1 flex min-w-0 items-center justify-start gap-1 text-[8.5px] font-semibold uppercase tracking-[0.05em] text-[var(--color-text-tertiary)] min-[390px]:gap-1.5 min-[390px]:text-[9.5px]">
+                    {index === 0 && <Icon name="Wallet" size={11} />}
+                    {index === 1 && <Icon name="TrendDown" size={11} />}
+                    {index === 2 && <Icon name="TrendUp" size={11} />}
                     <p className="min-w-0 truncate">{item.label}</p>
                   </div>
-                  <p className="whitespace-nowrap text-[13px] font-bold leading-none tabular-nums text-[var(--color-text-primary)] min-[390px]:text-sm sm:text-base">
+                  <p className="whitespace-nowrap text-xs font-bold leading-none tabular-nums text-[var(--color-text-primary)] min-[390px]:text-[13px] sm:text-sm">
                     {item.value}
                   </p>
                 </div>
@@ -197,11 +197,8 @@ export default async function DashboardPage({
                 className="themed-card mb-4 bg-white rounded-[16px] p-5 animate-fade-up delay-4"
                 aria-label="Gastos por categoria"
               >
-                <div className="flex items-center justify-between mb-2">
+                <div className="mb-2">
                   <h2 className="text-base font-heading text-[#1A1D23]">Por categoria</h2>
-                  <Link href="/feed" className="text-base font-medium text-[#A8C5E0]">
-                    Ver tudo
-                  </Link>
                 </div>
 
                 <CategoryBreakdown

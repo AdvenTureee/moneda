@@ -24,7 +24,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Perfil', icon: User, href: '/perfil' },
 ];
 
-const NAV_TRANSITION_TIMEOUT_MS = 1200;
+const NAV_TRANSITION_TIMEOUT_MS = 520;
 
 function scrollPageToTop() {
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -205,7 +205,12 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
               scroll={false}
               onMouseEnter={() => prefetchRoute(href)}
               onClick={(event) => {
-                if (!isSamePath || isModifiedClick(event)) return;
+                if (isModifiedClick(event)) return;
+
+                if (!isSamePath) {
+                  showNavTransition(href);
+                  return;
+                }
 
                 event.preventDefault();
                 clearPendingScrollReset();
