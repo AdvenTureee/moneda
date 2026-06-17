@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { House, List, Plus, Sparkle, User } from '@phosphor-icons/react';
+import { House, List, PlusCircle, Sparkle, User } from '@phosphor-icons/react';
 import {
   DASHBOARD_PERIOD_CHANGED_EVENT,
   dashboardHrefWithStoredPeriod,
@@ -19,7 +19,7 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { label: 'Dashboard', icon: House, href: '/app' },
   { label: 'Feed', icon: List, href: '/feed' },
-  { label: 'Adicionar', icon: Plus, href: '#add', isAction: true },
+  { label: 'Adicionar', icon: PlusCircle, href: '#add', isAction: true },
   { label: 'Insights', icon: Sparkle, href: '/insights' },
   { label: 'Perfil', icon: User, href: '/perfil' },
 ];
@@ -185,7 +185,7 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
                 aria-label="Adicionar gasto"
                 className="bottom-nav-action-btn"
               >
-                <Plus size={28} weight="bold" />
+                <PlusCircle size={28} weight="bold" />
               </button>
             );
           }

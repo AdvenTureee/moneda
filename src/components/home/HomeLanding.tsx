@@ -273,26 +273,6 @@ function CtaButton({ large = false, children = 'Criar conta' }: { large?: boolea
   );
 }
 
-function useAuraPause<T extends HTMLElement>() {
-  const ref = useRef<T | null>(null);
-  const [paused, setPaused] = useState(false);
-
-  useEffect(() => {
-    const element = ref.current;
-    if (!element || typeof IntersectionObserver === 'undefined') return;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => setPaused(!entry.isIntersecting),
-      { rootMargin: '160px 0px', threshold: 0.01 },
-    );
-
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, []);
-
-  return [ref, paused] as const;
-}
-
 function ThemeToggleButton() {
   const { isDark, toggleTheme } = useTheme();
   const Icon = isDark ? Sun : Moon;
@@ -389,8 +369,6 @@ function ProductMock({ compact = false }: { compact?: boolean }) {
 }
 
 function HeroProductScene({ reduceMotion }: { reduceMotion: boolean | null }) {
-  const marketItem = feedItems[2];
-  const MarketIcon = marketItem.icon;
 
   const mainMotion = reduceMotion
     ? {}
@@ -471,24 +449,6 @@ function HeroProductScene({ reduceMotion }: { reduceMotion: boolean | null }) {
         </div>
       </motion.div>
 
-      <motion.div
-        aria-hidden="true"
-        className="hero-orbital hero-orbital--record hidden lg:block"
-        {...orbitalMotion(0.44)}
-      >
-        <div className="flex items-center gap-3">
-          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-[var(--color-surface-alt)] text-[var(--color-brand-blue-dark)]">
-            <MarketIcon size={18} weight="bold" aria-hidden />
-          </span>
-          <div className="min-w-0">
-            <p className="truncate text-sm font-bold text-[var(--color-text-primary)]">{marketItem.title}</p>
-            <p className="truncate text-xs text-[var(--color-text-secondary)]">{marketItem.meta}</p>
-          </div>
-          <p className="ml-auto shrink-0 text-sm font-bold tabular-nums text-[var(--color-error)]">
-            -{marketItem.amount}
-          </p>
-        </div>
-      </motion.div>
     </div>
   );
 }
@@ -532,16 +492,12 @@ function Header() {
 function HeroSection() {
   const reduceMotion = useReducedMotion();
   const [mounted, setMounted] = useState(false);
-  const [heroRef, auraPaused] = useAuraPause<HTMLElement>();
 
   useEffect(() => { setMounted(true); }, []);
 
   return (
     <section
-      ref={heroRef}
-      className={`landing-hero flex min-h-[calc(100vh-80px)] items-center px-4 pb-10 pt-12 sm:px-6 sm:pb-12 sm:pt-16 lg:px-8 ${
-        auraPaused ? 'aura-paused' : ''
-      }`}
+      className="flex min-h-[calc(100vh-80px)] items-center px-4 pb-10 pt-12 sm:px-6 sm:pb-12 sm:pt-16 lg:px-8"
     >
       <div className={`w-full transition-opacity duration-500 ${mounted ? 'opacity-100' : 'opacity-0'}`}>
         <div className="mx-auto grid w-full max-w-7xl items-center gap-12 lg:grid-cols-[1fr_1.2fr]">
@@ -576,7 +532,7 @@ function HeroSection() {
               className="mt-5 flex items-center gap-2 text-sm font-medium text-[var(--color-text-tertiary)]"
             >
               <motion.div
-                animate={reduceMotion || auraPaused ? {} : { rotate: 360 }}
+                animate={reduceMotion ? {} : { rotate: 360 }}
                 transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
                 className="text-[var(--color-brand-blue)]"
               >
@@ -983,15 +939,9 @@ function PreviewCarousel() {
 }
 
 function PreviewSection() {
-  const [atmosphereRef, auraPaused] = useAuraPause<HTMLDivElement>();
-
   return (
     <Section id="visualizacao" className="pt-16 sm:pt-20 lg:pt-24">
-      <div
-        ref={atmosphereRef}
-        className={`landing-atmosphere landing-atmosphere--preview ${auraPaused ? 'aura-paused' : ''}`}
-      >
-        <div className="relative z-10 grid gap-10 lg:grid-cols-[1fr_1fr] lg:items-center">
+      <div className="relative z-10 grid gap-10 lg:grid-cols-[1fr_1fr] lg:items-center">
           <SectionTitle eyebrow="Visualização" title="O produto em uso.">
             Orçamento, categorias e últimos registros aparecem juntos para virar leitura, não relatório.
           </SectionTitle>
@@ -1000,22 +950,16 @@ function PreviewSection() {
             <PreviewCarousel />
           </div>
         </div>
-      </div>
     </Section>
   );
 }
 
 function CycleSection() {
   const item = cycleHighlight;
-  const [atmosphereRef, auraPaused] = useAuraPause<HTMLDivElement>();
 
   return (
     <Section id="ciclo">
-      <div
-        ref={atmosphereRef}
-        className={`landing-atmosphere landing-atmosphere--cycle ${auraPaused ? 'aura-paused' : ''}`}
-      >
-        <div className="relative z-10">
+      <div className="relative z-10">
           <SectionTitle align="center" eyebrow="Ciclo" title="A métrica principal do Moneda.">
             O app organiza o mês financeiro pelo fechamento da fatura, porque é ali que o gasto realmente aparece.
           </SectionTitle>
@@ -1060,7 +1004,6 @@ function CycleSection() {
             </div>
           </Surface>
         </div>
-      </div>
     </Section>
   );
 }
@@ -1139,15 +1082,9 @@ function TrustAndFaqSection() {
 
 function FinalCta() {
   const reduceMotion = useReducedMotion();
-  const [atmosphereRef, auraPaused] = useAuraPause<HTMLElement>();
 
   return (
-    <section
-      ref={atmosphereRef}
-      className={`landing-atmosphere landing-atmosphere--final px-4 py-12 sm:px-6 sm:py-16 lg:px-8 ${
-        auraPaused ? 'aura-paused' : ''
-      }`}
-    >
+    <section className="px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
       <motion.div
         initial={reduceMotion ? false : { opacity: 0, y: 14, scale: 0.99 }}
         whileInView={reduceMotion ? undefined : { opacity: 1, y: 0, scale: 1 }}
