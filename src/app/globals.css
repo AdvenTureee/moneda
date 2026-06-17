@@ -3026,6 +3026,32 @@ html[data-theme="dark"] .toast-body--error::before {
   50%      { opacity: var(--lh-sheet-opacity-peak); scale: 1.012; }
 }
 
+@keyframes hero-orbital-float {
+  0%, 100% { translate: 0 0; }
+  50%      { translate: 0 var(--hero-orbital-float-y, -5px); }
+}
+
+@keyframes landing-atmosphere-breathe {
+  0%, 100% { opacity: var(--la-opacity); scale: 1; }
+  50%      { opacity: var(--la-opacity-peak); scale: 1.014; }
+}
+
+@keyframes landing-atmosphere-drift {
+  0%, 100% { opacity: var(--la-soft-opacity); scale: 1; translate: 0 0; }
+  50%      { opacity: var(--la-soft-opacity-peak); scale: 1.01; translate: 0 -8px; }
+}
+
+@keyframes cycle-dot-pulse {
+  0%, 100% {
+    scale: 1;
+    box-shadow: 0 0 0 0 var(--cycle-pulse-shadow);
+  }
+  50% {
+    scale: 1.16;
+    box-shadow: 0 0 0 7px transparent;
+  }
+}
+
 .landing-hero {
   position: relative;
   isolation: isolate;
@@ -3136,6 +3162,10 @@ html[data-theme="dark"] .toast-body--error::before {
 }
 
 .landing-hero.aura-paused::after {
+  animation-play-state: paused;
+}
+
+.landing-hero.aura-paused .hero-orbital {
   animation-play-state: paused;
 }
 
@@ -3287,6 +3317,182 @@ html[data-theme="dark"] .landing-hero::after {
   }
 }
 
+.landing-atmosphere {
+  position: relative;
+  isolation: isolate;
+  overflow: visible;
+  --la-opacity: 0.15;
+  --la-opacity-peak: 0.23;
+  --la-soft-opacity: 0.08;
+  --la-soft-opacity-peak: 0.13;
+}
+
+.landing-atmosphere::before,
+.landing-atmosphere::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  pointer-events: none;
+  border-radius: clamp(32px, 7vw, 96px);
+  transform: translate3d(0, 0, 0);
+}
+
+.landing-atmosphere::before {
+  animation: landing-atmosphere-breathe var(--la-duration, 28s) ease-in-out infinite;
+  opacity: var(--la-opacity);
+  filter: blur(var(--la-blur, 76px)) saturate(1.04);
+  will-change: opacity, scale;
+}
+
+.landing-atmosphere::after {
+  animation: landing-atmosphere-drift var(--la-soft-duration, 34s) ease-in-out infinite;
+  animation-delay: var(--la-soft-delay, -9s);
+  opacity: var(--la-soft-opacity);
+  filter: blur(var(--la-soft-blur, 58px)) saturate(1.02);
+  will-change: opacity, scale, translate;
+}
+
+.landing-atmosphere.aura-paused::before,
+.landing-atmosphere.aura-paused::after,
+.landing-atmosphere.aura-paused .cycle-pulse-dot {
+  animation-play-state: paused;
+}
+
+.landing-atmosphere--preview::before {
+  inset: -12% -12% -22% 42%;
+  background:
+    radial-gradient(
+      ellipse at 58% 46%,
+      color-mix(in srgb, var(--color-brand-blue) 24%, transparent),
+      transparent 62%
+    ),
+    radial-gradient(
+      ellipse at 34% 68%,
+      color-mix(in srgb, var(--color-brand-green) 14%, transparent),
+      transparent 66%
+    );
+  -webkit-mask-image: radial-gradient(ellipse at 58% 52%, black 0 34%, transparent 76%);
+  mask-image: radial-gradient(ellipse at 58% 52%, black 0 34%, transparent 76%);
+}
+
+.landing-atmosphere--preview::after {
+  inset: 14% -10% 10% 58%;
+  background:
+    radial-gradient(
+      ellipse at 46% 44%,
+      color-mix(in srgb, var(--color-brand-green) 12%, transparent),
+      transparent 70%
+    );
+  -webkit-mask-image: radial-gradient(ellipse at center, black 0 32%, transparent 76%);
+  mask-image: radial-gradient(ellipse at center, black 0 32%, transparent 76%);
+}
+
+.landing-atmosphere--cycle {
+  --la-opacity: 0.14;
+  --la-opacity-peak: 0.2;
+  --la-soft-opacity: 0.08;
+  --la-soft-opacity-peak: 0.12;
+  --la-duration: 30s;
+}
+
+.landing-atmosphere--cycle::before {
+  inset: -24% 2% -24% 2%;
+  background:
+    radial-gradient(
+      ellipse at 52% 62%,
+      color-mix(in srgb, var(--color-warning) 18%, transparent),
+      transparent 58%
+    ),
+    radial-gradient(
+      ellipse at 24% 34%,
+      color-mix(in srgb, var(--color-brand-green) 18%, transparent),
+      transparent 58%
+    ),
+    radial-gradient(
+      ellipse at 78% 28%,
+      color-mix(in srgb, var(--color-brand-blue) 22%, transparent),
+      transparent 60%
+    );
+  -webkit-mask-image: radial-gradient(ellipse at center, black 0 48%, transparent 78%);
+  mask-image: radial-gradient(ellipse at center, black 0 48%, transparent 78%);
+}
+
+.landing-atmosphere--cycle::after {
+  inset: 16% 18% -16%;
+  background:
+    radial-gradient(
+      ellipse at 52% 42%,
+      color-mix(in srgb, var(--color-warning) 12%, transparent),
+      transparent 68%
+    );
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 30%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0%, black 30%, transparent 100%);
+}
+
+.landing-atmosphere--final {
+  --la-opacity: 0.16;
+  --la-opacity-peak: 0.24;
+  --la-soft-opacity: 0.1;
+  --la-soft-opacity-peak: 0.16;
+  --la-duration: 32s;
+}
+
+.landing-atmosphere--final::before {
+  inset: -22% 14% -30%;
+  background:
+    radial-gradient(
+      ellipse at 50% 46%,
+      color-mix(in srgb, var(--color-brand-blue) 30%, transparent),
+      transparent 58%
+    ),
+    radial-gradient(
+      ellipse at 62% 72%,
+      color-mix(in srgb, var(--color-brand-green) 20%, transparent),
+      transparent 62%
+    ),
+    radial-gradient(
+      ellipse at 36% 70%,
+      color-mix(in srgb, #f0a855 8%, transparent),
+      transparent 64%
+    );
+  -webkit-mask-image: radial-gradient(ellipse at center, black 0 42%, transparent 76%);
+  mask-image: radial-gradient(ellipse at center, black 0 42%, transparent 76%);
+}
+
+.landing-atmosphere--final::after {
+  inset: 24% 28% -18%;
+  background:
+    radial-gradient(
+      ellipse at center,
+      color-mix(in srgb, var(--color-brand-green) 16%, transparent),
+      transparent 70%
+    );
+  -webkit-mask-image: radial-gradient(ellipse at center, black 0 38%, transparent 72%);
+  mask-image: radial-gradient(ellipse at center, black 0 38%, transparent 72%);
+}
+
+html[data-theme="dark"] .landing-atmosphere {
+  --la-opacity: 0.1;
+  --la-opacity-peak: 0.16;
+  --la-soft-opacity: 0.06;
+  --la-soft-opacity-peak: 0.1;
+}
+
+.cycle-pulse-dot {
+  --cycle-pulse-shadow: color-mix(in srgb, var(--color-brand-blue) 28%, transparent);
+  animation: cycle-dot-pulse 5.4s ease-in-out infinite;
+  transform: translate3d(0, 0, 0);
+  will-change: scale, box-shadow;
+}
+
+.cycle-pulse-dot--warning {
+  --cycle-pulse-shadow: color-mix(in srgb, var(--color-warning) 28%, transparent);
+}
+
+.cycle-pulse-dot--blue {
+  animation-delay: -2.4s;
+}
+
 .hero-orbital {
   position: absolute;
   pointer-events: none;
@@ -3294,6 +3500,9 @@ html[data-theme="dark"] .landing-hero::after {
   border: 1px solid color-mix(in srgb, var(--color-text-primary) 7%, transparent);
   background: color-mix(in srgb, var(--color-surface) 94%, transparent);
   box-shadow: 0 6px 8px color-mix(in srgb, var(--color-text-primary) 6%, transparent);
+  animation: hero-orbital-float var(--hero-orbital-float-duration, 18s) ease-in-out infinite;
+  animation-delay: var(--hero-orbital-float-delay, 0s);
+  will-change: translate;
 }
 
 .hero-orbital--spend {
@@ -3302,6 +3511,9 @@ html[data-theme="dark"] .landing-hero::after {
   top: 156px;
   width: 168px;
   padding: 14px;
+  --hero-orbital-float-y: -5px;
+  --hero-orbital-float-duration: 18s;
+  --hero-orbital-float-delay: -3s;
 }
 
 .hero-orbital--goal {
@@ -3310,6 +3522,9 @@ html[data-theme="dark"] .landing-hero::after {
   top: 80px;
   width: 196px;
   padding: 12px;
+  --hero-orbital-float-y: 4px;
+  --hero-orbital-float-duration: 22s;
+  --hero-orbital-float-delay: -8s;
 }
 
 .hero-orbital--record {
@@ -3319,6 +3534,9 @@ html[data-theme="dark"] .landing-hero::after {
   left: auto;
   width: 264px;
   padding: 12px;
+  --hero-orbital-float-y: -4px;
+  --hero-orbital-float-duration: 20s;
+  --hero-orbital-float-delay: -12s;
 }
 
 html[data-theme="dark"] .hero-orbital {
@@ -3363,6 +3581,59 @@ html[data-theme="dark"] .hero-orbital {
   .hero-orbital--record {
     right: 112px;
     bottom: 12px;
+  }
+}
+
+@media (max-width: 1023px) {
+  .landing-atmosphere::before {
+    filter: blur(54px) saturate(1.02);
+  }
+
+  .landing-atmosphere::after {
+    filter: blur(42px) saturate(1.01);
+  }
+
+  .landing-atmosphere--preview::before {
+    inset: -8% -28% -20% 24%;
+  }
+
+  .landing-atmosphere--preview::after {
+    inset: 20% -22% 12% 54%;
+  }
+
+  .landing-atmosphere--cycle::before {
+    inset: -18% -14% -22%;
+  }
+
+  .landing-atmosphere--final::before {
+    inset: -14% -12% -24%;
+  }
+
+  .landing-atmosphere--final::after {
+    inset: 18% 4% -12%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-orbital,
+  .landing-atmosphere::before,
+  .landing-atmosphere::after,
+  .cycle-pulse-dot {
+    animation: none;
+    translate: 0 0;
+    scale: 1;
+  }
+
+  .landing-atmosphere::before {
+    opacity: 0.08;
+  }
+
+  .landing-atmosphere::after {
+    opacity: 0.05;
+  }
+
+  .cycle-pulse-dot {
+    box-shadow: none;
   }
 }
 /* =============================================
