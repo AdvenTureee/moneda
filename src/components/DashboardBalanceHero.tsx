@@ -127,7 +127,6 @@ export default function DashboardBalanceHero({
     <section className="mt-1 mb-4 animate-fade-up delay-1" aria-label="Status do orçamento">
       <div
         className="dashboard-balance-hero relative overflow-visible rounded-[18px]"
-        data-state={budgetState}
       >
         <div className="dashboard-balance-hero__content relative z-10 min-w-0 pb-2">
 

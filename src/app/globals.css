@@ -504,10 +504,6 @@ html[data-theme="dark"] .mo-tip-bubble::before {
   padding: clamp(20px, 5vw, 24px);
 }
 
-.dashboard-balance-hero[data-state="overBudget"] {
-  --dashboard-mo-size: clamp(110px, 26vw, 130px);
-}
-
 .dashboard-balance-hero__content {
   max-width: 100%;
   padding-right: calc(var(--dashboard-mo-size) + 10px);
@@ -547,10 +543,6 @@ html[data-theme="dark"] .mo-tip-bubble::before {
   contain: layout;
   transform-origin: calc(100% - clamp(18px, calc(var(--dashboard-mo-size, 96px) * 0.2), 30px)) calc(100% + 6px);
   will-change: opacity, transform, filter;
-}
-
-.dashboard-balance-hero__tip[data-state="overBudget"] .mo-tip-bubble--overlay {
-  transform-origin: calc(100% - clamp(18px, calc(var(--dashboard-mo-size, 96px) * 0.2), 30px)) calc(0% - 8px);
 }
 
 .mo-tip-bubble--exiting {
@@ -602,10 +594,6 @@ html[data-theme="dark"] .mo-tip-bubble::before {
   .dashboard-balance-hero {
     --dashboard-mo-size: clamp(90px, 26vw, 110px);
     padding: 18px;
-  }
-
-  .dashboard-balance-hero[data-state="overBudget"] {
-    --dashboard-mo-size: clamp(66px, 22vw, 80px);
   }
 
   .dashboard-balance-hero__content,
