@@ -1,9 +1,9 @@
 'use client';
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import Link, { useLinkStatus } from 'next/link';
+import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { House, List, PlusCircle, Sparkle, User } from '@phosphor-icons/react';
+import { House, List, Plus, Sparkle, User } from '@phosphor-icons/react';
 import {
   DASHBOARD_PERIOD_CHANGED_EVENT,
   dashboardHrefWithStoredPeriod,
@@ -11,7 +11,7 @@ import {
 
 interface NavItem {
   label: string;
-  icon: React.ComponentType<{ size?: number; className?: string }>;
+  icon: React.ComponentType<{ size?: number; weight?: 'regular' | 'fill' | 'bold' | 'light' | 'thin' | 'duotone'; className?: string }>;
   href: string;
   isAction?: boolean;
 }
@@ -19,7 +19,7 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { label: 'Dashboard', icon: House, href: '/app' },
   { label: 'Feed', icon: List, href: '/feed' },
-  { label: 'Adicionar', icon: PlusCircle, href: '#add', isAction: true },
+  { label: 'Adicionar', icon: Plus, href: '#add', isAction: true },
   { label: 'Insights', icon: Sparkle, href: '/insights' },
   { label: 'Perfil', icon: User, href: '/perfil' },
 ];
@@ -48,16 +48,6 @@ function resetTabScroll() {
   window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
 }
 
-function NavPendingHint() {
-  const { pending } = useLinkStatus();
-  return (
-    <span
-      className={`bottom-nav-pending-hint ${pending ? 'bottom-nav-pending-hint--visible' : ''}`}
-      aria-hidden
-    />
-  );
-}
-
 interface BottomNavProps {
   onAddExpense?: () => void;
 }
@@ -69,6 +59,7 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
   const shouldResetScrollRef = useRef(false);
   const previousPathnameRef = useRef(pathname);
   const resetScrollTimeoutRef = useRef<number | null>(null);
+  const navRef = useRef<HTMLElement>(null);
 
   const prefetchRoute = useCallback(
     (href: string) => {
@@ -120,12 +111,37 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
     };
   }, []);
 
+  useEffect(() => {
+    const flushBackdrop = () => {
+      const el = navRef.current;
+      if (!el) return;
+      const s = el.style as any;
+      s.webkitBackdropFilter = 'none';
+      s.backdropFilter = 'none';
+      void el.offsetHeight;
+      s.webkitBackdropFilter = '';
+      s.backdropFilter = '';
+    };
+
+    const observer = new MutationObserver(() => {
+      flushBackdrop();
+    });
+
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class', 'data-theme'],
+    });
+
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-40 bg-[var(--color-surface)] pb-[env(safe-area-inset-bottom,0px)]"
+      ref={navRef}
+      className="bottom-nav"
       aria-label="Navegação principal"
     >
-      <div className="grid h-[68px] grid-cols-5 items-center max-w-lg mx-auto px-2">
+      <div className="grid h-[72px] grid-cols-5 items-center px-3">
         {NAV_ITEMS.map((item) => {
           if (item.isAction) {
             return (
@@ -134,10 +150,9 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
                 type="button"
                 onClick={() => onAddExpense?.()}
                 aria-label="Adicionar gasto"
-                className="gesture-icon-button bottom-nav-action justify-self-center flex flex-col items-center justify-center h-[68px] w-[68px] rounded-full bg-[#5BBF8E] text-white -mt-6 touch-manipulation active:scale-90 transition-transform duration-75"
-                style={{ boxShadow: 'var(--shadow-nav-action)' }}
+                className="bottom-nav-action-btn justify-self-center flex items-center justify-center h-[50px] w-[50px] rounded-full bg-[var(--color-brand-green)] text-white touch-manipulation active:scale-[0.72] active:brightness-75 active:shadow-[0_0px_0px_rgba(91,191,142,0)] hover:shadow-[0_6px_20px_rgba(91,191,142,0.5)] hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-green)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--nav-glass-bg)] transition-all duration-[200ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] shadow-[0_4px_12px_rgba(91,191,142,0.35)] will-change-transform"
               >
-                <item.icon size={32} />
+                <Plus size={28} weight="bold" />
               </button>
             );
           }
@@ -167,18 +182,17 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
                 scheduleScrollReset();
               }}
               onFocus={() => prefetchRoute(href)}
-              className={`bottom-nav-link relative justify-self-center flex flex-col items-center justify-center gap-1 w-full min-w-[50px] min-h-[56px] rounded-xl touch-manipulation transition-[color,transform] duration-150 active:scale-[0.98] ${
+              className={`bottom-nav-link relative justify-self-center flex flex-col items-center justify-center gap-1 w-full min-w-[56px] min-h-[56px] rounded-xl touch-manipulation transition-all duration-[200ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] active:scale-[0.82] active:opacity-60 will-change-transform ${
                 isActive
-                  ? 'text-[#A8C5E0]'
-                  : 'text-[#9CA3AF] hover:text-[#6B7280]'
+                  ? 'text-[var(--color-brand-green)] font-bold'
+                  : 'text-slate-400 dark:text-slate-400/70'
               }`}
               aria-current={isActive ? 'page' : undefined}
             >
-              <item.icon size={23} />
-              <span className="text-[11px] font-semibold leading-none">{item.label}</span>
-              <NavPendingHint />
+              <item.icon size={isActive ? 26 : 24} weight={isActive ? 'fill' : 'regular'} className="transition-transform duration-150" />
+              <span className="text-[10px] font-medium tracking-wide leading-none">{item.label}</span>
               {isActive && (
-                <span className="bottom-nav-indicator absolute -bottom-0.5 h-0.5 rounded-full" />
+                <span className="absolute -bottom-[2px] h-[3px] w-4 rounded-full bg-[var(--color-brand-green)] animate-fade-in" />
               )}
             </Link>
           );

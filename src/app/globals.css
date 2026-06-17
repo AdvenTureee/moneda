@@ -13,6 +13,9 @@
   --color-bg: #F8F9FB;
   --color-surface: #FFFFFF;
   --color-surface-alt: #F1F3F7;
+  --nav-glass-bg: transparent;
+  --nav-glass-border: rgba(0, 0, 0, 0.05);
+  --nav-accent: var(--color-brand-green);
 
   /* Text */
   --color-text-primary: #1A1D23;
@@ -76,6 +79,9 @@ html[data-theme="dark"] {
   --color-bg: #10151C;
   --color-surface: #171E27;
   --color-surface-alt: #202A35;
+  --nav-glass-bg: rgba(30, 41, 59, 0.5);
+  --nav-glass-border: rgba(255, 255, 255, 0.09);
+  --nav-accent: var(--color-brand-green);
   --color-text-primary: #F5F7FA;
   --color-text-secondary: #C4CCD6;
   --color-text-tertiary: #8D99A7;
@@ -116,8 +122,13 @@ html[data-theme="dark"] {
 html,
 body {
   margin: 0;
-  min-height: 100%;
+  padding: 0;
   -webkit-tap-highlight-color: transparent;
+}
+
+body:has(.app-shell) {
+  height: 100dvh;
+  overflow: hidden;
 }
 
 /* Solid bg on <html> covers safe-area / overscroll on Safari iOS. */
@@ -488,14 +499,13 @@ html[data-theme="dark"] .mo-tip-bubble::before {
 }
 
 .dashboard-balance-hero {
-  --dashboard-mo-size: clamp(116px, 26vw, 136px);
-  --dashboard-tip-width: clamp(260px, 72vw, 360px);
+  --dashboard-mo-size: clamp(160px, 34vw, 180px);
   min-height: 0;
   padding: clamp(20px, 5vw, 24px);
 }
 
 .dashboard-balance-hero[data-state="overBudget"] {
-  --dashboard-mo-size: clamp(76px, 18vw, 92px);
+  --dashboard-mo-size: clamp(110px, 26vw, 130px);
 }
 
 .dashboard-balance-hero__content {
@@ -503,37 +513,15 @@ html[data-theme="dark"] .mo-tip-bubble::before {
   padding-right: calc(var(--dashboard-mo-size) + 10px);
 }
 
-.dashboard-balance-hero[data-state="overBudget"] .dashboard-balance-hero__content {
-  padding-right: 0;
-}
-
 .dashboard-balance-hero__summary {
   padding-right: calc(var(--dashboard-mo-size) + 12px);
-}
-
-.dashboard-balance-hero__actions {
-  grid-template-columns: minmax(0, 1fr);
-}
-
-@media (min-width: 640px) {
-  .dashboard-balance-hero__actions {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 }
 
 .dashboard-balance-hero__mo-zone {
   position: absolute;
   right: clamp(12px, 4vw, 16px);
   bottom: clamp(12px, 4vw, 16px);
-  width: var(--dashboard-mo-size);
-  height: var(--dashboard-mo-size);
-  min-height: 0;
   pointer-events: none;
-}
-
-.dashboard-balance-hero[data-state="overBudget"] .dashboard-balance-hero__mo-zone {
-  top: clamp(16px, 4vw, 20px);
-  bottom: auto;
 }
 
 .dashboard-balance-hero__mo,
@@ -547,12 +535,9 @@ html[data-theme="dark"] .mo-tip-bubble::before {
 }
 
 .dashboard-balance-hero__tip {
-  right: calc(var(--dashboard-mo-size) * 0.44);
-  top: -22px;
-  width: var(--dashboard-tip-width);
-  max-width: calc(100vw - 44px);
+  z-index: 50;
+  pointer-events: auto;
 }
-
 .mo-tip-bubble--overlay {
   min-height: 0;
   padding: 9px 11px;
@@ -562,6 +547,10 @@ html[data-theme="dark"] .mo-tip-bubble::before {
   contain: layout;
   transform-origin: calc(100% - clamp(18px, calc(var(--dashboard-mo-size, 96px) * 0.2), 30px)) calc(100% + 6px);
   will-change: opacity, transform, filter;
+}
+
+.dashboard-balance-hero__tip[data-state="overBudget"] .mo-tip-bubble--overlay {
+  transform-origin: calc(100% - clamp(18px, calc(var(--dashboard-mo-size, 96px) * 0.2), 30px)) calc(0% - 8px);
 }
 
 .mo-tip-bubble--exiting {
@@ -611,28 +600,17 @@ html[data-theme="dark"] .mo-tip-bubble::before {
 
 @media (max-width: 374px) {
   .dashboard-balance-hero {
-    --dashboard-mo-size: clamp(62px, 22vw, 78px);
-    --dashboard-tip-width: clamp(230px, 76vw, 290px);
+    --dashboard-mo-size: clamp(90px, 26vw, 110px);
     padding: 18px;
   }
 
   .dashboard-balance-hero[data-state="overBudget"] {
-    --dashboard-mo-size: clamp(48px, 18vw, 60px);
+    --dashboard-mo-size: clamp(66px, 22vw, 80px);
   }
 
   .dashboard-balance-hero__content,
   .dashboard-balance-hero__summary {
     padding-right: calc(var(--dashboard-mo-size) + 6px);
-  }
-
-  .dashboard-balance-hero[data-state="overBudget"] .dashboard-balance-hero__content {
-    padding-right: 0;
-  }
-
-  .dashboard-balance-hero__tip {
-    right: calc(var(--dashboard-mo-size) * 0.38);
-    top: -18px;
-    max-width: calc(100vw - 34px);
   }
 
   .mo-tip-bubble--overlay {
@@ -997,29 +975,11 @@ html[data-theme="dark"] .expense-action-separator {
 .bottom-nav-indicator {
   left: 50%;
   width: 20px;
-  background: var(--color-brand-blue);
+  background: var(--color-brand-green);
   transform: translateX(-50%);
   transition:
     background-color 160ms cubic-bezier(0.22, 1, 0.36, 1),
     width 160ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.bottom-nav-pending-hint {
-  position: absolute;
-  top: 6px;
-  right: calc(50% - 18px);
-  width: 5px;
-  height: 5px;
-  border-radius: 999px;
-  background: currentColor;
-  opacity: 0;
-  transform: scale(0.72);
-  transition: opacity 90ms ease-out, transform 90ms ease-out;
-}
-
-.bottom-nav-pending-hint--visible {
-  opacity: 0.42;
-  transform: scale(1);
 }
 
 .insight-generate-button {
@@ -2064,24 +2024,37 @@ html[data-theme="dark"] .bg-white\/90 {
   background-color: rgba(255, 255, 255, 0.88) !important;
 }
 
-/* Full-height app shell that survives Safari iOS toolbar quirks. */
+/* ── Scroll container for the app ───── */
 .app-shell {
-  --app-scroll-reserve: min(320px, 42vh);
-  min-height: calc(100vh + var(--app-scroll-reserve));
-  overflow-anchor: none;
+  height: 100%;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: clamp;
+  position: relative;
+  box-sizing: border-box;
 }
 
-@supports (height: 100dvh) {
-  .app-shell {
-    --app-scroll-reserve: min(320px, 42dvh);
-    min-height: calc(100dvh + var(--app-scroll-reserve));
-  }
-}
-
-@supports (-webkit-touch-callout: none) and (not (height: 100dvh)) {
-  .app-shell {
-    min-height: calc(100vh + var(--app-scroll-reserve));
-  }
+/* ── Camada de Mascaramento Suave (iOS Easing Fade) ────── */
+.bottom-glass-fade-overlay {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 140px;
+  z-index: 35;
+  pointer-events: none;
+  background: linear-gradient(
+    to top,
+    var(--color-bg) 0%,
+    color-mix(in srgb, var(--color-bg) 91.5%, transparent) 12.5%,
+    color-mix(in srgb, var(--color-bg) 72.3%, transparent) 25%,
+    color-mix(in srgb, var(--color-bg) 49.6%, transparent) 37.5%,
+    color-mix(in srgb, var(--color-bg) 30.2%, transparent) 50%,
+    color-mix(in srgb, var(--color-bg) 14.9%, transparent) 62.5%,
+    color-mix(in srgb, var(--color-bg) 5.1%, transparent) 75%,
+    color-mix(in srgb, var(--color-bg) 1%, transparent) 87.5%,
+    transparent 100%
+  );
 }
 
 body::before {
@@ -3790,94 +3763,48 @@ html[data-theme="dark"] .hero-orbital {
     box-shadow: none;
   }
 }
-/* =============================================
-   AURA DO DASHBOARD HERO
-   Usa as variáveis do Moneda
-   ============================================= */
-
-@keyframes aura-pulse {
-  0%, 100% {
-    opacity: 0.36;
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-  50% {
-    opacity: 0.68;
-    transform: translate3d(-6px, -3px, 0) scale(1.08);
-  }
-}
 
 .dashboard-balance-hero {
   position: relative;
   isolation: isolate;
-  overflow: hidden;
-  /* Cores padrão = estado healthy (verde-azul do Moneda) */
-  --aura-c1: var(--color-brand-blue);     /* #A8C5E0 */
-  --aura-c2: var(--color-brand-green);    /* #5BBF8E */
+  overflow: visible;
 }
 
-/* Aura animada atrás do card */
-.dashboard-balance-hero::before {
-  content: '';
-  position: absolute;
-  left: 10%;
-  right: -10%;
-  bottom: -12px;
-  height: 52%;
-  border-radius: 999px;
-  z-index: -1;
-  background:
-    radial-gradient(
-      ellipse at 70% 50%,
-      color-mix(in srgb, var(--aura-c1) 30%, transparent),
-      transparent 68%
-    ),
-    radial-gradient(
-      ellipse at 34% 68%,
-      color-mix(in srgb, var(--aura-c2) 16%, transparent),
-      transparent 72%
-    );
-  animation: aura-pulse 7s ease-in-out infinite;
-  filter: blur(18px);
-  opacity: 0.36;
-  pointer-events: none;
-  transform: translate3d(0, 0, 0);
-  will-change: opacity, transform;
+/* ── Bottom Nav (Liquid Glass) ───── */
+
+.bottom-nav {
+  position: fixed;
+  bottom: 1.25rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 40;
+  width: calc(100% - 2.5rem);
+  max-width: 32rem;
+  border-radius: 1.5rem;
+  background-color: var(--nav-glass-bg);
+  border: 1px solid var(--nav-glass-border);
+  -webkit-backdrop-filter: blur(28px) saturate(210%);
+  backdrop-filter: blur(28px) saturate(210%);
+  box-shadow:
+    0 4px 20px rgba(0, 0, 0, 0.02),
+    0 12px 40px rgba(15, 23, 42, 0.15);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  will-change: background-color, border-color;
+  -webkit-transform: translateX(-50%) translateZ(0);
+  transform: translateX(-50%) translateZ(0);
 }
 
-/* Fundo sólido do card (esconde o gradiente que vazaria por dentro) */
-.dashboard-balance-hero::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: 18px;
-  z-index: -1;
-  background: var(--color-surface);
-  border: 1px solid color-mix(in srgb, var(--aura-c1) 10%, var(--color-border));
-  box-shadow: 0 1px 0 color-mix(in srgb, var(--color-text-primary) 4%, transparent);
-}
-
-/* ── Estado WARNING ─────────────────────────── */
-.dashboard-balance-hero[data-state="warning"] {
-  --aura-c1: var(--color-warning);        /* #F0A855 */
-  --aura-c2: #F5D87A;
-}
-
-/* ── Estado OVER BUDGET ─────────────────────── */
-.dashboard-balance-hero[data-state="overBudget"] {
-  --aura-c1: var(--color-error);          /* #E07070 */
-  --aura-c2: #F0A0A0;
-}
-
-/* ── Estado RECOVERED ───────────────────────── */
-.dashboard-balance-hero[data-state="recovered"] {
-  --aura-c1: var(--color-brand-green);
-  --aura-c2: var(--color-brand-blue);
-}
-
-/* ── Reduzir movimento ──────────────────────── */
-@media (prefers-reduced-motion: reduce) {
-  .dashboard-balance-hero::before {
-    animation: none;
-    opacity: 0.35;
-  }
+html[data-theme="dark"] .bottom-glass-fade-overlay {
+  background: linear-gradient(
+    to top,
+    var(--color-bg) 0%,
+    color-mix(in srgb, var(--color-bg) 91.5%, transparent) 12.5%,
+    color-mix(in srgb, var(--color-bg) 72.3%, transparent) 25%,
+    color-mix(in srgb, var(--color-bg) 49.6%, transparent) 37.5%,
+    color-mix(in srgb, var(--color-bg) 30.2%, transparent) 50%,
+    color-mix(in srgb, var(--color-bg) 14.9%, transparent) 62.5%,
+    color-mix(in srgb, var(--color-bg) 5.1%, transparent) 75%,
+    color-mix(in srgb, var(--color-bg) 1%, transparent) 87.5%,
+    transparent 100%
+  );
 }
