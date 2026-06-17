@@ -488,14 +488,14 @@ html[data-theme="dark"] .mo-tip-bubble::before {
 }
 
 .dashboard-balance-hero {
-  --dashboard-mo-size: clamp(76px, 20vw, 104px);
+  --dashboard-mo-size: clamp(116px, 26vw, 136px);
   --dashboard-tip-width: clamp(260px, 72vw, 360px);
   min-height: 0;
   padding: clamp(20px, 5vw, 24px);
 }
 
 .dashboard-balance-hero[data-state="overBudget"] {
-  --dashboard-mo-size: clamp(54px, 14vw, 72px);
+  --dashboard-mo-size: clamp(76px, 18vw, 92px);
 }
 
 .dashboard-balance-hero__content {
@@ -3809,6 +3809,7 @@ html[data-theme="dark"] .hero-orbital {
 .dashboard-balance-hero {
   position: relative;
   isolation: isolate;
+  overflow: hidden;
   /* Cores padrão = estado healthy (verde-azul do Moneda) */
   --aura-c1: var(--color-brand-blue);     /* #A8C5E0 */
   --aura-c2: var(--color-brand-green);    /* #5BBF8E */
