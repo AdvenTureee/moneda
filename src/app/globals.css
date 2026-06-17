@@ -488,20 +488,62 @@ html[data-theme="dark"] .mo-tip-bubble::before {
 }
 
 .dashboard-balance-hero {
-  --dashboard-mo-size: clamp(100px, 27vw, 132px);
+  --dashboard-mo-size: clamp(76px, 20vw, 104px);
   --dashboard-tip-width: clamp(260px, 72vw, 360px);
-  min-height: calc(var(--dashboard-mo-size) + 40px);
-  grid-template-columns: minmax(0, 1fr) calc(var(--dashboard-mo-size) + 6px);
+  min-height: 0;
+  padding: clamp(20px, 5vw, 24px);
+}
+
+.dashboard-balance-hero[data-state="overBudget"] {
+  --dashboard-mo-size: clamp(54px, 14vw, 72px);
+}
+
+.dashboard-balance-hero__content {
+  max-width: 100%;
+  padding-right: calc(var(--dashboard-mo-size) + 10px);
+}
+
+.dashboard-balance-hero[data-state="overBudget"] .dashboard-balance-hero__content {
+  padding-right: 0;
+}
+
+.dashboard-balance-hero__summary {
+  padding-right: calc(var(--dashboard-mo-size) + 12px);
+}
+
+.dashboard-balance-hero__actions {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 640px) {
+  .dashboard-balance-hero__actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .dashboard-balance-hero__mo-zone {
-  min-height: calc(var(--dashboard-mo-size) + 34px);
+  position: absolute;
+  right: clamp(12px, 4vw, 16px);
+  bottom: clamp(12px, 4vw, 16px);
+  width: var(--dashboard-mo-size);
+  height: var(--dashboard-mo-size);
+  min-height: 0;
+  pointer-events: none;
+}
+
+.dashboard-balance-hero[data-state="overBudget"] .dashboard-balance-hero__mo-zone {
+  top: clamp(16px, 4vw, 20px);
+  bottom: auto;
 }
 
 .dashboard-balance-hero__mo,
 .dashboard-balance-hero__mo svg {
   width: var(--dashboard-mo-size);
   height: var(--dashboard-mo-size);
+}
+
+.dashboard-balance-hero__mo-button {
+  pointer-events: auto;
 }
 
 .dashboard-balance-hero__tip {
@@ -569,9 +611,22 @@ html[data-theme="dark"] .mo-tip-bubble::before {
 
 @media (max-width: 374px) {
   .dashboard-balance-hero {
-    --dashboard-mo-size: clamp(88px, 25vw, 104px);
+    --dashboard-mo-size: clamp(62px, 22vw, 78px);
     --dashboard-tip-width: clamp(230px, 76vw, 290px);
-    grid-template-columns: minmax(0, 1fr) calc(var(--dashboard-mo-size) + 2px);
+    padding: 18px;
+  }
+
+  .dashboard-balance-hero[data-state="overBudget"] {
+    --dashboard-mo-size: clamp(48px, 18vw, 60px);
+  }
+
+  .dashboard-balance-hero__content,
+  .dashboard-balance-hero__summary {
+    padding-right: calc(var(--dashboard-mo-size) + 6px);
+  }
+
+  .dashboard-balance-hero[data-state="overBudget"] .dashboard-balance-hero__content {
+    padding-right: 0;
   }
 
   .dashboard-balance-hero__tip {
@@ -3740,19 +3795,15 @@ html[data-theme="dark"] .hero-orbital {
    Usa as variáveis do Moneda
    ============================================= */
 
-@property --aura-angle {
-  syntax: '<angle>';
-  initial-value: 0deg;
-  inherits: false;
-}
-
-@keyframes aura-spin {
-  to { --aura-angle: 360deg; }
-}
-
 @keyframes aura-pulse {
-  0%, 100% { opacity: 0.5; transform: scale(1); }
-  50%       { opacity: 0.8; transform: scale(1.035); }
+  0%, 100% {
+    opacity: 0.36;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    opacity: 0.68;
+    transform: translate3d(-6px, -3px, 0) scale(1.08);
+  }
 }
 
 .dashboard-balance-hero {
@@ -3767,21 +3818,29 @@ html[data-theme="dark"] .hero-orbital {
 .dashboard-balance-hero::before {
   content: '';
   position: absolute;
-  inset: -2px;
-  border-radius: 20px;
+  left: 10%;
+  right: -10%;
+  bottom: -12px;
+  height: 52%;
+  border-radius: 999px;
   z-index: -1;
-  background: conic-gradient(
-    from var(--aura-angle),
-    transparent 20%,
-    var(--aura-c1) 40%,
-    var(--aura-c2) 60%,
-    transparent 80%
-  );
-  animation:
-    aura-spin 7s linear infinite,
-    aura-pulse 3.5s ease-in-out infinite;
-  filter: blur(16px);
-  opacity: 0.6;
+  background:
+    radial-gradient(
+      ellipse at 70% 50%,
+      color-mix(in srgb, var(--aura-c1) 30%, transparent),
+      transparent 68%
+    ),
+    radial-gradient(
+      ellipse at 34% 68%,
+      color-mix(in srgb, var(--aura-c2) 16%, transparent),
+      transparent 72%
+    );
+  animation: aura-pulse 7s ease-in-out infinite;
+  filter: blur(18px);
+  opacity: 0.36;
+  pointer-events: none;
+  transform: translate3d(0, 0, 0);
+  will-change: opacity, transform;
 }
 
 /* Fundo sólido do card (esconde o gradiente que vazaria por dentro) */
@@ -3792,7 +3851,8 @@ html[data-theme="dark"] .hero-orbital {
   border-radius: 18px;
   z-index: -1;
   background: var(--color-surface);
-  border: 1px solid color-mix(in srgb, var(--aura-c1) 22%, transparent);
+  border: 1px solid color-mix(in srgb, var(--aura-c1) 10%, var(--color-border));
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--color-text-primary) 4%, transparent);
 }
 
 /* ── Estado WARNING ─────────────────────────── */

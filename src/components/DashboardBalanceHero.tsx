@@ -92,12 +92,12 @@ export default function DashboardBalanceHero({
   }
 
   return (
-    <section className="mb-4 animate-fade-up delay-1" aria-label="Status do orçamento">
-      <div 
-      className="dashboard-balance-hero relative grid items-end gap-2 overflow-visible rounded-[18px] py-1"
-      data-state={budgetState}
+    <section className="mt-1 mb-4 animate-fade-up delay-1" aria-label="Status do orçamento">
+      <div
+        className="dashboard-balance-hero relative overflow-visible rounded-[18px]"
+        data-state={budgetState}
       >
-        <div className={`relative z-10 min-w-0 ${budgetState === 'overBudget' ? '' : 'pb-2'} pt-2`}>
+        <div className={`dashboard-balance-hero__content relative z-10 min-w-0 ${budgetState === 'overBudget' ? '' : 'pb-2'}`}>
           {budgetState === 'healthy' && (
             <>
               <p className="mb-1 text-xs font-medium text-[#6B7280]">
@@ -155,29 +155,31 @@ export default function DashboardBalanceHero({
 
           {budgetState === 'overBudget' && (
             <div>
-              <p className="mb-1 text-xs font-medium text-[#6B7280]">
-                Orçamento do mês
-              </p>
-              <p className="text-[24px] min-[390px]:text-[28px] font-extrabold tabular-nums leading-none text-[var(--color-warning)]">
-                {formatCurrency(Math.abs(remaining))}
-              </p>
-              <div className="mt-3">
-                <StatusBadge label="Acima do orçamento" />
+              <div className="dashboard-balance-hero__summary">
+                <div className="mb-2 flex flex-wrap items-center gap-2">
+                  <p className="text-xs font-medium text-[#6B7280]">
+                    Orçamento do mês
+                  </p>
+                  <StatusBadge label="Acima do orçamento" />
+                </div>
+                <p className="text-[24px] min-[390px]:text-[28px] font-extrabold tabular-nums leading-none text-[var(--color-warning)]">
+                  {formatCurrency(Math.abs(remaining))}
+                </p>
               </div>
-              <p className="mt-4 max-w-[30ch] text-sm leading-relaxed text-[var(--color-text-secondary)]">
+              <p className="mt-3 max-w-[30ch] text-sm leading-relaxed text-[var(--color-text-secondary)]">
                 Seus gastos passaram da meta. Veja onde ajustar ou registre uma entrada.
               </p>
-              <div className="mt-5 flex flex-col gap-2.5 sm:flex-row">
+              <div className="dashboard-balance-hero__actions mt-4 grid gap-2">
                 <Link
                   href={`/feed?period=${period}&focus=overspend`}
-                  className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-full bg-[#B7CCE4] px-4 py-2.5 text-sm font-bold text-[#16324A] transition-colors hover:bg-[#A8BDDB]"
+                  className="inline-flex min-h-10 w-full items-center justify-center gap-1.5 rounded-full bg-[#B7CCE4] px-4 py-2.5 text-sm font-bold text-[#16324A] transition-colors hover:bg-[#A8BDDB]"
                 >
                   Ver onde estourou
                   <span aria-hidden className="opacity-60">→</span>
                 </Link>
                 <Link
                   href="/perfil/ganhos?modal=add"
-                  className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-full bg-transparent px-4 py-2.5 text-sm font-medium text-[var(--color-text-tertiary)] transition-colors hover:text-[var(--color-text-primary)]"
+                  className="inline-flex min-h-10 w-full items-center justify-center gap-1.5 rounded-full border border-[var(--color-border)] bg-[var(--color-surface-alt)] px-4 py-2.5 text-sm font-semibold text-[var(--color-text-primary)] transition-colors hover:border-[var(--color-brand-blue)] hover:bg-[var(--color-surface)]"
                   aria-label="Cadastrar ganho para abater o estouro"
                 >
                   Cadastrar ganho
