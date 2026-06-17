@@ -3017,64 +3017,353 @@ html[data-theme="dark"] .toast-body--error::before {
 }
 
 @keyframes lh-aura-breathe {
-  0%, 100% { opacity: 0.7; transform: scale(1); }
-  50%       { opacity: 0.95;  transform: scale(1.03); }
+  0%, 100% { opacity: var(--lh-aura-opacity); scale: 1; }
+  50%      { opacity: var(--lh-aura-opacity-peak); scale: 1.018; }
+}
+
+@keyframes lh-aura-sheet {
+  0%, 100% { opacity: var(--lh-sheet-opacity); scale: 1; }
+  50%      { opacity: var(--lh-sheet-opacity-peak); scale: 1.012; }
 }
 
 .landing-hero {
   position: relative;
   isolation: isolate;
+  overflow: visible;
+  --lh-aura-opacity: 0.44;
+  --lh-aura-opacity-peak: 0.62;
+  --lh-sheet-opacity: 0.2;
+  --lh-sheet-opacity-peak: 0.3;
 }
 
 .landing-hero::before {
   content: "";
   position: absolute;
+  z-index: -2;
+  pointer-events: none;
+  inset: -18% -12% -34%;
+  border-radius: clamp(40px, 8vw, 120px);
+  opacity: var(--lh-aura-opacity);
+  background:
+    radial-gradient(
+      ellipse at 8% 24%,
+      color-mix(in srgb, var(--color-brand-blue) 48%, transparent) 0 8%,
+      transparent 35%
+    ),
+    radial-gradient(
+      ellipse at 38% 8%,
+      color-mix(in srgb, #9fd7ff 26%, transparent) 0 9%,
+      transparent 36%
+    ),
+    radial-gradient(
+      ellipse at 70% 28%,
+      color-mix(in srgb, var(--color-brand-green) 46%, transparent) 0 12%,
+      transparent 40%
+    ),
+    radial-gradient(
+      ellipse at 92% 68%,
+      color-mix(in srgb, var(--color-brand-blue) 42%, transparent) 0 11%,
+      transparent 42%
+    ),
+    radial-gradient(
+      ellipse at 24% 82%,
+      color-mix(in srgb, #f0a855 24%, transparent) 0 12%,
+      transparent 38%
+    ),
+    conic-gradient(
+      from var(--lh-angle) at 54% 48%,
+      transparent 0deg,
+      color-mix(in srgb, var(--color-brand-blue) 22%, transparent) 46deg,
+      color-mix(in srgb, #9fd7ff 18%, transparent) 104deg,
+      color-mix(in srgb, var(--color-brand-green) 24%, transparent) 170deg,
+      color-mix(in srgb, #f0a855 14%, transparent) 236deg,
+      transparent 326deg,
+      transparent 360deg
+  );
+  background-blend-mode: screen, screen, screen, screen, soft-light, normal;
+  filter: blur(112px) saturate(1.08);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 14%, black 74%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0%, black 14%, black 74%, transparent 100%);
+  transform: translate3d(0, 0, 0);
+  will-change: opacity, scale;
+  animation:
+    lh-aura-rotate 14s linear infinite,
+    lh-aura-breathe 12s ease-in-out infinite;
+}
+
+.landing-hero::after {
+  content: "";
+  position: absolute;
   z-index: -1;
   pointer-events: none;
-  border-radius: 50%;
-  right: -5%;
-  top: 10%;
-  width: 55%;
-  height: 80%;
-  background: conic-gradient(
-    from var(--lh-angle),
-    color-mix(in srgb, var(--color-brand-blue) 60%, transparent),
-    color-mix(in srgb, var(--color-brand-green) 70%, transparent)
-  );
-  filter: blur(90px);
-  animation: 
-    lh-aura-rotate 8s linear infinite,
-    lh-aura-breathe 5s ease-in-out infinite;
+  left: -2%;
+  right: -2%;
+  bottom: -30%;
+  height: 62%;
+  border-radius: clamp(36px, 7vw, 96px);
+  opacity: var(--lh-sheet-opacity);
+  background:
+    radial-gradient(
+      ellipse at 24% 24%,
+      color-mix(in srgb, var(--color-brand-blue) 30%, transparent),
+      transparent 56%
+    ),
+    radial-gradient(
+      ellipse at 72% 20%,
+      color-mix(in srgb, var(--color-brand-green) 24%, transparent),
+      transparent 58%
+    ),
+    radial-gradient(
+      ellipse at 52% 58%,
+      color-mix(in srgb, #f0a855 12%, transparent),
+      transparent 64%
+    ),
+    linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--color-bg) 0%, transparent),
+      transparent
+    );
+  filter: blur(88px) saturate(1.04);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 28%, black 58%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0%, black 28%, black 58%, transparent 100%);
+  transform: translate3d(0, 0, 0);
+  will-change: opacity, scale;
+  animation: lh-aura-sheet 20s ease-in-out infinite;
+}
+
+.landing-hero.aura-paused::before {
+  animation-play-state: paused;
+}
+
+.landing-hero.aura-paused::after {
+  animation-play-state: paused;
+}
+
+html[data-theme="dark"] .landing-hero {
+  --lh-aura-opacity: 0.34;
+  --lh-aura-opacity-peak: 0.5;
+  --lh-sheet-opacity: 0.16;
+  --lh-sheet-opacity-peak: 0.24;
 }
 
 html[data-theme="dark"] .landing-hero::before {
-  opacity: 0.55;
-  filter: blur(80px);
+  background:
+    radial-gradient(
+      ellipse at 8% 24%,
+      color-mix(in srgb, var(--color-brand-blue) 38%, transparent) 0 8%,
+      transparent 36%
+    ),
+    radial-gradient(
+      ellipse at 38% 8%,
+      color-mix(in srgb, #9fd7ff 18%, transparent) 0 9%,
+      transparent 38%
+    ),
+    radial-gradient(
+      ellipse at 70% 28%,
+      color-mix(in srgb, var(--color-brand-green) 34%, transparent) 0 12%,
+      transparent 42%
+    ),
+    radial-gradient(
+      ellipse at 92% 68%,
+      color-mix(in srgb, var(--color-brand-blue) 30%, transparent) 0 11%,
+      transparent 44%
+    ),
+    radial-gradient(
+      ellipse at 24% 82%,
+      color-mix(in srgb, #f0a855 16%, transparent) 0 12%,
+      transparent 40%
+    ),
+    conic-gradient(
+      from var(--lh-angle) at 54% 48%,
+      transparent 0deg,
+      color-mix(in srgb, var(--color-brand-blue) 16%, transparent) 46deg,
+      color-mix(in srgb, #9fd7ff 12%, transparent) 104deg,
+      color-mix(in srgb, var(--color-brand-green) 18%, transparent) 170deg,
+      color-mix(in srgb, #f0a855 10%, transparent) 236deg,
+      transparent 326deg,
+      transparent 360deg
+    );
+  filter: blur(122px) saturate(1.02);
+}
+
+html[data-theme="dark"] .landing-hero::after {
+  background:
+    radial-gradient(
+      ellipse at 24% 24%,
+      color-mix(in srgb, var(--color-brand-blue) 22%, transparent),
+      transparent 58%
+    ),
+    radial-gradient(
+      ellipse at 72% 20%,
+      color-mix(in srgb, var(--color-brand-green) 18%, transparent),
+      transparent 60%
+    ),
+    radial-gradient(
+      ellipse at 52% 58%,
+      color-mix(in srgb, #f0a855 8%, transparent),
+      transparent 66%
+    ),
+    linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--color-bg) 0%, transparent),
+      transparent
+    );
+}
+
+@supports not (background: color-mix(in srgb, white 50%, transparent)) {
+  .landing-hero::before {
+    background:
+      radial-gradient(ellipse at 8% 24%, rgba(168, 197, 224, 0.34) 0 8%, transparent 35%),
+      radial-gradient(ellipse at 38% 8%, rgba(159, 215, 255, 0.2) 0 9%, transparent 36%),
+      radial-gradient(ellipse at 70% 28%, rgba(91, 191, 142, 0.32) 0 12%, transparent 40%),
+      radial-gradient(ellipse at 92% 68%, rgba(168, 197, 224, 0.3) 0 11%, transparent 42%),
+      radial-gradient(ellipse at 24% 82%, rgba(240, 168, 85, 0.18) 0 12%, transparent 38%),
+      conic-gradient(
+        from var(--lh-angle) at 54% 48%,
+        transparent 0deg,
+        rgba(168, 197, 224, 0.16) 46deg,
+        rgba(159, 215, 255, 0.14) 104deg,
+        rgba(91, 191, 142, 0.18) 170deg,
+        rgba(240, 168, 85, 0.12) 236deg,
+        transparent 326deg,
+        transparent 360deg
+      );
+  }
+
+  .landing-hero::after {
+    background:
+      radial-gradient(ellipse at 24% 24%, rgba(168, 197, 224, 0.18), transparent 56%),
+      radial-gradient(ellipse at 72% 20%, rgba(91, 191, 142, 0.16), transparent 58%),
+      radial-gradient(ellipse at 52% 58%, rgba(240, 168, 85, 0.1), transparent 64%);
+  }
 }
 
 @media (max-width: 1023px) {
   .landing-hero::before {
-    right: auto;
-    left: 50%;
-    top: 30%;
-    transform: translateX(-50%);
-    width: 90%;
-    height: 60%;
+    inset: -18% -28% -30%;
+    border-radius: clamp(36px, 14vw, 104px);
+    transform: translate3d(0, 0, 0);
+  }
+
+  .landing-hero::after {
+    left: -10%;
+    right: -10%;
+    bottom: -22%;
+    height: 48%;
+    border-radius: clamp(32px, 14vw, 88px);
+    filter: blur(58px);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .landing-hero::before {
+  .landing-hero::before,
+  .landing-hero::after {
     animation: none;
-    opacity: 0.3;
-    background: radial-gradient(
-      circle at center,
-      color-mix(in srgb, var(--color-brand-blue) 40%, transparent),
-      color-mix(in srgb, var(--color-brand-green) 40%, transparent)
-    );
+    scale: 1;
+  }
+
+  .landing-hero::before {
+    opacity: 0.28;
+    background:
+      radial-gradient(
+        ellipse at 12% 28%,
+        color-mix(in srgb, var(--color-brand-blue) 36%, transparent),
+        transparent 44%
+      ),
+      radial-gradient(
+        ellipse at 74% 34%,
+        color-mix(in srgb, var(--color-brand-green) 32%, transparent),
+        transparent 46%
+      ),
+      radial-gradient(
+        ellipse at 34% 78%,
+        color-mix(in srgb, #f0a855 16%, transparent),
+        transparent 44%
+      );
+  }
+
+  .landing-hero::after {
+    opacity: 0.16;
   }
 }
 
+.hero-orbital {
+  position: absolute;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--color-text-primary) 7%, transparent);
+  background: color-mix(in srgb, var(--color-surface) 94%, transparent);
+  box-shadow: 0 6px 8px color-mix(in srgb, var(--color-text-primary) 6%, transparent);
+}
+
+.hero-orbital--spend {
+  z-index: 34;
+  left: 0;
+  top: 156px;
+  width: 168px;
+  padding: 14px;
+}
+
+.hero-orbital--goal {
+  z-index: 32;
+  right: 0;
+  top: 80px;
+  width: 196px;
+  padding: 12px;
+}
+
+.hero-orbital--record {
+  z-index: 36;
+  right: 56px;
+  bottom: 8px;
+  left: auto;
+  width: 264px;
+  padding: 12px;
+}
+
+html[data-theme="dark"] .hero-orbital {
+  border-color: color-mix(in srgb, var(--color-text-primary) 10%, transparent);
+  background: color-mix(in srgb, var(--color-surface) 90%, transparent);
+  box-shadow: 0 6px 8px color-mix(in srgb, #000 24%, transparent);
+}
+
+@media (min-width: 1280px) {
+  .hero-orbital--spend {
+    left: -32px;
+    top: 164px;
+    width: 176px;
+  }
+
+  .hero-orbital--goal {
+    right: 12px;
+    top: 92px;
+    width: 220px;
+    padding: 14px;
+  }
+
+  .hero-orbital--record {
+    right: 80px;
+    bottom: 8px;
+    width: 288px;
+    padding: 14px;
+  }
+}
+
+@media (min-width: 1536px) {
+  .hero-orbital--spend {
+    left: -40px;
+    top: 168px;
+  }
+
+  .hero-orbital--goal {
+    right: 24px;
+    top: 96px;
+  }
+
+  .hero-orbital--record {
+    right: 112px;
+    bottom: 12px;
+  }
+}
 /* =============================================
    AURA DO DASHBOARD HERO
    Usa as variáveis do Moneda

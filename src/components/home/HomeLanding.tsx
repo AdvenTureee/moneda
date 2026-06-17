@@ -368,6 +368,111 @@ function ProductMock({ compact = false }: { compact?: boolean }) {
   );
 }
 
+function HeroProductScene({ reduceMotion }: { reduceMotion: boolean | null }) {
+  const marketItem = feedItems[2];
+  const MarketIcon = marketItem.icon;
+
+  const mainMotion = reduceMotion
+    ? {}
+    : {
+        initial: { opacity: 0, y: 18, scale: 0.98 },
+        animate: { opacity: 1, y: 0, scale: 1 },
+        transition: { duration: 0.42, delay: 0.12, ease: easeOut },
+      };
+
+  const orbitalMotion = (delay: number) =>
+    reduceMotion
+      ? {}
+      : {
+          initial: { opacity: 0, y: 18, scale: 0.98 },
+          animate: { opacity: 1, y: 0, scale: 1 },
+          transition: { duration: 0.4, delay, ease: easeOut },
+        };
+
+  return (
+    <div className="relative mx-auto w-full max-w-[704px] lg:min-h-[520px] xl:min-h-[548px]">
+      <motion.div className="relative z-20 mx-auto max-w-[520px] xl:max-w-[540px]" {...mainMotion}>
+        <ProductMock />
+      </motion.div>
+
+      <motion.div
+        aria-hidden="true"
+        className="hero-orbital hero-orbital--spend hidden lg:block"
+        {...orbitalMotion(0.28)}
+      >
+        <p className="text-xs font-semibold text-[var(--color-text-secondary)]">Gastos da semana</p>
+        <p className="mt-1 text-xl font-bold tabular-nums text-[var(--color-text-primary)]">R$ 286,40</p>
+        <div className="mt-4 flex h-12 items-end gap-1.5">
+          {[34, 46, 28, 52, 38, 44].map((height, index) => (
+            <span
+              key={height + index}
+              className={`w-5 rounded-[5px] ${
+                index === 1 || index === 4
+                  ? 'bg-[var(--color-brand-blue)]'
+                  : index === 3
+                    ? 'bg-[var(--color-warning)]'
+                    : 'bg-[var(--color-brand-green)]'
+              }`}
+              style={{ height }}
+            />
+          ))}
+        </div>
+      </motion.div>
+
+      <motion.div
+        aria-hidden="true"
+        className="hero-orbital hero-orbital--goal hidden lg:block"
+        {...orbitalMotion(0.36)}
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-xs font-semibold text-[var(--color-text-secondary)]">Meta do mês</p>
+            <p className="mt-1 text-base font-bold tabular-nums text-[var(--color-text-primary)]">38% organizado</p>
+          </div>
+          <span className="shrink-0 rounded-full bg-[var(--color-success-bg)] px-2.5 py-1 text-xs font-bold text-[var(--color-success)]">
+            no eixo
+          </span>
+        </div>
+        <div className="mt-4 grid grid-cols-8 gap-1" aria-hidden>
+          {Array.from({ length: 24 }, (_, index) => (
+            <span
+              key={index}
+              className={`aspect-square rounded-[4px] ${
+                index < 9
+                  ? 'bg-[var(--color-success)]'
+                  : index < 16
+                    ? 'bg-[var(--color-brand-blue)]'
+                    : index < 20
+                      ? 'bg-[var(--color-warning)]'
+                      : 'bg-[var(--color-border)]'
+              }`}
+            />
+          ))}
+        </div>
+      </motion.div>
+
+      <motion.div
+        aria-hidden="true"
+        className="hero-orbital hero-orbital--record hidden lg:block"
+        {...orbitalMotion(0.44)}
+      >
+        <div className="flex items-center gap-3">
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-[var(--color-surface-alt)] text-[var(--color-brand-blue-dark)]">
+            <MarketIcon size={18} weight="bold" aria-hidden />
+          </span>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-bold text-[var(--color-text-primary)]">{marketItem.title}</p>
+            <p className="truncate text-xs text-[var(--color-text-secondary)]">{marketItem.meta}</p>
+          </div>
+          <p className="ml-auto shrink-0 text-sm font-bold tabular-nums text-[var(--color-error)]">
+            -{marketItem.amount}
+          </p>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
 function Header() {
   return (
     <header className="sticky top-0 z-50 border-b border-[var(--color-border)] bg-[var(--color-bg)]">
@@ -484,7 +589,7 @@ function HeroSection() {
             </motion.div>
           </motion.div>
 
-          <ProductMock />
+          <HeroProductScene reduceMotion={reduceMotion} />
         </div>
       </div>
     </section>
@@ -850,7 +955,7 @@ function PreviewCarousel() {
 
 function PreviewSection() {
   return (
-    <Section id="visualizacao">
+    <Section id="visualizacao" className="pt-16 sm:pt-20 lg:pt-24">
       <div className="grid gap-10 lg:grid-cols-[1fr_1fr] lg:items-center">
         <SectionTitle eyebrow="Visualização" title="O produto em uso.">
           Orçamento, categorias e últimos registros aparecem juntos para virar leitura, não relatório.
