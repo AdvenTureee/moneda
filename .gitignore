@@ -12,6 +12,7 @@
 
 # testing
 /coverage
+screenshots/
 mo-icons
 # next.js
 /.next/

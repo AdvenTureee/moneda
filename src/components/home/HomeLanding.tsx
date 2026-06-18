@@ -456,7 +456,7 @@ function HeroProductScene({ reduceMotion }: { reduceMotion: boolean | null }) {
 
 function Header() {
   return (
-    <header className="sticky top-0 z-50 border-b border-[var(--color-border)] bg-[var(--color-bg)]">
+    <header className="home-header-glass sticky top-0 z-50 border-b border-[var(--color-border)] bg-[var(--nav-glass-bg)] backdrop-blur-[18px] backdrop-saturate-[132%]">
       <div className="mx-auto grid min-h-16 w-full max-w-6xl grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 py-3 sm:px-6 lg:px-8">
         <div className="flex items-center justify-self-start">
           <ThemeToggleButton />

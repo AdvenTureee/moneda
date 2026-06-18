@@ -3248,6 +3248,11 @@ html[data-theme="dark"] .hero-orbital {
   }
 }
 
+.home-header-glass {
+  -webkit-backdrop-filter: blur(18px) saturate(132%);
+  backdrop-filter: blur(18px) saturate(132%);
+}
+
 /* ── Bottom Nav ───── */
 
 .bottom-nav {

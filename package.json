@@ -6,6 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "typecheck": "tsc --noEmit",
+    "screenshots": "node --env-file=.env scripts/screenshots.mjs",
     "security:audit": "npm audit --audit-level=high",
     "security:secrets": "git ls-files -z --cached --others --exclude-standard | xargs -0 secretlint",
     "test": "node --test --import jiti/register --import ./tests/test-setup.ts tests/*.test.ts",
@@ -39,6 +40,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "jiti": "^2.7.0",
+    "playwright": "^1.61.0",
     "secretlint": "^13.0.2",
     "tailwindcss": "^4",
     "typescript": "^5"
