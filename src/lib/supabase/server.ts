@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { supabaseAuthCookieOptions } from '@/lib/supabase/cookies';
 import type { Database } from '@/types/supabase';
 
 // Session-aware client — reads auth cookies to identify the current user.
@@ -11,6 +12,7 @@ export async function createSessionClient() {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
     {
+      cookieOptions: supabaseAuthCookieOptions,
       cookies: {
         getAll() { return cookieStore.getAll(); },
         setAll(cookiesToSet) {

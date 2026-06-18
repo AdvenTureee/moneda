@@ -18,6 +18,14 @@ function GoogleIcon() {
   );
 }
 
+function getSafeNextPath(): string {
+  const params = new URLSearchParams(window.location.search);
+  const next = params.get('next');
+  if (!next || !next.startsWith('/') || next.startsWith('//')) return '/app';
+  if (next === '/login' || next === '/signup') return '/app';
+  return next;
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
@@ -60,7 +68,7 @@ export default function LoginPage() {
       return;
     }
 
-    router.push('/app');
+    router.push(getSafeNextPath());
     router.refresh();
   }
 

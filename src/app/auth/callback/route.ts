@@ -3,6 +3,7 @@ import { createServerClient } from '@supabase/ssr';
 import { revalidateTag } from 'next/cache';
 import { cacheTags } from '@/lib/cache';
 import { TERMS_VERSION } from '@/lib/legal';
+import { supabaseAuthCookieOptions } from '@/lib/supabase/cookies';
 import {
   buildProfileIdentityPiiUpdate,
   buildProfilePhonePiiUpdate,
@@ -46,11 +47,15 @@ export async function GET(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
     {
+      cookieOptions: supabaseAuthCookieOptions,
       cookies: {
         getAll() { return request.cookies.getAll(); },
-        setAll(cookiesToSet) {
+        setAll(cookiesToSet, headers) {
           cookiesToSet.forEach(({ name, value, options }) =>
             response.cookies.set(name, value, options));
+          Object.entries(headers).forEach(([key, value]) => {
+            response.headers.set(key, value);
+          });
         },
       },
     },

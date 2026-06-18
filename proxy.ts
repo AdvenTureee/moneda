@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { supabaseAuthCookieOptions } from '@/lib/supabase/cookies';
 
 const PRIVATE_NO_STORE_HEADERS = {
   'Cache-Control': 'no-store, no-cache, max-age=0, must-revalidate, private',
@@ -48,24 +49,27 @@ export async function proxy(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
     {
+      cookieOptions: supabaseAuthCookieOptions,
       cookies: {
         getAll() {
           return request.cookies.getAll();
         },
-        setAll(cookiesToSet) {
+        setAll(cookiesToSet, headers) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
           supabaseResponse = NextResponse.next({ request });
           cookiesToSet.forEach(({ name, value, options }) => {
             supabaseResponse.cookies.set(name, value, options ?? {});
+          });
+          Object.entries(headers).forEach(([key, value]) => {
+            supabaseResponse.headers.set(key, value);
           });
         },
       },
     },
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data } = await supabase.auth.getClaims();
+  const user = data?.claims ?? null;
 
   if (!user && isApiRoute) {
     return withPrivateNoStore(
