@@ -35,6 +35,7 @@ import { useTheme } from '@/components/ThemeProvider';
 import TrackedMascot from '@/components/TrackedMascot';
 import MoFooter from '@/components/MoFooter';
 import MoSkate from './MoSkate';
+import HeroAura from './HeroAura';
 
 interface HomeLandingProps {
   whatsappUrl: string;
@@ -491,15 +492,17 @@ function Header() {
 
 function HeroSection() {
   const reduceMotion = useReducedMotion();
+  const { isDark } = useTheme();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => { setMounted(true); }, []);
 
   return (
     <section
-      className="flex min-h-[calc(100vh-80px)] items-center px-4 pb-10 pt-12 sm:px-6 sm:pb-12 sm:pt-16 lg:px-8"
+      className="relative isolate flex min-h-[calc(100vh-80px)] items-center overflow-x-clip overflow-y-visible px-4 pb-10 pt-12 sm:px-6 sm:pb-12 sm:pt-16 lg:px-8"
     >
-      <div className={`w-full transition-opacity duration-500 ${mounted ? 'opacity-100' : 'opacity-0'}`}>
+      <HeroAura isDark={isDark} reduceMotion={reduceMotion} />
+      <div className={`relative z-10 w-full transition-opacity duration-500 ${mounted ? 'opacity-100' : 'opacity-0'}`}>
         <div className="mx-auto grid w-full max-w-7xl items-center gap-12 lg:grid-cols-[1fr_1.2fr]">
           <motion.div
             variants={staggerGroup}
