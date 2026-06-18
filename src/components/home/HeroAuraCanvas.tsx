@@ -143,7 +143,7 @@ export function HeroAuraCanvas({ isDark, isReady = false, onReady }: HeroAuraCan
       onCreated={({ gl }) => {
         gl.setClearColor(0x000000, 0);
         window.requestAnimationFrame(() => {
-          window.setTimeout(() => onReady?.(), 120);
+          window.setTimeout(() => onReady?.(), 350);
         });
       }}
     >

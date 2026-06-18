@@ -499,7 +499,7 @@ function HeroSection() {
 
   return (
     <section
-      className="relative isolate flex min-h-[calc(100vh-80px)] items-center overflow-x-clip overflow-y-visible px-4 pb-10 pt-12 sm:px-6 sm:pb-12 sm:pt-16 lg:px-8"
+      className="relative isolate flex min-h-[calc(100vh-80px)] items-center overflow-hidden px-4 pb-10 pt-12 sm:px-6 sm:pb-12 sm:pt-16 lg:px-8"
     >
       <HeroAura isDark={isDark} reduceMotion={reduceMotion} />
       <div className={`relative z-10 w-full transition-opacity duration-500 ${mounted ? 'opacity-100' : 'opacity-0'}`}>

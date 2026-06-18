@@ -83,7 +83,7 @@ export default function HeroAura({ isDark, reduceMotion }: HeroAuraProps) {
 
   return (
     <div
-      className={`hero-aura ${isVisible ? 'hero-aura--visible' : ''} ${isDark ? 'hero-aura--dark' : 'hero-aura--light'}`}
+      className={`hero-aura ${isVisible ? 'hero-aura--visible' : ''} ${canvasReady ? 'hero-aura--canvas-ready' : ''} ${isDark ? 'hero-aura--dark' : 'hero-aura--light'}`}
       aria-hidden="true"
     >
       <div className="hero-aura__fallback" />
