@@ -368,6 +368,91 @@ function ProductMock({ compact = false }: { compact?: boolean }) {
   );
 }
 
+function HeroProductScene({ reduceMotion }: { reduceMotion: boolean | null }) {
+
+  const mainMotion = reduceMotion
+    ? {}
+    : {
+        initial: { opacity: 0, y: 18, scale: 0.98 },
+        animate: { opacity: 1, y: 0, scale: 1 },
+        transition: { duration: 0.42, delay: 0.12, ease: easeOut },
+      };
+
+  const orbitalMotion = (delay: number) =>
+    reduceMotion
+      ? {}
+      : {
+          initial: { opacity: 0, y: 18, scale: 0.98 },
+          animate: { opacity: 1, y: 0, scale: 1 },
+          transition: { duration: 0.4, delay, ease: easeOut },
+        };
+
+  return (
+    <div className="relative mx-auto w-full max-w-[704px] lg:min-h-[520px] xl:min-h-[548px]">
+      <motion.div className="relative z-20 mx-auto max-w-[520px] xl:max-w-[540px]" {...mainMotion}>
+        <ProductMock />
+      </motion.div>
+
+      <motion.div
+        aria-hidden="true"
+        className="hero-orbital hero-orbital--spend hidden lg:block"
+        {...orbitalMotion(0.28)}
+      >
+        <p className="text-xs font-semibold text-[var(--color-text-secondary)]">Gastos da semana</p>
+        <p className="mt-1 text-xl font-bold tabular-nums text-[var(--color-text-primary)]">R$ 286,40</p>
+        <div className="mt-4 flex h-12 items-end gap-1.5">
+          {[34, 46, 28, 52, 38, 44].map((height, index) => (
+            <span
+              key={height + index}
+              className={`w-5 rounded-[5px] ${
+                index === 1 || index === 4
+                  ? 'bg-[var(--color-brand-blue)]'
+                  : index === 3
+                    ? 'bg-[var(--color-warning)]'
+                    : 'bg-[var(--color-brand-green)]'
+              }`}
+              style={{ height }}
+            />
+          ))}
+        </div>
+      </motion.div>
+
+      <motion.div
+        aria-hidden="true"
+        className="hero-orbital hero-orbital--goal hidden lg:block"
+        {...orbitalMotion(0.36)}
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-xs font-semibold text-[var(--color-text-secondary)]">Meta do mês</p>
+            <p className="mt-1 text-base font-bold tabular-nums text-[var(--color-text-primary)]">38% organizado</p>
+          </div>
+          <span className="shrink-0 rounded-full bg-[var(--color-success-bg)] px-2.5 py-1 text-xs font-bold text-[var(--color-success)]">
+            no eixo
+          </span>
+        </div>
+        <div className="mt-4 grid grid-cols-8 gap-1" aria-hidden>
+          {Array.from({ length: 24 }, (_, index) => (
+            <span
+              key={index}
+              className={`aspect-square rounded-[4px] ${
+                index < 9
+                  ? 'bg-[var(--color-success)]'
+                  : index < 16
+                    ? 'bg-[var(--color-brand-blue)]'
+                    : index < 20
+                      ? 'bg-[var(--color-warning)]'
+                      : 'bg-[var(--color-border)]'
+              }`}
+            />
+          ))}
+        </div>
+      </motion.div>
+
+    </div>
+  );
+}
+
 function Header() {
   return (
     <header className="sticky top-0 z-50 border-b border-[var(--color-border)] bg-[var(--color-bg)]">
@@ -411,7 +496,9 @@ function HeroSection() {
   useEffect(() => { setMounted(true); }, []);
 
   return (
-    <section className="flex min-h-[calc(100vh-80px)] items-center px-4 pb-10 pt-12 sm:px-6 sm:pb-12 sm:pt-16 lg:px-8">
+    <section
+      className="flex min-h-[calc(100vh-80px)] items-center px-4 pb-10 pt-12 sm:px-6 sm:pb-12 sm:pt-16 lg:px-8"
+    >
       <div className={`w-full transition-opacity duration-500 ${mounted ? 'opacity-100' : 'opacity-0'}`}>
         <div className="mx-auto grid w-full max-w-7xl items-center gap-12 lg:grid-cols-[1fr_1.2fr]">
           <motion.div
@@ -461,13 +548,16 @@ function HeroSection() {
               className="mt-8 flex flex-row flex-wrap items-center justify-center gap-3 sm:justify-start"
             >
               <CtaButton large />
-              <a
+              <motion.a
                 href="#produto"
+                whileHover={reduceMotion ? undefined : { scale: 1.01 }}
+                whileTap={reduceMotion ? undefined : { scale: 0.99 }}
+                transition={{ duration: 0.15, ease: easeOut }}
                 className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full px-5 text-sm font-semibold text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-alt)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)] focus-visible:ring-offset-2"
               >
                 <Eye size={18} weight="bold" aria-hidden />
                 Conhecer a Mo
-              </a>
+              </motion.a>
             </motion.div>
 
             {/* TOQUE BRASILEIRO (Design de Badge Premium) */}
@@ -484,7 +574,7 @@ function HeroSection() {
             </motion.div>
           </motion.div>
 
-          <ProductMock />
+          <HeroProductScene reduceMotion={reduceMotion} />
         </div>
       </div>
     </section>
@@ -762,7 +852,7 @@ function PreviewCarousel() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="absolute top-0 left-0 right-0 h-[calc(100%-3rem)] z-20 flex flex-col items-center justify-center bg-[var(--color-bg)]/20 backdrop-blur-[1px] pointer-events-none"
+          className="absolute top-0 left-1 right-1 h-[calc(100%-3rem)] z-20 flex flex-col items-center justify-center overflow-hidden rounded-2xl bg-[var(--color-bg)]/20 backdrop-blur-[1px] pointer-events-none"
         >
           <div className="flex flex-col items-center gap-2 rounded-xl bg-[var(--color-surface)]/90 px-4 py-3 shadow-[var(--shadow-card-soft)] border border-[var(--color-border)]">
             <motion.div
@@ -850,16 +940,16 @@ function PreviewCarousel() {
 
 function PreviewSection() {
   return (
-    <Section id="visualizacao">
-      <div className="grid gap-10 lg:grid-cols-[1fr_1fr] lg:items-center">
-        <SectionTitle eyebrow="Visualização" title="O produto em uso.">
-          Orçamento, categorias e últimos registros aparecem juntos para virar leitura, não relatório.
-        </SectionTitle>
+    <Section id="visualizacao" className="pt-16 sm:pt-20 lg:pt-24">
+      <div className="relative z-10 grid gap-10 lg:grid-cols-[1fr_1fr] lg:items-center">
+          <SectionTitle eyebrow="Visualização" title="O produto em uso.">
+            Orçamento, categorias e últimos registros aparecem juntos para virar leitura, não relatório.
+          </SectionTitle>
 
-        <div className="mx-auto w-full max-w-[340px]">
-          <PreviewCarousel />
+          <div className="mx-auto w-full max-w-[340px]">
+            <PreviewCarousel />
+          </div>
         </div>
-      </div>
     </Section>
   );
 }
@@ -869,49 +959,51 @@ function CycleSection() {
 
   return (
     <Section id="ciclo">
-      <SectionTitle align="center" eyebrow="Ciclo" title="A métrica principal do Moneda.">
-        O app organiza o mês financeiro pelo fechamento da fatura, porque é ali que o gasto realmente aparece.
-      </SectionTitle>
+      <div className="relative z-10">
+          <SectionTitle align="center" eyebrow="Ciclo" title="A métrica principal do Moneda.">
+            O app organiza o mês financeiro pelo fechamento da fatura, porque é ali que o gasto realmente aparece.
+          </SectionTitle>
 
-      <Surface className="relative mx-auto mt-8 max-w-4xl border-[color-mix(in_srgb,var(--color-warning)_38%,var(--color-border))] bg-[color-mix(in_srgb,var(--color-surface-alt)_34%,var(--color-surface))] p-5 sm:p-6">
-        <Fire
-          size={44}
-          weight="fill"
-          className="pointer-events-none absolute -top-7 -right-1 rotate-12 text-[var(--color-warning)] sm:right-3"
-          aria-hidden
-        />
-        <div className="flex items-start justify-between gap-4">
-          <IconBadge icon={item.icon} />
-          <span className="rounded-full bg-[var(--color-surface-alt)] px-3 py-1 text-xs font-bold text-[var(--color-brand-blue-dark)]">
-            {item.tag}
-          </span>
-        </div>
-        <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_0.85fr] lg:items-end">
-          <div>
-            <h3 className="text-xl font-bold leading-snug text-[var(--color-text-primary)] sm:text-2xl">
-              {item.title}
-            </h3>
-            <p className="mt-4 font-heading text-[clamp(1.75rem,4vw,2.75rem)] font-bold leading-tight text-[var(--color-text-primary)]">
-              {item.mantra}
-            </p>
-            <p className="mt-4 max-w-2xl text-base leading-relaxed text-[var(--color-text-secondary)]">
-              {item.text}
-            </p>
-          </div>
+          <Surface className="relative mx-auto mt-8 max-w-4xl border-[color-mix(in_srgb,var(--color-warning)_38%,var(--color-border))] bg-[color-mix(in_srgb,var(--color-surface-alt)_34%,var(--color-surface))] p-5 sm:p-6">
+            <Fire
+              size={44}
+              weight="fill"
+              className="pointer-events-none absolute -top-7 -right-1 rotate-12 text-[var(--color-warning)] sm:right-3"
+              aria-hidden
+            />
+            <div className="flex items-start justify-between gap-4">
+              <IconBadge icon={item.icon} />
+              <span className="rounded-full bg-[var(--color-surface-alt)] px-3 py-1 text-xs font-bold text-[var(--color-brand-blue-dark)]">
+                {item.tag}
+              </span>
+            </div>
+            <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_0.85fr] lg:items-end">
+              <div>
+                <h3 className="text-xl font-bold leading-snug text-[var(--color-text-primary)] sm:text-2xl">
+                  {item.title}
+                </h3>
+                <p className="mt-4 font-heading text-[clamp(1.75rem,4vw,2.75rem)] font-bold leading-tight text-[var(--color-text-primary)]">
+                  {item.mantra}
+                </p>
+                <p className="mt-4 max-w-2xl text-base leading-relaxed text-[var(--color-text-secondary)]">
+                  {item.text}
+                </p>
+              </div>
 
-          <div className="rounded-xl bg-[var(--color-surface)] p-4">
-            <div className="flex items-center justify-between gap-3 text-sm font-bold text-[var(--color-text-secondary)]">
-              <span>{item.cycleStart}</span>
-              <span>{item.cycleEnd}</span>
+              <div className="rounded-xl bg-[var(--color-surface)] p-4">
+                <div className="flex items-center justify-between gap-3 text-sm font-bold text-[var(--color-text-secondary)]">
+                  <span>{item.cycleStart}</span>
+                  <span>{item.cycleEnd}</span>
+                </div>
+                <div className="mt-4 flex items-center gap-3" aria-hidden>
+                  <span className="cycle-pulse-dot cycle-pulse-dot--warning h-3 w-3 rounded-full bg-[var(--color-warning)]" />
+                  <span className="h-px flex-1 bg-[color-mix(in_srgb,var(--color-warning)_45%,var(--color-border))]" />
+                  <span className="cycle-pulse-dot cycle-pulse-dot--blue h-3 w-3 rounded-full bg-[var(--color-brand-blue)]" />
+                </div>
+              </div>
             </div>
-            <div className="mt-4 flex items-center gap-3" aria-hidden>
-              <span className="h-3 w-3 rounded-full bg-[var(--color-warning)]" />
-              <span className="h-px flex-1 bg-[color-mix(in_srgb,var(--color-warning)_45%,var(--color-border))]" />
-              <span className="h-3 w-3 rounded-full bg-[var(--color-brand-blue)]" />
-            </div>
-          </div>
+          </Surface>
         </div>
-      </Surface>
     </Section>
   );
 }
@@ -989,9 +1081,17 @@ function TrustAndFaqSection() {
 }
 
 function FinalCta() {
+  const reduceMotion = useReducedMotion();
+
   return (
     <section className="px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
-      <div className="mx-auto max-w-3xl text-center">
+      <motion.div
+        initial={reduceMotion ? false : { opacity: 0, y: 14, scale: 0.99 }}
+        whileInView={reduceMotion ? undefined : { opacity: 1, y: 0, scale: 1 }}
+        viewport={{ once: true, amount: 0.5 }}
+        transition={{ duration: 0.45, ease: easeOut }}
+        className="relative z-10 mx-auto max-w-3xl text-center"
+      >
         <h2 className="font-heading text-[clamp(2rem,4vw,3.5rem)] font-bold leading-tight text-[var(--color-text-primary)]">
           Comece pelo app.
         </h2>
@@ -1001,7 +1101,7 @@ function FinalCta() {
         <div className="mt-8">
           <CtaButton large />
         </div>
-      </div>
+      </motion.div>
     </section>
   );
 }

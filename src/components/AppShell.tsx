@@ -124,11 +124,12 @@ function ShellContent({
     <>
       <main
         className="app-shell"
-        style={{ paddingBottom: 'calc(68px + env(safe-area-inset-bottom, 0px))' }}
+        style={{ paddingBottom: 'calc(96px + env(safe-area-inset-bottom, 0px))' }}
       >
         {children}
       </main>
       <ScrollFadeIndicator />
+      <div className="bottom-glass-fade-overlay" aria-hidden="true" />
       <BottomNav onAddExpense={() => { if (!isTermsBlocking) setModalOpen(true); }} />
       <AddExpenseModal
         isOpen={modalOpen && !isTermsBlocking}

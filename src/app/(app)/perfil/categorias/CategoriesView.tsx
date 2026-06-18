@@ -162,7 +162,7 @@ export default function CategoriesView() {
   const isFormValid = formData.name.trim().length > 0;
 
   return (
-    <div className="max-w-lg mx-auto px-4 pb-24 [scrollbar-gutter:stable]">
+    <div className="max-w-lg mx-auto px-4 pb-4 [scrollbar-gutter:stable]">
       {/* Header */}
       <header className="flex items-center gap-3 py-5 animate-fade-up delay-0">
         <Link

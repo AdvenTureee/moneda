@@ -802,7 +802,7 @@ function FeedPageInner({ billingClosingDay, initialCategories, initialFeedPage }
 
   return (
     <>
-      <div className="max-w-lg mx-auto px-4 pb-24 [scrollbar-gutter:stable]">
+      <div className="max-w-lg mx-auto px-4 pb-4 [scrollbar-gutter:stable]">
         <PageHeader
           title="Feed de Gastos"
           subtitle="Histórico e agendados em um só lugar."

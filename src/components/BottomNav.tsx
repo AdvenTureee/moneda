@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import Link, { useLinkStatus } from 'next/link';
+import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { House, List, PlusCircle, Sparkle, User } from '@phosphor-icons/react';
 import {
@@ -11,7 +11,7 @@ import {
 
 interface NavItem {
   label: string;
-  icon: React.ComponentType<{ size?: number; className?: string }>;
+  icon: React.ComponentType<{ size?: number; weight?: 'regular' | 'fill' | 'bold' | 'light' | 'thin' | 'duotone'; className?: string }>;
   href: string;
   isAction?: boolean;
 }
@@ -23,6 +23,8 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Insights', icon: Sparkle, href: '/insights' },
   { label: 'Perfil', icon: User, href: '/perfil' },
 ];
+
+const NAV_TRANSITION_TIMEOUT_MS = 520;
 
 function scrollPageToTop() {
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -48,16 +50,6 @@ function resetTabScroll() {
   window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
 }
 
-function NavPendingHint() {
-  const { pending } = useLinkStatus();
-  return (
-    <span
-      className={`bottom-nav-pending-hint ${pending ? 'bottom-nav-pending-hint--visible' : ''}`}
-      aria-hidden
-    />
-  );
-}
-
 interface BottomNavProps {
   onAddExpense?: () => void;
 }
@@ -69,6 +61,9 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
   const shouldResetScrollRef = useRef(false);
   const previousPathnameRef = useRef(pathname);
   const resetScrollTimeoutRef = useRef<number | null>(null);
+  const navTransitionTimeoutRef = useRef<number | null>(null);
+  const navRef = useRef<HTMLElement>(null);
+  const [transitioningHref, setTransitioningHref] = useState<string | null>(null);
 
   const prefetchRoute = useCallback(
     (href: string) => {
@@ -109,6 +104,35 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
 
   useEffect(() => clearPendingScrollReset, [clearPendingScrollReset]);
 
+  const clearNavTransitionTimer = useCallback(() => {
+    if (navTransitionTimeoutRef.current) {
+      window.clearTimeout(navTransitionTimeoutRef.current);
+      navTransitionTimeoutRef.current = null;
+    }
+  }, []);
+
+  const clearNavTransition = useCallback(() => {
+    setTransitioningHref(null);
+    clearNavTransitionTimer();
+  }, [clearNavTransitionTimer]);
+
+  const showNavTransition = useCallback((href: string) => {
+    setTransitioningHref(href);
+    if (navTransitionTimeoutRef.current) {
+      window.clearTimeout(navTransitionTimeoutRef.current);
+    }
+    navTransitionTimeoutRef.current = window.setTimeout(() => {
+      setTransitioningHref(null);
+      navTransitionTimeoutRef.current = null;
+    }, NAV_TRANSITION_TIMEOUT_MS);
+  }, []);
+
+  useEffect(() => {
+    clearNavTransition();
+  }, [clearNavTransition, pathname]);
+
+  useEffect(() => clearNavTransitionTimer, [clearNavTransitionTimer]);
+
   useEffect(() => {
     const updateDashboardHref = () => setDashboardHref(dashboardHrefWithStoredPeriod());
     updateDashboardHref();
@@ -120,12 +144,37 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
     };
   }, []);
 
+  useEffect(() => {
+    const flushBackdrop = () => {
+      const el = navRef.current;
+      if (!el) return;
+      const s = el.style as any;
+      s.webkitBackdropFilter = 'none';
+      s.backdropFilter = 'none';
+      void el.offsetHeight;
+      s.webkitBackdropFilter = '';
+      s.backdropFilter = '';
+    };
+
+    const observer = new MutationObserver(() => {
+      flushBackdrop();
+    });
+
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class', 'data-theme'],
+    });
+
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-40 bg-[var(--color-surface)] pb-[env(safe-area-inset-bottom,0px)]"
+      ref={navRef}
+      className="bottom-nav"
       aria-label="Navegação principal"
     >
-      <div className="grid h-[68px] grid-cols-5 items-center max-w-lg mx-auto px-2">
+      <div className="bottom-nav__inner">
         {NAV_ITEMS.map((item) => {
           if (item.isAction) {
             return (
@@ -134,10 +183,9 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
                 type="button"
                 onClick={() => onAddExpense?.()}
                 aria-label="Adicionar gasto"
-                className="gesture-icon-button bottom-nav-action justify-self-center flex flex-col items-center justify-center h-[68px] w-[68px] rounded-full bg-[#5BBF8E] text-white -mt-6 touch-manipulation active:scale-90 transition-transform duration-75"
-                style={{ boxShadow: 'var(--shadow-nav-action)' }}
+                className="bottom-nav-action-btn"
               >
-                <item.icon size={32} />
+                <PlusCircle size={32} weight="bold" />
               </button>
             );
           }
@@ -147,6 +195,7 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
             ? pathname === '/app'
             : pathname.startsWith(item.href);
           const isSamePath = pathname === item.href;
+          const isTransitioning = transitioningHref === href;
 
           return (
             <Link
@@ -156,30 +205,33 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
               scroll={false}
               onMouseEnter={() => prefetchRoute(href)}
               onClick={(event) => {
-                if (!isSamePath || isModifiedClick(event)) return;
+                if (isModifiedClick(event)) return;
+
+                if (!isSamePath) {
+                  showNavTransition(href);
+                  return;
+                }
 
                 event.preventDefault();
                 clearPendingScrollReset();
                 scrollPageToTop();
               }}
               onNavigate={() => {
+                showNavTransition(href);
                 resetTabScroll();
                 scheduleScrollReset();
               }}
               onFocus={() => prefetchRoute(href)}
-              className={`bottom-nav-link relative justify-self-center flex flex-col items-center justify-center gap-1 w-full min-w-[50px] min-h-[56px] rounded-xl touch-manipulation transition-[color,transform] duration-150 active:scale-[0.98] ${
-                isActive
-                  ? 'text-[#A8C5E0]'
-                  : 'text-[#9CA3AF] hover:text-[#6B7280]'
-              }`}
+              className={`bottom-nav-link ${isActive ? 'bottom-nav-link--active' : ''} ${isTransitioning ? 'bottom-nav-link--transitioning' : ''}`}
               aria-current={isActive ? 'page' : undefined}
+              aria-busy={isTransitioning || undefined}
             >
-              <item.icon size={23} />
-              <span className="text-[11px] font-semibold leading-none">{item.label}</span>
-              <NavPendingHint />
-              {isActive && (
-                <span className="bottom-nav-indicator absolute -bottom-0.5 h-0.5 rounded-full" />
-              )}
+              <item.icon
+                size={isActive ? 25 : 23}
+                weight={isActive ? 'fill' : 'regular'}
+                className="bottom-nav-link__icon"
+              />
+              <span className="bottom-nav-link__label">{item.label}</span>
             </Link>
           );
         })}
