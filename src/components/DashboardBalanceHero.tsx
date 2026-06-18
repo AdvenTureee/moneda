@@ -54,23 +54,12 @@ function actionIcon(icon: HeroActionIcon) {
   return <ArrowRight size={14} weight="bold" className="shrink-0" />;
 }
 
-function amountToneClass(tone: HeroTone) {
-  if (tone === 'warning') return 'text-[var(--color-warning)]';
-  if (tone === 'success') return 'text-[var(--color-success)]';
-  return 'text-[var(--color-text-primary)]';
-}
 
 function actionClassName(variant: HeroActionVariant, hasMultipleActions: boolean) {
   const layout = hasMultipleActions
-    ? variant === 'primary'
-      ? 'flex flex-[1_1_0]'
-      : 'inline-flex flex-[0_0_auto]'
+    ? 'inline-flex flex-[0_0_auto]'
     : 'inline-flex';
   const base = `${layout} min-h-11 min-w-0 items-center justify-center gap-1.5 rounded-[14px] px-2.5 py-2 text-center text-xs font-semibold transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)] focus-visible:ring-offset-2 min-[390px]:px-3 sm:text-sm`;
-
-  if (variant === 'primary') {
-    return `${base} border border-[color-mix(in_srgb,var(--color-brand-blue)_48%,var(--color-border)_52%)] bg-[color-mix(in_srgb,var(--color-brand-blue)_18%,var(--color-surface)_82%)] text-[var(--color-text-primary)] hover:bg-[color-mix(in_srgb,var(--color-brand-blue)_24%,var(--color-surface)_76%)] active:bg-[color-mix(in_srgb,var(--color-brand-blue)_30%,var(--color-surface)_70%)]`;
-  }
 
   return `${base} border border-transparent px-1.5 text-[var(--color-text-secondary)] hover:bg-[color-mix(in_srgb,var(--color-surface)_64%,transparent)] hover:text-[var(--color-text-primary)] active:text-[var(--color-text-primary)] min-[390px]:px-2`;
 }
@@ -246,58 +235,59 @@ export default function DashboardBalanceHero({
   }
 
   return (
-    <section className="mt-3 mb-3 animate-fade-up delay-1" aria-label="Status do orçamento">
+    <section className="mt-5 mb-4 px-2 animate-fade-up delay-1" aria-label="Status do orçamento">
       <div className="dashboard-balance-hero">
-        <div className="dashboard-balance-hero__content relative z-10 min-w-0">
-          <p className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--color-text-tertiary)]">
-            {heroModel.badge ? (
-              <span
-                className={`h-1.5 w-1.5 shrink-0 rounded-full ${
-                  heroModel.badge.variant === 'success'
-                    ? 'bg-[var(--color-success)]'
-                    : 'bg-[var(--color-warning)]'
-                }`}
-                aria-hidden
-              />
-            ) : null}
-            {heroModel.label}
-          </p>
-          <div className="dashboard-balance-hero__amount-row">
+        <div className="flex items-center justify-between">
+          <div className="themed-card bg-white rounded-[14px] p-4 w-fit">
+            <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--color-text-tertiary)]">
+              {heroModel.badge ? (
+                <span
+                  className={`h-1.5 w-1.5 shrink-0 rounded-full ${
+                    heroModel.badge.variant === 'success'
+                      ? 'bg-[var(--color-success)]'
+                      : 'bg-[var(--color-warning)]'
+                  }`}
+                  aria-hidden
+                />
+              ) : null}
+              {heroModel.label}
+            </p>
             <p
-              className={`min-w-0 text-[30px] font-extrabold leading-none tabular-nums min-[390px]:text-[34px] lg:text-[36px] ${amountToneClass(heroModel.tone)}`}
+              className={`min-w-0 text-[32px] font-extrabold leading-none tabular-nums tracking-tight text-[var(--color-text-primary)] min-[390px]:text-[34px] lg:text-[36px]`}
               aria-label={heroModel.ariaLabel}
+              style={{ textShadow: '0 1px 2px rgba(0,0,0,0.06)' }}
             >
               {formatCurrency(heroModel.amount)}
             </p>
-            <div className="dashboard-balance-hero__mo-zone">
-              <button
-                ref={buttonRef}
-                type="button"
-                onClick={handleMoClick}
-                className="dashboard-balance-hero__mo-button relative block rounded-full outline-none transition-transform duration-150 active:scale-95 focus-visible:ring-2 focus-visible:ring-[#A8C5E0] focus-visible:ring-offset-2"
-                aria-label="Mostrar dica da Mo"
-              >
-                <TrackedMascot
-                  variant={budgetState === 'healthy' || budgetState === 'recovered' ? 'happy' : 'idle'}
-                  speaking={moSpeaking}
-                  className="dashboard-balance-hero__mo drop-shadow-[0_10px_18px_rgba(15,23,42,0.16)]"
-                />
-              </button>
-            </div>
           </div>
-          <div className="dashboard-balance-hero__actions mt-6 flex flex-nowrap gap-2">
-            {heroModel.actions.map((action) => (
-              <Link
-                key={action.href}
-                href={action.href}
-                className={actionClassName(action.variant, heroModel.actions.length > 1)}
-                aria-label={action.ariaLabel}
-              >
-                {actionIcon(action.icon)}
-                <span className="truncate">{action.label}</span>
-              </Link>
-            ))}
+          <div className="dashboard-balance-hero__mo-zone">
+            <button
+              ref={buttonRef}
+              type="button"
+              onClick={handleMoClick}
+              className="dashboard-balance-hero__mo-button relative block rounded-full outline-none transition-transform duration-150 active:scale-95 focus-visible:ring-2 focus-visible:ring-[#A8C5E0] focus-visible:ring-offset-2"
+              aria-label="Mostrar dica da Mo"
+            >
+              <TrackedMascot
+                variant={budgetState === 'healthy' || budgetState === 'recovered' ? 'happy' : 'idle'}
+                speaking={moSpeaking}
+                className="dashboard-balance-hero__mo drop-shadow-[0_10px_18px_rgba(15,23,42,0.16)]"
+              />
+            </button>
           </div>
+        </div>
+        <div className="dashboard-balance-hero__actions mt-6 flex flex-nowrap items-center justify-center gap-2">
+          {heroModel.actions.map((action) => (
+            <Link
+              key={action.href}
+              href={action.href}
+              className={actionClassName(action.variant, heroModel.actions.length > 1)}
+              aria-label={action.ariaLabel}
+            >
+              {actionIcon(action.icon)}
+              <span className="truncate">{action.label}</span>
+            </Link>
+          ))}
         </div>
 
         {/* ── PORTAL DA DICA DA MO (Centralização Corrigida) ── */}

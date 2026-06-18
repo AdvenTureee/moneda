@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter } from 'next/font/google';
+import { Inter, Sora } from 'next/font/google';
 import NextTopLoader from 'nextjs-toploader';
 import ModalScrollLock from '@/components/ModalScrollLock';
 import PWARegistrar from '@/components/PWARegistrar';
@@ -9,6 +9,12 @@ import './globals.css';
 const inter = Inter({
   subsets: ['latin'],
   variable: '--font-inter',
+  display: 'swap',
+});
+
+const sora = Sora({
+  subsets: ['latin'],
+  variable: '--font-sora',
   display: 'swap',
 });
 
@@ -64,7 +70,7 @@ export default function RootLayout({
   return (
     <html
       lang="pt-BR"
-      className={inter.variable}
+      className={`${inter.variable} ${sora.variable}`}
       data-theme="light"
       suppressHydrationWarning
     >

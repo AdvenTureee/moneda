@@ -185,7 +185,7 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
                 aria-label="Adicionar gasto"
                 className="bottom-nav-action-btn"
               >
-                <PlusCircle size={28} weight="bold" />
+                <PlusCircle size={32} weight="bold" />
               </button>
             );
           }

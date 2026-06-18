@@ -35,8 +35,8 @@
   --color-border-focus: #A8C5E0;
 
   /* Fonts */
-  --font-body: var(--font-body);
-  --font-heading: var(--font-heading);
+  --font-body: var(--font-inter);
+  --font-heading: var(--font-inter);
 }
 
 :root {
@@ -518,7 +518,7 @@ html[data-theme="dark"] .mo-tip-bubble::before {
   min-width: 0;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 4px;
 }
 
 .dashboard-balance-hero__mo-zone {
@@ -3218,10 +3218,10 @@ html[data-theme="dark"] .hero-orbital {
 .bottom-nav-action-btn {
   position: relative;
   display: inline-flex;
-  width: 52px;
-  height: 52px;
-  min-width: 52px;
-  min-height: 52px;
+  width: 58px;
+  height: 58px;
+  min-width: 58px;
+  min-height: 58px;
   align-items: center;
   justify-content: center;
   justify-self: center;
@@ -3239,7 +3239,7 @@ html[data-theme="dark"] .hero-orbital {
 
 .bottom-nav-action-btn::before {
   position: absolute;
-  inset: 7px;
+  inset: 8px;
   content: "";
   border-radius: inherit;
   background: rgba(255, 255, 255, 0.28);
@@ -3320,10 +3320,10 @@ html[data-theme="dark"] .bottom-nav-link--active {
   }
 
   .bottom-nav-action-btn {
-    width: 50px;
-    height: 50px;
-    min-width: 50px;
-    min-height: 50px;
+    width: 54px;
+    height: 54px;
+    min-width: 54px;
+    min-height: 54px;
   }
 }
 
