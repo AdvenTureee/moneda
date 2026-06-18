@@ -569,9 +569,9 @@ function HeroSection() {
               transition={{ duration: 0.3, ease: easeOut }}
               className="mt-8 flex items-center justify-center gap-2.5 text-sm font-medium text-[var(--color-text-tertiary)] sm:justify-start"
             >
-              <span className="flex h-6 items-center justify-center gap-[1px] rounded-[5px] border border-[var(--color-border)] bg-[var(--color-surface-alt)] px-2 text-[12px] font-black select-none shadow-sm">
-                <span className="text-[#009C3B]">B</span>
-                <span className="text-[#FFDF00]">R</span>
+              <span className="hero-br-badge flex h-6 items-center justify-center gap-[1px] rounded-[5px] border border-[var(--color-border)] bg-[var(--color-surface-alt)] px-2 text-[12px] font-black select-none shadow-sm">
+                <span className="hero-br-badge__letter hero-br-badge__letter--green">B</span>
+                <span className="hero-br-badge__letter hero-br-badge__letter--gold">R</span>
               </span>
               <span>Pensado e criado para o Brasil.</span>
             </motion.div>

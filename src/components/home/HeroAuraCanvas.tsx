@@ -117,6 +117,8 @@ function AuraPlane({ isDark }: HeroAuraCanvasProps) {
     material.uColorB = new THREE.Color(isDark ? '#6FD4A2' : '#5BBF8E');
     material.uColorC = new THREE.Color(isDark ? '#F5BE73' : '#F0A855');
     material.uIntensity = isDark ? 0.74 : 0.9;
+    material.blending = isDark ? THREE.NormalBlending : THREE.AdditiveBlending;
+    material.needsUpdate = true;
   }, [isDark, material]);
 
   useFrame((state) => {
