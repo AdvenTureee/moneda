@@ -5,9 +5,11 @@ import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import TrackedMascot from '@/components/TrackedMascot';
 import MoTipBubble from '@/components/MoTipBubble';
+import PrivateValue from '@/components/PrivateValue';
 import { getSessionGreeting } from '@/data/moTips';
 import { formatCurrency } from '@/lib/utils';
-import { ArrowRight, MagnifyingGlass, Plus } from '@phosphor-icons/react';
+import { usePrivacy } from '@/context/PrivacyContext';
+import { ArrowRight, EyeSlash, MagnifyingGlass, Plus } from '@phosphor-icons/react';
 
 interface DashboardBalanceHeroProps {
   budgetTotal: number;
@@ -71,6 +73,7 @@ export default function DashboardBalanceHero({
   period,
   displayName,
 }: DashboardBalanceHeroProps) {
+  const { isPrivate, togglePrivacy } = usePrivacy();
   const [showTip, setShowTip] = useState(false);
   const [tipMode, setTipMode] = useState<'session' | 'tip'>('tip');
   const [tipAdvanceToken, setTipAdvanceToken] = useState(0);
@@ -257,13 +260,24 @@ export default function DashboardBalanceHero({
               ) : null}
               {heroModel.label}
             </p>
-            <p
-              className={`min-w-0 text-[32px] font-extrabold leading-none tabular-nums tracking-tight text-[var(--color-text-primary)] min-[390px]:text-[34px] lg:text-[36px]`}
+            <button
+              type="button"
+              onClick={togglePrivacy}
+              className="block w-full cursor-pointer appearance-none border-none bg-transparent p-0 text-left"
               aria-label={heroModel.ariaLabel}
-              style={{ textShadow: '0 1px 2px rgba(0,0,0,0.06)' }}
             >
-              {formatCurrency(heroModel.amount)}
-            </p>
+              <p
+                className={`flex items-center gap-2 min-w-0 text-[32px] font-extrabold leading-none tabular-nums tracking-tight text-[var(--color-text-primary)] min-[390px]:text-[34px] lg:text-[36px]`}
+                style={{ textShadow: '0 1px 2px rgba(0,0,0,0.06)' }}
+              >
+                <PrivateValue value={formatCurrency(heroModel.amount)} />
+                {isPrivate && (
+                  <span className="shrink-0 text-[var(--color-text-tertiary)]" aria-label="Modo privado ativo">
+                    <EyeSlash size={20} weight="bold" />
+                  </span>
+                )}
+              </p>
+            </button>
           </div>
           <div className="dashboard-balance-hero__mo-zone">
             <button

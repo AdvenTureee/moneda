@@ -1,3 +1,5 @@
+import PrivateValue from '@/components/PrivateValue';
+
 interface DashboardMetricProps {
   label: string;
   value: string;
@@ -23,7 +25,7 @@ export default function DashboardMetric({
           size === 'lg' ? 'text-2xl' : 'text-lg'
         }`}
       >
-        {value}
+        <PrivateValue value={value} />
       </p>
       {subtext && (
         <p

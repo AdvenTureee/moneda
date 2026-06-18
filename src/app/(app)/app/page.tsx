@@ -8,6 +8,7 @@ import Icon from '@/components/Icon';
 import Confetti from '@/components/Confetti';
 import MonthPicker from '@/components/MonthPicker';
 import DashboardBalanceHero from '@/components/DashboardBalanceHero';
+import DashboardCompactMetrics from '@/components/DashboardCompactMetrics';
 import PageHeader from '@/components/PageHeader';
 import RefreshOnExpenseMutation from '@/components/RefreshOnExpenseMutation';
 import { getDashboardMetrics, getSpendingTimeline } from '@/lib/expenses';
@@ -173,45 +174,11 @@ export default async function DashboardPage({
               <MonthPicker value={period} closingDay={billingClosingDay} fullWidth />
             </section>
 
-            <section
-              className="themed-card mb-4 grid grid-cols-3 gap-1 rounded-[14px] bg-white p-1.5 animate-fade-up delay-3 min-[390px]:gap-1.5"
-              aria-label="Resumo financeiro do ciclo"
-            >
-              {compactMetrics.map((item, index) => (
-                <div
-                  key={item.label}
-                  className="relative min-w-0 overflow-hidden rounded-[10px] px-1.5 py-1.5 text-center min-[390px]:px-2"
-                >
-                  {index < 2 && (
-                    <span className="absolute right-0 top-1/2 h-4 w-px -translate-y-1/2 bg-[var(--color-border)]" aria-hidden />
-                  )}
-                  <p className="mb-1 min-w-0 truncate text-center text-[8.5px] font-semibold uppercase tracking-[0.05em] text-[var(--color-text-tertiary)] min-[390px]:text-[9.5px]">
-                    {item.label}
-                  </p>
-                  <p className="whitespace-nowrap text-center text-xs font-bold leading-none tabular-nums text-[var(--color-text-primary)] min-[390px]:text-[13px] sm:text-sm">
-                    {item.value}
-                  </p>
-                  {item.label === 'Gasto' && spendingProgressPercent !== null && (
-                    <div
-                      className="mt-2 flex h-3 items-center justify-center"
-                      aria-hidden
-                    >
-                      <div
-                        className="h-1 w-[46%] overflow-hidden rounded-full bg-[color-mix(in_srgb,var(--color-border)_30%,transparent)]"
-                      >
-                        <div
-                          className="h-full rounded-full"
-                          style={{
-                            width: `${spendingProgressPercent}%`,
-                            backgroundColor: spendingProgressColor,
-                          }}
-                        />
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </section>
+            <DashboardCompactMetrics
+              items={compactMetrics}
+              spendingProgressPercent={spendingProgressPercent}
+              spendingProgressColor={spendingProgressColor}
+            />
           </div>
 
           <div className="min-w-0">

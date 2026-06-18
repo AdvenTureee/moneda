@@ -4,6 +4,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import ChartCard from './ChartCard';
 import ChartTooltip from './ChartTooltip';
+import PrivateValue from '@/components/PrivateValue';
+import { usePrivacy } from '@/context/PrivacyContext';
+import { maskValue } from '@/components/PrivateValue';
 import { formatCurrency } from '@/lib/utils';
 import { DEFAULT_BILLING_CLOSING_DAY, getBillingCycleForPeriod } from '@/lib/billingCycle';
 import { toLocalDateInput } from '@/lib/date';
@@ -42,6 +45,7 @@ const PAD = { top: 12, right: 8, bottom: 28, left: 36 };
 const COMPACT_PAD_LEFT = 8;
 
 export default function DailyHistogram({ data, period, billingClosingDay = DEFAULT_BILLING_CLOSING_DAY }: DailyHistogramProps) {
+  const { isPrivate } = usePrivacy();
   const router = useRouter();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [hovered, setHovered] = useState<string | null>(null);
@@ -137,7 +141,7 @@ export default function DailyHistogram({ data, period, billingClosingDay = DEFAU
             <span className="text-xs text-[#6B7280]">
               Média:{' '}
               <span className="font-semibold text-[#1A1D23] tabular-nums">
-                {formatCurrency(Math.round(avg))}
+                <PrivateValue value={formatCurrency(Math.round(avg))} />
               </span>
               /dia
             </span>
@@ -159,7 +163,7 @@ export default function DailyHistogram({ data, period, billingClosingDay = DEFAU
               >
                 <p className="font-semibold capitalize">{formatFullDate(hoveredBar.date)}</p>
                 <p className="text-[#A8C5E0] tabular-nums mt-0.5">
-                  {formatCurrency(hoveredBar.amount)}
+                  <PrivateValue value={formatCurrency(hoveredBar.amount)} />
                 </p>
                 <p className="text-[10px] text-[#9CA3AF] mt-1">Toque para filtrar feed</p>
               </ChartTooltip>
@@ -252,7 +256,7 @@ export default function DailyHistogram({ data, period, billingClosingDay = DEFAU
                       onTouchStart={() => setHovered(bar.date)}
                       onClick={() => bar.amount > 0 && handleBarClick(bar.date)}
                     >
-                      <title>{bar.amount > 0 ? `${bar.day}: ${formatCurrency(bar.amount)}` : `${bar.day}: sem gastos`}</title>
+                      <title>{bar.amount > 0 ? `${bar.day}: ${isPrivate ? maskValue(formatCurrency(bar.amount)) : formatCurrency(bar.amount)}` : `${bar.day}: sem gastos`}</title>
                     </rect>
                     {/* Visible bar */}
                     {bar.amount > 0 && (

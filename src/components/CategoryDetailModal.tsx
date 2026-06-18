@@ -4,6 +4,7 @@ import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react
 import { createPortal } from 'react-dom';
 import { MagnifyingGlass, X } from '@phosphor-icons/react';
 import Icon from '@/components/Icon';
+import PrivateValue from '@/components/PrivateValue';
 import ExpenseCard from '@/components/ExpenseCard';
 import Mo from '@/components/Mo';
 import { formatCurrency, formatDate } from '@/lib/utils';
@@ -121,7 +122,7 @@ export default function CategoryDetailModal({
               {categoryName}
             </h3>
             <p className="text-sm font-bold tabular-nums text-[#1A1D23] mt-0.5">
-              {formatCurrency(total)}
+              <PrivateValue value={formatCurrency(total)} />
               <span className="ml-1.5 text-xs font-normal text-[#6B7280]">
                 · {expenses.length} {expenses.length === 1 ? 'gasto' : 'gastos'}
               </span>
@@ -192,7 +193,7 @@ export default function CategoryDetailModal({
               : `${expenses.length} ${expenses.length === 1 ? 'gasto' : 'gastos'}`}
           </span>
           <span className="text-sm font-bold tabular-nums text-[#1A1D23]">
-            {formatCurrency(search.trim() ? filteredTotal : total)}
+            <PrivateValue value={formatCurrency(search.trim() ? filteredTotal : total)} />
           </span>
         </div>
       </div>

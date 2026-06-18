@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import PrivateValue from '@/components/PrivateValue';
 import { formatCurrency } from '@/lib/utils';
 
 interface TopCategory {
@@ -195,7 +196,7 @@ export default function WaffleChart({
       <div className="flex min-h-[152px] min-w-0 flex-col items-center justify-center text-center max-[420px]:min-h-0">
         <p className="text-[11px] font-semibold uppercase tracking-wide text-[#6B7280]">Distribuição</p>
         <p className="mt-1 text-[28px] font-extrabold leading-tight tabular-nums text-[#1A1D23] max-[420px]:text-2xl">
-          {formatCurrency(total)}
+          <PrivateValue value={formatCurrency(total)} />
         </p>
         <div
           className={`mt-3 grid w-full max-w-[220px] overflow-hidden transition-[grid-template-rows,opacity,transform] duration-220 ease-[cubic-bezier(0.22,1,0.36,1)] ${
@@ -207,7 +208,8 @@ export default function WaffleChart({
             <div className="rounded-[10px] border border-[#E5E7EB] bg-[#F8F9FB] px-3 py-2 transition-[background-color,border-color]">
               <p className="truncate text-sm font-semibold text-[#1A1D23]">{preview?.categoryName}</p>
               <p className="text-xs text-[#6B7280] tabular-nums mt-0.5">
-                {preview ? `${formatCurrency(preview.amount)} · ${((preview.amount / total) * 100).toFixed(0)}%` : ''}
+                {preview ? <><PrivateValue value={formatCurrency(preview.amount)} /> · {((preview.amount / total) * 100).toFixed(0)}%</> : ''}
+                {preview ? `${((preview.amount / total) * 100).toFixed(0)}%` : ''}
               </p>
             </div>
           </div>

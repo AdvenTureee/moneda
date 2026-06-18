@@ -1,4 +1,7 @@
+'use client';
+
 import Icon from '@/components/Icon';
+import PrivateValue from '@/components/PrivateValue';
 import ChartCard from './ChartCard';
 import { formatCurrency } from '@/lib/utils';
 
@@ -51,11 +54,11 @@ export default function BudgetProgressList({ items }: BudgetProgressListProps) {
                   </span>
                   <span className="text-xs tabular-nums shrink-0">
                     <span className="font-semibold text-[#1A1D23]">
-                      {formatCurrency(item.spent)}
+                      <PrivateValue value={formatCurrency(item.spent)} />
                     </span>
                     <span className="text-[#9CA3AF]">
                       {' / '}
-                      {formatCurrency(item.budget)}
+                      <PrivateValue value={formatCurrency(item.budget)} />
                     </span>
                   </span>
                 </div>
@@ -84,7 +87,7 @@ export default function BudgetProgressList({ items }: BudgetProgressListProps) {
                 </div>
                 {rawPct > 1 && (
                   <p className="text-[10px] font-medium text-[#E07070]">
-                    {formatCurrency(item.spent - item.budget)} acima do orçamento
+                    <PrivateValue value={formatCurrency(item.spent - item.budget)} /> acima do orçamento
                   </p>
                 )}
               </li>

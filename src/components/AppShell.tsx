@@ -8,6 +8,7 @@ import WhatsAppPhoneModal from '@/components/WhatsAppPhoneModal';
 import TermsModal from '@/components/TermsModal';
 import { ToastProvider, useToast } from '@/components/ToastProvider';
 import ScrollFadeIndicator from '@/components/ScrollFadeIndicator';
+import { PrivacyProvider } from '@/context/PrivacyContext';
 import type { ExpenseInput } from '@/types';
 
 const WHATSAPP_PROMPT_DISMISSED_KEY = 'moneda:whatsapp-phone-prompt-dismissed';
@@ -159,14 +160,16 @@ export default function AppShell({
   requiresWhatsappPhone = false,
 }: AppShellProps) {
   return (
-    <ToastProvider>
-      <ShellContent
-        requiresTermsAcceptance={requiresTermsAcceptance}
-        requiresWhatsappPhone={requiresWhatsappPhone}
-      >
-        {children}
-      </ShellContent>
-    </ToastProvider>
+    <PrivacyProvider>
+      <ToastProvider>
+        <ShellContent
+          requiresTermsAcceptance={requiresTermsAcceptance}
+          requiresWhatsappPhone={requiresWhatsappPhone}
+        >
+          {children}
+        </ShellContent>
+      </ToastProvider>
+    </PrivacyProvider>
   );
 }
 

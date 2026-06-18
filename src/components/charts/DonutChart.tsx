@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { usePrivacy } from '@/context/PrivacyContext';
+import { maskValue } from '@/components/PrivateValue';
 import { formatCurrency } from '@/lib/utils';
 
 interface TopCategory {
@@ -34,6 +36,7 @@ export default function DonutChart({
   size = 180,
   onCategoryClick,
 }: DonutChartProps) {
+  const { isPrivate } = usePrivacy();
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [animReady, setAnimReady] = useState(false);
 
@@ -178,7 +181,7 @@ export default function DonutChart({
             fill: 'var(--color-text-primary)',
           }}
         >
-          {formatCurrency(total)}
+          {isPrivate ? maskValue(formatCurrency(total)) : formatCurrency(total)}
         </text>
         <text
           x={center}
