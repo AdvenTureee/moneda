@@ -196,13 +196,18 @@ export default function DashboardBalanceHero({
     if (showTip) {
       updateCoords();
       window.addEventListener('resize', updateCoords);
-      window.addEventListener('scroll', updateCoords);
+      const shell = document.querySelector('.app-shell');
+      const onScroll = () => {
+        setShowTip(false);
+        setMoSpeaking(false);
+      };
+      shell?.addEventListener('scroll', onScroll, { once: true });
+      return () => {
+        window.removeEventListener('resize', updateCoords);
+        shell?.removeEventListener('scroll', onScroll);
+      };
     }
-    return () => {
-      window.removeEventListener('resize', updateCoords);
-      window.removeEventListener('scroll', updateCoords);
-    };
-  }, [showTip, budgetState]);
+  }, [showTip]);
 
   useEffect(() => {
     const key = 'moneda:mo-session-greeting-shown';
