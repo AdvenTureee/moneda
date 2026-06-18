@@ -78,6 +78,12 @@ export default async function DashboardPage({
   const budgetTotal = BUDGET_CENTS;
   const expensesTotal = metrics.totalSpent;
   const incomeTotal = monthlyIncomeTotalCents;
+  const spendingProgressPercent = BUDGET_CENTS > 0
+    ? Math.min((metrics.totalSpent / BUDGET_CENTS) * 100, 100)
+    : null;
+  const spendingProgressColor = metrics.totalSpent > BUDGET_CENTS
+    ? 'color-mix(in srgb, var(--color-warning) 68%, var(--color-surface) 32%)'
+    : 'color-mix(in srgb, var(--color-success) 64%, var(--color-surface) 36%)';
   const compactMetrics = [
     { label: 'Orçamento', value: formatCurrency(BUDGET_CENTS) },
     { label: 'Gasto', value: formatCurrency(metrics.totalSpent) },
@@ -174,20 +180,35 @@ export default async function DashboardPage({
               {compactMetrics.map((item, index) => (
                 <div
                   key={item.label}
-                  className="relative min-w-0 rounded-[10px] px-1.5 py-1.5 text-center min-[390px]:px-2"
+                  className="relative min-w-0 overflow-hidden rounded-[10px] px-1.5 py-1.5 text-center min-[390px]:px-2"
                 >
                   {index < 2 && (
                     <span className="absolute right-0 top-1/2 h-4 w-px -translate-y-1/2 bg-[var(--color-border)]" aria-hidden />
                   )}
-                  <div className="mb-1 flex min-w-0 items-center justify-center gap-1 text-[8.5px] font-semibold uppercase tracking-[0.05em] text-[var(--color-text-tertiary)] min-[390px]:gap-1.5 min-[390px]:text-[9.5px]">
-                    {index === 0 && <Icon name="Wallet" size={11} />}
-                    {index === 1 && <Icon name="TrendDown" size={11} />}
-                    {index === 2 && <Icon name="TrendUp" size={11} />}
-                    <p className="min-w-0 truncate">{item.label}</p>
-                  </div>
+                  <p className="mb-1 min-w-0 truncate text-center text-[8.5px] font-semibold uppercase tracking-[0.05em] text-[var(--color-text-tertiary)] min-[390px]:text-[9.5px]">
+                    {item.label}
+                  </p>
                   <p className="whitespace-nowrap text-center text-xs font-bold leading-none tabular-nums text-[var(--color-text-primary)] min-[390px]:text-[13px] sm:text-sm">
                     {item.value}
                   </p>
+                  {item.label === 'Gasto' && spendingProgressPercent !== null && (
+                    <div
+                      className="mt-2 flex h-3 items-center justify-center"
+                      aria-hidden
+                    >
+                      <div
+                        className="h-1 w-[46%] overflow-hidden rounded-full bg-[color-mix(in_srgb,var(--color-border)_30%,transparent)]"
+                      >
+                        <div
+                          className="h-full rounded-full"
+                          style={{
+                            width: `${spendingProgressPercent}%`,
+                            backgroundColor: spendingProgressColor,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </section>
