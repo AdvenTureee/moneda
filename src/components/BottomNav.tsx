@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { House, List, PlusCircle, Sparkle, User } from '@phosphor-icons/react';
@@ -26,13 +26,8 @@ const NAV_ITEMS: NavItem[] = [
 
 const NAV_TRANSITION_TIMEOUT_MS = 520;
 
-function scrollPageToTop() {
-  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  window.scrollTo({
-    top: 0,
-    left: 0,
-    behavior: reduceMotion ? 'auto' : 'smooth',
-  });
+function getAppShellElement() {
+  return document.querySelector<HTMLElement>('.app-shell');
 }
 
 function isModifiedClick(event: React.MouseEvent<HTMLAnchorElement>) {
@@ -45,9 +40,9 @@ function isModifiedClick(event: React.MouseEvent<HTMLAnchorElement>) {
   );
 }
 
-function resetTabScroll() {
+function resetTabScroll(behavior: ScrollBehavior = 'auto') {
   window.dispatchEvent(new CustomEvent('moneda:tab-scroll-reset'));
-  window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  getAppShellElement()?.scrollTo({ top: 0, left: 0, behavior });
 }
 
 interface BottomNavProps {
@@ -58,9 +53,7 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [dashboardHref, setDashboardHref] = useState('/app');
-  const shouldResetScrollRef = useRef(false);
   const previousPathnameRef = useRef(pathname);
-  const resetScrollTimeoutRef = useRef<number | null>(null);
   const navTransitionTimeoutRef = useRef<number | null>(null);
   const navRef = useRef<HTMLElement>(null);
   const [transitioningHref, setTransitioningHref] = useState<string | null>(null);
@@ -72,37 +65,12 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
     [router],
   );
 
-  const clearPendingScrollReset = useCallback(() => {
-    shouldResetScrollRef.current = false;
-    if (resetScrollTimeoutRef.current) {
-      window.clearTimeout(resetScrollTimeoutRef.current);
-      resetScrollTimeoutRef.current = null;
-    }
-  }, []);
-
-  const scheduleScrollReset = useCallback(() => {
-    shouldResetScrollRef.current = true;
-    if (resetScrollTimeoutRef.current) {
-      window.clearTimeout(resetScrollTimeoutRef.current);
-    }
-
-    resetScrollTimeoutRef.current = window.setTimeout(() => {
-      shouldResetScrollRef.current = false;
-      resetScrollTimeoutRef.current = null;
-    }, 3000);
-  }, []);
-
-  useLayoutEffect(() => {
+  useEffect(() => {
     if (previousPathnameRef.current === pathname) return;
 
     previousPathnameRef.current = pathname;
-    if (!shouldResetScrollRef.current) return;
-
-    clearPendingScrollReset();
-    resetTabScroll();
-  }, [clearPendingScrollReset, pathname]);
-
-  useEffect(() => clearPendingScrollReset, [clearPendingScrollReset]);
+    resetTabScroll('auto');
+  }, [pathname]);
 
   const clearNavTransitionTimer = useCallback(() => {
     if (navTransitionTimeoutRef.current) {
@@ -213,13 +181,10 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
                 }
 
                 event.preventDefault();
-                clearPendingScrollReset();
-                scrollPageToTop();
+                resetTabScroll('smooth');
               }}
               onNavigate={() => {
                 showNavTransition(href);
-                resetTabScroll();
-                scheduleScrollReset();
               }}
               onFocus={() => prefetchRoute(href)}
               className={`bottom-nav-link ${isActive ? 'bottom-nav-link--active' : ''} ${isTransitioning ? 'bottom-nav-link--transitioning' : ''}`}

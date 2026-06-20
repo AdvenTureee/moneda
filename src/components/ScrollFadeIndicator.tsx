@@ -17,6 +17,7 @@ export default function ScrollFadeIndicator() {
   const wasAtEndRef = useRef(false);
   const timeoutRef = useRef<number | null>(null);
   const ignoreTopWaveUntilRef = useRef(0);
+  const scrollContainerRef = useRef<HTMLElement | null>(null);
   const pathname = usePathname();
 
   useEffect(() => {
@@ -26,13 +27,14 @@ export default function ScrollFadeIndicator() {
       timeoutRef.current = null;
     }
 
-    const doc = document.documentElement;
-    const scrollY = window.scrollY;
-    const remaining = doc.scrollHeight - scrollY - window.innerHeight;
-    const hasScrollableContent = doc.scrollHeight > window.innerHeight + END_THRESHOLD;
+    const shell = document.querySelector<HTMLElement>('.app-shell');
+    scrollContainerRef.current = shell;
+    const scrollTop = shell?.scrollTop ?? 0;
+    const remaining = (shell?.scrollHeight ?? 0) - scrollTop - (shell?.clientHeight ?? window.innerHeight);
+    const hasScrollableContent = (shell?.scrollHeight ?? 0) > (shell?.clientHeight ?? window.innerHeight) + END_THRESHOLD;
 
-    hasScrolledAwayFromTopRef.current = hasScrollableContent && scrollY > END_THRESHOLD;
-    wasAtTopRef.current = hasScrollableContent && scrollY <= END_THRESHOLD;
+    hasScrolledAwayFromTopRef.current = hasScrollableContent && scrollTop > END_THRESHOLD;
+    wasAtTopRef.current = hasScrollableContent && scrollTop <= END_THRESHOLD;
     wasAtEndRef.current = hasScrollableContent && remaining <= END_THRESHOLD;
   }, [pathname]);
 
@@ -60,14 +62,16 @@ export default function ScrollFadeIndicator() {
     }
 
     function update() {
-      const doc = document.documentElement;
-      const scrollY = window.scrollY;
-      const remaining = doc.scrollHeight - window.scrollY - window.innerHeight;
-      const hasScrollableContent = doc.scrollHeight > window.innerHeight + END_THRESHOLD;
-      const isAtTop = hasScrollableContent && scrollY <= END_THRESHOLD;
+      const shell = scrollContainerRef.current ?? document.querySelector<HTMLElement>('.app-shell');
+      if (!shell) return;
+
+      const scrollTop = shell.scrollTop;
+      const remaining = shell.scrollHeight - scrollTop - shell.clientHeight;
+      const hasScrollableContent = shell.scrollHeight > shell.clientHeight + END_THRESHOLD;
+      const isAtTop = hasScrollableContent && scrollTop <= END_THRESHOLD;
       const isAtEnd = hasScrollableContent && remaining <= END_THRESHOLD;
 
-      if (hasScrollableContent && scrollY > END_THRESHOLD) {
+      if (hasScrollableContent && scrollTop > END_THRESHOLD) {
         hasScrolledAwayFromTopRef.current = true;
       }
 
@@ -86,14 +90,15 @@ export default function ScrollFadeIndicator() {
     }
 
     update();
-    window.addEventListener('scroll', update, { passive: true });
+    const shell = scrollContainerRef.current ?? document.querySelector<HTMLElement>('.app-shell');
+    shell?.addEventListener('scroll', update, { passive: true });
     window.addEventListener('resize', update);
     window.addEventListener('moneda:tab-scroll-reset', suppressTopWave);
     const ro = new ResizeObserver(update);
-    ro.observe(document.body);
+    if (shell) ro.observe(shell);
 
     return () => {
-      window.removeEventListener('scroll', update);
+      shell?.removeEventListener('scroll', update);
       window.removeEventListener('resize', update);
       window.removeEventListener('moneda:tab-scroll-reset', suppressTopWave);
       ro.disconnect();
