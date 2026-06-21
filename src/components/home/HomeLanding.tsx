@@ -58,7 +58,7 @@ const fadeUp = {
 const staggerGroup = {
   hidden: {},
   show: {
-    transition: { staggerChildren: 0.06 },
+    transition: { staggerChildren: 0.12 },
   },
 };
 
@@ -576,7 +576,7 @@ function HeroSection() {
               transition={{ duration: 0.3, ease: easeOut }}
               className="mt-5 max-w-xl text-base leading-relaxed text-[var(--color-text-secondary)]"
             >
-              Em poucos segundos você cria sua conta e começa a registrar tudo sem esforço. Depois, é só conversar com a nossa IA para entender seus hábitos de um jeito leve e sem julgamentos.
+              Com o Moneda, você assume o controle do seu ciclo financeiro e recebe alertas direto no seu WhatsApp. Em poucos segundos, você registra tudo sem esforço e conversa com a nossa IA para entender seus hábitos de um jeito leve e sem julgamentos.
             </motion.p>
 
             {/* AVISO DE DESENVOLVIMENTO */}
@@ -601,17 +601,7 @@ function HeroSection() {
               transition={{ duration: 0.3, ease: easeOut }}
               className="mt-8 flex flex-row flex-wrap items-center justify-center gap-3 sm:justify-start"
             >
-              <CtaButton large />
-              <motion.a
-                href="#produto"
-                whileHover={reduceMotion ? undefined : { scale: 1.01 }}
-                whileTap={reduceMotion ? undefined : { scale: 0.99 }}
-                transition={{ duration: 0.15, ease: easeOut }}
-                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full px-5 text-sm font-semibold text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-alt)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)] focus-visible:ring-offset-2"
-              >
-                <Eye size={18} weight="bold" aria-hidden />
-                Conhecer a Mo
-              </motion.a>
+              <CtaButton large>Começar gratuitamente</CtaButton>
             </motion.div>
 
             {/* TOQUE BRASILEIRO (Design de Badge Premium) */}
@@ -1035,8 +1025,8 @@ function PreviewSection() {
   return (
     <Section id="visualizacao" className="pt-16 sm:pt-20 lg:pt-24">
       <div className="relative z-10 grid gap-10 lg:grid-cols-[1fr_1fr] lg:items-center">
-          <SectionTitle eyebrow="Visualização" title="Veja para onde o seu dinheiro vai em segundos.">
-            Esqueça as planilhas. O Moneda organiza seus gastos por categorias e mostra quanto você já gastou e quanto ainda tem livre, tudo em uma interface intuitiva.
+          <SectionTitle eyebrow="Visualização" title="Entenda seu dinheiro. Sem esforço, sem julgamentos.">
+            Chega de tentar decifrar para onde seu dinheiro foi. O Moneda organiza seus gastos automaticamente e nossa IA analisa seus padrões, mostrando exatamente onde você pode economizar de um jeito simples e direto.
           </SectionTitle>
 
           <div className="mx-auto w-full max-w-[340px]">
