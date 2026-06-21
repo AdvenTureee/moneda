@@ -846,6 +846,8 @@ function PreviewCarousel() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [hasInteracted, setHasInteracted] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const wheelDeltaRef = useRef(0);
+  const wheelLockRef = useRef(0);
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -853,12 +855,12 @@ function PreviewCarousel() {
     () =>
       isDark
         ? [
-            { src: '/dash-dark.PNG', alt: 'Dashboard' },
-            { src: '/feed-dark.PNG', alt: 'Feed' },
+            { src: '/dark-app.png', alt: 'Dashboard' },
+            { src: '/dark-feed.png', alt: 'Feed' },
           ]
         : [
-            { src: '/dash-light.PNG', alt: 'Dashboard' },
-            { src: '/feed-light.PNG', alt: 'Feed' },
+            { src: '/light-app.png', alt: 'Dashboard' },
+            { src: '/light-feed.png', alt: 'Feed' },
           ],
     [isDark],
   );
@@ -868,13 +870,50 @@ function PreviewCarousel() {
     setActiveIndex(boundedIndex);
   }, [screenshots.length]);
 
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const normalizeWheelDelta = (event: WheelEvent) => {
+      const unit = event.deltaMode === WheelEvent.DOM_DELTA_LINE ? 16 : 1;
+      return event.deltaX * unit;
+    };
+
+    const handleWheel = (event: WheelEvent) => {
+      const absX = Math.abs(event.deltaX);
+      const absY = Math.abs(event.deltaY);
+      const isHorizontalIntent = absX > 8 && absX > absY * 0.75;
+
+      if (!isHorizontalIntent) return;
+
+      event.preventDefault();
+      if (!hasInteracted) setHasInteracted(true);
+
+      const now = window.performance.now();
+      if (now < wheelLockRef.current) return;
+
+      wheelDeltaRef.current += normalizeWheelDelta(event);
+
+      const wheelThreshold = 70;
+      if (Math.abs(wheelDeltaRef.current) < wheelThreshold) return;
+
+      const direction = wheelDeltaRef.current > 0 ? 1 : -1;
+      wheelDeltaRef.current = 0;
+      wheelLockRef.current = now + 450;
+      goTo(activeIndex + direction);
+    };
+
+    container.addEventListener('wheel', handleWheel, { passive: false });
+    return () => { container.removeEventListener('wheel', handleWheel); };
+  }, [activeIndex, goTo, hasInteracted]);
+
   const handleDragStart = () => {
     if (!hasInteracted) setHasInteracted(true);
   };
 
   const handleDragEnd = (event: any, info: any) => {
-    const swipeThreshold = 40;
-    const velocityThreshold = 200;
+    const swipeThreshold = 28;
+    const velocityThreshold = 180;
 
     const offset = info.offset.x;
     const velocity = info.velocity.x;
@@ -931,7 +970,7 @@ function PreviewCarousel() {
       )}
 
       <motion.div
-        className="flex cursor-grab active:cursor-grabbing select-none"
+        className="flex cursor-grab active:cursor-grabbing select-none [touch-action:pan-y]"
         drag="x"
         dragDirectionLock
         dragConstraints={{ left: 0, right: 0 }}
@@ -952,8 +991,8 @@ function PreviewCarousel() {
               <Image
                 src={img.src}
                 alt={img.alt}
-                width={1200}
-                height={800}
+                width={1170}
+                height={2532}
                 className="pointer-events-none h-auto w-full object-cover select-none"
                 priority
                 draggable="false"
@@ -963,7 +1002,7 @@ function PreviewCarousel() {
         ))}
       </motion.div>
 
-      <div className="mt-5 flex items-center justify-center gap-2.5 relative z-10 pointer-events-none">
+      <div className="mt-5 flex items-center justify-center gap-2.5 relative z-10">
         {screenshots.map((_, index) => {
           const isActive = index === activeIndex;
           return (
