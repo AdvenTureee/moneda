@@ -101,9 +101,9 @@ const featureRows = [
 const cycleHighlight = {
   icon: CreditCard,
   tag: 'Métrica',
-  title: 'Seu mês começa no fechamento da fatura.',
+  title: 'Suas finanças não param no dia 30.',
   mantra: 'Moneda mede o ciclo, não o calendário.',
-  text: 'O gasto entra no período que realmente pesa: a próxima fatura.',
+  text: 'O Moneda acompanha seu ciclo real de fatura, do fechamento ao vencimento. Assim, você enxerga o quadro completo do seu mês financeiro sem distorções ou sustos.',
   cycleStart: 'Fecha dia 10',
   cycleEnd: 'Ciclo 10 a 09',
 };
@@ -126,18 +126,18 @@ const ideas = [
 const flowSteps = [
   {
     icon: Devices,
-    title: 'Crie sua conta',
-    text: 'Entre pelo navegador e defina seu mês.',
+    title: 'Configure seu ciclo',
+    text: 'Cadastre suas contas, defina seu ciclo de fatura e o app entende como o seu mês financeiro funciona.',
   },
   {
     icon: Receipt,
-    title: 'Registre o mês',
-    text: 'Adicione gastos, ganhos e comprovantes.',
+    title: 'Acompanhe pelo WhatsApp',
+    text: 'Receba alertas importantes e resumos automáticos para você saber se está gastando mais do que devia.',
   },
   {
     icon: Brain,
-    title: 'Leia com a Mo',
-    text: 'Pergunte o que mudou e onde ajustar.',
+    title: 'Tenha paz de mente',
+    text: 'Chegue ao fim do ciclo com dinheiro sobrando. Pare de adivinhar e comece a controlar.',
   },
 ];
 
@@ -145,6 +145,9 @@ const trustItems = [
   { icon: LockKey, text: 'Dados sensíveis protegidos desde o primeiro registro.' },
   { icon: ShieldCheck, text: 'Preferências ficam sob seu controle no perfil.' },
   { icon: Trash, text: 'Exclusão de conta disponível quando quiser sair.' },
+  { icon: LockKey, text: 'Você no controle: Não exigimos acesso obrigatório à sua conta bancária. Você cadastra o que quer controlar.' },
+  { icon: ShieldCheck, text: 'Dados Criptografados: Suas informações financeiras são protegidas com os mesmos padrões de segurança dos grandes bancos.' },
+  { icon: ShieldCheck, text: 'Sem compartilhamento: Seus dados de gastos nunca serão vendidos para terceiros ou empresas de marketing.' },
 ];
 
 const faqs = [
@@ -163,6 +166,22 @@ const faqs = [
   {
     q: 'Posso apagar meus dados?',
     a: 'Sim. O perfil do app inclui opções de privacidade e exclusão de conta.',
+  },
+  {
+    q: 'O Moneda acessa minha conta bancária?',
+    a: 'Não. O Moneda foi desenhado para dar a você o controle total. Você insere seus dados manualmente ou de forma facilitada, sem precisarmos acessar seu internet banking.',
+  },
+  {
+    q: 'Como funciona o acompanhamento pelo WhatsApp?',
+    a: 'Basta conectar seu número na configuração do app. Nós te enviaremos lembretes inteligentes antes do vencimento das suas contas e um resumo do seu ciclo financeiro.',
+  },
+  {
+    q: 'O que significa "Ciclo de Fatura"?',
+    a: 'É o período exato entre o fechamento do seu cartão/cartões e o dia do pagamento. Ao organizar por ciclo, você para de misturar gastos de meses diferentes e tem uma visão real do que pode gastar.',
+  },
+  {
+    q: 'Preciso pagar para usar?',
+    a: 'Você pode começar a usar o Moneda gratuitamente. Para recursos avançados, como alertas ilimitados no WhatsApp, oferecemos um plano premium acessível.',
   },
 ];
 
@@ -455,18 +474,50 @@ function HeroProductScene({ reduceMotion }: { reduceMotion: boolean | null }) {
 }
 
 function Header() {
+  const [showSubtitle, setShowSubtitle] = useState(false);
+  const reduceMotion = useReducedMotion();
+
   return (
     <header className="home-header-glass sticky top-0 z-50 border-b border-[var(--color-border)] bg-[var(--nav-glass-bg)] backdrop-blur-[18px] backdrop-saturate-[132%]">
       <div className="mx-auto grid min-h-16 w-full max-w-6xl grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 py-3 sm:px-6 lg:px-8">
         <div className="flex items-center justify-self-start">
           <ThemeToggleButton />
         </div>
-        <Link
-          href="/"
-          className="justify-self-center font-heading text-2xl font-bold leading-none text-[var(--color-text-primary)]"
+        <motion.button
+          type="button"
+          onClick={() => setShowSubtitle((current) => !current)}
+          aria-expanded={showSubtitle}
+          animate={
+            reduceMotion
+              ? undefined
+              : {
+                  scale: [1, 1.04, 0.995, 1],
+                  rotate: [0, -1.2, 1, 0],
+                }
+          }
+          transition={{ delay: 0.75, duration: 0.56, ease: easeOut }}
+          className="cursor-pointer justify-self-center font-heading text-2xl font-bold leading-none text-[var(--color-text-primary)] outline-none transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)] focus-visible:ring-offset-2"
         >
-          Moneda
-        </Link>
+          <div className="flex flex-col items-center">
+            <span>Moneda</span>
+            <AnimatePresence initial={false}>
+              {showSubtitle && (
+                <motion.div
+                  key="header-subtitle"
+                  initial={reduceMotion ? { opacity: 0 } : { height: 0, opacity: 0 }}
+                  animate={reduceMotion ? { opacity: 1 } : { height: 'auto', opacity: 1 }}
+                  exit={reduceMotion ? { opacity: 0 } : { height: 0, opacity: 0 }}
+                  transition={{ duration: 0.22, ease: easeOut }}
+                  className="overflow-hidden"
+                >
+                  <span className="block text-[10px] font-medium leading-none mt-1 opacity-80">
+                    Seu dinheiro finalmente claro.
+                  </span>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </motion.button>
         <nav className="justify-self-end">
           <div className="flex items-center gap-2">
             <Link
@@ -945,8 +996,8 @@ function PreviewSection() {
   return (
     <Section id="visualizacao" className="pt-16 sm:pt-20 lg:pt-24">
       <div className="relative z-10 grid gap-10 lg:grid-cols-[1fr_1fr] lg:items-center">
-          <SectionTitle eyebrow="Visualização" title="O produto em uso.">
-            Orçamento, categorias e últimos registros aparecem juntos para virar leitura, não relatório.
+          <SectionTitle eyebrow="Visualização" title="Veja para onde o seu dinheiro vai em segundos.">
+            Esqueça as planilhas. O Moneda organiza seus gastos por categorias e mostra quanto você já gastou e quanto ainda tem livre, tudo em uma interface intuitiva.
           </SectionTitle>
 
           <div className="mx-auto w-full max-w-[340px]">
