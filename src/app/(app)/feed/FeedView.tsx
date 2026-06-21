@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect, useCallback, useRef, useLayoutEffect, use
 import { createPortal } from 'react-dom';
 import { useSearchParams } from 'next/navigation';
 import { CalendarBlank, CreditCard, MagnifyingGlass, Tag, Wallet, X } from '@phosphor-icons/react';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import ExpenseCard from '@/components/ExpenseCard';
 import AddExpenseModal from '@/components/AddExpenseModal';
 import ConfirmDialog from '@/components/ConfirmDialog';
@@ -48,6 +49,10 @@ const DEFAULT_DATE_PRESET = 'current-cycle';
 const FEED_FILTERS_STORAGE_KEY = 'moneda:feed-filters:v1';
 const FEED_CACHE_STORAGE_KEY = 'moneda:feed-cache:v1';
 const FEED_CACHE_TTL_MS = 5 * 60 * 1000;
+const noticeTransition = {
+  duration: 0.24,
+  ease: [0.22, 1, 0.36, 1] as const,
+};
 
 interface StoredFeedFilters {
   dateRange?: DateRange;
@@ -422,7 +427,6 @@ function FeedPageInner({ billingClosingDay, initialCategories, initialFeedPage }
   const [deletingExpense, setDeletingExpense] = useState<Expense | null>(null);
   const [selectedInstallmentExpense, setSelectedInstallmentExpense] = useState<Expense | null>(null);
   const [showOverspendNotice, setShowOverspendNotice] = useState(true);
-  const [noticeExiting, setNoticeExiting] = useState(false);
   const feedStateRef = useRef({
     expenses: initialPage.data,
     hasMore: initialPage.hasMore,
@@ -799,6 +803,18 @@ function FeedPageInner({ billingClosingDay, initialCategories, initialFeedPage }
   const showRefreshing = loading && hasLoadedExpenses;
   const showFeedProgress = loading || loadingMore;
   const animateGroups = !showRefreshing && !showStaleView;
+  const reduceMotion = useReducedMotion();
+  const overspendNoticeMotion = reduceMotion
+    ? {
+        initial: { opacity: 0 },
+        animate: { opacity: 1 },
+        exit: { opacity: 0 },
+      }
+    : {
+        initial: { opacity: 0, scale: 0.95 },
+        animate: { opacity: 1, scale: 1 },
+        exit: { opacity: 0, scale: 0.95 },
+      };
 
   return (
     <>
@@ -808,43 +824,44 @@ function FeedPageInner({ billingClosingDay, initialCategories, initialFeedPage }
           subtitle="Histórico e agendados em um só lugar."
         />
 
-        {focusParam === 'overspend' && showOverspendNotice && topCategories.length > 0 && (
-          <div
-            className={`relative mb-4 rounded-xl bg-[var(--color-warning-bg)] px-3 pb-3 pt-2.5 ring-1 ring-inset ring-[color-mix(in_srgb,var(--color-warning)_18%,transparent)] ${
-              noticeExiting ? 'animate-fade-down' : 'animate-fade-up delay-1'
-            }`}
-            onAnimationEnd={() => {
-              if (noticeExiting) {
-                setShowOverspendNotice(false);
-                setNoticeExiting(false);
-              }
-            }}
-          >
-            <button
-              type="button"
-              onClick={() => setNoticeExiting(true)}
-              className="absolute right-2 top-2 grid size-5 place-items-center rounded-full text-[var(--color-warning)] opacity-60 transition-opacity hover:opacity-100"
-              aria-label="Fechar aviso"
+        <AnimatePresence initial={false} mode="popLayout">
+          {focusParam === 'overspend' && showOverspendNotice && topCategories.length > 0 && (
+            <motion.div
+              key="overspend-notice"
+              layout
+              className="relative mb-4 rounded-xl bg-[var(--color-warning-bg)] px-3 pb-3 pt-2.5 ring-1 ring-inset ring-[color-mix(in_srgb,var(--color-warning)_18%,transparent)]"
+              initial={overspendNoticeMotion.initial}
+              animate={overspendNoticeMotion.animate}
+              exit={overspendNoticeMotion.exit}
+              transition={noticeTransition}
+              style={{ transformOrigin: 'top center' }}
             >
-              <X size={14} weight="bold" />
-            </button>
-            <div className="mb-2 flex items-center gap-1.5 pr-6">
-              <span className="size-1.5 rounded-full bg-[var(--color-warning)]" aria-hidden />
-              <p className="text-xs font-semibold text-[var(--color-warning)]">Acima do orçamento</p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {topCategories.map((cat) => (
-                <span
-                  key={cat.id}
-                  className="inline-flex items-center gap-1 rounded-full bg-white/70 px-2.5 py-1 text-xs font-semibold text-[var(--color-text-primary)] dark:bg-white/8"
-                >
-                  <span>{cat.name}</span>
-                  <span className="tabular-nums text-[var(--color-text-secondary)]">{formatCurrency(cat.total)}</span>
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
+              <button
+                type="button"
+                onClick={() => setShowOverspendNotice(false)}
+                className="absolute right-2 top-2 grid size-5 place-items-center rounded-full text-[var(--color-warning)] opacity-60 transition-opacity hover:opacity-100"
+                aria-label="Fechar aviso"
+              >
+                <X size={14} weight="bold" />
+              </button>
+              <div className="mb-2 flex items-center gap-1.5 pr-6">
+                <span className="size-1.5 rounded-full bg-[var(--color-warning)]" aria-hidden />
+                <p className="text-xs font-semibold text-[var(--color-warning)]">Acima do orçamento</p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {topCategories.map((cat) => (
+                  <span
+                    key={cat.id}
+                    className="inline-flex items-center gap-1 rounded-full bg-white/70 px-2.5 py-1 text-xs font-semibold text-[var(--color-text-primary)] dark:bg-white/8"
+                  >
+                    <span>{cat.name}</span>
+                    <span className="tabular-nums text-[var(--color-text-secondary)]">{formatCurrency(cat.total)}</span>
+                  </span>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <div className="themed-card bg-white rounded-[14px] p-2.5 space-y-2.5 mb-5 animate-fade-up delay-2">
           <div className="relative grid grid-cols-2 overflow-hidden rounded-[12px] bg-[#F4F6FA] p-0.5 dark:bg-white/6" role="tablist" aria-label="Visão do feed">
