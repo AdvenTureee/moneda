@@ -31,6 +31,12 @@ const nextConfig: NextConfig = {
   images: {
     deviceSizes: [360, 414, 640, 750, 828, 1080, 1200, 1920],
     imageSizes: [32, 48, 64, 96, 128, 256],
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "*.supabase.co",
+      },
+    ],
   },
   experimental: {
     optimizePackageImports: ["@phosphor-icons/react"],

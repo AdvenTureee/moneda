@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useState, useTransition, useRef, useEffect } from 'react';
 import {
   SignOut,
@@ -65,6 +66,11 @@ const CURRENCY_LABELS: Record<string, string> = {
   GBP: 'Libra Esterlina (GBP)',
 };
 
+const MAX_AVATAR_FILE_SIZE = 7 * 1024 * 1024;
+const AVATAR_CROP_PREVIEW_SIZE = 256;
+const MIN_AVATAR_ZOOM = 1;
+const MAX_AVATAR_ZOOM = 4;
+
 type ProfileIconTone =
   | 'green'
   | 'blue'
@@ -74,6 +80,86 @@ type ProfileIconTone =
   | 'danger'
   | 'brand'
   | 'google';
+
+type CropDraft = {
+  file: File;
+  objectUrl: string;
+  naturalWidth: number;
+  naturalHeight: number;
+  zoom: number;
+  offsetX: number;
+  offsetY: number;
+};
+
+type CropMetrics = {
+  displayWidth: number;
+  displayHeight: number;
+  offsetX: number;
+  offsetY: number;
+  maxOffsetX: number;
+  maxOffsetY: number;
+  cropX: number;
+  cropY: number;
+  cropWidth: number;
+  cropHeight: number;
+};
+
+type DragState = {
+  pointerId: number;
+  startX: number;
+  startY: number;
+  startOffsetX: number;
+  startOffsetY: number;
+};
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function getCropMetrics(draft: CropDraft): CropMetrics {
+  const baseScale = AVATAR_CROP_PREVIEW_SIZE / Math.min(draft.naturalWidth, draft.naturalHeight);
+  const scale = baseScale * draft.zoom;
+  const displayWidth = draft.naturalWidth * scale;
+  const displayHeight = draft.naturalHeight * scale;
+  const maxOffsetX = Math.max(0, (displayWidth - AVATAR_CROP_PREVIEW_SIZE) / 2);
+  const maxOffsetY = Math.max(0, (displayHeight - AVATAR_CROP_PREVIEW_SIZE) / 2);
+  const offsetX = clamp(draft.offsetX, -maxOffsetX, maxOffsetX);
+  const offsetY = clamp(draft.offsetY, -maxOffsetY, maxOffsetY);
+  const cropWidth = AVATAR_CROP_PREVIEW_SIZE / scale;
+  const cropHeight = AVATAR_CROP_PREVIEW_SIZE / scale;
+  const cropX = clamp(
+    ((displayWidth - AVATAR_CROP_PREVIEW_SIZE) / 2 - offsetX) / scale,
+    0,
+    Math.max(0, draft.naturalWidth - cropWidth),
+  );
+  const cropY = clamp(
+    ((displayHeight - AVATAR_CROP_PREVIEW_SIZE) / 2 - offsetY) / scale,
+    0,
+    Math.max(0, draft.naturalHeight - cropHeight),
+  );
+
+  return {
+    displayWidth,
+    displayHeight,
+    offsetX,
+    offsetY,
+    maxOffsetX,
+    maxOffsetY,
+    cropX,
+    cropY,
+    cropWidth,
+    cropHeight,
+  };
+}
+
+function clampCropDraft(draft: CropDraft): CropDraft {
+  const metrics = getCropMetrics(draft);
+  return {
+    ...draft,
+    offsetX: metrics.offsetX,
+    offsetY: metrics.offsetY,
+  };
+}
 
 function ProfileIcon({
   tone,
@@ -118,7 +204,10 @@ export default function ProfileView({
   const [uploading, setUploading] = useState(false);
   const [linkingGoogle, setLinkingGoogle] = useState(false);
   const [currentAvatarUrl, setCurrentAvatarUrl] = useState<string | null>(avatarUrl);
+  const [cropDraft, setCropDraft] = useState<CropDraft | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cropDragRef = useRef<DragState | null>(null);
+  const cropObjectUrlRef = useRef<string | null>(null);
   const { isDark, toggleTheme } = useTheme();
 
   const initial = (name?.[0] ?? email?.[0] ?? '?').toUpperCase();
@@ -230,13 +319,98 @@ export default function ProfileView({
     return () => clearInterval(id);
   }, [otpStep, otpExpiresAt]);
 
+  useEffect(() => {
+    return () => {
+      if (cropObjectUrlRef.current) {
+        URL.revokeObjectURL(cropObjectUrlRef.current);
+      }
+    };
+  }, []);
+
+  function clearFileInput() {
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  }
+
+  function revokeCropObjectUrl(url: string | null = cropObjectUrlRef.current) {
+    if (!url) return;
+    URL.revokeObjectURL(url);
+    if (cropObjectUrlRef.current === url) {
+      cropObjectUrlRef.current = null;
+    }
+  }
+
+  function closeCropDraft() {
+    if (cropDraft) {
+      revokeCropObjectUrl(cropDraft.objectUrl);
+    }
+    cropDragRef.current = null;
+    setCropDraft(null);
+    clearFileInput();
+  }
+
+  function updateCropDraft(updater: (draft: CropDraft) => CropDraft) {
+    setCropDraft((current) => (current ? clampCropDraft(updater(current)) : current));
+  }
+
   async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    if (file.size > MAX_AVATAR_FILE_SIZE) {
+      showToast('error', 'Arquivo maior que 7MB.');
+      clearFileInput();
+      return;
+    }
+
+    if (cropDraft) {
+      revokeCropObjectUrl(cropDraft.objectUrl);
+      setCropDraft(null);
+    }
+
+    const objectUrl = URL.createObjectURL(file);
+    const probe = new window.Image();
+    probe.onload = () => {
+      const naturalWidth = probe.naturalWidth;
+      const naturalHeight = probe.naturalHeight;
+      if (!naturalWidth || !naturalHeight) {
+        revokeCropObjectUrl(objectUrl);
+        clearFileInput();
+        showToast('error', 'Não foi possível ler essa imagem.');
+        return;
+      }
+
+      cropObjectUrlRef.current = objectUrl;
+      setCropDraft({
+        file,
+        objectUrl,
+        naturalWidth,
+        naturalHeight,
+        zoom: MIN_AVATAR_ZOOM,
+        offsetX: 0,
+        offsetY: 0,
+      });
+    };
+    probe.onerror = () => {
+      revokeCropObjectUrl(objectUrl);
+      clearFileInput();
+      showToast('error', 'Imagem inválida ou corrompida.');
+    };
+    probe.src = objectUrl;
+  }
+
+  async function uploadCroppedAvatar() {
+    if (!cropDraft) return;
+
+    const metrics = getCropMetrics(cropDraft);
     setUploading(true);
     try {
       const formData = new FormData();
-      formData.set('file', file);
+      formData.set('file', cropDraft.file);
+      formData.set('cropX', String(Math.round(metrics.cropX)));
+      formData.set('cropY', String(Math.round(metrics.cropY)));
+      formData.set('cropWidth', String(Math.round(metrics.cropWidth)));
+      formData.set('cropHeight', String(Math.round(metrics.cropHeight)));
+
       const res = await fetch('/api/upload-avatar', { method: 'POST', body: formData });
       const data = await res.json();
       if (!res.ok) {
@@ -245,11 +419,39 @@ export default function ProfileView({
       }
       setCurrentAvatarUrl(data.url);
       showToast('success', 'Foto atualizada.');
+      closeCropDraft();
     } catch {
       showToast('error', 'Erro ao conectar com o servidor.');
     } finally {
       setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  }
+
+  function handleCropPointerDown(event: React.PointerEvent<HTMLDivElement>) {
+    if (!cropDraft) return;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    cropDragRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      startOffsetX: cropDraft.offsetX,
+      startOffsetY: cropDraft.offsetY,
+    };
+  }
+
+  function handleCropPointerMove(event: React.PointerEvent<HTMLDivElement>) {
+    const drag = cropDragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    updateCropDraft((draft) => ({
+      ...draft,
+      offsetX: drag.startOffsetX + event.clientX - drag.startX,
+      offsetY: drag.startOffsetY + event.clientY - drag.startY,
+    }));
+  }
+
+  function handleCropPointerEnd(event: React.PointerEvent<HTMLDivElement>) {
+    if (cropDragRef.current?.pointerId === event.pointerId) {
+      cropDragRef.current = null;
     }
   }
 
@@ -260,6 +462,7 @@ export default function ProfileView({
   }
 
   const anyBusy = savingName || savingEmail || savingOtp || signingOut || uploading;
+  const cropMetrics = cropDraft ? getCropMetrics(cropDraft) : null;
 
   return (
     <div className="max-w-lg mx-auto px-4 pb-4">
@@ -273,10 +476,13 @@ export default function ProfileView({
           <div className="relative shrink-0">
             <div className="profile-avatar-frame">
               {currentAvatarUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
+                <Image
                   src={currentAvatarUrl}
                   alt=""
+                  width={64}
+                  height={64}
+                  sizes="64px"
+                  priority
                   className="h-full w-full rounded-full object-cover"
                   referrerPolicy="no-referrer"
                 />
@@ -289,7 +495,7 @@ export default function ProfileView({
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              disabled={uploading}
+              disabled={uploading || Boolean(cropDraft)}
               className="absolute -bottom-0.5 -right-0.5 w-6 h-6 rounded-full bg-white border border-[#E5E7EB] flex items-center justify-center shadow-sm hover:bg-[#F8F9FB] transition-colors disabled:opacity-60"
               aria-label="Alterar foto"
             >
@@ -772,7 +978,88 @@ export default function ProfileView({
         </section>
       )}
 
-      
+      {cropDraft && cropMetrics && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-[#0F172A]/55 px-4 py-6 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="avatar-crop-title"
+        >
+          <div className="themed-card w-full max-w-sm rounded-[22px] bg-white p-5 shadow-2xl animate-scale-in">
+            <div className="mb-5 text-center">
+              <h2 id="avatar-crop-title" className="text-lg font-bold text-[#1A1D23]">
+                Ajustar foto
+              </h2>
+              <p className="mt-1 text-sm text-[#6B7280]">
+                Arraste para centralizar e use o zoom para enquadrar no círculo.
+              </p>
+            </div>
+
+            <div className="flex justify-center">
+              <div
+                className="relative touch-none select-none overflow-hidden rounded-full border-[6px] border-white bg-[#EEF3F8] shadow-[0_0_0_1px_rgba(168,197,224,0.45),0_18px_38px_rgba(26,29,35,0.18)]"
+                style={{ width: AVATAR_CROP_PREVIEW_SIZE, height: AVATAR_CROP_PREVIEW_SIZE }}
+                onPointerDown={handleCropPointerDown}
+                onPointerMove={handleCropPointerMove}
+                onPointerUp={handleCropPointerEnd}
+                onPointerCancel={handleCropPointerEnd}
+                aria-label="Prévia circular do recorte"
+              >
+                {/* Blob local de prévia: o backend refaz o crop real com sharp. */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={cropDraft.objectUrl}
+                  alt=""
+                  draggable={false}
+                  className="absolute left-1/2 top-1/2 max-w-none object-cover"
+                  style={{
+                    width: cropMetrics.displayWidth,
+                    height: cropMetrics.displayHeight,
+                    transform: `translate(calc(-50% + ${cropMetrics.offsetX}px), calc(-50% + ${cropMetrics.offsetY}px))`,
+                  }}
+                />
+                <div className="pointer-events-none absolute inset-0 rounded-full ring-1 ring-inset ring-white/80" />
+              </div>
+            </div>
+
+            <label className="mt-6 block text-xs font-heading uppercase tracking-wider text-[#6B7280]">
+              Zoom
+              <input
+                type="range"
+                min={MIN_AVATAR_ZOOM}
+                max={MAX_AVATAR_ZOOM}
+                step="0.01"
+                value={cropDraft.zoom}
+                onChange={(event) => {
+                  const zoom = clamp(Number(event.target.value), MIN_AVATAR_ZOOM, MAX_AVATAR_ZOOM);
+                  updateCropDraft((draft) => ({ ...draft, zoom }));
+                }}
+                className="mt-3 w-full accent-[#5BBF8E]"
+                aria-label="Zoom da foto"
+              />
+            </label>
+
+            <div className="mt-6 grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={closeCropDraft}
+                disabled={uploading}
+                className="min-h-11 rounded-[14px] border border-[#E5E7EB] px-4 text-sm font-bold text-[#6B7280] transition-colors hover:bg-[#F8F9FB] disabled:opacity-60"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={uploadCroppedAvatar}
+                disabled={uploading}
+                className="min-h-11 rounded-[14px] bg-[#5BBF8E] px-4 text-sm font-bold text-white transition-colors hover:bg-[#4AAE7D] disabled:opacity-60"
+              >
+                {uploading ? 'Salvando…' : 'Salvar foto'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

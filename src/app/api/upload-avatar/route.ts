@@ -17,6 +17,57 @@ const ALLOWED_MIME_TYPES = new Set([
   'image/heif',
 ]);
 
+type RequestedCrop = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
+
+type SharpCrop = {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+};
+
+function getFiniteFormNumber(formData: FormData, key: string) {
+  const raw = formData.get(key);
+  if (typeof raw !== 'string') return null;
+  const value = Number(raw);
+  return Number.isFinite(value) ? value : null;
+}
+
+function parseRequestedCrop(formData: FormData): RequestedCrop | null {
+  const x = getFiniteFormNumber(formData, 'cropX');
+  const y = getFiniteFormNumber(formData, 'cropY');
+  const width = getFiniteFormNumber(formData, 'cropWidth');
+  const height = getFiniteFormNumber(formData, 'cropHeight');
+
+  if (x === null || y === null || width === null || height === null) return null;
+  if (x < 0 || y < 0 || width <= 0 || height <= 0) return null;
+
+  return { x, y, width, height };
+}
+
+function normalizeCropForImage(
+  crop: RequestedCrop,
+  imageWidth: number | undefined,
+  imageHeight: number | undefined,
+): SharpCrop | null {
+  if (!imageWidth || !imageHeight) return null;
+
+  const left = Math.round(crop.x);
+  const top = Math.round(crop.y);
+  const width = Math.round(crop.width);
+  const height = Math.round(crop.height);
+
+  if (left < 0 || top < 0 || width <= 0 || height <= 0) return null;
+  if (left + width > imageWidth || top + height > imageHeight) return null;
+
+  return { left, top, width, height };
+}
+
 export async function POST(req: NextRequest) {
   try {
     const session = await createSessionClient();
@@ -59,10 +110,23 @@ export async function POST(req: NextRequest) {
       return noStoreJson({ error: 'Conteúdo da imagem não é permitido.' }, { status: 415 });
     }
 
+    const requestedCrop = parseRequestedCrop(formData);
+    if (!requestedCrop) {
+      return noStoreJson({ error: 'Recorte inválido.' }, { status: 400 });
+    }
+
     let imageData: Buffer;
     try {
+      const metadata = await sharp(inputBytes).rotate().metadata();
+      const crop = normalizeCropForImage(requestedCrop, metadata.width, metadata.height);
+      if (!crop) {
+        return noStoreJson({ error: 'Recorte fora dos limites da imagem.' }, { status: 400 });
+      }
+
       imageData = await sharp(inputBytes)
         .rotate()
+        .extract(crop)
+        .resize(256, 256, { fit: 'cover' })
         .webp({ quality: 82 })
         .toBuffer();
     } catch {
