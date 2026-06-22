@@ -420,6 +420,7 @@ export default function ProfileView({
       setCurrentAvatarUrl(data.url);
       showToast('success', 'Foto atualizada.');
       closeCropDraft();
+      window.location.reload();
     } catch {
       showToast('error', 'Erro ao conectar com o servidor.');
     } finally {
