@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter, Sora } from 'next/font/google';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 import NextTopLoader from 'nextjs-toploader';
 import ModalScrollLock from '@/components/ModalScrollLock';
 import PWARegistrar from '@/components/PWARegistrar';
@@ -84,6 +85,7 @@ export default function RootLayout({
           <PWARegistrar />
           {children}
         </ThemeProvider>
+        <SpeedInsights />
       </body>
     </html>
   );
