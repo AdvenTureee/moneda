@@ -344,7 +344,7 @@ function ProductMock({ compact = false }: { compact?: boolean }) {
               <p className="text-sm font-semibold text-[var(--color-text-primary)]">Categorias</p>
               <span className="text-sm font-bold tabular-nums text-[var(--color-success)]">38%</span>
             </div>
-            <div className="grid grid-cols-10 gap-1" aria-label="Distribuição de gastos por categoria">
+            <div className="grid grid-cols-10 gap-1" aria-hidden="true">
               {Array.from({ length: 60 }, (_, index) => (
                 <span
                   key={index}
@@ -971,7 +971,7 @@ function PreviewCarousel() {
         animate={{ x: `-${activeIndex * 100}%` }}
         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
       >
-        {screenshots.map((img) => (
+        {screenshots.map((img, index) => (
           <div
             key={img.src}
             className="min-w-0 shrink-0 grow-0 basis-full px-1 select-none"
@@ -983,8 +983,11 @@ function PreviewCarousel() {
                 alt={img.alt}
                 width={1170}
                 height={2532}
+                sizes="(max-width: 640px) 340px, (max-width: 1024px) 340px, 340px"
+                quality={70}
                 className="pointer-events-none h-auto w-full object-cover select-none"
-                priority
+                priority={index === 0}
+                loading={index === 0 ? undefined : 'lazy'}
                 draggable="false"
               />
             </Surface>
@@ -1251,7 +1254,8 @@ function ScrollHint() {
   return (
     <AnimatePresence>
       {showHint && (
-        <motion.div
+        <motion.button
+          type="button"
           className="fixed bottom-6 left-1/2 z-40 -translate-x-1/2 flex cursor-pointer flex-col items-center gap-1.5"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -1273,7 +1277,7 @@ function ScrollHint() {
           >
             <CaretDown size={20} weight="bold" />
           </motion.div>
-        </motion.div>
+        </motion.button>
       )}
     </AnimatePresence>
   );
@@ -1283,7 +1287,7 @@ export default function HomeLanding({ whatsappUrl }: HomeLandingProps) {
   void whatsappUrl;
 
   return (
-    <main className="min-h-dvh overflow-x-clip bg-[var(--color-bg)] text-[var(--color-text-primary)]">
+    <main className="home-landing min-h-dvh overflow-x-clip bg-[var(--color-bg)] text-[var(--color-text-primary)]">
       <Header />
       <HeroSection />
       <FloatingSummary />

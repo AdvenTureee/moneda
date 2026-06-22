@@ -28,7 +28,12 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  images: {
+    deviceSizes: [360, 414, 640, 750, 828, 1080, 1200, 1920],
+    imageSizes: [32, 48, 64, 96, 128, 256],
+  },
   experimental: {
+    optimizePackageImports: ["@phosphor-icons/react"],
     staleTimes: {
       dynamic: 30,
       static: 180,

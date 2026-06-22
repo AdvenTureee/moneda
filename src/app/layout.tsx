@@ -1,10 +1,10 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter, Sora } from 'next/font/google';
-import { SpeedInsights } from '@vercel/speed-insights/next';
-import NextTopLoader from 'nextjs-toploader';
 import ModalScrollLock from '@/components/ModalScrollLock';
 import PWARegistrar from '@/components/PWARegistrar';
+import SpeedInsightsClient from '@/components/SpeedInsightsClient';
 import { ThemeProvider } from '@/components/ThemeProvider';
+import TopLoaderClient from '@/components/TopLoaderClient';
 import './globals.css';
 
 const inter = Inter({
@@ -48,7 +48,6 @@ export const viewport: Viewport = {
   colorScheme: 'light dark',
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
   viewportFit: 'cover',
 };
 
@@ -79,13 +78,13 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className="min-h-full bg-[var(--color-bg)] antialiased font-body">
-        <NextTopLoader color="#A8C5E0" height={3} showSpinner={false} />
+        <TopLoaderClient />
         <ModalScrollLock />
         <ThemeProvider>
           <PWARegistrar />
           {children}
         </ThemeProvider>
-        <SpeedInsights />
+        <SpeedInsightsClient />
       </body>
     </html>
   );

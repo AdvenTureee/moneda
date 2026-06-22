@@ -115,6 +115,24 @@ html[data-theme="dark"] {
   --ai-card-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
 }
 
+.home-landing {
+  --color-brand-blue-dark: #386F95;
+  --color-text-secondary: #4B5563;
+  --color-text-tertiary: #687385;
+  --color-error: #B94A48;
+  --color-success: #247A55;
+  --color-warning: #96620F;
+}
+
+html[data-theme="dark"] .home-landing {
+  --color-brand-blue-dark: #A8D2EC;
+  --color-text-secondary: #D4DAE2;
+  --color-text-tertiary: #ADB7C4;
+  --color-error: #FFA0A0;
+  --color-success: #8CE0B3;
+  --color-warning: #FFD08B;
+}
+
 *,
 *::before,
 *::after {
