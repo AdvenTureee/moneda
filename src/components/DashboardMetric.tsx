@@ -25,7 +25,7 @@ export default function DashboardMetric({
           size === 'lg' ? 'text-2xl' : 'text-lg'
         }`}
       >
-        <PrivateValue value={value} />
+        <PrivateValue value={value} animate />
       </p>
       {subtext && (
         <p

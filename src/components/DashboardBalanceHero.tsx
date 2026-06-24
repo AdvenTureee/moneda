@@ -178,6 +178,7 @@ export default function DashboardBalanceHero({
       ],
     };
   }, [budgetState, effectiveBalance, period, remaining]);
+  const formattedAmount = formatCurrency(heroModel.amount);
 
   useEffect(() => {
     setMounted(true);
@@ -267,10 +268,10 @@ export default function DashboardBalanceHero({
               aria-label={heroModel.ariaLabel}
             >
               <p
-                className={`flex items-center gap-2 min-w-0 text-[32px] font-extrabold leading-none tabular-nums tracking-tight text-[var(--color-text-primary)] min-[390px]:text-[34px] lg:text-[36px]`}
+                className={`flex items-center gap-2 min-w-0 text-[32px] font-extrabold leading-none tabular-nums text-[var(--color-text-primary)] min-[390px]:text-[34px] lg:text-[36px]`}
                 style={{ textShadow: '0 1px 2px rgba(0,0,0,0.06)' }}
               >
-                <PrivateValue value={formatCurrency(heroModel.amount)} />
+                <PrivateValue value={formattedAmount} animate />
                 {isPrivate && (
                   <span className="shrink-0 text-[var(--color-text-tertiary)]" aria-label="Modo privado ativo">
                     <EyeSlash size={20} weight="bold" />

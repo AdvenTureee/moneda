@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect, useCallback, useRef, useLayoutEffect, useTransition, Suspense, type ComponentType } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef, useLayoutEffect, useTransition, Suspense, type ChangeEvent, type ComponentType } from 'react';
 import { createPortal } from 'react-dom';
 import { useSearchParams } from 'next/navigation';
 import { CalendarBlank, CreditCard, MagnifyingGlass, Tag, Wallet, X } from '@phosphor-icons/react';
@@ -337,6 +337,278 @@ function dateFilterLabel(range: DateRange, filters: DateFilterItem[]): string {
 
 function paymentFilterLabel(method: ExpensePaymentMethod | null): string {
   return PAYMENT_FILTERS.find((item) => item.value === method)?.label ?? 'Todos';
+}
+
+function readClearNumber(name: string, fallback: number): number {
+  const value = Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue(name));
+  return Number.isFinite(value) ? value : fallback;
+}
+
+function clearBezier(value: string): (time: number) => number {
+  const match = String(value).match(/cubic-bezier\(([-\d.]+),\s*([-\d.]+),\s*([-\d.]+),\s*([-\d.]+)\)/);
+  if (!match) return (time) => time;
+
+  const [x1, y1, x2, y2] = match.slice(1).map(Number.parseFloat);
+  const cx = 3 * x1;
+  const bx = 3 * (x2 - x1) - cx;
+  const ax = 1 - cx - bx;
+  const cy = 3 * y1;
+  const by = 3 * (y2 - y1) - cy;
+  const ay = 1 - cy - by;
+
+  return (time) => {
+    if (time <= 0) return 0;
+    if (time >= 1) return 1;
+
+    let sample = time;
+    for (let index = 0; index < 8; index += 1) {
+      const delta = ((ax * sample + bx) * sample + cx) * sample - time;
+      const derivative = (3 * ax * sample + 2 * bx) * sample + cx;
+      if (Math.abs(delta) < 1e-6 || derivative === 0) break;
+      sample -= delta / derivative;
+    }
+
+    return ((ay * sample + by) * sample + cy) * sample;
+  };
+}
+
+interface ClearableFeedSearchInputProps {
+  value: string;
+  onChange: (value: string) => void;
+}
+
+function ClearableFeedSearchInput({ value, onChange }: ClearableFeedSearchInputProps) {
+  const prefersReducedMotion = useReducedMotion();
+  const wrapRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const mirrorRef = useRef<HTMLDivElement | null>(null);
+  const placeholderRef = useRef<HTMLDivElement | null>(null);
+  const glowRef = useRef<HTMLDivElement | null>(null);
+  const canvasRef = useRef<CanvasRenderingContext2D | null>(null);
+  const clearingRef = useRef(false);
+  const frameRef = useRef<number | null>(null);
+  const [mirrorValue, setMirrorValue] = useState(value);
+  const hasValue = value.length > 0;
+
+  useEffect(() => {
+    if (!clearingRef.current) setMirrorValue(value);
+  }, [value]);
+
+  useEffect(() => {
+    return () => {
+      if (frameRef.current !== null) cancelAnimationFrame(frameRef.current);
+    };
+  }, []);
+
+  function getCanvas() {
+    if (!canvasRef.current) {
+      canvasRef.current = document.createElement('canvas').getContext('2d');
+    }
+    return canvasRef.current;
+  }
+
+  function buildGlow(text: string): string {
+    const wrap = wrapRef.current;
+    const input = inputRef.current;
+    const canvas = getCanvas();
+    if (!wrap || !input || !canvas) return '';
+
+    const root = document.documentElement;
+    const inputStyles = getComputedStyle(input);
+    canvas.font = inputStyles.font;
+
+    const isDark = root.getAttribute('data-theme') === 'dark';
+    const rgb = isDark ? '255,255,255' : '0,0,0';
+    const width = wrap.clientWidth || 280;
+    const paddingLeft = Number.parseFloat(inputStyles.paddingLeft) || 12;
+    const spread = readClearNumber('--glow-spread', 1.5);
+    const layers: string[] = [];
+    let x = 0;
+
+    text.split(/(\s+)/).forEach((segment) => {
+      const segmentWidth = canvas.measureText(segment).width;
+      if (segment.trim()) {
+        const centerX = paddingLeft + x + segmentWidth / 2;
+        const halfWidth = Math.max(segmentWidth * 0.45, 8) * spread;
+
+        [
+          [0, 0.8, 7, 0.22],
+          [halfWidth * 0.45, 0.55, 8, 0.18],
+          [halfWidth * -0.4, 0.65, 6, 0.16],
+          [halfWidth * 0.15, 0.9, 5, 0.14],
+        ].forEach(([dx, radiusWidthMultiplier, radiusHeight, alpha]) => {
+          const layerX = (((centerX + dx) / width) * 100).toFixed(2);
+          layers.push(
+            `radial-gradient(ellipse ${Math.max(halfWidth * radiusWidthMultiplier, 2).toFixed(1)}px ${radiusHeight}px at ${layerX}% 100%, rgba(${rgb},${alpha}), transparent)`
+          );
+        });
+      }
+      x += segmentWidth;
+    });
+
+    return layers.join(', ');
+  }
+
+  function resetClearStyles() {
+    const mirror = mirrorRef.current;
+    const placeholder = placeholderRef.current;
+    const glow = glowRef.current;
+
+    if (mirror) {
+      mirror.style.transform = '';
+      mirror.style.opacity = '';
+      mirror.style.filter = '';
+    }
+    if (placeholder) {
+      placeholder.style.transform = '';
+      placeholder.style.opacity = '';
+      placeholder.style.filter = '';
+    }
+    if (glow) {
+      glow.style.opacity = '0';
+      glow.style.background = '';
+    }
+  }
+
+  function handleInputChange(event: ChangeEvent<HTMLInputElement>) {
+    onChange(event.target.value);
+  }
+
+  function handleClear() {
+    const text = value;
+    const wrap = wrapRef.current;
+    const input = inputRef.current;
+    const mirror = mirrorRef.current;
+    const placeholder = placeholderRef.current;
+    const glow = glowRef.current;
+    if (!text || !wrap || !input || !mirror || !placeholder || !glow || clearingRef.current) return;
+
+    const keepFocus = document.activeElement === input;
+    setMirrorValue(text);
+    onChange('');
+
+    if (prefersReducedMotion) {
+      resetClearStyles();
+      if (keepFocus) requestAnimationFrame(() => input.focus({ preventScroll: true }));
+      return;
+    }
+
+    clearingRef.current = true;
+    wrap.classList.add('is-clearing');
+    wrap.classList.remove('has-value');
+    glow.style.background = buildGlow(text);
+    glow.style.opacity = '0';
+
+    const rootStyles = getComputedStyle(document.documentElement);
+    const total = readClearNumber('--clear-dur', 1000);
+    const outDuration = readClearNumber('--clear-out-dur', 400);
+    const inDuration = readClearNumber('--clear-in-dur', 400);
+    const outFly = readClearNumber('--clear-out-fly', 12);
+    const inFly = readClearNumber('--clear-in-fly', 12);
+    const blur = readClearNumber('--clear-blur', 2);
+    const glowDelay = readClearNumber('--glow-delay', 50);
+    const glowPeakAt = readClearNumber('--glow-peak-at', 0.15);
+    const glowOpacity = readClearNumber('--glow-opacity', 0.42);
+    const easeOut = clearBezier(rootStyles.getPropertyValue('--clear-out-ease'));
+    const easeIn = clearBezier(rootStyles.getPropertyValue('--clear-in-ease'));
+
+    placeholder.style.transform = `translateY(-${inFly}px)`;
+    placeholder.style.opacity = '0.9';
+    placeholder.style.filter = `blur(${blur}px)`;
+
+    const start = performance.now();
+    const tick = (now: number) => {
+      const elapsed = now - start;
+      const easedOut = easeOut(Math.min(1, elapsed / outDuration));
+      mirror.style.transform = `translateY(${(easedOut * outFly).toFixed(1)}px)`;
+      mirror.style.opacity = (1 - easedOut).toFixed(3);
+      mirror.style.filter = `blur(${(easedOut * blur).toFixed(1)}px)`;
+
+      const easedIn = easeIn(Math.min(1, elapsed / inDuration));
+      placeholder.style.transform = `translateY(${(-inFly + easedIn * inFly).toFixed(1)}px)`;
+      placeholder.style.opacity = (0.9 + easedIn * 0.1).toFixed(3);
+      placeholder.style.filter = `blur(${(blur - easedIn * blur).toFixed(1)}px)`;
+
+      let glowLevel = 0;
+      if (elapsed > glowDelay) {
+        const progress = Math.min(1, (elapsed - glowDelay) / Math.max(1, total - glowDelay));
+        glowLevel = progress < glowPeakAt
+          ? progress / glowPeakAt
+          : 1 - (progress - glowPeakAt) / (1 - glowPeakAt);
+      }
+      glow.style.opacity = (glowLevel * glowOpacity).toFixed(3);
+
+      if (elapsed < total) {
+        frameRef.current = requestAnimationFrame(tick);
+        return;
+      }
+
+      wrap.classList.remove('is-clearing');
+      resetClearStyles();
+      setMirrorValue('');
+      clearingRef.current = false;
+      frameRef.current = null;
+      if (keepFocus) requestAnimationFrame(() => input.focus({ preventScroll: true }));
+    };
+
+    frameRef.current = requestAnimationFrame(tick);
+  }
+
+  const mirrorText = mirrorValue.replace(/ /g, '\u00a0');
+
+  return (
+    <div
+      ref={wrapRef}
+      className={`t-clear themed-field h-9 w-full rounded-[9px] border border-[#E5E7EB] bg-[#F8F9FB] dark:border-white/10 dark:bg-white/6 ${hasValue ? 'has-value' : ''}`}
+    >
+      <MagnifyingGlass
+        size={16}
+        className="pointer-events-none absolute left-3 top-1/2 z-40 -translate-y-1/2 text-[#7C8898] dark:text-[#94A3B8]"
+        aria-hidden
+      />
+      <input
+        ref={inputRef}
+        type="search"
+        value={value}
+        onChange={handleInputChange}
+        placeholder=""
+        className="relative z-10 h-full w-full bg-transparent pl-9 pr-10 text-sm text-[#1A1D23] caret-[#1A1D23] outline-none dark:text-[#F5F7FA] dark:caret-[#F5F7FA]"
+        aria-label="Buscar gastos"
+      />
+      <div
+        ref={mirrorRef}
+        className="t-clear-mirror pl-9 pr-10 text-sm text-[#1A1D23] dark:text-[#F5F7FA]"
+        aria-hidden="true"
+      >
+        {mirrorText}
+      </div>
+      <div
+        ref={placeholderRef}
+        className="t-clear-placeholder pl-9 pr-10 text-sm text-[#7C8898] dark:text-[#94A3B8]"
+        aria-hidden="true"
+      >
+        Buscar gasto...
+      </div>
+      <div ref={glowRef} className="t-clear-glow" aria-hidden="true" />
+      <button
+        type="button"
+        onPointerDown={(event) => {
+          if (document.activeElement === inputRef.current) event.preventDefault();
+        }}
+        onMouseDown={(event) => {
+          if (document.activeElement === inputRef.current) event.preventDefault();
+        }}
+        onClick={handleClear}
+        disabled={!hasValue}
+        className={`t-clear-btn absolute right-1.5 top-1/2 z-40 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-[#7C8898] outline-none transition-[opacity,transform,background-color,color] duration-150 hover:bg-[#E8EEF5] hover:text-[#1A1D23] active:scale-95 focus-visible:ring-2 focus-visible:ring-[#A8C5E0] focus-visible:ring-offset-1 disabled:pointer-events-none dark:text-[#94A3B8] dark:hover:bg-white/10 dark:hover:text-[#F5F7FA] ${
+          hasValue ? 'opacity-100 scale-100' : 'opacity-0 scale-75'
+        }`}
+        aria-label="Limpar busca"
+      >
+        <X size={15} weight="bold" aria-hidden />
+      </button>
+    </div>
+  );
 }
 
 interface FeedViewProps {
@@ -896,20 +1168,8 @@ function FeedPageInner({ billingClosingDay, initialCategories, initialFeedPage }
             </div>
 
             {/* Search bar */}
-            <div className="relative">
-                <MagnifyingGlass
-                  size={16}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7C8898] dark:text-[#94A3B8]"
-                  aria-hidden
-                />
-                <input
-                  type="search"
-                  value={searchInput}
-                  onChange={(e) => setSearchInput(e.target.value)}
-                  placeholder="Buscar gasto..."
-                  className="themed-field h-9 w-full rounded-[9px] border border-[#E5E7EB] bg-[#F8F9FB] pl-9 pr-3 text-sm text-[#1A1D23] placeholder:text-[#7C8898] outline-none transition-colors focus:border-[#A8C5E0] dark:border-white/10 dark:bg-white/6 dark:text-[#F5F7FA] dark:placeholder:text-[#94A3B8]"
-                  aria-label="Buscar gastos"
-                />
+            <div>
+              <ClearableFeedSearchInput value={searchInput} onChange={setSearchInput} />
             </div>
 
           <div

@@ -4,7 +4,9 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeSlash } from '@phosphor-icons/react';
+import AuthErrorNotice from '@/components/AuthErrorNotice';
 import { createClient } from '@/lib/supabase/client';
+import { isValidEmail } from '@/lib/utils';
 import { useAuthMascot } from '../AuthMascotContext';
 
 function GoogleIcon() {
@@ -32,12 +34,23 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [errorReplayKey, setErrorReplayKey] = useState(0);
   const [info, setInfo] = useState('');
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [forgotLoading, setForgotLoading] = useState(false);
   const [lastForgotAttempt, setLastForgotAttempt] = useState(0);
   const { setEyesClosed } = useAuthMascot();
+
+  function showError(message: string) {
+    setError(message);
+    setErrorReplayKey((key) => key + 1);
+  }
+
+  function clearFeedback() {
+    setError('');
+    setInfo('');
+  }
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -51,7 +64,7 @@ export default function LoginPage() {
       missing_code: 'Resposta do Google inválida. Tente novamente.',
       exchange_failed: 'Não foi possível concluir o login.',
     };
-    setError((map[err] ?? 'Falha na autenticação. Tente novamente.') + reasonText);
+    showError((map[err] ?? 'Falha na autenticação. Tente novamente.') + reasonText);
   }, []);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -59,11 +72,23 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
 
+    if (!isValidEmail(email)) {
+      showError('Informe um email válido.');
+      setLoading(false);
+      return;
+    }
+
+    if (!password) {
+      showError('Informe sua senha.');
+      setLoading(false);
+      return;
+    }
+
     const supabase = createClient();
     const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
 
     if (authError) {
-      setError('Email ou senha incorretos.');
+      showError('Email ou senha incorretos.');
       setLoading(false);
       return;
     }
@@ -77,13 +102,13 @@ export default function LoginPage() {
     setInfo('');
     const now = Date.now();
     if (now - lastForgotAttempt < 30000) {
-      setError('Aguarde 30 segundos entre cada pedido de redefinição.');
+      showError('Aguarde 30 segundos entre cada pedido de redefinição.');
       return;
     }
     setLastForgotAttempt(now);
     const target = email.trim();
     if (!target) {
-      setError('Informe seu email acima para receber o link de redefinição.');
+      showError('Informe seu email acima para receber o link de redefinição.');
       return;
     }
     setForgotLoading(true);
@@ -107,7 +132,7 @@ export default function LoginPage() {
       options: { redirectTo: `${window.location.origin}/auth/callback` },
     });
     if (authError) {
-      setError('Erro ao entrar com Google. Tente novamente.');
+      showError('Erro ao entrar com Google. Tente novamente.');
       setGoogleLoading(false);
     }
   }
@@ -136,7 +161,7 @@ export default function LoginPage() {
         <div className="flex-1 h-px bg-[#E5E7EB]" />
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4" noValidate>
         <div>
           <label htmlFor="email" className="block text-xs font-medium text-[#6B7280] mb-1.5">
             Email
@@ -147,7 +172,10 @@ export default function LoginPage() {
             autoComplete="email"
             required
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              clearFeedback();
+            }}
             placeholder="seu@email.com"
             className="w-full px-3.5 py-2.5 rounded-[10px] bg-[#F8F9FB] border border-[#E5E7EB] text-sm text-[#1A1D23] placeholder:text-[#9CA3AF] outline-none focus:border-[#A8C5E0] transition-colors"
           />
@@ -174,7 +202,10 @@ export default function LoginPage() {
               autoComplete="current-password"
               required
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                clearFeedback();
+              }}
               onFocus={() => setEyesClosed(true)}
               onBlur={() => setEyesClosed(false)}
               placeholder="••••••••"
@@ -191,11 +222,7 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {error && (
-          <p className="text-xs font-medium text-[#E07070]" role="alert">
-            {error}
-          </p>
-        )}
+        <AuthErrorNotice message={error} replayKey={errorReplayKey} />
 
         {info && (
           <p className="text-xs font-medium text-[#2E7D5B]" role="status">
