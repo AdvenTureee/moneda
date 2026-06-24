@@ -327,6 +327,33 @@ body {
 .t-clear {
   position: relative;
   overflow: hidden;
+  transition:
+    border-color 180ms ease-out,
+    box-shadow 180ms ease-out;
+}
+.t-clear.is-clearing {
+  border-color: color-mix(in srgb, var(--color-brand-green) 42%, var(--color-border));
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--color-brand-green) 18%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--color-brand-green) 12%, transparent),
+    0 10px 24px color-mix(in srgb, var(--color-brand-green) 10%, transparent);
+}
+.t-clear::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateX(-16%) scaleX(0.72);
+  background:
+    radial-gradient(circle at 16% 52%, rgba(168, 197, 224, 0.42), transparent 30%),
+    radial-gradient(circle at 44% 52%, rgba(91, 191, 142, 0.26), transparent 34%),
+    linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.42) 48%, transparent 100%);
+  filter: blur(1px);
+}
+.t-clear.is-clearing::before {
+  animation: t-clear-field-dissolve var(--clear-out-dur) var(--clear-out-ease) both;
 }
 .t-clear > input[type="search"]::-webkit-search-cancel-button,
 .t-clear > input[type="search"]::-webkit-search-decoration {
@@ -368,6 +395,24 @@ body {
   mix-blend-mode: multiply;
 }
 
+@keyframes t-clear-field-dissolve {
+  0% {
+    opacity: 0;
+    transform: translateX(-16%) scaleX(0.72);
+    filter: blur(1.5px);
+  }
+  28% {
+    opacity: 0.9;
+    transform: translateX(0%) scaleX(1);
+    filter: blur(0.5px);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(24%) scaleX(1.08);
+    filter: blur(2px);
+  }
+}
+
 /* The transitions live in JS (per-frame transform/opacity/
    filter writes), so this stylesheet only owns the resting
    state + the variables that JS reads. Read them with
@@ -375,15 +420,23 @@ body {
    so live tweaks apply on the next clear without a reload. */
 
 html[data-theme="dark"] {
-  --glow-opacity: 0.85;
+  --glow-opacity: 1;
 }
 
 html[data-theme="dark"] .t-clear-glow {
   mix-blend-mode: screen;
 }
 
+html[data-theme="dark"] .t-clear::before {
+  background:
+    radial-gradient(circle at 16% 52%, rgba(168, 197, 224, 0.42), transparent 32%),
+    radial-gradient(circle at 44% 52%, rgba(91, 191, 142, 0.34), transparent 36%),
+    linear-gradient(90deg, transparent 0%, rgba(245, 247, 250, 0.42) 48%, transparent 100%);
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .t-clear-glow { opacity: 0 !important; }
+  .t-clear::before,
+  .t-clear-glow { opacity: 0 !important; animation: none !important; }
 }
 
 html.theme-transitioning body,

@@ -387,7 +387,9 @@ function ClearableFeedSearchInput({ value, onChange }: ClearableFeedSearchInputP
   const canvasRef = useRef<CanvasRenderingContext2D | null>(null);
   const clearingRef = useRef(false);
   const frameRef = useRef<number | null>(null);
+  const clearValueFrameRef = useRef<number | null>(null);
   const [mirrorValue, setMirrorValue] = useState(value);
+  const [isClearing, setIsClearing] = useState(false);
   const hasValue = value.length > 0;
 
   useEffect(() => {
@@ -397,6 +399,7 @@ function ClearableFeedSearchInput({ value, onChange }: ClearableFeedSearchInputP
   useEffect(() => {
     return () => {
       if (frameRef.current !== null) cancelAnimationFrame(frameRef.current);
+      if (clearValueFrameRef.current !== null) cancelAnimationFrame(clearValueFrameRef.current);
     };
   }, []);
 
@@ -484,20 +487,28 @@ function ClearableFeedSearchInput({ value, onChange }: ClearableFeedSearchInputP
     if (!text || !wrap || !input || !mirror || !placeholder || !glow || clearingRef.current) return;
 
     const keepFocus = document.activeElement === input;
+    clearingRef.current = true;
+    setIsClearing(true);
     setMirrorValue(text);
-    onChange('');
+    mirror.textContent = text.replace(/ /g, '\u00a0');
 
     if (prefersReducedMotion) {
+      onChange('');
+      clearingRef.current = false;
+      setIsClearing(false);
       resetClearStyles();
       if (keepFocus) requestAnimationFrame(() => input.focus({ preventScroll: true }));
       return;
     }
 
-    clearingRef.current = true;
     wrap.classList.add('is-clearing');
     wrap.classList.remove('has-value');
     glow.style.background = buildGlow(text);
     glow.style.opacity = '0';
+    clearValueFrameRef.current = requestAnimationFrame(() => {
+      onChange('');
+      clearValueFrameRef.current = null;
+    });
 
     const rootStyles = getComputedStyle(document.documentElement);
     const total = readClearNumber('--clear-dur', 1000);
@@ -547,6 +558,7 @@ function ClearableFeedSearchInput({ value, onChange }: ClearableFeedSearchInputP
       resetClearStyles();
       setMirrorValue('');
       clearingRef.current = false;
+      setIsClearing(false);
       frameRef.current = null;
       if (keepFocus) requestAnimationFrame(() => input.focus({ preventScroll: true }));
     };
@@ -555,11 +567,13 @@ function ClearableFeedSearchInput({ value, onChange }: ClearableFeedSearchInputP
   }
 
   const mirrorText = mirrorValue.replace(/ /g, '\u00a0');
+  const showValueState = hasValue && !isClearing;
+  const showClearButton = hasValue || isClearing;
 
   return (
     <div
       ref={wrapRef}
-      className={`t-clear themed-field h-9 w-full rounded-[9px] border border-[#E5E7EB] bg-[#F8F9FB] dark:border-white/10 dark:bg-white/6 ${hasValue ? 'has-value' : ''}`}
+      className={`t-clear themed-field h-9 w-full rounded-[9px] border border-[#E5E7EB] bg-[#F8F9FB] dark:border-white/10 dark:bg-white/6 ${showValueState ? 'has-value' : ''} ${isClearing ? 'is-clearing' : ''}`}
     >
       <MagnifyingGlass
         size={16}
@@ -568,7 +582,8 @@ function ClearableFeedSearchInput({ value, onChange }: ClearableFeedSearchInputP
       />
       <input
         ref={inputRef}
-        type="search"
+        type="text"
+        role="searchbox"
         value={value}
         onChange={handleInputChange}
         placeholder=""
@@ -594,14 +609,15 @@ function ClearableFeedSearchInput({ value, onChange }: ClearableFeedSearchInputP
         type="button"
         onPointerDown={(event) => {
           if (document.activeElement === inputRef.current) event.preventDefault();
+          handleClear();
         }}
         onMouseDown={(event) => {
           if (document.activeElement === inputRef.current) event.preventDefault();
         }}
         onClick={handleClear}
-        disabled={!hasValue}
+        disabled={!showClearButton}
         className={`t-clear-btn absolute right-1.5 top-1/2 z-40 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-[#7C8898] outline-none transition-[opacity,transform,background-color,color] duration-150 hover:bg-[#E8EEF5] hover:text-[#1A1D23] active:scale-95 focus-visible:ring-2 focus-visible:ring-[#A8C5E0] focus-visible:ring-offset-1 disabled:pointer-events-none dark:text-[#94A3B8] dark:hover:bg-white/10 dark:hover:text-[#F5F7FA] ${
-          hasValue ? 'opacity-100 scale-100' : 'opacity-0 scale-75'
+          showClearButton ? 'opacity-100 scale-100' : 'opacity-0 scale-75'
         }`}
         aria-label="Limpar busca"
       >

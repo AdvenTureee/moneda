@@ -35,7 +35,7 @@ export default function DashboardCompactMetrics({
             {item.label}
           </p>
           <p className="whitespace-nowrap text-center text-xs font-bold leading-none tabular-nums text-[var(--color-text-primary)] min-[390px]:text-[13px] sm:text-sm">
-            <PrivateValue value={item.value} animate />
+            <PrivateValue value={item.value} animate animationKey={`dashboard-compact-metric:${item.label}`} />
           </p>
           {item.label === 'Gasto' && spendingProgressPercent !== null && (
             <div

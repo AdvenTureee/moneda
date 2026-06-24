@@ -8,8 +8,11 @@ interface PrivateValueProps {
   value: string;
   className?: string;
   animate?: boolean;
+  animationKey?: string;
   'aria-label'?: string;
 }
+
+const animatedValueMemory = new Map<string, string>();
 
 export function maskValue(value: string): string {
   return value.replace(/\d/g, '•');
@@ -28,11 +31,13 @@ function AnimatedPrivateValue({
   visibleValue,
   className,
   ariaLabel,
+  animationKey,
 }: {
   value: string;
   visibleValue: string;
   className?: string;
   ariaLabel?: string;
+  animationKey?: string;
 }) {
   const groupRef = useRef<HTMLSpanElement>(null);
   const hasMountedRef = useRef(false);
@@ -42,9 +47,17 @@ function AnimatedPrivateValue({
     const group = groupRef.current;
     if (!group) return;
 
-    if (!hasMountedRef.current) {
+    if (animationKey) {
+      const previousValue = animatedValueMemory.get(animationKey);
+      animatedValueMemory.set(animationKey, value);
+      if (previousValue === undefined || previousValue === value) return;
+    } else if (!hasMountedRef.current) {
       hasMountedRef.current = true;
       return;
+    }
+
+    if (!hasMountedRef.current) {
+      hasMountedRef.current = true;
     }
 
     group.classList.remove('is-animating');
@@ -61,7 +74,7 @@ function AnimatedPrivateValue({
     return () => {
       window.clearTimeout(cleanupTimer);
     };
-  }, [value, visibleValue]);
+  }, [animationKey, value, visibleValue]);
 
   return (
     <span
@@ -84,7 +97,13 @@ function AnimatedPrivateValue({
   );
 }
 
-export default function PrivateValue({ value, className, animate = false, 'aria-label': ariaLabel }: PrivateValueProps) {
+export default function PrivateValue({
+  value,
+  className,
+  animate = false,
+  animationKey,
+  'aria-label': ariaLabel,
+}: PrivateValueProps) {
   const { isPrivate } = usePrivacy();
   const visibleValue = isPrivate ? maskValue(value) : value;
 
@@ -95,6 +114,7 @@ export default function PrivateValue({ value, className, animate = false, 'aria-
         visibleValue={visibleValue}
         className={className}
         ariaLabel={ariaLabel}
+        animationKey={animationKey}
       />
     );
   }

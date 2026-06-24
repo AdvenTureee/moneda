@@ -196,7 +196,7 @@ export default function WaffleChart({
       <div className="flex min-h-[152px] min-w-0 flex-col items-center justify-center text-center max-[420px]:min-h-0">
         <p className="text-[11px] font-semibold uppercase tracking-wide text-[#6B7280]">Distribuição</p>
         <p className="mt-1 text-[28px] font-extrabold leading-tight tabular-nums text-[#1A1D23] max-[420px]:text-2xl">
-          <PrivateValue value={formatCurrency(total)} animate />
+          <PrivateValue value={formatCurrency(total)} animate animationKey="waffle-distribution-total" />
         </p>
         <div
           className={`mt-3 grid w-full max-w-[220px] overflow-hidden transition-[grid-template-rows,opacity,transform] duration-220 ease-[cubic-bezier(0.22,1,0.36,1)] ${
