@@ -8,7 +8,9 @@ const PRIVATE_NO_STORE_HEADERS = {
   Expires: '0',
 } as const;
 
-const PUBLIC_ROUTES = new Set(['/', '/redefinir-senha']);
+const SUPABASE_COOKIE_HEADER_NAMES = ['Cache-Control', 'Expires', 'Pragma'] as const;
+
+const AUTH_BYPASS_ROUTES = new Set(['/redefinir-senha']);
 const AUTH_ROUTES = new Set(['/login', '/signup']);
 const PROTECTED_PAGE_PREFIXES = ['/app', '/feed', '/insights', '/perfil', '/onboarding'];
 
@@ -19,20 +21,36 @@ function withPrivateNoStore(response: NextResponse): NextResponse {
   return response;
 }
 
+function applySupabaseCookies(from: NextResponse, to: NextResponse): NextResponse {
+  from.cookies.getAll().forEach((cookie) => {
+    to.cookies.set(cookie);
+  });
+
+  SUPABASE_COOKIE_HEADER_NAMES.forEach((headerName) => {
+    const value = from.headers.get(headerName);
+    if (value) {
+      to.headers.set(headerName, value);
+    }
+  });
+
+  return to;
+}
+
 function isProtectedPage(pathname: string): boolean {
   return PROTECTED_PAGE_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
 }
 
-function isPublicRoute(pathname: string): boolean {
-  return PUBLIC_ROUTES.has(pathname) || pathname.startsWith('/auth/callback');
+function shouldBypassAuthRefresh(pathname: string): boolean {
+  return AUTH_BYPASS_ROUTES.has(pathname) || pathname.startsWith('/auth/callback');
 }
 
 export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const isApiRoute = pathname.startsWith('/api/');
   const isAuthRoute = AUTH_ROUTES.has(pathname);
+  const isRootRoute = pathname === '/';
 
-  if (!isApiRoute && !isAuthRoute && isPublicRoute(pathname)) {
+  if (shouldBypassAuthRefresh(pathname)) {
     return NextResponse.next({ request });
   }
 
@@ -73,7 +91,10 @@ export async function proxy(request: NextRequest) {
 
   if (!user && isApiRoute) {
     return withPrivateNoStore(
-      NextResponse.json({ error: 'Unauthorized' }, { status: 401 }),
+      applySupabaseCookies(
+        supabaseResponse,
+        NextResponse.json({ error: 'Unauthorized' }, { status: 401 }),
+      ),
     );
   }
 
@@ -81,14 +102,18 @@ export async function proxy(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
     url.searchParams.set('next', pathname);
-    return withPrivateNoStore(NextResponse.redirect(url));
+    return withPrivateNoStore(
+      applySupabaseCookies(supabaseResponse, NextResponse.redirect(url)),
+    );
   }
 
-  if (user && isAuthRoute) {
+  if (user && (isRootRoute || isAuthRoute)) {
     const url = request.nextUrl.clone();
     url.pathname = '/app';
     url.search = '';
-    return withPrivateNoStore(NextResponse.redirect(url));
+    return withPrivateNoStore(
+      applySupabaseCookies(supabaseResponse, NextResponse.redirect(url)),
+    );
   }
 
   if (user && (isApiRoute || isProtectedPage(pathname))) {
