@@ -67,6 +67,12 @@
   --ai-card-to: #4AA77C;
   --ai-card-shadow: 0 8px 24px rgba(91, 191, 142, 0.25);
   --home-primary-action-fg: var(--color-text-primary);
+  --tabs-dur: 250ms;
+  --tabs-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --tabs-text-muted: rgba(15, 15, 15, 0.8);
+  --tabs-text-active: #0f0f0f;
+  --tabs-bar-bg: #f1f1f1;
+  --tabs-pill-bg: #ffffff;
   --digit-dur: 500ms;
   --digit-distance: 8px;
   --digit-stagger: 70ms;
@@ -128,6 +134,10 @@ html[data-theme="dark"] {
   --shadow-nav-action: 0 3px 12px rgba(91, 191, 142, 0.22);
   --shadow-nav-shell: 0 14px 28px rgba(0, 0, 0, 0.32);
   --home-primary-action-fg: var(--color-bg);
+  --tabs-text-muted: rgba(245, 247, 250, 0.72);
+  --tabs-text-active: #F5F7FA;
+  --tabs-bar-bg: #202A35;
+  --tabs-pill-bg: rgba(91, 191, 142, 0.14);
   --field-bg: #1B2430;
   --field-active-bg: #173327;
   --chart-grid: #2A3542;
@@ -3501,11 +3511,69 @@ html[data-theme="dark"] .hero-orbital {
   backdrop-filter: blur(18px) saturate(132%);
 }
 
+/* The bar is just a flex container with padding for the pill
+   to sit inside. Tabs sit on z-index: 1, the pill on z-index: 0,
+   so labels read above the pill background. */
+.t-tabs {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px;
+  border-radius: 48px;
+  background: var(--tabs-bar-bg);
+}
+.t-tab {
+  position: relative;
+  appearance: none;
+  border: 0;
+  background: transparent;
+  height: 30px;
+  padding: 4px 12px;
+  color: var(--tabs-text-muted);
+  cursor: pointer;
+  border-radius: 48px;
+  z-index: 1;
+  transition: color var(--tabs-dur) var(--tabs-ease);
+}
+.t-tab:not([aria-selected="true"]):hover,
+.t-tab[aria-selected="true"] {
+  color: var(--tabs-text-active);
+}
+
+/* The pill: width + transform are written inline by JS so
+   the transition tweens between the previous and next
+   measured positions. */
+.t-tabs-pill {
+  position: absolute;
+  top: 3px;
+  left: 0;
+  height: 30px;
+  width: 0;
+  background: var(--tabs-pill-bg);
+  border-radius: 48px;
+  transform: translateX(0);
+  transition:
+    transform var(--tabs-dur) var(--tabs-ease),
+    width     var(--tabs-dur) var(--tabs-ease);
+  will-change: transform, width;
+  z-index: 0;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t-tabs-pill, .t-tab { transition: none !important; }
+}
+
 /* ── Bottom Nav ───── */
 
 .bottom-nav {
   --bottom-nav-duration: 180ms;
   --bottom-nav-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --tabs-bar-bg: transparent;
+  --tabs-pill-bg: color-mix(in srgb, var(--nav-accent) 13%, var(--color-surface) 82%);
+  --tabs-text-active: var(--nav-accent);
+  --tabs-text-muted: var(--color-text-tertiary);
   position: fixed;
   bottom: calc(12px + env(safe-area-inset-bottom, 0px));
   left: 50%;
@@ -3527,13 +3595,23 @@ html[data-theme="dark"] .hero-orbital {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   align-items: center;
+  gap: 0;
   min-height: 68px;
   padding: 6px 8px;
+  background: transparent;
+}
+
+.bottom-nav-tabs-pill {
+  top: 6px;
+  height: calc(100% - 12px);
+  border-radius: 16px;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--nav-accent) 12%, transparent);
 }
 
 .bottom-nav-link {
   position: relative;
   display: flex;
+  height: auto;
   min-width: 0;
   min-height: 56px;
   width: 100%;
@@ -3542,6 +3620,7 @@ html[data-theme="dark"] .hero-orbital {
   justify-self: center;
   flex-direction: column;
   gap: 4px;
+  padding: 0;
   border-radius: 16px;
   color: var(--color-text-tertiary);
   font-weight: 650;
@@ -3622,6 +3701,7 @@ html[data-theme="dark"] .hero-orbital {
 
 .bottom-nav-action-btn {
   position: relative;
+  z-index: 2;
   display: inline-flex;
   width: 58px;
   height: 58px;
@@ -3704,6 +3784,10 @@ html[data-theme="dark"] .bottom-nav-link--active {
   color: var(--nav-accent);
 }
 
+html[data-theme="dark"] .bottom-nav {
+  --tabs-pill-bg: color-mix(in srgb, var(--nav-accent) 16%, transparent);
+}
+
 @media (max-width: 374px) {
   .bottom-nav {
     width: min(calc(100vw - 1rem), 36rem);
@@ -3717,6 +3801,10 @@ html[data-theme="dark"] .bottom-nav-link--active {
 
   .bottom-nav-link {
     min-height: 54px;
+    border-radius: 14px;
+  }
+
+  .bottom-nav-tabs-pill {
     border-radius: 14px;
   }
 
@@ -3736,6 +3824,7 @@ html[data-theme="dark"] .bottom-nav-link--active {
   .bottom-nav,
   .bottom-nav-link,
   .bottom-nav-link__icon,
+  .bottom-nav-tabs-pill,
   .bottom-nav-action-btn {
     animation: none;
     transition-duration: 1ms;

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { House, List, PlusCircle, Sparkle, User } from '@phosphor-icons/react';
@@ -56,6 +56,7 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
   const previousPathnameRef = useRef(pathname);
   const navTransitionTimeoutRef = useRef<number | null>(null);
   const navRef = useRef<HTMLElement>(null);
+  const tabsPillRef = useRef<HTMLSpanElement>(null);
   const [transitioningHref, setTransitioningHref] = useState<string | null>(null);
 
   const prefetchRoute = useCallback(
@@ -136,13 +137,57 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
     return () => observer.disconnect();
   }, []);
 
+  const moveTabsPill = useCallback((animate: boolean) => {
+    const nav = navRef.current;
+    const pill = tabsPillRef.current;
+    if (!nav || !pill) return;
+
+    const activeTab = nav.querySelector<HTMLElement>('.t-tab[aria-selected="true"]');
+    if (!activeTab) {
+      pill.style.width = '0px';
+      return;
+    }
+
+    if (!animate) {
+      const previousTransition = pill.style.transition;
+      pill.style.transition = 'none';
+      pill.style.transform = `translateX(${activeTab.offsetLeft}px)`;
+      pill.style.width = `${activeTab.offsetWidth}px`;
+      void pill.offsetWidth;
+      pill.style.transition = previousTransition;
+      return;
+    }
+
+    pill.style.transform = `translateX(${activeTab.offsetLeft}px)`;
+    pill.style.width = `${activeTab.offsetWidth}px`;
+  }, []);
+
+  useLayoutEffect(() => {
+    const frame = window.requestAnimationFrame(() => moveTabsPill(false));
+    const handleResize = () => moveTabsPill(false);
+
+    window.addEventListener('resize', handleResize);
+    window.visualViewport?.addEventListener('resize', handleResize);
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener('resize', handleResize);
+      window.visualViewport?.removeEventListener('resize', handleResize);
+    };
+  }, [moveTabsPill]);
+
+  useLayoutEffect(() => {
+    moveTabsPill(true);
+  }, [dashboardHref, moveTabsPill, pathname, transitioningHref]);
+
   return (
     <nav
       ref={navRef}
       className="bottom-nav"
       aria-label="Navegação principal"
     >
-      <div className="bottom-nav__inner">
+      <div className="bottom-nav__inner t-tabs">
+        <span ref={tabsPillRef} className="t-tabs-pill bottom-nav-tabs-pill" aria-hidden="true" />
         {NAV_ITEMS.map((item) => {
           if (item.isAction) {
             return (
@@ -164,6 +209,7 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
             : pathname.startsWith(item.href);
           const isSamePath = pathname === item.href;
           const isTransitioning = transitioningHref === href;
+          const isSelected = transitioningHref ? isTransitioning : isActive;
 
           return (
             <Link
@@ -187,8 +233,9 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
                 showNavTransition(href);
               }}
               onFocus={() => prefetchRoute(href)}
-              className={`bottom-nav-link ${isActive ? 'bottom-nav-link--active' : ''} ${isTransitioning ? 'bottom-nav-link--transitioning' : ''}`}
+              className={`t-tab bottom-nav-link ${isSelected ? 'bottom-nav-link--active' : ''} ${isTransitioning ? 'bottom-nav-link--transitioning' : ''}`}
               aria-current={isActive ? 'page' : undefined}
+              aria-selected={isSelected ? 'true' : 'false'}
               aria-busy={isTransitioning || undefined}
             >
               <item.icon

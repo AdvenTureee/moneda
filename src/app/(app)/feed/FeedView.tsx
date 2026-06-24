@@ -650,6 +650,7 @@ function FeedPageInner({ billingClosingDay, initialCategories, initialFeedPage }
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [activeFilterTab, setActiveFilterTab] = useState<FilterTab>('date');
   const [filtersPosition, setFiltersPosition] = useState<{ top: number; left: number; width: number } | null>(null);
+  const [filterScrollEdges, setFilterScrollEdges] = useState({ left: false, right: false });
   const [mounted, setMounted] = useState(false);
   const [filtersHydrated, setFiltersHydrated] = useState(false);
   const [, startUiTransition] = useTransition();
@@ -987,6 +988,41 @@ function FeedPageInner({ billingClosingDay, initialCategories, initialFeedPage }
       active: activePaymentMethod !== null,
     },
   ];
+  const updateFilterScrollEdges = useCallback(() => {
+    const target = filtersAnchorRef.current;
+    if (!target) return;
+    const maxScrollLeft = target.scrollWidth - target.clientWidth;
+    const nextEdges = {
+      left: target.scrollLeft > 1,
+      right: maxScrollLeft > 1 && target.scrollLeft < maxScrollLeft - 1,
+    };
+    setFilterScrollEdges((current) => (
+      current.left === nextEdges.left && current.right === nextEdges.right ? current : nextEdges
+    ));
+  }, []);
+
+  useLayoutEffect(() => {
+    const target = filtersAnchorRef.current;
+    if (!target) return;
+
+    updateFilterScrollEdges();
+    const frame = window.requestAnimationFrame(updateFilterScrollEdges);
+    const resizeObserver = new ResizeObserver(updateFilterScrollEdges);
+    resizeObserver.observe(target);
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      resizeObserver.disconnect();
+    };
+  }, [activeCategory, activePaymentMethod, categoryLabel, dateRange, updateFilterScrollEdges]);
+
+  const filterScrollMaskImage = filterScrollEdges.left && filterScrollEdges.right
+    ? 'linear-gradient(to right, transparent, black 8%, black 92%, transparent)'
+    : filterScrollEdges.left
+      ? 'linear-gradient(to right, transparent, black 8%, black 100%)'
+      : filterScrollEdges.right
+        ? 'linear-gradient(to right, black 0%, black 92%, transparent)'
+        : 'none';
 
   const topCategories = useMemo(() => {
     const map = new Map<string, number>();
@@ -1092,6 +1128,28 @@ function FeedPageInner({ billingClosingDay, initialCategories, initialFeedPage }
   const showFeedProgress = loading || loadingMore;
   const animateGroups = !showRefreshing && !showStaleView;
   const reduceMotion = useReducedMotion();
+  const clearFiltersButtonMotion = reduceMotion
+    ? {
+        initial: { opacity: 0 },
+        animate: { opacity: 1 },
+        exit: { opacity: 0 },
+      }
+    : {
+        initial: { opacity: 0, y: -3 },
+        animate: { opacity: 1, y: 0 },
+        exit: { opacity: 0, y: -3 },
+      };
+  const clearFiltersSlotMotion = reduceMotion
+    ? {
+        initial: { height: 0 },
+        animate: { height: 44 },
+        exit: { height: 0 },
+      }
+    : {
+        initial: { height: 0 },
+        animate: { height: 44 },
+        exit: { height: 0 },
+      };
   const overspendNoticeMotion = reduceMotion
     ? {
         initial: { opacity: 0 },
@@ -1190,7 +1248,12 @@ function FeedPageInner({ billingClosingDay, initialCategories, initialFeedPage }
 
           <div
             ref={filtersAnchorRef}
+            onScroll={updateFilterScrollEdges}
             className="-mx-0.5 flex gap-1.5 overflow-x-auto px-0.5 pb-0.5 text-[11px] font-semibold text-[#1A1D23] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            style={{
+              WebkitMaskImage: filterScrollMaskImage,
+              maskImage: filterScrollMaskImage,
+            }}
           >
             {filterTabs.map((tab) => {
               const TabIcon = tab.icon;
@@ -1232,17 +1295,33 @@ function FeedPageInner({ billingClosingDay, initialCategories, initialFeedPage }
                 </button>
               );
             })}
-            {activeFilterCount > 0 && (
-              <button
-                type="button"
-                onClick={clearFilters}
-                className="h-8 shrink-0 rounded-full px-3 text-[11px] font-bold text-[#5BBF8E] outline-none transition-colors hover:bg-[#EEF9F4] focus-visible:ring-2 focus-visible:ring-[#A8C5E0] focus-visible:ring-offset-1 dark:hover:bg-white/8"
-              >
-                Limpar
-              </button>
-            )}
           </div>
         </div>
+
+        <AnimatePresence initial={false}>
+          {activeFilterCount > 0 && (
+            <motion.div
+              key="clear-feed-filters"
+              className="overflow-hidden"
+              initial={clearFiltersSlotMotion.initial}
+              animate={clearFiltersSlotMotion.animate}
+              exit={clearFiltersSlotMotion.exit}
+              transition={noticeTransition}
+            >
+              <motion.button
+                type="button"
+                onClick={clearFilters}
+                className="mx-auto mt-3 flex h-8 items-center text-[11px] font-bold text-[#5BBF8E] transition-all active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A8C5E0] focus-visible:ring-offset-2"
+                initial={clearFiltersButtonMotion.initial}
+                animate={clearFiltersButtonMotion.animate}
+                exit={clearFiltersButtonMotion.exit}
+                transition={noticeTransition}
+              >
+                Limpar
+              </motion.button>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {mounted && filtersOpen && filtersPosition && createPortal(
           <>
