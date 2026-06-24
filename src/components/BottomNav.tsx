@@ -238,11 +238,18 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
               aria-selected={isSelected ? 'true' : 'false'}
               aria-busy={isTransitioning || undefined}
             >
-              <item.icon
-                size={isActive ? 25 : 23}
-                weight={isActive ? 'fill' : 'regular'}
-                className="bottom-nav-link__icon"
-              />
+              <span
+                className="t-icon-swap bottom-nav-link__icon"
+                data-state={isSelected ? 'b' : 'a'}
+                aria-hidden="true"
+              >
+                <span className="t-icon" data-icon="a">
+                  <item.icon size={24} weight="regular" />
+                </span>
+                <span className="t-icon" data-icon="b">
+                  <item.icon size={24} weight="fill" />
+                </span>
+              </span>
               <span className="bottom-nav-link__label">{item.label}</span>
             </Link>
           );
