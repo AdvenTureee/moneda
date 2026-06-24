@@ -108,6 +108,11 @@ export async function proxy(request: NextRequest) {
   }
 
   if (user && (isRootRoute || isAuthRoute)) {
+    const { data: { user: verifiedUser } } = await supabase.auth.getUser();
+    if (!verifiedUser) {
+      return supabaseResponse;
+    }
+
     const url = request.nextUrl.clone();
     url.pathname = '/app';
     url.search = '';
