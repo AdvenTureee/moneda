@@ -1209,13 +1209,13 @@ function LandingFooter() {
         </div>
         <div className="grid gap-3 sm:text-right">
           <a
-            href="https://api.whatsapp.com/send/?phone=5511991333769&text&type=phone_number&app_absent=0"
+            href="https://api.whatsapp.com/send/?phone=5511939170488&text&type=phone_number&app_absent=0"
             target="_blank"
             rel="noreferrer"
             className="inline-flex items-center gap-2 text-left font-semibold underline-offset-2 transition-colors hover:opacity-70 hover:underline sm:justify-end"
           >
             <WhatsappLogo size={16} weight="bold" aria-hidden />
-            <span>(+55) 1199133-3769</span>
+            <span>(+55) 1193917-0488</span>
           </a>
           <div className="flex items-center gap-2 sm:justify-end">
             <Buildings size={16} weight="bold" aria-hidden />
