@@ -1,0 +1,277 @@
+# Moneda — Documentação de Produto
+
+> **"Seu dinheiro, finalmente claro."**
+
+---
+
+## 1. Nome e Tagline
+
+| Campo     | Valor                               |
+|-----------|-------------------------------------|
+| Nome      | **Moneda**                           |
+| Tagline   | *"Seu dinheiro, finalmente claro."* |
+| Domínio   | App de controle de gastos pessoais  |
+| Mercado   | Brasil                              |
+
+---
+
+## 2. Problema que Resolve
+
+### Problema 1 — Lançar gasto é chato demais
+A maioria dos apps exige que o usuário abra o app, navegue por menus, preencha categoria, valor, data e descrição. Resultado: as pessoas desistem depois de 3 dias. A planilha do Excel fica mais tempo aberta que qualquer app de finanças.
+
+### Problema 2 — Ninguém entende o próprio dinheiro
+Os apps mostram gráficos e tabelas, mas não explicam *o que fazer*. O usuário fecha o painel sabendo que gastou R$ 1.200 em alimentação, mas sem ideia de se isso é muito, pouco, ou como melhorar.
+
+### Problema 3 — Julgamento e culpa bloqueiam a ação
+Categorias chamadas "Gastos supérfluos" e notificações do tipo "Você gastou 40% acima do orçamento!" criam ansiedade financeira, não consciência. As pessoas evitam o app porque se sentem culpadas ao abri-lo.
+
+---
+
+## 3. Público-Alvo
+
+**Foco principal:** Brasileiros entre 22–40 anos, com renda entre R$ 2.000–10.000/mês, que têm consciência de que deveriam controlar os gastos mas nunca conseguiram manter o hábito por mais de duas semanas.
+
+**Perfil comportamental:**
+- Usam WhatsApp diariamente (mais de 2h/dia)
+- Já tentaram pelo menos um app de finanças e abandonaram
+- Não têm dívidas graves, mas sentem que o dinheiro "some"
+- Preferem mensagem de texto a preencher formulários
+- Reagem bem a linguagem direta, sem jargão financeiro
+
+---
+
+## 4. Proposta de Valor e Diferenciação
+
+### Proposta Central
+Moneda é o único app de controle de gastos que funciona *de onde você já está* — o WhatsApp — e usa IA para te explicar seu dinheiro sem julgamentos.
+
+### Pilares de Diferenciação
+
+| Diferencial             | Moneda                                     | GuiaBolso / Mobills          | Planilha Excel              |
+|-------------------------|-------------------------------------------|------------------------------|-----------------------------|
+| Canal de entrada        | WhatsApp (zero fricção)                   | App próprio                  | Desktop / mobile            |
+| Lançamento              | Mensagem de texto natural                 | Formulário por categoria     | Digitação manual            |
+| IA / insights           | Explica, sugere, conversa                 | Relatórios estáticos         | Nenhum                      |
+| Tom                     | Sem julgamentos, direto ao ponto          | Neutro / técnico             | Nenhum                      |
+| Tempo p/ primeiro valor | < 60 segundos                             | 5–15 minutos (onboarding)    | Horas de setup              |
+
+---
+## 5. Métricas de Sucesso (KPIs)
+
+### Métricas de Produto
+
+| Métrica                         | V0 Target       | V1 Target       | V2 Target       |
+|----------------------------------|-----------------|-----------------|-----------------|
+| Ativação (≥1 gasto no D1)       | > 70%           | > 75%           | > 80%           |
+| Retenção D7                     | > 40%           | > 50%           | > 55%           |
+| Retenção D30                    | —               | > 35%           | > 45%           |
+| DAU/MAU                         | —               | > 15%           | > 20%           |
+| Gastos lançados / usuário / mês | > 5             | > 15            | > 25            |
+| NPS                             | > 30            | > 45            | > 55            |
+
+### Métricas de Negócio
+
+| Métrica                 | Descrição                                              |
+|-------------------------|--------------------------------------------------------|
+| CAC                     | Custo por usuário ativo adquirido                      |
+| LTV                     | Receita projetada por usuário no ciclo de vida         |
+| Churn mensal            | % de usuários ativos que param de usar em 30 dias      |
+| Conversão freemium→pago | % de usuários gratuitos que migram para plano pago     |
+
+### North Star Metric
+> **Número de gastos lançados por usuários ativos mensais.**  
+> Reflete engajamento real, não apenas cadastro.
+
+---
+
+## 6. Personas
+
+### Persona 1 — Marina, 28 anos, Analista de Marketing
+
+**Perfil:** Mora em São Paulo, ganha R$ 5.500/mês, paga aluguel de R$ 1.800 e tem uma assinatura de academia que nunca usa. Trabalha em regime híbrido, pede delivery 4x por semana.
+
+**Dores:**
+- Sente que o dinheiro some sem saber para onde
+- Já baixou Mobills e GuiaBolso, abandonou em menos de 2 semanas
+- Odia preencher categorias e fica com preguiça de abrir o app
+
+**Motivações:**
+- Quer fazer uma viagem para a Europa em 18 meses
+- Se sente bem quando tem clareza sobre seus gastos
+- Usa WhatsApp mais de 3h por dia
+
+**Como usa o Moneda:**
+Manda mensagem no WhatsApp enquanto ainda está no iFood: "gastei 42 no almoço". Abre o app uma vez por semana pra ver o resumo. Adora quando a IA diz "você gastou menos que na semana passada".
+
+**Jobs to Be Done:** *"Quando peço delivery, quero registrar sem abrir outro app para que não perca o controle do mês sem perceber."*
+
+---
+
+### Persona 2 — Rafael, 35 anos, Servidor Público
+
+**Perfil:** Mora em Belo Horizonte com esposa e filho de 3 anos. Renda familiar de R$ 9.000/mês. Tem parcela de carro, financiamento de apartamento e gastos com escola particular. "Parece que nunca sobra nada."
+
+**Dores:**
+- Tenta usar planilha do Excel mas perde o fio entre os meses
+- Discute com a esposa sobre gastos pois nenhum dos dois sabe ao certo quanto gastaram
+- Se sente culpado quando vê o total mensal e não consegue agir
+
+**Motivações:**
+- Quer construir uma reserva de emergência
+- Precisa de clareza, não de mais dados
+- Prefere uma explicação simples a um relatório complexo
+
+**Como usa o Moneda:**
+Usa o WhatsApp para lançar compras no supermercado e despesas da escola. Consulta o resumo semanal que o Moneda manda. Valoriza quando a IA diz "vocês estão dentro do esperado para o mês" — ou o alerta antes de extrapolar.
+
+**Jobs to Be Done:** *"Quando pago uma conta, quero saber se ainda estou dentro do orçamento para que minha família não seja pega de surpresa no fim do mês."*
+
+---
+
+## 7. Roadmap
+
+### V1 — Produto Básico Funcional + Diferenciais de Canal
+**Objetivo:** Usuário tem conta, dados persistidos e vê o Moneda como o app mais conveniente que já usou — porque funciona 100% no WhatsApp.
+
+#### App
+
+- **Dashboard completo**
+- **Onboarding**
+  - Qual o orçamento?
+  - Categorias
+  - Distribuição por categoria
+  - Adicionar gastos recorrentes
+  - Adicionar WhatsApp
+  - Dia do fechamento do cartão
+  - Modo escuro ou claro
+- **Termo LGPD**
+- **Criptografia de dados sensíveis**
+- **Login com Google**
+- **Feed completo** com:
+  - Filtros por método de pagamento, data e categorias; pesquisa por categoria e descrição
+  - Filtro padrão: gastos dos últimos 30 dias
+  - Edição dos gastos
+- **Adicionar gasto** em forma de formulário
+- **Insights:**
+  - *Perguntas para a Mo* — chat para dúvidas financeiras (com limite diário de perguntas)
+  - *Análise da Mo* — fechamento do mês com análise total
+- **Perfil:**
+  - *Orçamento* — definir quanto quer gastar no mês e por categoria; IA distribui com 3 opções: Essencial, Equilibrado e Flexível
+  - *Ganhos e receitas* — adicionar ganhos com descrição, origem e data de recebimento
+  - *Gerenciar categorias* — ver todas as categorias, editar as adicionadas pelo usuário, adicionar novas com ícone, cor, nome e palavras-chave
+  - *Moeda* — alterar a moeda de referência
+  - *Interface* — alternar entre modo claro e escuro
+  - *Notificações:*
+    - Resumo semanal por e-mail (todo domingo)
+    - Alerta de orçamento por e-mail (quando os gastos ultrapassarem a receita ou o orçamento)
+    - Notificações push: lembrete de vencimento do cartão (D-1), alerta de estouro de orçamento/receita e aviso de resumo semanal disponível
+  - *Conexões* — adicionar número do WhatsApp, vincular conta Google
+  - *Redefinir senha* — envio de e-mail para redefinição, incentivo a senha forte, opção de visualizar senha digitada
+  - *Exportar dados* — exportar o feed em CSV
+  - *Sair da conta*
+  - *Apagar conta*
+- **Fechamento do mês** de acordo com o cartão
+- **Previsor do fim do mês** — alerta automático no dia 20: "no ritmo atual você vai gastar R$ X — R$ Y acima do mês passado"
+- Lançamento no crédito registra se a compra foi à vista ou parcelada; em parcelado, o usuário informa parcela atual e total de parcelas
+- UX polish: empty states, loading states, mobile-first
+
+#### Automação (WhatsApp)
+
+- **🎙️ Envio de gastos por texto e áudio** — usuário manda mensagem ou voz, Groq Whisper transcreve e registra o gasto automaticamente (nenhum concorrente tem isso)
+- Onboarding pede telefone do WhatsApp como passo opcional. O lançamento pelo WhatsApp permanece indisponível até a confirmação por código via WhatsApp Business do Moneda estar pronta
+
+**Critério de saída:** 30-day retention > 40%.
+
+---
+
+### V2 — Engajamento, Inteligência e Vida Social do Dinheiro
+**Objetivo:** Moneda começa a surpreender o usuário com insights que ele não pediu, e vira ferramenta de casal.
+
+#### App
+
+- **Insights proativos semanais** — enviados pelo WhatsApp e exibidos na aba de Insights
+- **💑 Modo Casal / Conta Compartilhada:**
+  - Vincular 2 contas: mescla ganhos e gastos de ambos (2 usuários em uma conta)
+  - Dashboard com insight de quem gasta mais — total de gastos de cada um (gráfico igual ao de categoria)
+  - A definir: outras funcionalidades específicas do modo casal
+- **Assinatura do app** (modelo freemium → pago)
+- **Ler extratos do banco**
+- **🔄 Detector de assinaturas e recorrências** — identifica gastos que se repetem, avisa quando o valor muda ("sua Netflix subiu de R$ 44,90 para R$ 55,90 esse mês")
+- **Conectar com SMS** — contato específico que recebe mensagens de gastos (viabilidade a confirmar)
+- Metas mensais por categoria com acompanhamento em tempo real
+- Dashboard com gráficos de evolução mês a mês
+- Gráfico anual compara cada mês contra seu próprio teto de orçamento, sem acumular o orçamento ao longo do ano
+- Notificações de alerta de orçamento
+
+#### Automação (WhatsApp)
+
+- Insights proativos semanais enviados todo domingo
+- **💑 Modo Casal** — 2 números de WhatsApp vinculados à mesma conta
+- **🤖 CFO conversacional** — usuário pode fazer perguntas sobre a conta (ex: "Qual categoria gastei mais no mês?", "Quanto já gastei esse mês?", "Quanto posso gastar?", "Faça um resumo do meu mês / semana")
+- **📸 Registrar comprovante como gasto** — usuário manda foto via WhatsApp, IA lê total, estabelecimento e data e registra automaticamente
+
+**Critério de saída:** DAU/MAU > 20%.
+
+---
+
+### V3 — Conexão Bancária, Automação e Zero Fricção Total
+**Objetivo:** Zero esforço de lançamento — o Moneda importa, lê fotos e responde qualquer pergunta.
+
+#### App
+
+- **Conta família / multi-usuário**
+- **Aba Insights** — comparação anônima com pares ("Pessoas com renda similar gastam X em Y")
+- **Aba de investimentos** (escopo a definir)
+- **📱 App mobile nativo**
+- **💼 Modo MEI / Freelancer** — separa gastos pessoais de profissionais com tag simples, calcula quanto separar de imposto (tabela Simples Nacional / MEI), gera relatório de despesas dedutíveis mensais
+- Open Banking (leitura de extratos bancários)
+- Lançamento automático de transações bancárias
+- Detecção de duplicatas (manual vs automático)
+
+#### Automação (WhatsApp)
+
+- Receber e registrar gastos da conta família
+- **🤖 CFO conversacional completo** — histórico multi-mês, perguntas complexas: "qual foi meu mês mais barato em 2026?", "quando foi a última vez que gastei mais de R$ 200 de uma vez?", "quanto economizei nos últimos 3 meses?"
+
+**Critério de saída:** 60% dos usuários ativos têm ao menos uma conta bancária conectada ou foto de comprovante enviada.
+
+---
+
+### V4 — Plataforma Financeira Pessoal + Profissional
+**Objetivo:** Moneda vira a referência financeira do usuário — não apenas controle, mas orientação.
+
+- Simulações ("Se eu cortar delivery, quanto poupo em 6 meses?")
+- Integração com investimentos (visão de patrimônio)
+- Relatório anual para IR
+- **API pública para parceiros**
+
+**Critério de saída:** NPS > 60, churn mensal < 3%.
+
+---
+
+## Stack de Referência
+
+| Camada       | Tecnologia                                    |
+|--------------|-----------------------------------------------|
+| Frontend     | Next.js 14+ (App Router)                      |
+| Linguagem    | TypeScript                                    |
+| Estilo       | Tailwind CSS                                  |
+| IA / NLP     | **Groq API** (`llama-3.1-8b-instant` / `llama-3.3-70b-versatile`) |
+| Dados (V0)   | Mock em memória / JSON local                  |
+| Dados (V1+)  | **Supabase** (Postgres gerenciado)            |
+| Deploy       | Vercel                                        |
+| Canal input  | WhatsApp — provedor **TBD** (Evolution API ou WAHA) |
+
+---
+
+## Decisões e Princípios de Produto
+
+1. **Zero fricção no lançamento.** Se o usuário precisar abrir o app para lançar um gasto, fracassamos no problema número 1.
+2. **IA que explica, não que julga.** Nenhuma linguagem de culpa, shame ou comparação negativa.
+3. **WhatsApp é o produto.** A interface web é a tela de acompanhamento, não o canal principal.
+4. **Progressivo.** O usuário começa simples e descobre profundidade quando quiser.
+5. **Privacidade por padrão.** Coletamos apenas o mínimo necessário para o serviço funcionar.
+
+---
+
