@@ -1,4 +1,4 @@
-# DESIGN.md — Moneda
+# DESIGN.md: Moneda
 
 > Sistema de design, estrutura de navegação e especificação de telas.
 > Este documento é a fonte de verdade para engenheiros implementando o MVP.
@@ -150,8 +150,8 @@ Base: **4px**. Todos os valores de margin, padding e gap devem ser múltiplos de
 **Regras de uso:**
 - Cards em lista: `--shadow-xs` (quase imperceptível, evitar noise visual).
 - Cards de destaque / modal: `--shadow-md`.
-- FAB (botão de ação flutuante): `--shadow-fab` — halo verde reforça ação positiva.
-- Bottom nav: `border-top: 1px solid var(--color-border)` sem shadow — não elevar a nav.
+- FAB (botão de ação flutuante): `--shadow-fab`, halo verde reforça ação positiva.
+- Bottom nav: `border-top: 1px solid var(--color-border)` sem shadow, não elevar a nav.
 
 ### 1.6 Motion
 
@@ -167,7 +167,7 @@ Base: **4px**. Todos os valores de margin, padding e gap devem ser múltiplos de
 --easing-spring:     cubic-bezier(0.34, 1.56, 0.64, 1) /* FAB, confirmações */
 ```
 
-**Princípio:** animações existem para comunicar causalidade e estado, não decoração. Respeitar `prefers-reduced-motion: reduce` — reduzir a `opacity`-only em 80ms.
+**Princípio:** animações existem para comunicar causalidade e estado, não decoração. Respeitar `prefers-reduced-motion: reduce`, reduzir a `opacity`-only em 80ms.
 
 ---
 
@@ -179,7 +179,7 @@ Base: **4px**. Todos os valores de margin, padding e gap devem ser múltiplos de
 
 **Rationale (Fitts's Law + Jakob's Law):**
 - Usuários de finanças pessoais acessam o app em movimento, com uma mão. A Bottom Nav garante que todas as ações principais estejam na zona de alcance do polegar (thumb zone inferior).
-- Apps de referência no domínio (Nubank, Mobills, Guiabolso) utilizam bottom nav — Jakob's Law: usuários esperam que isso funcione assim.
+- Apps de referência no domínio (Nubank, Mobills, Guiabolso) utilizam bottom nav, Jakob's Law: usuários esperam que isso funcione assim.
 - Sidebar (hamburger) esconde funcionalidades, aumenta cognitive load e viola o princípio de Recognition over Recall.
 - Com 5 abas, ainda respeitamos Miller's Law (7 ± 2) e o limite prático de bottom navs.
 
@@ -194,11 +194,11 @@ Base: **4px**. Todos os valores de margin, padding e gap devem ser múltiplos de
 |-----|-------|------|-----------|
 | Dashboard | `home` | `/` | Visão geral do mês, total gasto, insight rápido |
 | Feed | `list` | `/feed` | Timeline cronológica de todos os gastos |
-| + Gasto | `plus-circle` | Modal | FAB central — abre modal de lançamento rápido |
+| + Gasto | `plus-circle` | Modal | FAB central, abre modal de lançamento rápido |
 | Insights | `pie-chart` | `/insights` | Gráficos por categoria, tendências, comparativo |
 | Perfil | `user` | `/perfil` | Config, categorias personalizadas, exportar dados |
 
-**Observação de implementação:** a aba "+ Gasto" não navega para uma tela — abre um `BottomSheet` modal. O item da nav deve ter estilo visual diferenciado (FAB elevado ou ícone maior com cor verde) para sinalizar ação primária vs navegação.
+**Observação de implementação:** a aba "+ Gasto" não navega para uma tela, abre um `BottomSheet` modal. O item da nav deve ter estilo visual diferenciado (FAB elevado ou ícone maior com cor verde) para sinalizar ação primária vs navegação.
 
 ### 2.3 Mapa de Telas
 
@@ -301,7 +301,7 @@ Regra: máximo 2 níveis de push navigation + modais. Nunca empilhar modais sobr
 **Estados:**
 - **Loading:** skeletons para o valor total, donut (círculo cinza pulsante), e 3 SpendCards skeleton.
 - **Mês sem gastos:** empty state com ilustração e CTA "Lance seu primeiro gasto".
-- **Orçamento não definido:** card "Restante" mostra "—" e link "Definir orçamento".
+- **Orçamento não definido:** card "Restante" mostra "" e link "Definir orçamento".
 
 ---
 
@@ -373,7 +373,7 @@ Regra: máximo 2 níveis de push navigation + modais. Nunca empilhar modais sobr
 ```
 
 **Comportamentos:**
-- FilterChips horizontais scrolláveis — aplicam filtro imediatamente (sem botão Aplicar para os chips rápidos).
+- FilterChips horizontais scrolláveis, aplicam filtro imediatamente (sem botão Aplicar para os chips rápidos).
 - SearchBar busca por descrição e categoria em tempo real (debounce 300ms).
 - DateSection headers ficam sticky enquanto a seção está visível.
 - Swipe left em SpendCard → ação "Deletar" (com confirmação).
@@ -580,7 +580,7 @@ Especificação:
 
 ### 4.3 DonutChart
 
-Gráfico de pizza/donut de categorias — Dashboard e Insights.
+Gráfico de pizza/donut de categorias, Dashboard e Insights.
 
 ```
 Props:
@@ -602,7 +602,7 @@ Segmento mínimo renderizável: 3% (segmentos menores são agrupados em "Outros"
 
 ### 4.4 QuickAddModal (Bottom Sheet)
 
-Sheet de lançamento rápido de gasto — componente central do produto.
+Sheet de lançamento rápido de gasto, componente central do produto.
 
 ```
 Props:
@@ -622,7 +622,7 @@ Comportamento:
 
 ### 4.5 AIInsightBanner
 
-Banner de insight gerado por IA — Dashboard.
+Banner de insight gerado por IA, Dashboard.
 
 ```
 Props:
@@ -728,7 +728,7 @@ A leitura financeira é uma tarefa de alta frequência realizada em contextos de
 
 **Como aplicar:**
 - Hierarquia de tamanho de texto agressiva: o número mais importante é sempre o maior.
-- Valores à direita (alinhados à direita), texto descritivo à esquerda — cria coluna visual de números.
+- Valores à direita (alinhados à direita), texto descritivo à esquerda, cria coluna visual de números.
 - Cores semânticas são não-negociáveis: vermelho = gasto/negativo, verde = positivo/ok.
 - Nunca colocar mais de 4 informações no mesmo card sem agrupamento visual (Chunking).
 - F-pattern scanning: informação crítica no topo esquerdo de cada seção.
@@ -740,9 +740,9 @@ O FAB `+` na bottom nav é a ação mais importante do app. Qualquer fricção n
 **Como aplicar:**
 - Toque 1: FAB → sheet abre com cursor no campo de valor e teclado numérico ativo.
 - Toque 2: digitar valor + selecionar categoria (basta um tap no chip) → Salvar.
-- Descrição e data são opcionais e ficam visualmente subordinadas (não pedir mais do que o mínimo necessário — Tesler's Law).
+- Descrição e data são opcionais e ficam visualmente subordinadas (não pedir mais do que o mínimo necessário, Tesler's Law).
 - O teclado deve aparecer em < 100ms após o toque no FAB (Doherty Threshold).
-- Categoria mais usada aparece primeiro (personalização baseada em frequência — Goal-Gradient Effect).
+- Categoria mais usada aparece primeiro (personalização baseada em frequência, Goal-Gradient Effect).
 
 ### 5.3 Feedback visual imediato
 
@@ -750,15 +750,15 @@ Cada ação deve ter confirmação visual em ≤ 80ms. O usuário nunca deve que
 
 **Como aplicar:**
 - Press states: `scale(0.97)` + `opacity(0.85)` em 80ms para botões e cards tocáveis.
-- Salvar gasto: toast de confirmação verde "Gasto adicionado" aparece em 150ms (optimistic UI — não esperar resposta da API).
+- Salvar gasto: toast de confirmação verde "Gasto adicionado" aparece em 150ms (optimistic UI, não esperar resposta da API).
 - Deletar: feedback imediato de remoção da lista + toast com undo.
-- Erro de rede: toast vermelho "Erro ao salvar. Tentando novamente..." — nunca silencioso.
+- Erro de rede: toast vermelho "Erro ao salvar. Tentando novamente...", nunca silencioso.
 - Loading de dados: skeletons sempre, nunca spinners bloqueantes sobre conteúdo existente.
 - Animações de confirmação (scale-spring no botão Salvar, check animado) reforçam o loop de recompensa.
 
 ### 5.4 Tom amigo, sem julgamentos
 
-O app lida com dinheiro — assunto sensível. O tom de voz nunca deve envergonhar, culpar ou alarmisticamente exagerar.
+O app lida com dinheiro, assunto sensível. O tom de voz nunca deve envergonhar, culpar ou alarmisticamente exagerar.
 
 **Como aplicar:**
 - Insights de IA: fraseados como observações, não julgamentos ("Você gastou mais com lazer este mês" ≠ "Você está gastando demais").
@@ -769,11 +769,11 @@ O app lida com dinheiro — assunto sensível. O tom de voz nunca deve envergonh
 ### 5.5 Acessibilidade como padrão
 
 - Contraste mínimo 4.5:1 para texto normal, 3:1 para texto grande (WCAG AA).
-- Nunca usar cor como único comunicador de estado — sempre acompanhar com texto ou ícone.
+- Nunca usar cor como único comunicador de estado, sempre acompanhar com texto ou ícone.
 - Tap targets mínimos 44×44px para todos os elementos interativos (Apple HIG / Material).
 - `prefers-reduced-motion`: substituir animações por transições de opacidade simples.
 - Labels `aria-label` em todos os ícones standalone, valores monetários e gráficos.
-- Suporte a Dynamic Type (iOS) e font scale (Android) — layouts que não quebram em 200% de zoom.
+- Suporte a Dynamic Type (iOS) e font scale (Android), layouts que não quebram em 200% de zoom.
 
 ---
 
@@ -781,7 +781,7 @@ O app lida com dinheiro — assunto sensível. O tom de voz nunca deve envergonh
 
 ### 6.1 Stack assumida (MVP)
 
-- **Framework:** React Native (Expo) ou React Web (Next.js) — a ser confirmado pelo CTO.
+- **Framework:** React Native (Expo) ou React Web (Next.js), a ser confirmado pelo CTO.
 - **Fontes:** `@fontsource/inter` ou Google Fonts CDN.
 - **Ícones:** Lucide React (coerente, limpo, licença MIT).
 - **Gráficos:** SVG direto para o DonutChart (evitar bundlesize de bibliotecas pesadas no MVP).
@@ -801,4 +801,4 @@ Cada tela deve ser considerada concluída quando:
 
 ---
 
-*Documento criado por UXDesigner — GAB-14 · Moneda MVP · Maio 2026*
+*Documento criado por UXDesigner, GAB-14 · Moneda MVP · Maio 2026*

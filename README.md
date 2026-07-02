@@ -7,14 +7,14 @@
 <p align="center"><em>"Seu dinheiro, finalmente claro."</em></p>
 
 <p align="center">
-  Assistente financeiro pessoal com IA. Lance gastos em linguagem natural, receba insights que explicam o seu dinheiro e entenda para onde ele vai — sem planilhas e sem julgamentos.
+  Assistente financeiro pessoal com IA. Lance gastos em linguagem natural, receba insights que explicam o seu dinheiro e entenda para onde ele vai, sem planilhas e sem julgamentos.
 </p>
 
 ---
 
 ## Visão geral
 
-Moneda é um app de controle de gastos pessoal voltado para o brasileiro. A premissa: lançar um gasto deve levar menos de 60 segundos. Você escreve em português natural — _"almoço 35 ifood"_ — e a IA categoriza, registra e devolve um resumo que **explica** o seu dinheiro em vez de só mostrar gráficos.
+Moneda é um app de controle de gastos pessoal voltado para o brasileiro. A premissa: lançar um gasto deve levar menos de 60 segundos. Você escreve em português natural, como "almoço 35 ifood", e a IA categoriza, registra e devolve um resumo que **explica** o seu dinheiro em vez de só mostrar gráficos.
 
 Hoje o produto roda como uma **PWA** (dashboard + insights com IA), com modo claro/escuro, ciclo de cartão e fechamento no padrão brasileiro. O norte do projeto é levar essa experiência para o **WhatsApp**, onde o público-alvo já vive.
 
@@ -33,12 +33,12 @@ Hoje o produto roda como uma **PWA** (dashboard + insights com IA), com modo cla
 
 ## Funcionalidades
 
-- **Lançamento em linguagem natural** — texto livre categorizado por IA (Groq)
+- **Lançamento em linguagem natural**: texto livre categorizado por IA (Groq)
 - **Dashboard claro** de orçamento, saldo e progresso de gastos
-- **Insights com IA** — resumos mensais, alertas de padrão e dicas personalizadas
+- **Insights com IA**: resumos mensais, alertas de padrão e dicas personalizadas
 - **Ciclo de cartão e fechamento** modelados no padrão brasileiro
 - **PWA instalável** com tema claro/escuro
-- **Privacidade por padrão** — mascaramento de valores sensíveis e auditoria de PII
+- **Privacidade por padrão**: mascaramento de valores sensíveis e auditoria de PII
 
 ## Stack
 
@@ -51,7 +51,7 @@ Hoje o produto roda como uma **PWA** (dashboard + insights com IA), com modo cla
 | Banco & Auth | Supabase (Postgres, RLS, cookies SSR) |
 | IA | Groq API (`llama-3.1-8b-instant`, `llama-3.3-70b-versatile`) |
 | PWA | manifest + service worker |
-| Deploy | Vercel — [moneda.info](https://moneda.info) |
+| Deploy | Vercel: [moneda.info](https://moneda.info) |
 
 ## Primeiros passos
 
@@ -117,7 +117,7 @@ moneda/
 ├── supabase/               # Migrations e schema
 ├── scripts/                # Screenshots, backfill de PII
 ├── tests/
-├── DESIGN.md  PRODUCT.md  ARCHITECTURE.md  DATABASE.md  PWA.md
+├── DESIGN.md  PRODUCT.md  PWA.md
 └── package.json
 ```
 
@@ -126,9 +126,7 @@ moneda/
 | Documento | O que cobre |
 | --- | --- |
 | [PRODUCT.md](PRODUCT.md) | Visão de produto, personas, proposta de valor e KPIs |
-| [ARCHITECTURE.md](ARCHITECTURE.md) | Stack, estrutura de pastas, fluxos (WhatsApp, IA) e decisões técnicas |
 | [DESIGN.md](DESIGN.md) | Design system: tokens, cores, componentes e guia visual |
-| [DATABASE.md](DATABASE.md) | Schema Supabase, migrations, RLS e plano de evolução |
 | [PWA.md](PWA.md) | Configuração e estratégia de PWA |
 
 ## Status

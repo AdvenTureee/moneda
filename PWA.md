@@ -68,7 +68,7 @@ Se o projeto estiver em Next.js moderno com App Router, seguir o padrão nativo 
 
 ---
 
-## Fase 1 — Manifesto e identidade do app
+## Fase 1: Manifesto e identidade do app
 
 Criar o manifesto do app com os metadados corretos para instalação. [web:33][web:49][web:53]
 
@@ -122,7 +122,7 @@ Criar o manifesto do app com os metadados corretos para instalação. [web:33][w
 
 ---
 
-## Fase 2 — Ícones e assets de instalação
+## Fase 2: Ícones e assets de instalação
 
 Criar os ícones oficiais do Moneda para instalação. Os ícones precisam existir em múltiplos tamanhos e idealmente incluir uma versão `maskable` para melhor recorte em launchers Android. [web:56][web:59]
 
@@ -140,7 +140,7 @@ Criar os ícones oficiais do Moneda para instalação. Os ícones precisam exist
 
 ---
 
-## Fase 3 — Service worker
+## Fase 3: Service worker
 
 Implementar service worker para cache e comportamento offline. O service worker é a base da confiabilidade da PWA e permite interceptar requests e armazenar recursos do app. [web:37][web:43]
 
@@ -169,7 +169,7 @@ Como o Moneda lida com dados pessoais/financeiros, não cachear indiscriminadame
 
 ---
 
-## Fase 4 — Experiência offline mínima
+## Fase 4: Experiência offline mínima
 
 Adicionar comportamento offline básico para o usuário não cair em tela quebrada quando estiver sem internet. Boas PWAs oferecem ao menos uma página offline customizada e feedback claro em condições ruins de rede. [web:38][web:42][web:54]
 
@@ -190,7 +190,7 @@ A experiência offline deve ser útil, honesta e consistente com o produto. Não
 
 ---
 
-## Fase 5 — Instalação do app
+## Fase 5: Instalação do app
 
 Fazer o app ser instalável e comunicar isso da forma certa. A instalação depende de manifest válido, HTTPS e critérios do navegador. [web:33][web:35]
 
@@ -206,7 +206,7 @@ Se for adicionar CTA de instalação, fazer isso com discrição e somente quand
 
 ---
 
-## Fase 6 — Responsividade e comportamento mobile
+## Fase 6: Responsividade e comportamento mobile
 
 Uma boa PWA precisa funcionar muito bem em mobile, com viewport correta, safe areas e experiência parecida com app nativo. [web:38][web:44]
 
@@ -227,7 +227,7 @@ Uma boa PWA precisa funcionar muito bem em mobile, com viewport correta, safe ar
 
 ---
 
-## Fase 7 — Performance e app shell
+## Fase 7: Performance e app shell
 
 Uma boa PWA deve abrir rápido e continuar rápida. O checklist do web.dev enfatiza rapidez, confiabilidade e adaptação a qualquer dispositivo. [web:38][web:41]
 
@@ -245,7 +245,7 @@ Uma boa PWA deve abrir rápido e continuar rápida. O checklist do web.dev enfat
 
 ---
 
-## Fase 8 — Segurança e dados do usuário
+## Fase 8: Segurança e dados do usuário
 
 Como o Moneda trabalha com finanças pessoais, a PWA precisa manter segurança e previsibilidade no tratamento dos dados. HTTPS é obrigatório e a política de cache precisa respeitar o caráter privado das informações. [web:33][web:44]
 
@@ -260,7 +260,7 @@ Nada de reaproveitar dados de um usuário para outro via cache de sessão.
 
 ---
 
-## Fase 9 — Validação e testes
+## Fase 9: Validação e testes
 
 Validar a implementação com DevTools, Lighthouse e testes reais em dispositivo. Lighthouse e as documentações recomendam verificar manifest, service worker e installability explicitamente. [web:35][web:38][web:51][web:54]
 
