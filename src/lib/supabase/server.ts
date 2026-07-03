@@ -1,7 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
 import { supabaseAuthCookieOptions } from '@/lib/supabase/cookies';
+import { MOCK_USER } from '@/data/mock';
 import type { Database } from '@/types/supabase';
 
 // Session-aware client — reads auth cookies to identify the current user.
@@ -58,4 +60,24 @@ export function isSupabaseEnabled(): boolean {
     process.env.NEXT_PUBLIC_SUPABASE_URL &&
     process.env.SUPABASE_SERVICE_ROLE_KEY
   );
+}
+
+export async function requireUserId(): Promise<string> {
+  if (!isSupabaseEnabled()) return MOCK_USER.id;
+  const supabase = await createSessionClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect('/login');
+  return user.id;
+}
+
+export type ResolveUserIdResult =
+  | { ok: true; userId: string }
+  | { ok: false; error: string };
+
+export async function tryResolveUserId(): Promise<ResolveUserIdResult> {
+  if (!isSupabaseEnabled()) return { ok: true, userId: MOCK_USER.id };
+  const supabase = await createSessionClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: 'Sessão expirada. Entre novamente.' };
+  return { ok: true, userId: user.id };
 }
