@@ -3,7 +3,7 @@ import type { User, Category, Expense } from '@/types';
 export const MOCK_USER: User = {
   id: 'user-001',
   name: 'Gabriel Mauro',
-  email: 'gabriel@fieldcorp.com.br',
+  email: 'gabriel@example.com',
   phone: '+5511999999999',
   createdAt: new Date('2026-01-01'),
 };

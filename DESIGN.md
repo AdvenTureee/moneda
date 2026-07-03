@@ -489,7 +489,7 @@ Regra: máximo 2 níveis de push navigation + modais. Nunca empilhar modais sobr
 │                                     │
 │  ┌──────────────────────────────┐  │
 │  │ 👤 Gabriel Mauro             │  │  ← Avatar inicial + nome
-│  │    gabriel@fieldcorp.com.br  │  │
+│  │    gabriel@example.com      │  │
 │  └──────────────────────────────┘  │
 │                                     │
 │  Orçamento Mensal                   │  ← Seção
