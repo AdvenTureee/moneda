@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
+import { useTopLoader } from 'nextjs-toploader';
 import { ArrowUUpLeft, CaretDown } from '@phosphor-icons/react';
 import { formatBillingCycleLabel, getCurrentBillingPeriod, shiftPeriod } from '@/lib/billingCycle';
 import { setStoredDashboardPeriod } from '@/lib/navigationState';
@@ -55,6 +56,7 @@ export default function MonthPicker({
   const isDraggingRef = useRef(false);
   const dragYRef = useRef(0);
   const router = useRouter();
+  const loader = useTopLoader();
   const menuWidth = 280;
 
   const currentLabel = formatBillingCycleLabel(value, closingDay);
@@ -117,7 +119,8 @@ export default function MonthPicker({
   function pick(period: string) {
     closeMenu();
     setStoredDashboardPeriod(period);
-      router.push(`/app?period=${period}`);
+    loader.start();
+    router.push(`/app?period=${period}`);
     router.refresh();
   }
 
