@@ -24,7 +24,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Perfil', icon: User, href: '/perfil' },
 ];
 
-const NAV_TRANSITION_TIMEOUT_MS = 520;
+const NAV_TRANSITION_TIMEOUT_MS = 5000;
 
 function getAppShellElement() {
   return document.querySelector<HTMLElement>('.app-shell');
