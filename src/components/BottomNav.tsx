@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { House, List, PlusCircle, Sparkle, User } from '@phosphor-icons/react';
+import { House, List, Plus, Sparkle, User } from '@phosphor-icons/react';
 import {
   DASHBOARD_PERIOD_CHANGED_EVENT,
   dashboardHrefWithStoredPeriod,
@@ -19,7 +19,7 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { label: 'Dashboard', icon: House, href: '/app' },
   { label: 'Feed', icon: List, href: '/feed' },
-  { label: 'Adicionar', icon: PlusCircle, href: '#add', isAction: true },
+  { label: 'Adicionar', icon: Plus, href: '#add', isAction: true },
   { label: 'Insights', icon: Sparkle, href: '/insights' },
   { label: 'Perfil', icon: User, href: '/perfil' },
 ];
@@ -58,6 +58,7 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
   const navRef = useRef<HTMLElement>(null);
   const tabsPillRef = useRef<HTMLSpanElement>(null);
   const [transitioningHref, setTransitioningHref] = useState<string | null>(null);
+  const [isCompact, setIsCompact] = useState(false);
 
   const prefetchRoute = useCallback(
     (href: string) => {
@@ -137,6 +138,44 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
     return () => observer.disconnect();
   }, []);
 
+  useEffect(() => {
+    const shell = getAppShellElement();
+    if (!shell) return;
+
+    let ticking = false;
+    let lastTop = shell.scrollTop;
+    let current = false;
+    const THRESHOLD_DOWN = 120;
+    const THRESHOLD_UP = 40;
+    const MIN_UP_DELTA = 4;
+
+    const update = () => {
+      ticking = false;
+      const top = shell.scrollTop;
+      const delta = top - lastTop;
+      const goingDown = delta > 0;
+      const goingUp = delta < -MIN_UP_DELTA;
+      let next = current;
+      if (goingDown && top > THRESHOLD_DOWN) next = true;
+      else if (top <= THRESHOLD_UP || goingUp) next = false;
+      lastTop = top;
+      if (next !== current) {
+        current = next;
+        setIsCompact(next);
+      }
+    };
+
+    const onScroll = () => {
+      if (!ticking) {
+        ticking = true;
+        window.requestAnimationFrame(update);
+      }
+    };
+
+    shell.addEventListener('scroll', onScroll, { passive: true });
+    return () => shell.removeEventListener('scroll', onScroll);
+  }, []);
+
   const moveTabsPill = useCallback((animate: boolean) => {
     const nav = navRef.current;
     const pill = tabsPillRef.current;
@@ -183,7 +222,7 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
   return (
     <nav
       ref={navRef}
-      className="bottom-nav"
+      className={`bottom-nav${isCompact ? ' is-compact' : ''}`}
       aria-label="Navegação principal"
     >
       <div className="bottom-nav__inner t-tabs">
@@ -198,7 +237,7 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
                 aria-label="Adicionar gasto"
                 className="bottom-nav-action-btn"
               >
-                <PlusCircle size={32} weight="bold" />
+                <Plus size={26} weight="bold" />
               </button>
             );
           }

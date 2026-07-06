@@ -3608,7 +3608,7 @@ html[data-theme="dark"] .hero-orbital {
   --tabs-text-active: var(--nav-accent);
   --tabs-text-muted: var(--color-text-tertiary);
   position: fixed;
-  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
   left: 50%;
   z-index: 40;
   width: min(calc(100vw - 1.5rem), 36rem);
@@ -3622,6 +3622,9 @@ html[data-theme="dark"] .hero-orbital {
   will-change: background-color, border-color, transform;
   -webkit-transform: translateX(-50%) translateZ(0);
   transform: translateX(-50%) translateZ(0);
+  transition:
+    bottom 220ms var(--bottom-nav-ease),
+    box-shadow 220ms var(--bottom-nav-ease);
 }
 
 .bottom-nav__inner {
@@ -3629,16 +3632,22 @@ html[data-theme="dark"] .hero-orbital {
   grid-template-columns: repeat(5, minmax(0, 1fr));
   align-items: center;
   gap: 0;
-  min-height: 68px;
-  padding: 6px 8px;
+  min-height: 56px;
+  padding: 5px 7px;
   background: transparent;
+  transition:
+    min-height 220ms var(--bottom-nav-ease),
+    padding 220ms var(--bottom-nav-ease);
 }
 
 .bottom-nav-tabs-pill {
-  top: 6px;
-  height: calc(100% - 12px);
+  top: 5px;
+  height: calc(100% - 10px);
   border-radius: 16px;
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--nav-accent) 12%, transparent);
+  transition:
+    top 220ms var(--bottom-nav-ease),
+    height 220ms var(--bottom-nav-ease);
 }
 
 .bottom-nav-link {
@@ -3646,13 +3655,13 @@ html[data-theme="dark"] .hero-orbital {
   display: flex;
   height: auto;
   min-width: 0;
-  min-height: 56px;
+  min-height: 48px;
   width: 100%;
   align-items: center;
   justify-content: center;
   justify-self: center;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
   padding: 0;
   border-radius: 16px;
   color: var(--color-text-tertiary);
@@ -3660,6 +3669,8 @@ html[data-theme="dark"] .hero-orbital {
   text-decoration: none;
   transition:
     color var(--bottom-nav-duration) var(--bottom-nav-ease),
+    min-height 220ms var(--bottom-nav-ease),
+    gap 220ms var(--bottom-nav-ease),
     transform 120ms var(--bottom-nav-ease);
 }
 
@@ -3715,16 +3726,18 @@ html[data-theme="dark"] .hero-orbital {
 
 .bottom-nav-link__label {
   max-width: 100%;
+  max-height: 1.3em;
   overflow: hidden;
-  font-size: 0.625rem;
-  line-height: 1;
+  font-size: 0.59375rem;
+  line-height: 1.25;
   letter-spacing: 0;
   text-overflow: ellipsis;
   white-space: nowrap;
   transition:
     color var(--bottom-nav-duration) var(--bottom-nav-ease),
-    opacity var(--bottom-nav-duration) var(--bottom-nav-ease),
-    transform var(--bottom-nav-duration) var(--bottom-nav-ease);
+    opacity 180ms var(--bottom-nav-ease),
+    transform 220ms var(--bottom-nav-ease),
+    max-height 220ms var(--bottom-nav-ease);
 }
 
 .bottom-nav-link--active .bottom-nav-link__label,
@@ -3741,20 +3754,26 @@ html[data-theme="dark"] .hero-orbital {
   position: relative;
   z-index: 2;
   display: inline-flex;
-  width: 58px;
-  height: 58px;
-  min-width: 58px;
-  min-height: 58px;
+  width: 50px;
+  height: 50px;
+  min-width: 50px;
+  min-height: 50px;
   align-items: center;
   justify-content: center;
   justify-self: center;
   border: 0;
   border-radius: 999px;
-  background: var(--color-brand-green);
+  background: linear-gradient(180deg, #5BBF8E 0%, #4AA77C 100%);
   color: #FFFFFF;
-  box-shadow: var(--shadow-nav-action);
+  box-shadow:
+    var(--shadow-nav-action),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.18);
   overflow: hidden;
   transition:
+    width 220ms var(--bottom-nav-ease),
+    height 220ms var(--bottom-nav-ease),
+    min-width 220ms var(--bottom-nav-ease),
+    min-height 220ms var(--bottom-nav-ease),
     filter var(--bottom-nav-duration) var(--bottom-nav-ease),
     box-shadow var(--bottom-nav-duration) var(--bottom-nav-ease),
     transform 120ms var(--bottom-nav-ease);
@@ -3781,21 +3800,61 @@ html[data-theme="dark"] .hero-orbital {
 
 .bottom-nav-action-btn:hover {
   filter: brightness(1.04);
-  box-shadow: 0 6px 16px rgba(91, 191, 142, 0.28);
+  box-shadow:
+    0 6px 18px color-mix(in srgb, var(--color-brand-green) 30%, transparent),
+    0 0 0 4px color-mix(in srgb, var(--color-brand-green) 18%, transparent),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.22);
 }
 
 .bottom-nav-action-btn:active {
   transform: scale(0.93);
   filter: brightness(0.98);
+  box-shadow:
+    0 2px 6px color-mix(in srgb, var(--color-brand-green) 22%, transparent),
+    inset 0 2px 4px rgba(0, 0, 0, 0.14),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.12);
 }
 
 .bottom-nav-action-btn:active svg {
-  transform: rotate(90deg) scale(0.92);
+  transform: scale(0.92);
 }
 
 .bottom-nav-action-btn:active::before {
   opacity: 1;
   transform: scale(1);
+}
+
+/* ── Compact (scrolling) state ───── */
+.bottom-nav.is-compact .bottom-nav__inner {
+  min-height: 46px;
+  padding: 4px 6px;
+}
+
+.bottom-nav.is-compact .bottom-nav-link {
+  min-height: 40px;
+  gap: 0;
+}
+
+.bottom-nav.is-compact .bottom-nav-link__icon {
+  transform: scale(0.88);
+}
+
+.bottom-nav.is-compact .bottom-nav-link__label {
+  max-height: 0;
+  opacity: 0;
+  transform: translateY(2px);
+}
+
+.bottom-nav.is-compact .bottom-nav-action-btn {
+  width: 42px;
+  height: 42px;
+  min-width: 42px;
+  min-height: 42px;
+}
+
+.bottom-nav.is-compact .bottom-nav-tabs-pill {
+  top: 4px;
+  height: calc(100% - 8px);
 }
 
 html[data-theme="dark"] .bottom-nav-link {
@@ -3821,12 +3880,12 @@ html[data-theme="dark"] .bottom-nav {
   }
 
   .bottom-nav__inner {
-    min-height: 64px;
+    min-height: 58px;
     padding-inline: 5px;
   }
 
   .bottom-nav-link {
-    min-height: 54px;
+    min-height: 48px;
     border-radius: 14px;
   }
 
@@ -3835,21 +3894,38 @@ html[data-theme="dark"] .bottom-nav {
   }
 
   .bottom-nav-link__label {
-    font-size: 0.59375rem;
+    font-size: 0.5625rem;
   }
 
   .bottom-nav-action-btn {
-    width: 54px;
-    height: 54px;
-    min-width: 54px;
-    min-height: 54px;
+    width: 46px;
+    height: 46px;
+    min-width: 46px;
+    min-height: 46px;
+  }
+
+  .bottom-nav.is-compact .bottom-nav__inner {
+    min-height: 42px;
+  }
+
+  .bottom-nav.is-compact .bottom-nav-link {
+    min-height: 36px;
+  }
+
+  .bottom-nav.is-compact .bottom-nav-action-btn {
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+    min-height: 38px;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .bottom-nav,
+  .bottom-nav__inner,
   .bottom-nav-link,
   .bottom-nav-link__icon,
+  .bottom-nav-link__label,
   .bottom-nav-tabs-pill,
   .bottom-nav-action-btn {
     animation: none;
@@ -3859,7 +3935,9 @@ html[data-theme="dark"] .bottom-nav {
   .bottom-nav-link:active,
   .bottom-nav-action-btn:active,
   .bottom-nav-link--active .bottom-nav-link__icon,
-  .bottom-nav-link--transitioning .bottom-nav-link__icon {
+  .bottom-nav-link--transitioning .bottom-nav-link__icon,
+  .bottom-nav.is-compact .bottom-nav-link__icon,
+  .bottom-nav.is-compact .bottom-nav-link__label {
     transform: none;
   }
 }
