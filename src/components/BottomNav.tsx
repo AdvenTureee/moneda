@@ -58,7 +58,6 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
   const navRef = useRef<HTMLElement>(null);
   const tabsPillRef = useRef<HTMLSpanElement>(null);
   const [transitioningHref, setTransitioningHref] = useState<string | null>(null);
-  const [isCompact, setIsCompact] = useState(false);
 
   const prefetchRoute = useCallback(
     (href: string) => {
@@ -138,44 +137,6 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
     return () => observer.disconnect();
   }, []);
 
-  useEffect(() => {
-    const shell = getAppShellElement();
-    if (!shell) return;
-
-    let ticking = false;
-    let lastTop = shell.scrollTop;
-    let current = false;
-    const THRESHOLD_DOWN = 120;
-    const THRESHOLD_UP = 40;
-    const MIN_UP_DELTA = 4;
-
-    const update = () => {
-      ticking = false;
-      const top = shell.scrollTop;
-      const delta = top - lastTop;
-      const goingDown = delta > 0;
-      const goingUp = delta < -MIN_UP_DELTA;
-      let next = current;
-      if (goingDown && top > THRESHOLD_DOWN) next = true;
-      else if (top <= THRESHOLD_UP || goingUp) next = false;
-      lastTop = top;
-      if (next !== current) {
-        current = next;
-        setIsCompact(next);
-      }
-    };
-
-    const onScroll = () => {
-      if (!ticking) {
-        ticking = true;
-        window.requestAnimationFrame(update);
-      }
-    };
-
-    shell.addEventListener('scroll', onScroll, { passive: true });
-    return () => shell.removeEventListener('scroll', onScroll);
-  }, []);
-
   const moveTabsPill = useCallback((animate: boolean) => {
     const nav = navRef.current;
     const pill = tabsPillRef.current;
@@ -219,26 +180,10 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
     moveTabsPill(true);
   }, [dashboardHref, moveTabsPill, pathname, transitioningHref]);
 
-  useEffect(() => {
-    if (isCompact === undefined) return;
-    let raf = 0;
-    let frames = 0;
-    const maxFrames = 22;
-    const tick = () => {
-      moveTabsPill(false);
-      frames += 1;
-      if (frames < maxFrames) {
-        raf = window.requestAnimationFrame(tick);
-      }
-    };
-    raf = window.requestAnimationFrame(tick);
-    return () => window.cancelAnimationFrame(raf);
-  }, [isCompact, moveTabsPill]);
-
   return (
     <nav
       ref={navRef}
-      className={`bottom-nav${isCompact ? ' is-compact' : ''}`}
+      className="bottom-nav"
       aria-label="Navegação principal"
     >
       <div className="bottom-nav__inner t-tabs">
