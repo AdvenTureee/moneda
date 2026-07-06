@@ -17,13 +17,6 @@ const COLOR_SWATCHES = [
 const DEFAULT_COLOR = '#6B7280';
 const DEFAULT_ICON = 'Package';
 
-function slugify(text: string): string {
-  return text.toLowerCase()
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]+/g, '_')
-    .replace(/^_|_$/g, '');
-}
-
 type CategoryItem = ReturnType<typeof useCategories>['data'][number];
 
 export default function CategoriesView() {
@@ -100,11 +93,10 @@ export default function CategoriesView() {
 
     try {
       if (creating) {
-        const id = slugify(formData.name);
         const res = await fetch('/api/categories', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'create', id, ...formData }),
+          body: JSON.stringify({ action: 'create', ...formData }),
         });
         const d = await res.json();
         if (!res.ok) throw new Error(d.error);
@@ -447,11 +439,6 @@ export default function CategoriesView() {
             readOnly={readOnly}
             className={`${inputBase} ${readOnly ? inputDisabled : inputEnabled}`}
           />
-          {creating && formData.name.trim().length > 0 && (
-            <p className="text-[10px] text-[#9CA3AF] mt-1">
-              ID: <span className="font-mono">{slugify(formData.name)}</span>
-            </p>
-          )}
         </div>
 
         {/* Icon picker */}

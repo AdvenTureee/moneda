@@ -23,6 +23,47 @@ export interface CategoryWithMeta extends Category {
   sort_order: number;
 }
 
+function slugifyCategoryName(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .replace(/^([0-9])/, 'c$1');
+}
+
+export function buildCustomCategoryId(userId: string, name: string, index: number): string {
+  const base = slugifyCategoryName(name) || `cat${index}`;
+  return `u_${userId.replace(/-/g, '').slice(0, 8)}_${base}_${index + 1}`.slice(0, 60);
+}
+
+export function userCategoryPrefix(userId: string): string {
+  return `u_${userId.replace(/-/g, '').slice(0, 8)}_`;
+}
+
+export async function generateUniqueCategoryId(userId: string, name: string): Promise<string> {
+  if (isSupabaseEnabled()) {
+    const db = createServiceClient();
+    const prefix = userCategoryPrefix(userId);
+    const { data, error } = await db
+      .from('categories')
+      .select('id')
+      .eq('user_id', userId)
+      .like('id', `${prefix}%`);
+    if (error) throw new Error(`generateUniqueCategoryId: ${error.message}`);
+    const used = new Set((data ?? []).map((r: { id: string }) => r.id));
+    let i = 0;
+    for (;;) {
+      const candidate = buildCustomCategoryId(userId, name, i);
+      if (!used.has(candidate)) return candidate;
+      i += 1;
+    }
+  }
+  // Mock: time-based index guarda unicidade dentro da sessão.
+  return buildCustomCategoryId(userId, name, Math.max(0, Math.floor(Date.now() / 1000) - 1_700_000_000));
+}
+
 async function getCategoriesFromDB(
   userId: string,
   _opts: { applyHasPetGate: boolean },

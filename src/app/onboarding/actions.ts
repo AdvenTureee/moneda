@@ -12,6 +12,7 @@ import { createExpense } from '@/lib/expenses';
 import { getCurrentBillingPeriod } from '@/lib/billingCycle';
 import { normalizeWhatsappPhone } from '@/lib/phone';
 import { buildProfilePhonePiiUpdate } from '@/lib/security/profilePii';
+import { buildCustomCategoryId } from '@/lib/categories';
 
 export type OnboardingResult = { ok: true } | { ok: false; error: string };
 
@@ -41,21 +42,6 @@ export interface OnboardingPayload {
   customCategories: OnboardingCustomCategory[];
   categoryBudgets?: OnboardingCategoryBudget[];
   whatsappPhone?: string | null;
-}
-
-function slugifyCategoryName(name: string): string {
-  return name
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]+/g, '_')
-    .replace(/^_+|_+$/g, '')
-    .replace(/^([0-9])/, 'c$1');
-}
-
-function buildCustomCategoryId(userId: string, name: string, index: number): string {
-  const base = slugifyCategoryName(name) || `cat${index}`;
-  return `u_${userId.replace(/-/g, '').slice(0, 8)}_${base}_${index + 1}`.slice(0, 60);
 }
 
 function validatePayload(p: OnboardingPayload): string | null {
