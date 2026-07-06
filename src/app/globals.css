@@ -3607,12 +3607,17 @@ html[data-theme="dark"] .hero-orbital {
   --tabs-pill-bg: color-mix(in srgb, var(--nav-accent) 13%, var(--color-surface) 82%);
   --tabs-text-active: var(--nav-accent);
   --tabs-text-muted: var(--color-text-tertiary);
+  --nav-shell-radius: 22px;
+  --nav-pad-y: 5px;
+  --nav-pad-x: 7px;
+  --nav-inner-radius: calc(var(--nav-shell-radius) - var(--nav-pad-y));
+  --nav-structure-duration: 320ms;
   position: fixed;
   bottom: calc(16px + env(safe-area-inset-bottom, 0px));
   left: 50%;
   z-index: 40;
   width: min(calc(100vw - 1.5rem), 36rem);
-  border-radius: 22px;
+  border-radius: var(--nav-shell-radius);
   background-color: var(--nav-glass-bg);
   border: 1px solid var(--nav-glass-border);
   -webkit-backdrop-filter: blur(18px) saturate(132%);
@@ -3623,8 +3628,8 @@ html[data-theme="dark"] .hero-orbital {
   -webkit-transform: translateX(-50%) translateZ(0);
   transform: translateX(-50%) translateZ(0);
   transition:
-    bottom 220ms var(--bottom-nav-ease),
-    box-shadow 220ms var(--bottom-nav-ease);
+    bottom var(--nav-structure-duration) var(--bottom-nav-ease),
+    box-shadow var(--nav-structure-duration) var(--bottom-nav-ease);
 }
 
 .bottom-nav__inner {
@@ -3633,21 +3638,21 @@ html[data-theme="dark"] .hero-orbital {
   align-items: center;
   gap: 0;
   min-height: 56px;
-  padding: 5px 7px;
+  padding: var(--nav-pad-y) var(--nav-pad-x);
   background: transparent;
   transition:
-    min-height 220ms var(--bottom-nav-ease),
-    padding 220ms var(--bottom-nav-ease);
+    min-height var(--nav-structure-duration) var(--bottom-nav-ease),
+    padding var(--nav-structure-duration) var(--bottom-nav-ease);
 }
 
 .bottom-nav-tabs-pill {
-  top: 5px;
-  height: calc(100% - 10px);
-  border-radius: 16px;
+  top: var(--nav-pad-y);
+  height: calc(100% - (var(--nav-pad-y) * 2));
+  border-radius: var(--nav-inner-radius);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--nav-accent) 12%, transparent);
   transition:
-    top 220ms var(--bottom-nav-ease),
-    height 220ms var(--bottom-nav-ease);
+    top var(--nav-structure-duration) var(--bottom-nav-ease),
+    height var(--nav-structure-duration) var(--bottom-nav-ease);
 }
 
 .bottom-nav-link {
@@ -3663,14 +3668,15 @@ html[data-theme="dark"] .hero-orbital {
   flex-direction: column;
   gap: 2px;
   padding: 0;
-  border-radius: 16px;
+  border-radius: var(--nav-inner-radius);
   color: var(--color-text-tertiary);
   font-weight: 650;
   text-decoration: none;
   transition:
     color var(--bottom-nav-duration) var(--bottom-nav-ease),
-    min-height 220ms var(--bottom-nav-ease),
-    gap 220ms var(--bottom-nav-ease),
+    min-height var(--nav-structure-duration) var(--bottom-nav-ease),
+    gap var(--nav-structure-duration) var(--bottom-nav-ease),
+    border-radius var(--nav-structure-duration) var(--bottom-nav-ease),
     transform 120ms var(--bottom-nav-ease);
 }
 
@@ -3717,19 +3723,19 @@ html[data-theme="dark"] .hero-orbital {
   transition:
     color var(--bottom-nav-duration) var(--bottom-nav-ease),
     opacity var(--bottom-nav-duration) var(--bottom-nav-ease),
-    transform 220ms var(--bottom-nav-ease);
+    transform var(--nav-structure-duration) var(--bottom-nav-ease);
 }
 
 .bottom-nav-link--active .bottom-nav-link__icon {
   color: var(--nav-accent);
   transform: scale(1.08);
-  filter: drop-shadow(0 2px 4px color-mix(in srgb, var(--color-brand-green) 42%, transparent));
+  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--color-brand-green) 42%, transparent));
 }
 
 .bottom-nav-link--transitioning .bottom-nav-link__icon {
   color: var(--nav-accent);
   transform: scale(1.08);
-  filter: drop-shadow(0 2px 4px color-mix(in srgb, var(--color-brand-green) 42%, transparent));
+  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--color-brand-green) 42%, transparent));
 }
 
 .bottom-nav-link__label {
@@ -3743,9 +3749,9 @@ html[data-theme="dark"] .hero-orbital {
   white-space: nowrap;
   transition:
     color var(--bottom-nav-duration) var(--bottom-nav-ease),
-    opacity 180ms var(--bottom-nav-ease),
-    transform 220ms var(--bottom-nav-ease),
-    max-height 220ms var(--bottom-nav-ease);
+    opacity var(--nav-structure-duration) var(--bottom-nav-ease),
+    transform var(--nav-structure-duration) var(--bottom-nav-ease),
+    max-height var(--nav-structure-duration) var(--bottom-nav-ease);
 }
 
 .bottom-nav-link--active .bottom-nav-link__label,
@@ -3778,10 +3784,10 @@ html[data-theme="dark"] .hero-orbital {
     inset 0 0 0 1px rgba(255, 255, 255, 0.18);
   overflow: hidden;
   transition:
-    width 220ms var(--bottom-nav-ease),
-    height 220ms var(--bottom-nav-ease),
-    min-width 220ms var(--bottom-nav-ease),
-    min-height 220ms var(--bottom-nav-ease),
+    width var(--nav-structure-duration) var(--bottom-nav-ease),
+    height var(--nav-structure-duration) var(--bottom-nav-ease),
+    min-width var(--nav-structure-duration) var(--bottom-nav-ease),
+    min-height var(--nav-structure-duration) var(--bottom-nav-ease),
     filter var(--bottom-nav-duration) var(--bottom-nav-ease),
     box-shadow var(--bottom-nav-duration) var(--bottom-nav-ease),
     transform 120ms var(--bottom-nav-ease);
@@ -3833,9 +3839,13 @@ html[data-theme="dark"] .hero-orbital {
 }
 
 /* ── Compact (scrolling) state ───── */
+.bottom-nav.is-compact {
+  --nav-pad-y: 4px;
+  --nav-pad-x: 6px;
+}
+
 .bottom-nav.is-compact .bottom-nav__inner {
   min-height: 46px;
-  padding: 4px 6px;
 }
 
 .bottom-nav.is-compact .bottom-nav-link {
@@ -3850,7 +3860,7 @@ html[data-theme="dark"] .hero-orbital {
 .bottom-nav.is-compact .bottom-nav-link--active .bottom-nav-link__icon,
 .bottom-nav.is-compact .bottom-nav-link--transitioning .bottom-nav-link__icon {
   transform: scale(0.92);
-  filter: drop-shadow(0 1px 3px color-mix(in srgb, var(--color-brand-green) 36%, transparent));
+  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--color-brand-green) 36%, transparent));
 }
 
 .bottom-nav.is-compact .bottom-nav-link__label {
@@ -3889,22 +3899,17 @@ html[data-theme="dark"] .bottom-nav {
 
 @media (max-width: 374px) {
   .bottom-nav {
+    --nav-shell-radius: 20px;
+    --nav-pad-x: 5px;
     width: min(calc(100vw - 1rem), 36rem);
-    border-radius: 20px;
   }
 
   .bottom-nav__inner {
     min-height: 58px;
-    padding-inline: 5px;
   }
 
   .bottom-nav-link {
     min-height: 48px;
-    border-radius: 14px;
-  }
-
-  .bottom-nav-tabs-pill {
-    border-radius: 14px;
   }
 
   .bottom-nav-link__label {

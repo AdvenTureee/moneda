@@ -177,11 +177,11 @@ export default function WaffleChart({
                 style={{
                   backgroundColor: cell.isMixedOthers ? 'transparent' : cell.categoryColor,
                   borderColor: cell.isMixedOthers ? 'var(--color-border)' : 'transparent',
-                  opacity: isDimmed ? 0.28 : 1,
-                  transform: ready ? (isHovered ? 'scale(1.08)' : 'scale(1)') : 'scale(0.65)',
+                  opacity: isDimmed ? 0.28 : ready ? 1 : 0,
+                  transform: ready ? (isHovered ? 'scale(1.08)' : 'scale(1)') : 'scale(0.92)',
                   transition:
-                    'border-color 160ms ease-out, opacity 160ms ease-out, transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1)',
-                  transitionDelay: ready ? '0ms' : `${Math.min(cell.index * 8, 420)}ms`,
+                    'border-color 160ms ease-out, opacity 240ms cubic-bezier(0.22, 1, 0.36, 1), transform 240ms cubic-bezier(0.22, 1, 0.36, 1)',
+                  transitionDelay: ready ? '0ms' : `${Math.min(cell.index * 3, 120)}ms`,
                 }}
                 onFocus={() => setHoveredId(cell.categoryId)}
                 onBlur={() => setHoveredId(null)}
