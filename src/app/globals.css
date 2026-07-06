@@ -3612,11 +3612,12 @@ html[data-theme="dark"] .hero-orbital {
   --nav-pad-x: 7px;
   --nav-inner-radius: calc(var(--nav-shell-radius) - var(--nav-pad-y));
   --nav-structure-duration: 320ms;
+  --nav-width: min(calc(100vw - 1.5rem), 36rem);
   position: fixed;
   bottom: calc(16px + env(safe-area-inset-bottom, 0px));
   left: 50%;
   z-index: 40;
-  width: min(calc(100vw - 1.5rem), 36rem);
+  width: var(--nav-width);
   border-radius: var(--nav-shell-radius);
   background-color: var(--nav-glass-bg);
   border: 1px solid var(--nav-glass-border);
@@ -3628,6 +3629,7 @@ html[data-theme="dark"] .hero-orbital {
   -webkit-transform: translateX(-50%) translateZ(0);
   transform: translateX(-50%) translateZ(0);
   transition:
+    width var(--nav-structure-duration) var(--bottom-nav-ease),
     bottom var(--nav-structure-duration) var(--bottom-nav-ease),
     box-shadow var(--nav-structure-duration) var(--bottom-nav-ease);
 }
@@ -3842,6 +3844,7 @@ html[data-theme="dark"] .hero-orbital {
 .bottom-nav.is-compact {
   --nav-pad-y: 4px;
   --nav-pad-x: 6px;
+  --nav-width: min(calc(100vw - 3rem), 32rem);
 }
 
 .bottom-nav.is-compact .bottom-nav__inner {
@@ -3901,7 +3904,7 @@ html[data-theme="dark"] .bottom-nav {
   .bottom-nav {
     --nav-shell-radius: 20px;
     --nav-pad-x: 5px;
-    width: min(calc(100vw - 1rem), 36rem);
+    --nav-width: min(calc(100vw - 1rem), 36rem);
   }
 
   .bottom-nav__inner {
@@ -3936,6 +3939,10 @@ html[data-theme="dark"] .bottom-nav {
     height: 38px;
     min-width: 38px;
     min-height: 38px;
+  }
+
+  .bottom-nav.is-compact {
+    --nav-width: min(calc(100vw - 2rem), 32rem);
   }
 }
 

@@ -219,6 +219,22 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
     moveTabsPill(true);
   }, [dashboardHref, moveTabsPill, pathname, transitioningHref]);
 
+  useEffect(() => {
+    if (isCompact === undefined) return;
+    let raf = 0;
+    let frames = 0;
+    const maxFrames = 22;
+    const tick = () => {
+      moveTabsPill(false);
+      frames += 1;
+      if (frames < maxFrames) {
+        raf = window.requestAnimationFrame(tick);
+      }
+    };
+    raf = window.requestAnimationFrame(tick);
+    return () => window.cancelAnimationFrame(raf);
+  }, [isCompact, moveTabsPill]);
+
   return (
     <nav
       ref={navRef}
