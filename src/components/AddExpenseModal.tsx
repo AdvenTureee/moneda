@@ -732,7 +732,7 @@ export default function AddExpenseModal({
               : isEditing
               ? 'Atualizar'
               : amountCents > 0
-                ? `Salvar — ${formatCurrency(amountCents)}`
+                ? `Salvar ${formatCurrency(amountCents)}`
                 : 'Salvar Gasto'}
           </button>
         </div>
