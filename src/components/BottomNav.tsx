@@ -162,19 +162,45 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
     pill.style.width = `${activeTab.offsetWidth}px`;
   }, []);
 
-  useLayoutEffect(() => {
+  const schedulePillResync = useCallback(() => {
     const frame = window.requestAnimationFrame(() => moveTabsPill(false));
-    const handleResize = () => moveTabsPill(false);
+    const tail = window.setTimeout(() => moveTabsPill(false), 360);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.clearTimeout(tail);
+    };
+  }, [moveTabsPill]);
 
-    window.addEventListener('resize', handleResize);
-    window.visualViewport?.addEventListener('resize', handleResize);
+  useLayoutEffect(() => {
+    const nav = navRef.current;
+    if (!nav) return;
+
+    let cancelTail: (() => void) | null = null;
+    const handleStructuralChange = () => {
+      cancelTail?.();
+      cancelTail = schedulePillResync();
+    };
+
+    const frame = window.requestAnimationFrame(() => moveTabsPill(false));
+
+    const resizeObserver =
+      typeof ResizeObserver !== 'undefined' ? new ResizeObserver(() => handleStructuralChange()) : null;
+    resizeObserver?.observe(nav);
+
+    const handleViewportResize = () => handleStructuralChange();
+    window.visualViewport?.addEventListener('resize', handleViewportResize);
+
+    const handleOrientationChange = () => handleStructuralChange();
+    window.addEventListener('orientationchange', handleOrientationChange);
 
     return () => {
       window.cancelAnimationFrame(frame);
-      window.removeEventListener('resize', handleResize);
-      window.visualViewport?.removeEventListener('resize', handleResize);
+      resizeObserver?.disconnect();
+      window.visualViewport?.removeEventListener('resize', handleViewportResize);
+      window.removeEventListener('orientationchange', handleOrientationChange);
+      cancelTail?.();
     };
-  }, [moveTabsPill]);
+  }, [moveTabsPill, schedulePillResync]);
 
   useLayoutEffect(() => {
     moveTabsPill(true);
