@@ -15,6 +15,7 @@ import {
   Tag,
   Bell,
   DownloadSimple,
+  FileArrowUp,
   CurrencyDollar,
   Camera,
   Moon,
@@ -914,6 +915,20 @@ export default function ProfileView({
                 ? 'Enviar link de redefinição para o email'
                 : 'Crie uma senha para entrar também via email'}
             </p>
+          </div>
+          <CaretRight size={18} className="text-[#E5E7EB] group-hover:text-[#9CA3AF] transition-colors" />
+        </Link>
+
+        <Link
+          href="/importar"
+          className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-[#F8F9FB] transition-colors group"
+        >
+          <ProfileIcon tone="purple">
+            <FileArrowUp size={18} />
+          </ProfileIcon>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-[#1A1D23]">Importar extrato</p>
+            <p className="text-xs text-[#6B7280]">Importe gastos do seu banco (OFX/CSV)</p>
           </div>
           <CaretRight size={18} className="text-[#E5E7EB] group-hover:text-[#9CA3AF] transition-colors" />
         </Link>

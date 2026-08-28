@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useTransition } from 'react';
+import { useMemo, useState, useTransition, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   ArrowLeft,
@@ -12,6 +12,9 @@ import {
   Sun,
   Calculator,
   WhatsappLogo,
+  UploadSimple,
+  FileArrowUp,
+  Check,
 } from '@phosphor-icons/react';
 import Icon, { AVAILABLE_ICONS } from '@/components/Icon';
 import Mo from '@/components/Mo';
@@ -33,8 +36,8 @@ interface OnboardingViewProps {
   firstName: string;
 }
 
-type Step = 'budget' | 'categories' | 'categoryBudget' | 'expenses' | 'whatsapp' | 'closing' | 'theme';
-const STEP_ORDER: Step[] = ['budget', 'categories', 'categoryBudget', 'expenses', 'whatsapp', 'closing', 'theme'];
+type Step = 'budget' | 'categories' | 'categoryBudget' | 'expenses' | 'import' | 'whatsapp' | 'closing' | 'theme';
+const STEP_ORDER: Step[] = ['budget', 'categories', 'categoryBudget', 'expenses', 'import', 'whatsapp', 'closing', 'theme'];
 
 interface ExpenseRow {
   tempId: string;
@@ -129,6 +132,12 @@ export default function OnboardingView({ defaultCategories, firstName }: Onboard
   const firstCategoryId = visibleCategories[0]?.id ?? '';
   const [expenseRows, setExpenseRows] = useState<ExpenseRow[]>([]);
 
+  // Import step
+  const importFileRef = useRef<HTMLInputElement>(null);
+  const [importParsing, setImportParsing] = useState(false);
+  const [importParsedCount, setImportParsedCount] = useState<number | null>(null);
+  const [importError, setImportError] = useState<string | null>(null);
+
   // Submit
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -144,6 +153,7 @@ export default function OnboardingView({ defaultCategories, firstName }: Onboard
         (r) => r.description.trim() && r.amountCents > 0 && r.categoryId && r.occurredAtInput,
       );
       case 'categories': return true;
+      case 'import': return true;
     }
   })();
 
@@ -257,6 +267,34 @@ export default function OnboardingView({ defaultCategories, firstName }: Onboard
       );
     }
     setCustomCategories((cs) => cs.filter((_, i) => i !== idx));
+  }
+
+  async function handleImportFile(file: File) {
+    setImportError(null);
+    setImportParsing(true);
+    setImportParsedCount(null);
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const res = await fetch('/api/import/parse', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (!res.ok) {
+        setImportError(data.error ?? 'Erro ao processar arquivo.');
+        return;
+      }
+      const txns = data.transactions ?? [];
+      if (txns.length === 0) {
+        setImportError('Nenhuma transação encontrada no arquivo.');
+        return;
+      }
+      setImportParsedCount(txns.length);
+    } catch {
+      setImportError('Erro de conexão ao enviar arquivo.');
+    } finally {
+      setImportParsing(false);
+    }
   }
 
   function goNext() {
@@ -805,6 +843,87 @@ export default function OnboardingView({ defaultCategories, firstName }: Onboard
               className="w-full flex items-center justify-center gap-2 py-3 rounded-[12px] border-2 border-dashed border-[#E5E7EB] text-sm font-semibold text-[#6B7280] hover:border-[#A8C5E0] hover:text-[#1A1D23] transition-colors"
             >
               <Plus size={16} weight="bold" /> Adicionar gasto
+            </button>
+          </section>
+        )}
+
+        {step === 'import' && (
+          <section className="flex-1">
+            <div className="mx-auto w-16 h-16 rounded-full bg-[#EEF9F4] flex items-center justify-center mb-4">
+              <FileArrowUp size={32} weight="bold" className="text-[#2E8F67]" />
+            </div>
+            <h2 className="text-xl font-heading text-center text-[#1A1D23]">
+              Importar extrato bancário
+            </h2>
+            <p className="text-sm text-[#6B7280] text-center mt-2 mb-6 max-w-[320px] mx-auto">
+              Exporte o extrato do seu banco em OFX ou CSV e importe aqui. É opcional — você pode fazer depois.
+            </p>
+
+            <input
+              ref={importFileRef}
+              type="file"
+              accept=".ofx,.qfx,.csv"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleImportFile(file);
+              }}
+            />
+
+            {importParsing && (
+              <div className="flex flex-col items-center py-6">
+                <span className="w-6 h-6 border-2 border-[#5BBF8E]/30 border-t-[#5BBF8E] rounded-full animate-spin" />
+                <p className="text-sm text-[#6B7280] mt-2">Processando arquivo...</p>
+              </div>
+            )}
+
+            {!importParsing && importParsedCount !== null && (
+              <div className="rounded-[16px] bg-[#EEF9F4] border border-[#5BBF8E]/30 p-4 flex items-center gap-3">
+                <span className="w-8 h-8 rounded-full bg-[#5BBF8E] flex items-center justify-center shrink-0">
+                  <Check size={16} weight="bold" className="text-white" />
+                </span>
+                <div>
+                  <p className="text-sm font-bold text-[#2E8F67]">
+                    {importParsedCount} transações encontradas
+                  </p>
+                  <p className="text-xs text-[#6B7280] mt-0.5">
+                    Elas serão importadas quando você concluir o onboarding.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {!importParsing && importParsedCount === null && (
+              <button
+                type="button"
+                onClick={() => importFileRef.current?.click()}
+                className="w-full flex flex-col items-center gap-3 py-8 rounded-[16px] border-2 border-dashed border-[#E5E7EB] hover:border-[#5BBF8E] hover:bg-[#EEF9F4] transition-all active:scale-[0.99]"
+              >
+                <div className="w-12 h-12 rounded-full bg-[#F8F9FB] flex items-center justify-center">
+                  <UploadSimple size={24} weight="bold" className="text-[#5BBF8E]" />
+                </div>
+                <p className="text-sm font-bold text-[#1A1D23]">Selecionar arquivo</p>
+                <p className="text-xs text-[#6B7280]">OFX ou CSV</p>
+              </button>
+            )}
+
+            {importError && (
+              <div className="mt-3 flex items-center gap-2 px-4 py-3 rounded-[12px] bg-[#FDF0F0] text-[#B14C4C] border border-[#F4D7D7]">
+                <WarningCircle size={16} className="shrink-0" />
+                <p className="text-sm font-medium">{importError}</p>
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={() => {
+                setImportParsedCount(null);
+                setImportError(null);
+                setStepIdx((i) => Math.min(i + 1, STEP_ORDER.length - 1));
+              }}
+              className="mt-4 w-full rounded-full bg-[#F1F3F7] py-3 text-sm font-bold text-[#6B7280] transition-colors hover:bg-[#E5E7EB] active:scale-[0.98]"
+            >
+              {importParsedCount !== null ? 'Continuar' : 'Pular por enquanto'}
             </button>
           </section>
         )}
