@@ -27,19 +27,14 @@ export default function ResetPasswordView() {
 
     async function prepareRecoverySession() {
       const supabase = createClient();
-      const params = new URLSearchParams(window.location.search);
-      const code = params.get('code');
 
-      if (code) {
-        const { error } = await supabase.auth.exchangeCodeForSession(code);
+      const params = new URLSearchParams(window.location.search);
+      const errCode = params.get('error');
+      if (errCode) {
         if (!active) return;
-        window.history.replaceState({}, '', '/redefinir-senha');
-        if (error) {
-          console.error('[passwordRecovery:exchange]', error);
-          setLinkState('error');
-          setMessage('Link inválido ou expirado. Solicite um novo email de redefinição.');
-          return;
-        }
+        setLinkState('error');
+        setMessage('Link inválido ou expirado. Solicite um novo email de redefinição.');
+        return;
       }
 
       const { data, error } = await supabase.auth.getSession();
@@ -50,6 +45,7 @@ export default function ResetPasswordView() {
         return;
       }
 
+      window.history.replaceState({}, '', '/redefinir-senha');
       setLinkState('ready');
       setMessage('Escolha uma nova senha para continuar.');
     }
