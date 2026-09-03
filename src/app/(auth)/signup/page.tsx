@@ -112,6 +112,14 @@ export default function SignupPage() {
       return;
     }
 
+    const returnedEmail = data?.user?.email?.toLowerCase();
+    if (returnedEmail && returnedEmail !== email.toLowerCase()) {
+      console.error('[signup] email mismatch', { requested: email, returned: returnedEmail });
+      showError('Este email já está em uso em outra conta. Use a opção "Entrar" ou tente recuperar a senha.');
+      setLoading(false);
+      return;
+    }
+
     if (!data.session) {
       setSuccess(true);
       setLoading(false);
