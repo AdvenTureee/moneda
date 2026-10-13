@@ -22,6 +22,25 @@ interface ConfirmBody {
   transactions: ConfirmTransaction[];
 }
 
+const MAX_AMOUNT_CENTS = 100_000_000_000; // R$ 1 bilhão
+const MAX_DESCRIPTION_LENGTH = 200;
+const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+function validateTransaction(tx: ConfirmTransaction, index: number): string | null {
+  const label = `Transação ${index + 1}`;
+  if (!tx || typeof tx !== 'object') return `${label}: dados inválidos.`;
+  if (tx.type !== 'expense' && tx.type !== 'income') return `${label}: tipo inválido.`;
+  if (typeof tx.date !== 'string' || !ISO_DATE_RE.test(tx.date) || Number.isNaN(new Date(`${tx.date}T00:00:00Z`).getTime()))
+    return `${label}: data inválida.`;
+  if (!Number.isInteger(tx.amountCents) || tx.amountCents <= 0 || tx.amountCents > MAX_AMOUNT_CENTS)
+    return `${label}: valor inválido.`;
+  if (typeof tx.description !== 'string' || !tx.description.trim())
+    return `${label}: descrição obrigatória.`;
+  if (tx.description.trim().length > MAX_DESCRIPTION_LENGTH)
+    return `${label}: descrição com mais de ${MAX_DESCRIPTION_LENGTH} caracteres.`;
+  return null;
+}
+
 export async function POST(req: NextRequest) {
   const supabase = await createSessionClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -49,6 +68,13 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  for (let i = 0; i < body.transactions.length; i++) {
+    const invalid = validateTransaction(body.transactions[i], i);
+    if (invalid) {
+      return noStoreJson({ error: invalid }, { status: 422 });
+    }
+  }
+
   const categories = await getCategories(user.id);
   const fallbackCategoryId = getDefaultCategoryId(categories);
   const validCategoryIds = new Set(categories.map((c) => c.id));
@@ -68,7 +94,7 @@ export async function POST(req: NextRequest) {
           userId: user.id,
           amount: tx.amountCents,
           category: categoryId,
-          description: tx.description,
+          description: tx.description.trim(),
           source: 'import',
           paymentMethod: 'other',
           tags: [],
@@ -79,7 +105,7 @@ export async function POST(req: NextRequest) {
         await createIncome({
           userId: user.id,
           amount: tx.amountCents,
-          description: tx.description,
+          description: tx.description.trim(),
           source: 'other',
           isRecurring: false,
           receivedAt: new Date(tx.date),

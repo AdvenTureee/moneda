@@ -9,6 +9,7 @@ import {
   Check,
   X,
   CaretDown,
+  PencilSimple,
   Sparkle,
 } from '@phosphor-icons/react';
 import Link from 'next/link';
@@ -23,6 +24,17 @@ interface ImportViewProps {
 }
 
 type Phase = 'upload' | 'review' | 'importing' | 'done';
+
+type TransactionPatch = Partial<Pick<ParsedTransaction, 'date' | 'amountCents' | 'description'>>;
+
+const MAX_AMOUNT_CENTS = 1_000_000_000_00; // R$ 1 bilhão
+const MAX_DESCRIPTION_LENGTH = 200;
+const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+function isValidIsoDate(value: string): boolean {
+  if (!ISO_DATE_RE.test(value)) return false;
+  return !Number.isNaN(new Date(`${value}T00:00:00Z`).getTime());
+}
 
 interface ParseResponse {
   transactions: ParsedTransaction[];
@@ -146,6 +158,12 @@ export default function ImportView({ categories }: ImportViewProps) {
       prev.map((t) =>
         t.id === id ? { ...t, suggestedCategoryId: categoryId } : t,
       ),
+    );
+  }
+
+  function updateTransaction(id: string, patch: TransactionPatch) {
+    setTransactions((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, ...patch } : t)),
     );
   }
 
@@ -377,6 +395,7 @@ export default function ImportView({ categories }: ImportViewProps) {
               onToggleAll={(sel) => toggleAllByType('expense', sel)}
               onUpdateCategory={updateCategory}
               onToggleType={toggleTransactionType}
+              onUpdate={updateTransaction}
             />
           )}
 
@@ -391,6 +410,7 @@ export default function ImportView({ categories }: ImportViewProps) {
                 onToggleAll={(sel) => toggleAllByType('income', sel)}
                 onUpdateCategory={updateCategory}
                 onToggleType={toggleTransactionType}
+                onUpdate={updateTransaction}
                 isIncome
               />
             </div>
@@ -438,6 +458,7 @@ function TransactionSection({
   onToggleAll,
   onUpdateCategory,
   onToggleType,
+  onUpdate,
   isIncome,
 }: {
   title: string;
@@ -448,6 +469,7 @@ function TransactionSection({
   onToggleAll: (selected: boolean) => void;
   onUpdateCategory: (id: string, categoryId: string) => void;
   onToggleType: (id: string) => void;
+  onUpdate: (id: string, patch: TransactionPatch) => void;
   isIncome?: boolean;
 }) {
   const allSelected = transactions.every((t) => t.selected);
@@ -480,6 +502,7 @@ function TransactionSection({
             onToggle={() => onToggle(tx.id)}
             onUpdateCategory={(catId) => onUpdateCategory(tx.id, catId)}
             onToggleType={() => onToggleType(tx.id)}
+            onUpdate={(patch) => onUpdate(tx.id, patch)}
             isIncome={isIncome}
           />
         ))}
@@ -494,6 +517,7 @@ function TransactionRow({
   onToggle,
   onUpdateCategory,
   onToggleType,
+  onUpdate,
   isIncome,
 }: {
   tx: ParsedTransaction;
@@ -501,11 +525,106 @@ function TransactionRow({
   onToggle: () => void;
   onUpdateCategory: (categoryId: string) => void;
   onToggleType: () => void;
+  onUpdate: (patch: TransactionPatch) => void;
   isIncome?: boolean;
 }) {
-  const matchedCategory = categories.find(
-    (c) => c.id === tx.suggestedCategoryId,
-  );
+  const [editing, setEditing] = useState(false);
+  const [draftDescription, setDraftDescription] = useState(tx.description);
+  const [draftDate, setDraftDate] = useState(tx.date);
+  const [draftAmount, setDraftAmount] = useState((tx.amountCents / 100).toFixed(2));
+
+  const draftAmountCents = Math.round(Number(draftAmount.replace(',', '.')) * 100);
+  const draftErrors: string[] = [];
+  if (!draftDescription.trim()) draftErrors.push('Informe a descrição.');
+  if (draftDescription.trim().length > MAX_DESCRIPTION_LENGTH)
+    draftErrors.push(`Descrição com no máximo ${MAX_DESCRIPTION_LENGTH} caracteres.`);
+  if (!isValidIsoDate(draftDate)) draftErrors.push('Data inválida.');
+  if (
+    !Number.isFinite(draftAmountCents) ||
+    draftAmountCents <= 0 ||
+    draftAmountCents > MAX_AMOUNT_CENTS
+  )
+    draftErrors.push('Valor deve ser maior que zero.');
+  const draftValid = draftErrors.length === 0;
+
+  function startEditing() {
+    setDraftDescription(tx.description);
+    setDraftDate(tx.date);
+    setDraftAmount((tx.amountCents / 100).toFixed(2));
+    setEditing(true);
+  }
+
+  function saveEditing() {
+    if (!draftValid) return;
+    onUpdate({
+      description: draftDescription.trim(),
+      date: draftDate,
+      amountCents: draftAmountCents,
+    });
+    setEditing(false);
+  }
+
+  if (editing) {
+    const inputClass =
+      'w-full rounded-[8px] border border-[#E5E7EB] bg-white px-2.5 py-2 text-sm text-[#1A1D23] outline-none focus:border-[#A8C5E0]';
+    return (
+      <div className="rounded-[12px] border border-[#A8C5E0] bg-white p-3 space-y-2.5">
+        <label className="block">
+          <span className="text-xs font-medium text-[#6B7280]">Descrição</span>
+          <input
+            type="text"
+            value={draftDescription}
+            maxLength={MAX_DESCRIPTION_LENGTH}
+            onChange={(e) => setDraftDescription(e.target.value)}
+            className={`${inputClass} mt-1`}
+          />
+        </label>
+        <div className="grid grid-cols-2 gap-2">
+          <label className="block">
+            <span className="text-xs font-medium text-[#6B7280]">Data</span>
+            <input
+              type="date"
+              value={draftDate}
+              onChange={(e) => setDraftDate(e.target.value)}
+              className={`${inputClass} mt-1`}
+            />
+          </label>
+          <label className="block">
+            <span className="text-xs font-medium text-[#6B7280]">Valor (R$)</span>
+            <input
+              type="number"
+              inputMode="decimal"
+              step="0.01"
+              min="0.01"
+              value={draftAmount}
+              onChange={(e) => setDraftAmount(e.target.value)}
+              className={`${inputClass} mt-1 tabular-nums`}
+            />
+          </label>
+        </div>
+        {!draftValid && (
+          <p className="text-xs text-[#B14C4C]">{draftErrors[0]}</p>
+        )}
+        <div className="flex justify-end gap-2 pt-1">
+          <button
+            type="button"
+            onClick={() => setEditing(false)}
+            className="rounded-full bg-[#F1F3F7] px-4 py-1.5 text-xs font-bold text-[#6B7280] hover:bg-[#E5E7EB] transition-colors"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            onClick={saveEditing}
+            disabled={!draftValid}
+            className="rounded-full bg-[#5BBF8E] px-4 py-1.5 text-xs font-bold text-white hover:bg-[#4AA77C] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            Salvar
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -544,6 +663,15 @@ function TransactionRow({
         </div>
         <div className="flex items-center gap-2 mt-1">
           <span className="text-xs text-[#9CA3AF]">{formatDate(tx.date)}</span>
+          <button
+            type="button"
+            onClick={startEditing}
+            className="flex items-center gap-0.5 text-[10px] font-bold uppercase tracking-wide rounded-[6px] border border-[#E5E7EB] bg-[#F8F9FB] text-[#6B7280] px-1.5 py-0.5 hover:bg-[#F1F3F7] transition-colors"
+            aria-label="Editar transação"
+            title="Editar descrição, data e valor"
+          >
+            <PencilSimple size={10} weight="bold" /> Editar
+          </button>
           <button
             type="button"
             onClick={onToggleType}
