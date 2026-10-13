@@ -3,6 +3,10 @@ import { createServiceClient, createSessionClient } from '@/lib/supabase/server'
 import { v4 as uuidv4 } from 'uuid';
 import sharp from 'sharp';
 import { noStoreJson } from '@/lib/http';
+import {
+  PROFILE_AVATAR_BUCKET,
+  PROFILE_AVATAR_SIGNED_URL_TTL_SECONDS,
+} from '@/lib/profileAvatar';
 
 const MAX_FILE_SIZE = 7 * 1024 * 1024;
 
@@ -73,30 +77,47 @@ export async function POST(req: NextRequest) {
 
     const admin = createServiceClient();
     const { error: uploadError } = await admin.storage
-      .from('fotos_perfil')
+      .from(PROFILE_AVATAR_BUCKET)
       .upload(filePath, imageData, {
         contentType: outputType,
         upsert: true,
       });
 
     if (uploadError) {
+      console.error('[upload-avatar] storage upload failed', {
+        message: uploadError.message,
+        name: uploadError.name,
+      });
       return noStoreJson({ error: 'Falha ao fazer upload.' }, { status: 500 });
     }
 
     const { data: signedUrlData, error: signedUrlError } = await admin.storage
-      .from('fotos_perfil')
-      .createSignedUrl(filePath, 2592000); // 30 days
+      .from(PROFILE_AVATAR_BUCKET)
+      .createSignedUrl(filePath, PROFILE_AVATAR_SIGNED_URL_TTL_SECONDS);
 
     if (signedUrlError) {
+      await admin.storage.from(PROFILE_AVATAR_BUCKET).remove([filePath]);
+      console.error('[upload-avatar] signed URL generation failed', {
+        message: signedUrlError.message,
+        name: signedUrlError.name,
+      });
       return noStoreJson({ error: 'Upload feito, mas erro ao gerar URL.' }, { status: 500 });
     }
 
-    const { error: updateError } = await session.auth.updateUser({
-      data: { avatar_url: signedUrlData.signedUrl },
-    });
+    const { data: updatedProfile, error: updateError } = await session
+      .from('profiles')
+      .update({ avatar_url: filePath })
+      .eq('id', user.id)
+      .select('id')
+      .maybeSingle();
 
-    if (updateError) {
-      return noStoreJson({ url: signedUrlData.signedUrl });
+    if (updateError || !updatedProfile) {
+      await admin.storage.from(PROFILE_AVATAR_BUCKET).remove([filePath]);
+      console.error('[upload-avatar] profile avatar save failed', {
+        message: updateError?.message ?? 'Profile row not found',
+        code: updateError?.code,
+      });
+      return noStoreJson({ error: 'Não foi possível salvar a foto no perfil.' }, { status: 500 });
     }
 
     return noStoreJson({ url: signedUrlData.signedUrl });

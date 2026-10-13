@@ -19,6 +19,7 @@ import { decryptProfilePii, getDisplayNameFromUser } from '@/lib/security/profil
 import { formatCurrency } from '@/lib/utils';
 import { getCurrentBillingPeriod, normalizeBillingClosingDay } from '@/lib/billingCycle';
 import { createSessionClient, isSupabaseEnabled } from '@/lib/supabase/server';
+import { resolveProfileAvatarUrl } from '@/lib/profileAvatar';
 import BillingClosingDayPrompt from '@/components/BillingClosingDayPrompt';
 import { TERMS_VERSION } from '@/lib/legal';
 
@@ -86,15 +87,20 @@ export default async function DashboardPage({
 
   // Custom personalized AI Welcome message if no insight exists yet.
   let fullName = getDisplayNameFromUser(user);
+  let storedAvatar: string | null = null;
   if (isSupabaseEnabled()) {
     const { data: profile } = await supabase
       .from('profiles')
-      .select('name_ciphertext,name_iv,name_tag,email_ciphertext,email_iv,email_tag,phone_ciphertext,phone_iv,phone_tag')
+      .select('avatar_url,name_ciphertext,name_iv,name_tag,email_ciphertext,email_iv,email_tag,phone_ciphertext,phone_iv,phone_tag')
       .eq('id', user.id)
       .single();
-    if (profile) fullName = decryptProfilePii(profile).name || fullName;
+    if (profile) {
+      storedAvatar = profile.avatar_url;
+      fullName = decryptProfilePii(profile).name || fullName;
+    }
   }
-  const avatarUrl = (user.user_metadata?.avatar_url as string | undefined) ?? null;
+  const legacyAvatarUrl = (user.user_metadata?.avatar_url as string | undefined) ?? null;
+  const avatarUrl = await resolveProfileAvatarUrl(user.id, storedAvatar, legacyAvatarUrl);
   const financialShortcuts = (
     <>
       <Link
