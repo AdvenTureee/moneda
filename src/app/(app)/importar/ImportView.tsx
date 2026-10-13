@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition, useRef, useMemo } from 'react';
+import { useState, useTransition, useRef, useMemo, useLayoutEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   ArrowLeft,
@@ -82,6 +82,19 @@ export default function ImportView({ categories }: ImportViewProps) {
   const [parseWarning, setParseWarning] = useState<string | null>(null);
   const [confirmResult, setConfirmResult] = useState<ConfirmResponse | null>(null);
   const [pending, startTransition] = useTransition();
+  const footerRef = useRef<HTMLDivElement>(null);
+  const [footerHeight, setFooterHeight] = useState(0);
+
+  // Mantém o espaço do fim da lista igual à altura real do rodapé (muda com quebra de linha e safe-area).
+  useLayoutEffect(() => {
+    const node = footerRef.current;
+    if (!node) return;
+    const update = () => setFooterHeight(node.offsetHeight);
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [phase, transactions.length]);
 
   const expenses = useMemo(
     () => transactions.filter((t) => t.type === 'expense'),
@@ -443,36 +456,42 @@ export default function ImportView({ categories }: ImportViewProps) {
             </div>
           )}
 
-          {/* Sticky acima da bottom nav: sem isso o CTA fica escondido atrás dela. */}
+          {/* Espaço reservado com a mesma altura do rodapé fixo, para o fim da lista não ficar coberto. */}
+          <div aria-hidden style={{ height: footerHeight }} />
+
+          {/* Rodapé fixo de largura total: vai até a borda inferior da tela e fica abaixo da bottom nav. */}
           <div
-            className="themed-card sticky z-10 mt-6 rounded-[16px] p-3"
-            style={{ bottom: BOTTOM_NAV_CLEARANCE }}
+            ref={footerRef}
+            className="fixed inset-x-0 bottom-0 z-[38] border-t border-[#E5E7EB] bg-[var(--color-surface)] px-4 pt-3 shadow-[0_-6px_20px_rgba(0,0,0,0.04)]"
+            style={{ paddingBottom: BOTTOM_NAV_CLEARANCE }}
           >
-            <p className="text-sm px-1 mb-2.5 tabular-nums">
-              <span className="font-bold text-[#1A1D23]">
-                {totalSelected} selecionada(s)
-              </span>
-              <span className="text-[#6B7280]">
-                {' · '}
-                {formatCurrency(totalExpenses)} em despesas
-                {totalIncomes > 0 && ` + ${formatCurrency(totalIncomes)} em receitas`}
-              </span>
-            </p>
-            <button
-              type="button"
-              onClick={handleConfirm}
-              disabled={totalSelected === 0 || pending}
-              className="gesture-button-primary w-full bg-[#5BBF8E] hover:bg-[#4AA77C] text-white font-semibold text-[15px] py-3.5 rounded-full shadow-[0_6px_20px_rgba(91,191,142,0.35)] disabled:opacity-40 disabled:shadow-none disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              {pending ? (
-                <>
-                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Importando...
-                </>
-              ) : (
-                `Importar ${totalSelected} transação(ões)`
-              )}
-            </button>
+            <div className="mx-auto w-full max-w-lg">
+              <p className="text-sm px-1 mb-2.5 tabular-nums">
+                <span className="font-bold text-[#1A1D23]">
+                  {totalSelected} selecionada(s)
+                </span>
+                <span className="text-[#6B7280]">
+                  {' · '}
+                  {formatCurrency(totalExpenses)} em despesas
+                  {totalIncomes > 0 && ` + ${formatCurrency(totalIncomes)} em receitas`}
+                </span>
+              </p>
+              <button
+                type="button"
+                onClick={handleConfirm}
+                disabled={totalSelected === 0 || pending}
+                className="gesture-button-primary w-full bg-[#5BBF8E] hover:bg-[#4AA77C] text-white font-semibold text-[15px] py-3.5 rounded-full shadow-[0_6px_20px_rgba(91,191,142,0.35)] disabled:opacity-40 disabled:shadow-none disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {pending ? (
+                  <>
+                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Importando...
+                  </>
+                ) : (
+                  `Importar ${totalSelected} transação(ões)`
+                )}
+              </button>
+            </div>
           </div>
         </section>
       )}
