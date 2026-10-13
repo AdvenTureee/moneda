@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { revalidateTag } from 'next/cache';
-import { createSessionClient } from '@/lib/supabase/server';
+import { createServiceClient, createSessionClient, isSupabaseEnabled } from '@/lib/supabase/server';
 import { createExpense } from '@/lib/expenses';
 import { createIncome } from '@/lib/incomes';
 import { cacheTags } from '@/lib/cache';
@@ -9,6 +9,11 @@ import { getDefaultCategoryId } from '@/lib/import/matchCategory';
 import { getCategories } from '@/lib/categories';
 import type { ConfirmTransaction } from '@/lib/import/types';
 import { MAX_TRANSACTIONS_PER_IMPORT } from '@/lib/import/types';
+import {
+  planSeriesGroups,
+  stripInstallmentMarker,
+  type SeriesGroup,
+} from '@/lib/import/seriesDetection';
 
 function invalidateCaches(userId: string) {
   const opts = { expire: 0 } as const;
@@ -38,7 +43,50 @@ function validateTransaction(tx: ConfirmTransaction, index: number): string | nu
     return `${label}: descrição obrigatória.`;
   if (tx.description.trim().length > MAX_DESCRIPTION_LENGTH)
     return `${label}: descrição com mais de ${MAX_DESCRIPTION_LENGTH} caracteres.`;
+  if (tx.installment != null) {
+    const { current, total } = tx.installment;
+    if (
+      !Number.isInteger(current) ||
+      !Number.isInteger(total) ||
+      total < 2 ||
+      total > 120 ||
+      current < 1 ||
+      current > total
+    )
+      return `${label}: parcela inválida.`;
+  }
   return null;
+}
+
+/**
+ * Já existe série ativa equivalente (ex.: a mesma compra veio em um extrato
+ * anterior)? Nesse caso não criamos outra, para não duplicar as parcelas.
+ */
+async function seriesAlreadyExists(
+  userId: string,
+  kind: 'installment' | 'recurring',
+  description: string,
+  amountCents: number,
+  totalOccurrences: number | null,
+): Promise<boolean> {
+  if (!isSupabaseEnabled()) return false;
+  const db = createServiceClient();
+  let query = db
+    .from('expense_series')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('kind', kind)
+    .eq('description', description)
+    .eq('amount_cents', amountCents)
+    .eq('status', 'active')
+    .is('deleted_at', null)
+    .limit(1);
+  query = totalOccurrences === null
+    ? query.is('total_occurrences', null)
+    : query.eq('total_occurrences', totalOccurrences);
+  const { data, error } = await query;
+  if (error) throw new Error(`seriesAlreadyExists: ${error.message}`);
+  return (data ?? []).length > 0;
 }
 
 export async function POST(req: NextRequest) {
@@ -83,39 +131,96 @@ export async function POST(req: NextRequest) {
   let skipped = 0;
   const errors: string[] = [];
 
-  for (const tx of body.transactions) {
-    try {
-      if (tx.type === 'expense') {
-        const categoryId = validCategoryIds.has(tx.categoryId)
-          ? tx.categoryId
-          : fallbackCategoryId ?? 'outros';
+  // Agrupa parcelas da mesma compra e recorrências em uma única série cada.
+  const groups: SeriesGroup<ConfirmTransaction>[] = planSeriesGroups(body.transactions);
 
+  for (const group of groups) {
+    const members = group.members;
+    const rep = members[0];
+    const label = `${rep.description} (${rep.date})`;
+
+    try {
+      if (group.kind === 'single') {
+        if (rep.type === 'expense') {
+          const categoryId = validCategoryIds.has(rep.categoryId)
+            ? rep.categoryId
+            : fallbackCategoryId ?? 'outros';
+
+          await createExpense({
+            userId: user.id,
+            amount: rep.amountCents,
+            category: categoryId,
+            description: rep.description.trim(),
+            source: 'import',
+            paymentMethod: 'other',
+            tags: [],
+            occurredAt: rep.date,
+          });
+        } else {
+          await createIncome({
+            userId: user.id,
+            amount: rep.amountCents,
+            description: rep.description.trim(),
+            source: 'other',
+            isRecurring: false,
+            receivedAt: new Date(rep.date),
+          });
+        }
+        imported++;
+        continue;
+      }
+
+      const categoryId = validCategoryIds.has(rep.categoryId)
+        ? rep.categoryId
+        : fallbackCategoryId ?? 'outros';
+      const seriesDescription = stripInstallmentMarker(rep.description);
+
+      if (group.kind === 'installment' && rep.installment) {
+        const total = rep.installment.total;
+        if (await seriesAlreadyExists(user.id, 'installment', seriesDescription, rep.amountCents, total)) {
+          skipped += members.length;
+          continue;
+        }
         await createExpense({
           userId: user.id,
-          amount: tx.amountCents,
+          amount: rep.amountCents,
           category: categoryId,
-          description: tx.description.trim(),
+          description: seriesDescription,
           source: 'import',
-          paymentMethod: 'other',
+          paymentMethod: 'credit',
+          creditDetails: {
+            purchaseType: 'installment',
+            installmentCurrent: rep.installment.current,
+            installmentTotal: total,
+          },
           tags: [],
-          occurredAt: tx.date,
+          occurredAt: rep.date,
         });
-        imported++;
-      } else {
-        await createIncome({
-          userId: user.id,
-          amount: tx.amountCents,
-          description: tx.description.trim(),
-          source: 'other',
-          isRecurring: false,
-          receivedAt: new Date(tx.date),
-        });
-        imported++;
+        imported += members.length;
+        continue;
       }
+
+      // Recorrente: uma série a partir da primeira ocorrência.
+      if (await seriesAlreadyExists(user.id, 'recurring', seriesDescription, rep.amountCents, null)) {
+        skipped += members.length;
+        continue;
+      }
+      await createExpense({
+        userId: user.id,
+        amount: rep.amountCents,
+        category: categoryId,
+        description: seriesDescription,
+        source: 'import',
+        paymentMethod: 'other',
+        tags: [],
+        occurredAt: rep.date,
+        isRecurring: true,
+      });
+      imported += members.length;
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Erro desconhecido';
-      errors.push(`${tx.description} (${tx.date}): ${msg}`);
-      skipped++;
+      errors.push(`${label}: ${msg}`);
+      skipped += members.length;
     }
   }
 

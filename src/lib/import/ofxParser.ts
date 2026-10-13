@@ -1,5 +1,6 @@
 import { parse as parseOFX } from 'ofx-parser';
 import type { ParsedTransaction } from './types';
+import { parseInstallmentMarker } from './seriesDetection';
 
 function generateTempId(): string {
   return `tx-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -68,6 +69,7 @@ export function parseOFXContent(content: string): {
           suggestedCategoryId: null,
           confidence: 'none',
           selected: true,
+          installment: parseInstallmentMarker(description),
         };
       })
       .filter((tx): tx is ParsedTransaction => tx !== null);

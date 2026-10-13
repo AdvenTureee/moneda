@@ -4,6 +4,7 @@ import { useState, useTransition, useRef, useMemo, useLayoutEffect } from 'react
 import { useRouter } from 'next/navigation';
 import {
   ArrowLeft,
+  ArrowsClockwise,
   UploadSimple,
   WarningCircle,
   Check,
@@ -16,6 +17,7 @@ import Icon from '@/components/Icon';
 import { formatCurrency } from '@/lib/utils';
 import type { Category } from '@/types';
 import type { ParsedTransaction, ConfirmTransaction } from '@/lib/import/types';
+import { planSeriesGroups } from '@/lib/import/seriesDetection';
 
 interface ImportViewProps {
   categories: Category[];
@@ -104,6 +106,15 @@ export default function ImportView({ categories }: ImportViewProps) {
     () => transactions.filter((t) => t.type === 'income'),
     [transactions],
   );
+
+  // Transações que farão parte de uma série recorrente (mesmo título e valor em 2+ meses).
+  const recurringMembers = useMemo(() => {
+    const set = new Set<ParsedTransaction>();
+    for (const group of planSeriesGroups(transactions)) {
+      if (group.kind === 'recurring') group.members.forEach((m) => set.add(m));
+    }
+    return set;
+  }, [transactions]);
 
   const selectedExpenses = expenses.filter((t) => t.selected);
   const selectedIncomes = incomes.filter((t) => t.selected);
@@ -213,6 +224,7 @@ export default function ImportView({ categories }: ImportViewProps) {
           description: t.description,
           type: t.type,
           categoryId: t.suggestedCategoryId ?? 'outros',
+          installment: t.installment ?? null,
         }));
 
       if (toImport.length === 0) {
@@ -437,6 +449,7 @@ export default function ImportView({ categories }: ImportViewProps) {
               onUpdateCategory={updateCategory}
               onToggleType={toggleTransactionType}
               onUpdate={updateTransaction}
+              recurringMembers={recurringMembers}
             />
           )}
 
@@ -451,6 +464,7 @@ export default function ImportView({ categories }: ImportViewProps) {
                 onUpdateCategory={updateCategory}
                 onToggleType={toggleTransactionType}
                 onUpdate={updateTransaction}
+                recurringMembers={recurringMembers}
                 isIncome
               />
             </div>
@@ -511,6 +525,7 @@ function TransactionSection({
   onUpdateCategory,
   onToggleType,
   onUpdate,
+  recurringMembers,
   isIncome,
 }: {
   title: string;
@@ -521,6 +536,7 @@ function TransactionSection({
   onUpdateCategory: (id: string, categoryId: string) => void;
   onToggleType: (id: string) => void;
   onUpdate: (id: string, patch: TransactionPatch) => void;
+  recurringMembers: Set<ParsedTransaction>;
   isIncome?: boolean;
 }) {
   const allSelected = transactions.every((t) => t.selected);
@@ -554,6 +570,7 @@ function TransactionSection({
             onUpdateCategory={(catId) => onUpdateCategory(tx.id, catId)}
             onToggleType={() => onToggleType(tx.id)}
             onUpdate={(patch) => onUpdate(tx.id, patch)}
+            isRecurring={recurringMembers.has(tx)}
             isIncome={isIncome}
           />
         ))}
@@ -569,6 +586,7 @@ function TransactionRow({
   onUpdateCategory,
   onToggleType,
   onUpdate,
+  isRecurring,
   isIncome,
 }: {
   tx: ParsedTransaction;
@@ -577,6 +595,7 @@ function TransactionRow({
   onUpdateCategory: (categoryId: string) => void;
   onToggleType: () => void;
   onUpdate: (patch: TransactionPatch) => void;
+  isRecurring?: boolean;
   isIncome?: boolean;
 }) {
   const [editing, setEditing] = useState(false);
@@ -770,6 +789,16 @@ function TransactionRow({
                 className="absolute right-2 top-1/2 -translate-y-1/2 text-[#9CA3AF] pointer-events-none"
               />
             </div>
+          )}
+          {tx.installment && (
+            <span className={`${chipClass} border-[#E5E7EB] bg-[#F8F9FB] text-[#6B7280]`}>
+              Parcela {tx.installment.current}/{tx.installment.total}
+            </span>
+          )}
+          {isRecurring && (
+            <span className={`${chipClass} border-transparent bg-[#FEF1D6] text-[#B57922]`}>
+              <ArrowsClockwise size={11} weight="bold" aria-hidden /> Recorrente
+            </span>
           )}
           {tx.confidence === 'low' && (
             <span className="inline-flex items-center gap-1 text-[11px] font-medium text-[#386F95] dark:text-[#A8C5E0]">

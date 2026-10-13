@@ -1,5 +1,12 @@
 export type TransactionType = 'expense' | 'income';
 
+export interface InstallmentInfo {
+  /** Número da parcela no extrato (ex.: 2 em "Parcela 2/5"). */
+  current: number;
+  /** Total de parcelas da compra (ex.: 5 em "Parcela 2/5"). */
+  total: number;
+}
+
 export interface ParsedTransaction {
   id: string;
   date: string;
@@ -9,6 +16,8 @@ export interface ParsedTransaction {
   suggestedCategoryId: string | null;
   confidence: 'high' | 'low' | 'none';
   selected: boolean;
+  /** Preenchido quando o título traz marcador de parcela (ex.: "PARC 02/05"). */
+  installment?: InstallmentInfo | null;
 }
 
 export interface ParseResult {
@@ -24,6 +33,7 @@ export interface ConfirmTransaction {
   description: string;
   type: TransactionType;
   categoryId: string;
+  installment?: InstallmentInfo | null;
 }
 
 export interface ConfirmResult {
