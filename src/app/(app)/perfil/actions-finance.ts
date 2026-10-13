@@ -1,10 +1,9 @@
 'use server';
 
 import { refresh, updateTag } from 'next/cache';
-import { createSessionClient, isSupabaseEnabled } from '@/lib/supabase/server';
+import { createSessionClient, isSupabaseEnabled, tryResolveUserId } from '@/lib/supabase/server';
 import { upsertBudget } from '@/lib/budgets';
 import { createIncome, deleteIncome, updateIncome } from '@/lib/incomes';
-import { MOCK_USER } from '@/data/mock';
 import type { IncomeSource } from '@/types';
 import { cacheTags } from '@/lib/cache';
 
@@ -29,13 +28,9 @@ export async function saveCategoryBudgetAction(
   period: string
 ): Promise<ActionResult> {
   try {
-    let userId = MOCK_USER.id;
-    if (isSupabaseEnabled()) {
-      const supabase = await createSessionClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return { ok: false, error: 'Sessão expirada. Entre novamente.' };
-      userId = user.id;
-    }
+    const auth = await tryResolveUserId();
+    if (!auth.ok) return { ok: false, error: auth.error };
+    const { userId } = auth;
 
     await upsertBudget({
       userId,
@@ -74,22 +69,19 @@ export async function saveCategoryBudgetsAction(
       return { ok: false, error: 'Orçamento mensal inválido.' };
     }
 
-    let userId = MOCK_USER.id;
-    if (isSupabaseEnabled()) {
-      const supabase = await createSessionClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return { ok: false, error: 'Sessão expirada. Entre novamente.' };
-      userId = user.id;
+    const auth = await tryResolveUserId();
+    if (!auth.ok) return { ok: false, error: auth.error };
+    const { userId } = auth;
 
-      if (monthlyBudgetCents !== undefined) {
-        const { error } = await supabase
-          .from('profiles')
-          .update({ monthly_budget_cents: monthlyBudgetCents || null })
-          .eq('id', userId);
-        if (error) {
-          console.error('[saveCategoryBudgetsAction] monthly budget:', error);
-          return { ok: false, error: 'Não foi possível salvar o orçamento mensal.' };
-        }
+    if (isSupabaseEnabled() && monthlyBudgetCents !== undefined) {
+      const supabase = await createSessionClient();
+      const { error } = await supabase
+        .from('profiles')
+        .update({ monthly_budget_cents: monthlyBudgetCents || null })
+        .eq('id', userId);
+      if (error) {
+        console.error('[saveCategoryBudgetsAction] monthly budget:', error);
+        return { ok: false, error: 'Não foi possível salvar o orçamento mensal.' };
       }
     }
 
@@ -127,13 +119,9 @@ export async function saveIncomeAction(
       return { ok: false, error: 'O valor deve ser maior que zero.' };
     }
 
-    let userId = MOCK_USER.id;
-    if (isSupabaseEnabled()) {
-      const supabase = await createSessionClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return { ok: false, error: 'Sessão expirada. Entre novamente.' };
-      userId = user.id;
-    }
+    const auth = await tryResolveUserId();
+    if (!auth.ok) return { ok: false, error: auth.error };
+    const { userId } = auth;
 
     const receivedAt = parseReceivedAt(receivedAtString);
     if (Number.isNaN(receivedAt.getTime())) {
@@ -181,13 +169,9 @@ export async function updateIncomeAction(
       return { ok: false, error: 'O valor deve ser maior que zero.' };
     }
 
-    let userId = MOCK_USER.id;
-    if (isSupabaseEnabled()) {
-      const supabase = await createSessionClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return { ok: false, error: 'Sessão expirada. Entre novamente.' };
-      userId = user.id;
-    }
+    const auth = await tryResolveUserId();
+    if (!auth.ok) return { ok: false, error: auth.error };
+    const { userId } = auth;
 
     const receivedAt = parseReceivedAt(receivedAtString);
     if (Number.isNaN(receivedAt.getTime())) {
@@ -217,13 +201,9 @@ export async function updateIncomeAction(
  */
 export async function deleteIncomeAction(id: string): Promise<ActionResult> {
   try {
-    let userId = MOCK_USER.id;
-    if (isSupabaseEnabled()) {
-      const supabase = await createSessionClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return { ok: false, error: 'Sessão expirada. Entre novamente.' };
-      userId = user.id;
-    }
+    const auth = await tryResolveUserId();
+    if (!auth.ok) return { ok: false, error: auth.error };
+    const { userId } = auth;
 
     await deleteIncome(id, userId);
 

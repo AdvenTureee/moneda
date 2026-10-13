@@ -16,7 +16,7 @@ export function ProfileSkeletonPage({
   compact?: boolean;
 }) {
   return (
-    <div className={`max-w-lg mx-auto px-4 ${compact ? 'pb-8' : 'pb-24'} [scrollbar-gutter:stable]`}>
+    <div className={`max-w-lg mx-auto px-4 ${compact ? 'pb-8' : 'pb-4'} [scrollbar-gutter:stable]`}>
       {children}
     </div>
   );

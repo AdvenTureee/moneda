@@ -12,6 +12,7 @@
 
 # testing
 /coverage
+screenshots/
 mo-icons
 # next.js
 /.next/
@@ -35,6 +36,9 @@ yarn-error.log*
 
 # vercel
 .vercel
+
+# supabase cli temp
+supabase/.temp/
 
 # typescript
 *.tsbuildinfo

@@ -55,7 +55,7 @@ export default function DeleteAccountForm({ confirmationName }: DeleteAccountFor
   }
 
   return (
-    <main className="mx-auto max-w-lg px-4 pb-24">
+    <main className="mx-auto max-w-lg px-4 pb-4">
       <header className="relative py-5 animate-fade-up delay-0">
         <Link
           href="/perfil"

@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { revalidateTag } from 'next/cache';
-import { getExpenses, createExpense, updateExpense, deleteExpense } from '@/lib/expenses';
+import { getFeedExpensesPage, createExpense, updateExpense, deleteExpense } from '@/lib/expenses';
 import type { ExpenseFilters, ExpenseInput, ExpensePaymentMethod } from '@/types';
 import { createSessionClient } from '@/lib/supabase/server';
 import { cacheTags } from '@/lib/cache';
@@ -39,6 +39,12 @@ function readBooleanParam(value: string | null): boolean {
   return value === 'true' || value === '1';
 }
 
+function readFeedOrder(searchParams: URLSearchParams): ExpenseFilters['order'] {
+  const raw = searchParams.get('order');
+  if (raw === 'history' || raw === 'scheduled') return raw;
+  return readBooleanParam(searchParams.get('onlyFuture')) ? 'scheduled' : 'history';
+}
+
 function invalidateExpenseCaches(userId: string) {
   // Toda mutation de expense mexe em métricas/insights/monthly totals do usuário.
   // expire: 0 → invalida imediato (read-your-own-writes em Route Handler).
@@ -72,6 +78,7 @@ export async function GET(req: NextRequest) {
   if (!user) return noStoreJson({ error: 'Unauthorized' }, { status: 401 });
 
   const { searchParams } = new URL(req.url);
+  const order = readFeedOrder(searchParams);
   const filters: ExpenseFilters = {
     userId: user.id,
     category: searchParams.get('category') ?? undefined,
@@ -81,13 +88,15 @@ export async function GET(req: NextRequest) {
     startDate: searchParams.get('startDate') ?? undefined,
     endDate: searchParams.get('endDate') ?? undefined,
     includeFuture: readBooleanParam(searchParams.get('includeFuture')),
-    onlyFuture: readBooleanParam(searchParams.get('onlyFuture')),
+    onlyFuture: order === 'scheduled' || readBooleanParam(searchParams.get('onlyFuture')),
     limit: searchParams.get('limit') ? Number(searchParams.get('limit')) : undefined,
+    cursor: searchParams.get('cursor') ?? undefined,
+    order,
     search: searchParams.get('search') ?? undefined,
   };
 
-  const expenses = await getExpenses(filters);
-  return noStoreJson({ data: expenses, count: expenses.length });
+  const page = await getFeedExpensesPage(filters);
+  return noStoreJson(page);
 }
 
 export async function POST(req: NextRequest) {

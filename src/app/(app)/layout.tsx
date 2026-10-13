@@ -25,7 +25,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     requiresTermsAcceptance =
       !profile.termsAcceptedAt ||
       profile.termsVersion !== TERMS_VERSION;
-    requiresWhatsappPhone = !profile.hasWhatsappPhone;
+    // Aceitou os termos mas ainda não fez onboarding → manda para /onboarding
+    // no nível do layout, antes do AppShell (e da modal de WhatsApp) renderizar.
+    if (!requiresTermsAcceptance && !profile.onboarded) {
+      redirect('/onboarding');
+    }
+    requiresWhatsappPhone = profile.onboarded && !profile.hasWhatsappPhone;
   }
 
   return (

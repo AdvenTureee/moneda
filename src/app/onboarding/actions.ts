@@ -12,6 +12,7 @@ import { createExpense } from '@/lib/expenses';
 import { getCurrentBillingPeriod } from '@/lib/billingCycle';
 import { normalizeWhatsappPhone } from '@/lib/phone';
 import { buildProfilePhonePiiUpdate } from '@/lib/security/profilePii';
+import { buildCustomCategoryId } from '@/lib/categories';
 
 export type OnboardingResult = { ok: true } | { ok: false; error: string };
 
@@ -41,21 +42,6 @@ export interface OnboardingPayload {
   customCategories: OnboardingCustomCategory[];
   categoryBudgets?: OnboardingCategoryBudget[];
   whatsappPhone?: string | null;
-}
-
-function slugifyCategoryName(name: string): string {
-  return name
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .replace(/[^a-z0-9]+/g, '_')
-    .replace(/^_+|_+$/g, '')
-    .replace(/^([0-9])/, 'c$1');
-}
-
-function buildCustomCategoryId(userId: string, name: string, index: number): string {
-  const base = slugifyCategoryName(name) || `cat${index}`;
-  return `u_${userId.replace(/-/g, '').slice(0, 8)}_${base}_${index + 1}`.slice(0, 60);
 }
 
 function validatePayload(p: OnboardingPayload): string | null {
@@ -118,7 +104,7 @@ export async function completeOnboardingAction(
         console.error('[completeOnboarding] profile update:', profileError);
         return { ok: false, error: 'Não foi possível salvar seu perfil.' };
       }
-      revalidateTag(cacheTags.profile(userId), { expire: 0 });
+      revalidateTag(cacheTags.profile(userId), 'max');
 
       // 2. Custom categories
       const customCategoryIdMap = new Map<string, string>();
@@ -153,8 +139,8 @@ export async function completeOnboardingAction(
           period,
           amountCents: Math.round(budget.amountCents),
         })));
-        revalidateTag(cacheTags.budgets(userId), { expire: 0 });
-        revalidateTag(cacheTags.metrics(userId), { expire: 0 });
+        revalidateTag(cacheTags.budgets(userId), 'max');
+        revalidateTag(cacheTags.metrics(userId), 'max');
       }
 
       // 4. Recurring expenses
@@ -175,9 +161,9 @@ export async function completeOnboardingAction(
           console.error('[completeOnboarding] recurring expenses:', expError);
           return { ok: false, error: 'Não foi possível salvar seus gastos recorrentes.' };
         }
-        revalidateTag(cacheTags.expenses(userId), { expire: 0 });
-        revalidateTag(cacheTags.metrics(userId), { expire: 0 });
-        revalidateTag(cacheTags.monthlyTotals(userId), { expire: 0 });
+        revalidateTag(cacheTags.expenses(userId), 'max');
+        revalidateTag(cacheTags.metrics(userId), 'max');
+        revalidateTag(cacheTags.monthlyTotals(userId), 'max');
       }
 
       // (onboarded já gravado em profiles no passo 1 — não usamos
@@ -223,7 +209,7 @@ export async function completeOnboardingAction(
       });
     }
 
-    revalidatePath('/feed');
+    revalidatePath('/app');
     revalidatePath('/perfil');
     return { ok: true };
   } catch (err: unknown) {

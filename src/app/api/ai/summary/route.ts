@@ -7,8 +7,10 @@ import { isClosedMonthlyPeriod, isValidPeriod } from '@/lib/utils';
 import { getBillingClosingDay } from '@/lib/profiles';
 import { getBillingCycleForPeriod, getCurrentBillingPeriod, shiftPeriod } from '@/lib/billingCycle';
 import { noStoreJson } from '@/lib/http';
+import { consumeRateLimit } from '@/lib/rateLimit';
 
 const MONTH_NOT_CLOSED_MESSAGE = 'O resumo mensal fica disponível quando o mês fechar.';
+const SUMMARY_LIMIT_PER_10_MINUTES = 6;
 
 export async function POST(req: NextRequest) {
   try {
@@ -16,6 +18,18 @@ export async function POST(req: NextRequest) {
     const { data: { user } } = await session.auth.getUser();
     if (!user) {
       return noStoreJson({ error: 'Não autenticado.' }, { status: 401 });
+    }
+
+    const rate = await consumeRateLimit({
+      key: `api:ai:summary:${user.id}`,
+      limit: SUMMARY_LIMIT_PER_10_MINUTES,
+      windowMs: 10 * 60 * 1000,
+    });
+    if (!rate.ok) {
+      return noStoreJson(
+        { error: `Muitas tentativas. Aguarde ${rate.retryAfterSec}s e tente de novo.` },
+        { status: 429, headers: { 'Retry-After': String(rate.retryAfterSec) } },
+      );
     }
 
     const body = await req.json();

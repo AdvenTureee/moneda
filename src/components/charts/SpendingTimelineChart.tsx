@@ -5,6 +5,9 @@ import { createPortal } from 'react-dom';
 import { X } from '@phosphor-icons/react';
 import ChartCard from './ChartCard';
 import DatePicker from '@/components/DatePicker';
+import PrivateValue from '@/components/PrivateValue';
+import { usePrivacy } from '@/context/PrivacyContext';
+import { maskValue } from '@/components/PrivateValue';
 import { formatCurrency } from '@/lib/utils';
 import { parseLocalDate } from '@/lib/date';
 import type { SpendingTimelineBucket, SpendingTimelineData, SpendingTimelineMode } from '@/types';
@@ -118,6 +121,7 @@ function defaultSelectedDay(data: SpendingTimelineData): string {
 }
 
 export default function SpendingTimelineChart({ data }: SpendingTimelineChartProps) {
+  const { isPrivate } = usePrivacy();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [width, setWidth] = useState(360);
   const [mode, setMode] = useState<SpendingTimelineMode>('year');
@@ -245,7 +249,7 @@ export default function SpendingTimelineChart({ data }: SpendingTimelineChartPro
           <span className="text-xs text-[#6B7280]">
             {plannedLabel}:{' '}
             <span className="font-semibold text-[#1A1D23] tabular-nums">
-              {formatCurrency(Math.round(plannedTotal))}
+              <PrivateValue value={formatCurrency(Math.round(plannedTotal))} />
             </span>
           </span>
         }
@@ -360,8 +364,8 @@ export default function SpendingTimelineChart({ data }: SpendingTimelineChartPro
                   >
                     <title>
                       {mode === 'year'
-                        ? `${point.label}: gasto ${formatCurrency(Math.round(point.spentCumulative))}, média ${formatCurrency(Math.round(point.plannedCumulative))}`
-                        : `${point.label}: gasto ${formatCurrency(Math.round(point.spentCumulative))}, planejado ${formatCurrency(Math.round(point.plannedCumulative))}`}
+                        ? `${point.label}: gasto ${isPrivate ? maskValue(formatCurrency(Math.round(point.spentCumulative))) : formatCurrency(Math.round(point.spentCumulative))}, média ${isPrivate ? maskValue(formatCurrency(Math.round(point.plannedCumulative))) : formatCurrency(Math.round(point.plannedCumulative))}`
+                        : `${point.label}: gasto ${isPrivate ? maskValue(formatCurrency(Math.round(point.spentCumulative))) : formatCurrency(Math.round(point.spentCumulative))}, planejado ${isPrivate ? maskValue(formatCurrency(Math.round(point.plannedCumulative))) : formatCurrency(Math.round(point.plannedCumulative))}`}
                     </title>
                   </rect>
                 </g>
@@ -421,6 +425,7 @@ function SpendingTimelineDetailModal({
   points,
   selectedIndex,
 }: SpendingTimelineDetailModalProps) {
+  const { isPrivate } = usePrivacy();
   const [mounted, setMounted] = useState(false);
   const [shouldRender, setShouldRender] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
@@ -504,8 +509,8 @@ function SpendingTimelineDetailModal({
             </h3>
             <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
               {mode === 'year'
-                ? `Total do ano: ${formatCurrency(Math.round(totalSpent))}. Média mensal: ${formatCurrency(Math.round(totalPlanned))}.`
-                : `Total do gráfico: ${formatCurrency(Math.round(totalSpent))} em gastos de ${formatCurrency(Math.round(totalPlanned))} planejados`}
+                ? `Total do ano: ${isPrivate ? maskValue(formatCurrency(Math.round(totalSpent))) : formatCurrency(Math.round(totalSpent))}. Média mensal: ${isPrivate ? maskValue(formatCurrency(Math.round(totalPlanned))) : formatCurrency(Math.round(totalPlanned))}.`
+                : `Total do gráfico: ${isPrivate ? maskValue(formatCurrency(Math.round(totalSpent))) : formatCurrency(Math.round(totalSpent))} em gastos de ${isPrivate ? maskValue(formatCurrency(Math.round(totalPlanned))) : formatCurrency(Math.round(totalPlanned))} planejados`}
             </p>
           </div>
           <button
@@ -520,12 +525,13 @@ function SpendingTimelineDetailModal({
 
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 min-[420px]:px-5">
           <div className="grid grid-cols-1 gap-2.5 min-[430px]:grid-cols-3">
-            <MetricPill label="Gasto" value={formatCurrency(Math.round(selected.spentCumulative))} color="var(--chart-primary-strong)" />
-            <MetricPill label={referenceLabel} value={formatCurrency(Math.round(selected.plannedCumulative))} color="var(--chart-success)" />
+            <MetricPill label="Gasto" value={formatCurrency(Math.round(selected.spentCumulative))} color="var(--chart-primary-strong)" isPrivate={isPrivate} />
+            <MetricPill label={referenceLabel} value={formatCurrency(Math.round(selected.plannedCumulative))} color="var(--chart-success)" isPrivate={isPrivate} />
             <MetricPill
               label={mode === 'year' ? (isAboveAverage ? 'Acima média' : 'Abaixo média') : (isOverPlan ? 'Acima' : 'Restante')}
               value={signedCurrency(difference)}
               color={mode === 'year' ? (isAboveAverage ? 'var(--color-warning)' : 'var(--color-success)') : (isOverPlan ? 'var(--color-error)' : 'var(--color-success)')}
+              isPrivate={isPrivate}
             />
           </div>
 
@@ -537,12 +543,12 @@ function SpendingTimelineDetailModal({
               <span className="inline-flex min-w-0 items-center gap-1.5 tabular-nums">
                 <span className="h-1.5 w-1.5 rounded-full bg-[var(--chart-primary-strong)]" />
                 <span>Gasto:</span>
-                <strong className="min-w-0 break-words text-[var(--color-text-primary)]">{formatCurrency(Math.round(selected.spent))}</strong>
+                <strong className="min-w-0 break-words text-[var(--color-text-primary)]"><PrivateValue value={formatCurrency(Math.round(selected.spent))} /></strong>
               </span>
               <span className="inline-flex min-w-0 items-center gap-1.5 tabular-nums">
                 <span className="h-1.5 w-1.5 rounded-full bg-[var(--chart-success)]" />
                 <span>{referenceLabel}:</span>
-                <strong className="min-w-0 break-words text-[var(--color-text-primary)]">{formatCurrency(Math.round(selected.plannedAmount))}</strong>
+                <strong className="min-w-0 break-words text-[var(--color-text-primary)]"><PrivateValue value={formatCurrency(Math.round(selected.plannedAmount))} /></strong>
               </span>
             </div>
           </div>
@@ -595,10 +601,10 @@ function SpendingTimelineDetailModal({
                     </div>
                     <div className="mt-2 grid grid-cols-1 gap-1.5 text-[11px] text-[var(--color-text-secondary)] min-[430px]:grid-cols-2">
                       <span className="min-w-0 tabular-nums">
-                        Gasto: <strong className="text-[var(--color-text-primary)]">{formatCurrency(Math.round(point.spentCumulative))}</strong>
+                        Gasto: <strong className="text-[var(--color-text-primary)]"><PrivateValue value={formatCurrency(Math.round(point.spentCumulative))} /></strong>
                       </span>
                       <span className="min-w-0 tabular-nums">
-                        {referenceLabel}: <strong className="text-[var(--color-text-primary)]">{formatCurrency(Math.round(point.plannedCumulative))}</strong>
+                        {referenceLabel}: <strong className="text-[var(--color-text-primary)]"><PrivateValue value={formatCurrency(Math.round(point.plannedCumulative))} /></strong>
                       </span>
                     </div>
                   </div>
@@ -613,7 +619,7 @@ function SpendingTimelineDetailModal({
   );
 }
 
-function MetricPill({ label, value, color }: { label: string; value: string; color: string }) {
+function MetricPill({ label, value, color, isPrivate }: { label: string; value: string; color: string; isPrivate?: boolean }) {
   return (
     <div className="min-w-0 rounded-[14px] border border-[color-mix(in_srgb,var(--color-border)_70%,transparent)] bg-[var(--color-surface-alt)] p-3">
       <div className="mb-2 flex items-center gap-1.5">
@@ -623,7 +629,7 @@ function MetricPill({ label, value, color }: { label: string; value: string; col
         </p>
       </div>
       <p className="break-words text-[clamp(1rem,4.5vw,1.25rem)] font-extrabold leading-tight tabular-nums text-[var(--color-text-primary)]">
-        {value}
+        {isPrivate ? maskValue(value) : value}
       </p>
     </div>
   );

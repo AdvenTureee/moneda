@@ -2,9 +2,16 @@
   "name": "moneda",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=24.0.0"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "typecheck": "tsc --noEmit",
+    "screenshots": "node --env-file=.env scripts/screenshots.mjs",
+    "security:audit": "npm audit --audit-level=high",
+    "security:secrets": "git ls-files -z --cached --others --exclude-standard | xargs -0 secretlint",
     "test": "node --test --import jiti/register --import ./tests/test-setup.ts tests/*.test.ts",
     "start": "next start",
     "backfill:pii": "node --env-file=.env scripts/backfill-pii.mjs",
@@ -12,27 +19,40 @@
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.10",
-    "@supabase/ssr": "^0.10.3",
-    "@supabase/supabase-js": "^2.106.1",
+    "@react-three/drei": "10.7.7",
+    "@react-three/fiber": "9.6.1",
+    "@supabase/ssr": "^0.12.0",
+    "@supabase/supabase-js": "^2.110.0",
+    "@vercel/speed-insights": "^2.0.0",
     "embla-carousel-react": "^8.6.0",
-    "framer-motion": "^12.40.0",
-    "groq-sdk": "^1.2.0",
-    "next": "16.2.6",
+    "framer-motion": "^12.42.2",
+    "groq-sdk": "^1.3.0",
+    "next": "^16.2.10",
     "nextjs-toploader": "^3.9.17",
-    "react": "19.2.4",
-    "react-dom": "19.2.4",
+    "ofx-parser": "^1.0.1",
+    "papaparse": "^5.7.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1",
-    "sharp": "^0.34.5",
-    "uuid": "^14.0.0"
+    "sharp": "^0.35.3",
+    "three": "^0.185.1",
+    "uuid": "^14.0.1"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
-    "@types/react": "^19",
+    "@secretlint/secretlint-rule-preset-recommend": "^13.0.2",
+    "@tailwindcss/postcss": "^4.3.2",
+    "@types/node": "^24.13.2",
+    "@types/papaparse": "^5.5.2",
+    "@types/react": "^19.2.17",
     "@types/react-dom": "^19",
     "jiti": "^2.7.0",
-    "tailwindcss": "^4",
+    "playwright": "^1.61.1",
+    "secretlint": "^13.0.2",
+    "tailwindcss": "^4.3.2",
     "typescript": "^5"
+  },
+  "overrides": {
+    "postcss": "^8.5.14"
   }
 }

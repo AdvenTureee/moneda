@@ -3,6 +3,7 @@ import { createServerClient } from '@supabase/ssr';
 import { revalidateTag } from 'next/cache';
 import { cacheTags } from '@/lib/cache';
 import { TERMS_VERSION } from '@/lib/legal';
+import { supabaseAuthCookieOptions } from '@/lib/supabase/cookies';
 import {
   buildProfileIdentityPiiUpdate,
   buildProfilePhonePiiUpdate,
@@ -14,8 +15,10 @@ export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get('code');
   const requestedNext = searchParams.get('next');
-  const next = !requestedNext || requestedNext === '/' ? '/feed' : requestedNext;
-  const isRecoveryNext = next.startsWith('/perfil/senha') && next.includes('recovery=1');
+  const next = !requestedNext || requestedNext === '/' ? '/app' : requestedNext;
+  const isLegacyRecoveryNext = next.startsWith('/perfil/senha') && next.includes('recovery=1');
+  const isPasswordResetNext = next === '/redefinir-senha';
+  const isRecoveryFlow = isLegacyRecoveryNext || isPasswordResetNext;
   // OAuth providers podem retornar erro direto (usuário cancelou, app não autorizado, etc.).
   const providerError = searchParams.get('error');
   const providerErrorDescription = searchParams.get('error_description');
@@ -31,7 +34,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(`${origin}/login?error=missing_code`);
   }
 
-  if (isRecoveryNext) {
+  if (isLegacyRecoveryNext) {
     const resetUrl = new URL('/redefinir-senha', origin);
     resetUrl.searchParams.set('code', code);
     return NextResponse.redirect(resetUrl);
@@ -39,18 +42,22 @@ export async function GET(request: NextRequest) {
 
   // IMPORTANTE: criar a response antes do client e gravar os cookies de sessão
   // NELA, não no `request`. Caso contrário o browser nunca recebe os cookies
-  // e o próximo request volta para /login via middleware.
+  // e o próximo request volta para /login via proxy.
   const response = NextResponse.redirect(`${origin}${next}`);
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
     {
+      cookieOptions: supabaseAuthCookieOptions,
       cookies: {
         getAll() { return request.cookies.getAll(); },
-        setAll(cookiesToSet) {
+        setAll(cookiesToSet, headers) {
           cookiesToSet.forEach(({ name, value, options }) =>
             response.cookies.set(name, value, options));
+          Object.entries(headers).forEach(([key, value]) => {
+            response.headers.set(key, value);
+          });
         },
       },
     },
@@ -62,13 +69,19 @@ export async function GET(request: NextRequest) {
       message: error.message,
       status: error.status,
       name: error.name,
+      next,
     });
+    if (isPasswordResetNext) {
+      // Mantém o usuário em /redefinir-senha para mostrar erro amigável
+      // em vez de mandá-lo de volta para /login.
+      return NextResponse.redirect(`${origin}/redefinir-senha?error=exchange_failed`);
+    }
     const reason = encodeURIComponent(error.message || 'exchange_failed');
     return NextResponse.redirect(`${origin}/login?error=exchange_failed&reason=${reason}`);
   }
 
   const { data: { user } } = await supabase.auth.getUser();
-  if (user) {
+  if (user && !isRecoveryFlow) {
     try {
       const { data: profile } = await supabase
         .from('profiles')

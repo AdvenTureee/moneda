@@ -59,7 +59,7 @@ export default function NotificationsForm({ initial }: NotificationsFormProps) {
     prefs.push_budget_alert !== initial.push_budget_alert;
 
   return (
-    <div className="max-w-lg mx-auto px-4 pb-24 [scrollbar-gutter:stable]">
+    <div className="max-w-lg mx-auto px-4 pb-4 [scrollbar-gutter:stable]">
       <header className="flex items-center gap-3 py-5 animate-fade-up delay-0">
         <Link
           href="/perfil"

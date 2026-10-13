@@ -187,20 +187,13 @@ export default function MoSkate({
           animation: leg-push 1.2s cubic-bezier(0.45, 0, 0.55, 1) infinite;
           transform-origin: 38px 72px;
         }
-        @keyframes wind-stream {
-          0% { stroke-dashoffset: 40; opacity: 0; }
-          50% { opacity: 0.5; }
-          100% { stroke-dashoffset: -40; opacity: 0; }
-        }
         .wind-line {
           stroke: #9CA3AF;
           stroke-width: 1.2;
           stroke-linecap: round;
           stroke-dasharray: 15 25;
-          animation: wind-stream 0.8s linear infinite;
+          opacity: 0.42;
         }
-        .wl1 { animation-delay: 0s; }
-        .wl2 { animation-delay: 0.3s; }
 
         @keyframes mo-speaking-mouth {
           0%, 100% { transform: scaleY(0.95) scaleX(1); }

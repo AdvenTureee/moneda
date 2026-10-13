@@ -7,6 +7,7 @@ import {
   updateCategory,
   deleteCategory,
   getCategoryExpenseCount,
+  generateUniqueCategoryId,
 } from '@/lib/categories';
 import { cacheTags } from '@/lib/cache';
 import { noStoreJson } from '@/lib/http';
@@ -44,10 +45,13 @@ export async function POST(req: NextRequest) {
 
     switch (action) {
       case 'create': {
-        const { id, name, icon, color, keywords } = body;
-        if (!id || !name || !icon || !color) {
-          return noStoreJson({ error: 'Campos obrigatórios: id, name, icon, color.' }, { status: 400 });
+        const { name, icon, color, keywords } = body;
+        if (!name || !icon || !color) {
+          return noStoreJson({ error: 'Campos obrigatórios: name, icon, color.' }, { status: 400 });
         }
+        // O id é gerado no servidor (com prefixo de usuário) para evitar
+        // colisões de PK global quando dois usuários escolhem o mesmo nome.
+        const id = await generateUniqueCategoryId(user.id, name);
         const cat = await createCategory(user.id, { id, name, icon, color, keywords: keywords ?? [] });
         invalidateCategoryCaches(user.id);
         return noStoreJson({ data: cat });
@@ -86,6 +90,9 @@ export async function POST(req: NextRequest) {
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Erro desconhecido';
+    if (message.includes('duplicate key value violates constraint "categories_pkey"')) {
+      return noStoreJson({ error: 'Categoria já existe. Tente outro nome.' }, { status: 409 });
+    }
     return noStoreJson({ error: message }, { status: 500 });
   }
 }

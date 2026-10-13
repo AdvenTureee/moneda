@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { CalendarBlank, DotsThree, Eye, Paperclip, PencilSimple, Trash, X } from '@phosphor-icons/react';
 import Icon from '@/components/Icon';
+import PrivateValue from '@/components/PrivateValue';
 import ReceiptViewerModal from '@/components/ReceiptViewerModal';
 import { PAYMENT_METHOD_BADGES } from '@/lib/paymentMethods';
 import { useToast } from '@/components/ToastProvider';
@@ -258,7 +259,7 @@ export default function ExpenseCard({
               isCompact ? 'text-sm' : 'text-[15px]'
             } text-[#E07070]`}
           >
-            −{formatCurrency(expense.amount)}
+            −<PrivateValue value={formatCurrency(expense.amount)} />
           </span>
         </div>
       </button>

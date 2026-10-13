@@ -8,12 +8,12 @@ import WhatsAppPhoneModal from '@/components/WhatsAppPhoneModal';
 import TermsModal from '@/components/TermsModal';
 import { ToastProvider, useToast } from '@/components/ToastProvider';
 import ScrollFadeIndicator from '@/components/ScrollFadeIndicator';
+import { PrivacyProvider } from '@/context/PrivacyContext';
 import type { ExpenseInput } from '@/types';
 
 const WHATSAPP_PROMPT_DISMISSED_KEY = 'moneda:whatsapp-phone-prompt-dismissed';
 const AUTHENTICATED_PREFETCH_ROUTES = [
   '/app',
-  '/feed',
   '/feed',
   '/insights',
   '/perfil',
@@ -125,11 +125,12 @@ function ShellContent({
     <>
       <main
         className="app-shell"
-        style={{ paddingBottom: 'calc(68px + env(safe-area-inset-bottom, 0px))' }}
+        style={{ paddingBottom: 'calc(84px + env(safe-area-inset-bottom, 0px))' }}
       >
         {children}
       </main>
       <ScrollFadeIndicator />
+      <div className="bottom-glass-fade-overlay" aria-hidden="true" />
       <BottomNav onAddExpense={() => { if (!isTermsBlocking) setModalOpen(true); }} />
       <AddExpenseModal
         isOpen={modalOpen && !isTermsBlocking}
@@ -159,14 +160,16 @@ export default function AppShell({
   requiresWhatsappPhone = false,
 }: AppShellProps) {
   return (
-    <ToastProvider>
-      <ShellContent
-        requiresTermsAcceptance={requiresTermsAcceptance}
-        requiresWhatsappPhone={requiresWhatsappPhone}
-      >
-        {children}
-      </ShellContent>
-    </ToastProvider>
+    <PrivacyProvider>
+      <ToastProvider>
+        <ShellContent
+          requiresTermsAcceptance={requiresTermsAcceptance}
+          requiresWhatsappPhone={requiresWhatsappPhone}
+        >
+          {children}
+        </ShellContent>
+      </ToastProvider>
+    </PrivacyProvider>
   );
 }
 

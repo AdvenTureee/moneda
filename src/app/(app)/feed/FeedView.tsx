@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useMemo, useEffect, useCallback, useRef, useLayoutEffect, useTransition, Suspense, type ComponentType } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef, useLayoutEffect, useTransition, Suspense, type ChangeEvent, type ComponentType } from 'react';
 import { createPortal } from 'react-dom';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { CalendarBlank, CreditCard, MagnifyingGlass, Tag, Wallet, X } from '@phosphor-icons/react';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import ExpenseCard from '@/components/ExpenseCard';
 import AddExpenseModal from '@/components/AddExpenseModal';
 import ConfirmDialog from '@/components/ConfirmDialog';
@@ -24,7 +25,9 @@ import {
   shiftPeriod,
 } from '@/lib/billingCycle';
 import { useCategories } from '@/hooks/useCategories';
-import type { Expense, ExpenseInput, ExpensePaymentMethod } from '@/types';
+import { buildFeedQueryKey, buildFeedSearchParams, FEED_PAGE_SIZE } from '@/lib/feedQuery';
+import type { CategoryWithMeta } from '@/lib/categories';
+import type { Expense, ExpenseInput, ExpensePaymentMethod, FeedExpensesPage } from '@/types';
 
 type FilterTab = 'date' | 'category' | 'payment';
 type FeedView = 'history' | 'scheduled';
@@ -44,6 +47,12 @@ const PAYMENT_FILTERS: Array<{ value: ExpensePaymentMethod; label: string; icon:
 
 const DEFAULT_DATE_PRESET = 'current-cycle';
 const FEED_FILTERS_STORAGE_KEY = 'moneda:feed-filters:v1';
+const FEED_CACHE_STORAGE_KEY = 'moneda:feed-cache:v1';
+const FEED_CACHE_TTL_MS = 5 * 60 * 1000;
+const noticeTransition = {
+  duration: 0.24,
+  ease: [0.22, 1, 0.36, 1] as const,
+};
 
 interface StoredFeedFilters {
   dateRange?: DateRange;
@@ -51,6 +60,129 @@ interface StoredFeedFilters {
   activePaymentMethod?: ExpensePaymentMethod | null;
   searchInput?: string;
   activeView?: FeedView;
+}
+
+interface StoredFeedCache {
+  pages: Record<string, { ts: number; page: FeedExpensesPage }>;
+}
+
+const feedInflight = new Map<string, Promise<FeedExpensesPage>>();
+
+function rehydrateExpense(expense: Expense): Expense {
+  return {
+    ...expense,
+    createdAt: new Date(expense.createdAt),
+    receipt: expense.receipt
+      ? { ...expense.receipt, uploadedAt: new Date(expense.receipt.uploadedAt) }
+      : null,
+  };
+}
+
+function rehydrateFeedPage(page: FeedExpensesPage): FeedExpensesPage {
+  return {
+    ...page,
+    data: page.data.map(rehydrateExpense),
+  };
+}
+
+function readFeedCache(queryKey: string): FeedExpensesPage | null {
+  try {
+    const raw = window.sessionStorage.getItem(FEED_CACHE_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as StoredFeedCache;
+    const entry = parsed.pages?.[queryKey];
+    if (!entry || Date.now() - entry.ts > FEED_CACHE_TTL_MS) return null;
+    return rehydrateFeedPage(entry.page);
+  } catch {
+    return null;
+  }
+}
+
+function writeFeedCache(queryKey: string, page: FeedExpensesPage) {
+  try {
+    const raw = window.sessionStorage.getItem(FEED_CACHE_STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) as StoredFeedCache : { pages: {} };
+    parsed.pages = parsed.pages ?? {};
+    parsed.pages[queryKey] = { ts: Date.now(), page };
+    window.sessionStorage.setItem(FEED_CACHE_STORAGE_KEY, JSON.stringify(parsed));
+  } catch {
+    // Cache de UX opcional; segue sem persistência se indisponível.
+  }
+}
+
+function clearFeedCache() {
+  try {
+    window.sessionStorage.removeItem(FEED_CACHE_STORAGE_KEY);
+  } catch {}
+}
+
+function expenseRenderSignature(expense: Expense): string {
+  return [
+    expense.id,
+    new Date(expense.createdAt).toISOString(),
+    expense.amount,
+    expense.category,
+    expense.description,
+    expense.paymentMethod,
+    expense.seriesId ?? '',
+    expense.seriesOccurrenceIndex ?? '',
+    expense.receipt?.path ?? '',
+    expense.receipt?.uploadedAt ? new Date(expense.receipt.uploadedAt).toISOString() : '',
+  ].join('|');
+}
+
+function feedPageMatchesCurrent(
+  page: FeedExpensesPage,
+  currentExpenses: Expense[],
+  currentHasMore: boolean,
+  currentNextCursor: string | null,
+): boolean {
+  if (page.data.length > currentExpenses.length) return false;
+  const pageMatchesCurrentPrefix = page.data.every((expense, index) =>
+    expenseRenderSignature(expense) === expenseRenderSignature(currentExpenses[index])
+  );
+  if (!pageMatchesCurrentPrefix) return false;
+  if (currentExpenses.length > page.data.length) return true;
+  return page.hasMore === currentHasMore && page.nextCursor === currentNextCursor;
+}
+
+function feedViewFromQueryKey(queryKey: string): FeedView {
+  return new URLSearchParams(queryKey).get('order') === 'scheduled' ? 'scheduled' : 'history';
+}
+
+async function fetchFeedPage(
+  input: {
+    category?: string | null;
+    paymentMethod?: ExpensePaymentMethod | null;
+    startDate?: string | null;
+    endDate?: string | null;
+    search?: string | null;
+    order: FeedView;
+    cursor?: string | null;
+  },
+  signal?: AbortSignal,
+): Promise<FeedExpensesPage> {
+  const params = buildFeedSearchParams({ ...input, limit: FEED_PAGE_SIZE });
+  const url = `/api/expenses?${params.toString()}`;
+  const key = url;
+  const existing = feedInflight.get(key);
+  if (existing) return existing;
+
+  const promise = fetch(url, { signal })
+    .then(async (res) => {
+      if (!res.ok) {
+        if (res.status === 401) {
+          window.location.href = '/login';
+        }
+        throw new Error('Erro ao buscar despesas');
+      }
+      return rehydrateFeedPage(await res.json() as FeedExpensesPage);
+    })
+    .finally(() => {
+      feedInflight.delete(key);
+    });
+  feedInflight.set(key, promise);
+  return promise;
 }
 
 function isPaymentMethod(value: unknown): value is ExpensePaymentMethod {
@@ -207,16 +339,305 @@ function paymentFilterLabel(method: ExpensePaymentMethod | null): string {
   return PAYMENT_FILTERS.find((item) => item.value === method)?.label ?? 'Todos';
 }
 
-interface FeedViewProps {
-  billingClosingDay: number;
+function readClearNumber(name: string, fallback: number): number {
+  const value = Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue(name));
+  return Number.isFinite(value) ? value : fallback;
 }
 
-function FeedPageInner({ billingClosingDay }: FeedViewProps) {
+function clearBezier(value: string): (time: number) => number {
+  const match = String(value).match(/cubic-bezier\(([-\d.]+),\s*([-\d.]+),\s*([-\d.]+),\s*([-\d.]+)\)/);
+  if (!match) return (time) => time;
+
+  const [x1, y1, x2, y2] = match.slice(1).map(Number.parseFloat);
+  const cx = 3 * x1;
+  const bx = 3 * (x2 - x1) - cx;
+  const ax = 1 - cx - bx;
+  const cy = 3 * y1;
+  const by = 3 * (y2 - y1) - cy;
+  const ay = 1 - cy - by;
+
+  return (time) => {
+    if (time <= 0) return 0;
+    if (time >= 1) return 1;
+
+    let sample = time;
+    for (let index = 0; index < 8; index += 1) {
+      const delta = ((ax * sample + bx) * sample + cx) * sample - time;
+      const derivative = (3 * ax * sample + 2 * bx) * sample + cx;
+      if (Math.abs(delta) < 1e-6 || derivative === 0) break;
+      sample -= delta / derivative;
+    }
+
+    return ((ay * sample + by) * sample + cy) * sample;
+  };
+}
+
+interface ClearableFeedSearchInputProps {
+  value: string;
+  onChange: (value: string) => void;
+}
+
+function ClearableFeedSearchInput({ value, onChange }: ClearableFeedSearchInputProps) {
+  const prefersReducedMotion = useReducedMotion();
+  const wrapRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const mirrorRef = useRef<HTMLDivElement | null>(null);
+  const placeholderRef = useRef<HTMLDivElement | null>(null);
+  const glowRef = useRef<HTMLDivElement | null>(null);
+  const canvasRef = useRef<CanvasRenderingContext2D | null>(null);
+  const clearingRef = useRef(false);
+  const frameRef = useRef<number | null>(null);
+  const clearValueFrameRef = useRef<number | null>(null);
+  const [mirrorValue, setMirrorValue] = useState(value);
+  const [isClearing, setIsClearing] = useState(false);
+  const hasValue = value.length > 0;
+
+  useEffect(() => {
+    if (!clearingRef.current) setMirrorValue(value);
+  }, [value]);
+
+  useEffect(() => {
+    return () => {
+      if (frameRef.current !== null) cancelAnimationFrame(frameRef.current);
+      if (clearValueFrameRef.current !== null) cancelAnimationFrame(clearValueFrameRef.current);
+    };
+  }, []);
+
+  function getCanvas() {
+    if (!canvasRef.current) {
+      canvasRef.current = document.createElement('canvas').getContext('2d');
+    }
+    return canvasRef.current;
+  }
+
+  function buildGlow(text: string): string {
+    const wrap = wrapRef.current;
+    const input = inputRef.current;
+    const canvas = getCanvas();
+    if (!wrap || !input || !canvas) return '';
+
+    const root = document.documentElement;
+    const inputStyles = getComputedStyle(input);
+    canvas.font = inputStyles.font;
+
+    const isDark = root.getAttribute('data-theme') === 'dark';
+    const rgb = isDark ? '255,255,255' : '0,0,0';
+    const width = wrap.clientWidth || 280;
+    const paddingLeft = Number.parseFloat(inputStyles.paddingLeft) || 12;
+    const spread = readClearNumber('--glow-spread', 1.5);
+    const layers: string[] = [];
+    let x = 0;
+
+    text.split(/(\s+)/).forEach((segment) => {
+      const segmentWidth = canvas.measureText(segment).width;
+      if (segment.trim()) {
+        const centerX = paddingLeft + x + segmentWidth / 2;
+        const halfWidth = Math.max(segmentWidth * 0.45, 8) * spread;
+
+        [
+          [0, 0.8, 7, 0.22],
+          [halfWidth * 0.45, 0.55, 8, 0.18],
+          [halfWidth * -0.4, 0.65, 6, 0.16],
+          [halfWidth * 0.15, 0.9, 5, 0.14],
+        ].forEach(([dx, radiusWidthMultiplier, radiusHeight, alpha]) => {
+          const layerX = (((centerX + dx) / width) * 100).toFixed(2);
+          layers.push(
+            `radial-gradient(ellipse ${Math.max(halfWidth * radiusWidthMultiplier, 2).toFixed(1)}px ${radiusHeight}px at ${layerX}% 100%, rgba(${rgb},${alpha}), transparent)`
+          );
+        });
+      }
+      x += segmentWidth;
+    });
+
+    return layers.join(', ');
+  }
+
+  function resetClearStyles() {
+    const mirror = mirrorRef.current;
+    const placeholder = placeholderRef.current;
+    const glow = glowRef.current;
+
+    if (mirror) {
+      mirror.style.transform = '';
+      mirror.style.opacity = '';
+      mirror.style.filter = '';
+    }
+    if (placeholder) {
+      placeholder.style.transform = '';
+      placeholder.style.opacity = '';
+      placeholder.style.filter = '';
+    }
+    if (glow) {
+      glow.style.opacity = '0';
+      glow.style.background = '';
+    }
+  }
+
+  function handleInputChange(event: ChangeEvent<HTMLInputElement>) {
+    onChange(event.target.value);
+  }
+
+  function handleClear() {
+    const text = value;
+    const wrap = wrapRef.current;
+    const input = inputRef.current;
+    const mirror = mirrorRef.current;
+    const placeholder = placeholderRef.current;
+    const glow = glowRef.current;
+    if (!text || !wrap || !input || !mirror || !placeholder || !glow || clearingRef.current) return;
+
+    const keepFocus = document.activeElement === input;
+    clearingRef.current = true;
+    setIsClearing(true);
+    setMirrorValue(text);
+    mirror.textContent = text.replace(/ /g, '\u00a0');
+
+    if (prefersReducedMotion) {
+      onChange('');
+      clearingRef.current = false;
+      setIsClearing(false);
+      resetClearStyles();
+      if (keepFocus) requestAnimationFrame(() => input.focus({ preventScroll: true }));
+      return;
+    }
+
+    wrap.classList.add('is-clearing');
+    wrap.classList.remove('has-value');
+    glow.style.background = buildGlow(text);
+    glow.style.opacity = '0';
+    clearValueFrameRef.current = requestAnimationFrame(() => {
+      onChange('');
+      clearValueFrameRef.current = null;
+    });
+
+    const rootStyles = getComputedStyle(document.documentElement);
+    const total = readClearNumber('--clear-dur', 1000);
+    const outDuration = readClearNumber('--clear-out-dur', 400);
+    const inDuration = readClearNumber('--clear-in-dur', 400);
+    const outFly = readClearNumber('--clear-out-fly', 12);
+    const inFly = readClearNumber('--clear-in-fly', 12);
+    const blur = readClearNumber('--clear-blur', 2);
+    const glowDelay = readClearNumber('--glow-delay', 50);
+    const glowPeakAt = readClearNumber('--glow-peak-at', 0.15);
+    const glowOpacity = readClearNumber('--glow-opacity', 0.42);
+    const easeOut = clearBezier(rootStyles.getPropertyValue('--clear-out-ease'));
+    const easeIn = clearBezier(rootStyles.getPropertyValue('--clear-in-ease'));
+
+    placeholder.style.transform = `translateY(-${inFly}px)`;
+    placeholder.style.opacity = '0.9';
+    placeholder.style.filter = `blur(${blur}px)`;
+
+    const start = performance.now();
+    const tick = (now: number) => {
+      const elapsed = now - start;
+      const easedOut = easeOut(Math.min(1, elapsed / outDuration));
+      mirror.style.transform = `translateY(${(easedOut * outFly).toFixed(1)}px)`;
+      mirror.style.opacity = (1 - easedOut).toFixed(3);
+      mirror.style.filter = `blur(${(easedOut * blur).toFixed(1)}px)`;
+
+      const easedIn = easeIn(Math.min(1, elapsed / inDuration));
+      placeholder.style.transform = `translateY(${(-inFly + easedIn * inFly).toFixed(1)}px)`;
+      placeholder.style.opacity = (0.9 + easedIn * 0.1).toFixed(3);
+      placeholder.style.filter = `blur(${(blur - easedIn * blur).toFixed(1)}px)`;
+
+      let glowLevel = 0;
+      if (elapsed > glowDelay) {
+        const progress = Math.min(1, (elapsed - glowDelay) / Math.max(1, total - glowDelay));
+        glowLevel = progress < glowPeakAt
+          ? progress / glowPeakAt
+          : 1 - (progress - glowPeakAt) / (1 - glowPeakAt);
+      }
+      glow.style.opacity = (glowLevel * glowOpacity).toFixed(3);
+
+      if (elapsed < total) {
+        frameRef.current = requestAnimationFrame(tick);
+        return;
+      }
+
+      wrap.classList.remove('is-clearing');
+      resetClearStyles();
+      setMirrorValue('');
+      clearingRef.current = false;
+      setIsClearing(false);
+      frameRef.current = null;
+      if (keepFocus) requestAnimationFrame(() => input.focus({ preventScroll: true }));
+    };
+
+    frameRef.current = requestAnimationFrame(tick);
+  }
+
+  const mirrorText = mirrorValue.replace(/ /g, '\u00a0');
+  const showValueState = hasValue && !isClearing;
+  const showClearButton = hasValue || isClearing;
+
+  return (
+    <div
+      ref={wrapRef}
+      className={`t-clear themed-field h-9 w-full rounded-[9px] border border-[#E5E7EB] bg-[#F8F9FB] dark:border-white/10 dark:bg-white/6 ${showValueState ? 'has-value' : ''} ${isClearing ? 'is-clearing' : ''}`}
+    >
+      <MagnifyingGlass
+        size={16}
+        className="pointer-events-none absolute left-3 top-1/2 z-40 -translate-y-1/2 text-[#7C8898] dark:text-[#94A3B8]"
+        aria-hidden
+      />
+      <input
+        ref={inputRef}
+        type="text"
+        role="searchbox"
+        value={value}
+        onChange={handleInputChange}
+        placeholder=""
+        className="relative z-10 h-full w-full bg-transparent pl-9 pr-10 text-sm text-[#1A1D23] caret-[#1A1D23] outline-none dark:text-[#F5F7FA] dark:caret-[#F5F7FA]"
+        aria-label="Buscar gastos"
+      />
+      <div
+        ref={mirrorRef}
+        className="t-clear-mirror pl-9 pr-10 text-sm text-[#1A1D23] dark:text-[#F5F7FA]"
+        aria-hidden="true"
+      >
+        {mirrorText}
+      </div>
+      <div
+        ref={placeholderRef}
+        className="t-clear-placeholder pl-9 pr-10 text-sm text-[#7C8898] dark:text-[#94A3B8]"
+        aria-hidden="true"
+      >
+        Buscar gasto...
+      </div>
+      <div ref={glowRef} className="t-clear-glow" aria-hidden="true" />
+      <button
+        type="button"
+        onPointerDown={(event) => {
+          if (document.activeElement === inputRef.current) event.preventDefault();
+          handleClear();
+        }}
+        onMouseDown={(event) => {
+          if (document.activeElement === inputRef.current) event.preventDefault();
+        }}
+        onClick={handleClear}
+        disabled={!showClearButton}
+        className={`t-clear-btn absolute right-1.5 top-1/2 z-40 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-[#7C8898] outline-none transition-[opacity,transform,background-color,color] duration-150 hover:bg-[#E8EEF5] hover:text-[#1A1D23] active:scale-95 focus-visible:ring-2 focus-visible:ring-[#A8C5E0] focus-visible:ring-offset-1 disabled:pointer-events-none dark:text-[#94A3B8] dark:hover:bg-white/10 dark:hover:text-[#F5F7FA] ${
+          showClearButton ? 'opacity-100 scale-100' : 'opacity-0 scale-75'
+        }`}
+        aria-label="Limpar busca"
+      >
+        <X size={15} weight="bold" aria-hidden />
+      </button>
+    </div>
+  );
+}
+
+interface FeedViewProps {
+  billingClosingDay: number;
+  initialCategories: CategoryWithMeta[];
+  initialFeedPage: FeedExpensesPage;
+}
+
+function FeedPageInner({ billingClosingDay, initialCategories, initialFeedPage }: FeedViewProps) {
   const searchParams = useSearchParams();
   const focusParam = searchParams.get('focus');
   const periodParam = searchParams.get('period');
   const { showToast } = useToast();
-  const router = useRouter();
   const dateFilters = useMemo(() => buildDateFilters(billingClosingDay), [billingClosingDay]);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [activePaymentMethod, setActivePaymentMethod] = useState<ExpensePaymentMethod | null>(null);
@@ -229,6 +650,7 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [activeFilterTab, setActiveFilterTab] = useState<FilterTab>('date');
   const [filtersPosition, setFiltersPosition] = useState<{ top: number; left: number; width: number } | null>(null);
+  const [filterScrollEdges, setFilterScrollEdges] = useState({ left: false, right: false });
   const [mounted, setMounted] = useState(false);
   const [filtersHydrated, setFiltersHydrated] = useState(false);
   const [, startUiTransition] = useTransition();
@@ -280,20 +702,40 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
     setCustomTo(isoToDateInput(dateRange.to));
   }, [dateRange]);
 
-  const [allExpenses, setAllExpenses] = useState<Expense[]>([]);
-  const { data: categories } = useCategories();
-  const [loading, setLoading] = useState(true);
-  const [hasLoadedExpenses, setHasLoadedExpenses] = useState(false);
+  const initialPage = useMemo(() => rehydrateFeedPage(initialFeedPage), [initialFeedPage]);
+  const [allExpenses, setAllExpenses] = useState<Expense[]>(() => initialPage.data);
+  const [nextCursor, setNextCursor] = useState<string | null>(() => initialPage.nextCursor);
+  const [hasMore, setHasMore] = useState(() => initialPage.hasMore);
+  const [loadedQueryKey, setLoadedQueryKey] = useState(() => initialPage.queryKey);
+  const { data: categories } = useCategories(initialCategories);
+  const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasLoadedExpenses, setHasLoadedExpenses] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [deletingExpense, setDeletingExpense] = useState<Expense | null>(null);
   const [selectedInstallmentExpense, setSelectedInstallmentExpense] = useState<Expense | null>(null);
   const [showOverspendNotice, setShowOverspendNotice] = useState(true);
-  const [noticeExiting, setNoticeExiting] = useState(false);
+  const feedStateRef = useRef({
+    expenses: initialPage.data,
+    hasMore: initialPage.hasMore,
+    nextCursor: initialPage.nextCursor,
+    loadedQueryKey: initialPage.queryKey,
+  });
   const abortRef = useRef<AbortController | null>(null);
   const requestSeqRef = useRef(0);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => setMounted(true), []);
+
+  useEffect(() => {
+    feedStateRef.current = {
+      expenses: allExpenses,
+      hasMore,
+      nextCursor,
+      loadedQueryKey,
+    };
+  }, [allExpenses, hasMore, loadedQueryKey, nextCursor]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => setDebouncedSearch(searchInput), 180);
@@ -343,97 +785,171 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
     };
   }, [filtersOpen]);
 
-  const fetchExpenses = useCallback(async () => {
+  const currentFeedRequest = useMemo(() => ({
+    category: activeCategory,
+    paymentMethod: activePaymentMethod,
+    startDate: dateRange.from,
+    endDate: dateRange.to,
+    search: debouncedSearch.trim(),
+    order: activeView,
+    limit: FEED_PAGE_SIZE,
+  }), [activeCategory, activePaymentMethod, activeView, dateRange, debouncedSearch]);
+  const currentQueryKey = useMemo(() => buildFeedQueryKey(currentFeedRequest), [currentFeedRequest]);
+
+  const applyReplacePage = useCallback((page: FeedExpensesPage) => {
+    feedStateRef.current = {
+      expenses: page.data,
+      hasMore: page.hasMore,
+      nextCursor: page.nextCursor,
+      loadedQueryKey: page.queryKey,
+    };
+    setAllExpenses(page.data);
+    setNextCursor(page.nextCursor);
+    setHasMore(page.hasMore);
+    setLoadedQueryKey(page.queryKey);
+    setHasLoadedExpenses(true);
+    writeFeedCache(page.queryKey, page);
+  }, []);
+
+  const appendPage = useCallback((page: FeedExpensesPage) => {
+    setAllExpenses((prev) => {
+      const seen = new Set(prev.map((expense) => expense.id));
+      const merged = [...prev, ...page.data.filter((expense) => !seen.has(expense.id))];
+      feedStateRef.current = {
+        expenses: merged,
+        hasMore: page.hasMore,
+        nextCursor: page.nextCursor,
+        loadedQueryKey: currentQueryKey,
+      };
+      writeFeedCache(currentQueryKey, {
+        ...page,
+        data: merged,
+        count: merged.length,
+        queryKey: currentQueryKey,
+      });
+      return merged;
+    });
+    setNextCursor(page.nextCursor);
+    setHasMore(page.hasMore);
+    setLoadedQueryKey(currentQueryKey);
+  }, [currentQueryKey]);
+
+  const loadFeedPage = useCallback(async (options?: {
+    append?: boolean;
+    background?: boolean;
+    bypassCache?: boolean;
+  }) => {
     if (!filtersHydrated) return;
-    abortRef.current?.abort();
-    const controller = new AbortController();
+
+    const append = options?.append === true;
+    const cursor = append ? nextCursor : null;
+    if (append && !cursor) return;
+
+    const cached = !append && !options?.bypassCache ? readFeedCache(currentQueryKey) : null;
+    const shouldFetchInBackground = options?.background === true || Boolean(cached);
+    const controller = append ? null : new AbortController();
     const requestSeq = requestSeqRef.current + 1;
     requestSeqRef.current = requestSeq;
-    abortRef.current = controller;
-    setLoading(true);
-    setError(null);
-    try {
-      const params = new URLSearchParams();
-      if (activeCategory) params.set('category', activeCategory);
-      if (activePaymentMethod) params.set('paymentMethod', activePaymentMethod);
-      if (debouncedSearch.trim()) params.set('search', debouncedSearch.trim());
-      if (dateRange.from) params.set('startDate', dateRange.from);
-      if (dateRange.to) params.set('endDate', dateRange.to);
-      if (activeView === 'scheduled') params.set('onlyFuture', 'true');
-      const url = `/api/expenses${params.size ? '?' + params.toString() : ''}`;
-      const res = await fetch(url, { signal: controller.signal });
-      if (!res.ok) {
-        if (res.status === 401) {
-          window.location.href = '/login';
-          return;
-        }
-        throw new Error('Erro ao buscar despesas');
+
+    if (!append) {
+      abortRef.current?.abort();
+      abortRef.current = controller;
+      if (cached) {
+        applyReplacePage(cached);
       }
-      const json = await res.json();
-      setAllExpenses(json.data ?? []);
+    }
+
+    setError(null);
+    if (append) {
+      setLoadingMore(true);
+    } else if (shouldFetchInBackground) {
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
+
+    try {
+      const page = await fetchFeedPage(
+        { ...currentFeedRequest, cursor },
+        controller?.signal,
+      );
+      if (requestSeqRef.current !== requestSeq) return;
+      if (append) {
+        appendPage(page);
+      } else if (shouldFetchInBackground && feedPageMatchesCurrent(
+        page,
+        feedStateRef.current.expenses,
+        feedStateRef.current.hasMore,
+        feedStateRef.current.nextCursor,
+      )) {
+        const currentFeedState = feedStateRef.current;
+        writeFeedCache(page.queryKey, currentFeedState.expenses.length > page.data.length
+          ? {
+              ...page,
+              data: currentFeedState.expenses,
+              count: currentFeedState.expenses.length,
+              hasMore: currentFeedState.hasMore,
+              nextCursor: currentFeedState.nextCursor,
+            }
+          : page);
+        feedStateRef.current = {
+          ...currentFeedState,
+          loadedQueryKey: page.queryKey,
+        };
+        setLoadedQueryKey(page.queryKey);
+        setHasLoadedExpenses(true);
+      } else {
+        applyReplacePage(page);
+      }
     } catch (e) {
       if ((e as Error)?.name === 'AbortError') return;
-      setError(e instanceof Error ? e.message : 'Erro desconhecido');
+      if (requestSeqRef.current === requestSeq) {
+        setError(e instanceof Error ? e.message : 'Erro desconhecido');
+      }
     } finally {
       if (requestSeqRef.current === requestSeq) {
         setHasLoadedExpenses(true);
         setLoading(false);
+        setLoadingMore(false);
         if (abortRef.current === controller) abortRef.current = null;
       }
     }
-  }, [activeCategory, activePaymentMethod, debouncedSearch, dateRange, activeView, filtersHydrated]);
+  }, [appendPage, applyReplacePage, currentFeedRequest, currentQueryKey, filtersHydrated, nextCursor]);
 
   useEffect(() => {
-    fetchExpenses();
-  }, [fetchExpenses]);
+    if (!filtersHydrated) return;
+    void loadFeedPage({ background: currentQueryKey === loadedQueryKey });
+    // Reage apenas à identidade dos filtros; o loader já captura o estado atual.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentQueryKey, filtersHydrated]);
 
   useEffect(() => {
-    const handler = (event: Event) => {
-      const expense = (event as CustomEvent<{ expense?: Expense }>).detail?.expense;
-      if (expense) {
-        setAllExpenses((prev) => {
-          const exists = prev.some((item) => item.id === expense.id);
-          return exists
-            ? prev.map((item) => (item.id === expense.id ? expense : item))
-            : [expense, ...prev];
-        });
+    const target = loadMoreRef.current;
+    if (!target || !hasMore || loadingMore || loading) return;
+
+    const observer = new IntersectionObserver((entries) => {
+      if (entries.some((entry) => entry.isIntersecting)) {
+        void loadFeedPage({ append: true });
       }
-      fetchExpenses();
+    }, { rootMargin: '360px 0px' });
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [hasMore, loading, loadingMore, loadFeedPage]);
+
+  useEffect(() => {
+    const handler = () => {
+      clearFeedCache();
+      void loadFeedPage({ bypassCache: true, background: true });
     };
     window.addEventListener('expense-mutated', handler);
     return () => window.removeEventListener('expense-mutated', handler);
-  }, [fetchExpenses]);
+  }, [loadFeedPage]);
 
-  const filtered = useMemo(() => {
-    let result = allExpenses;
-
-    if (activeCategory) {
-      result = result.filter((e) => e.category === activeCategory);
-    }
-
-    if (activePaymentMethod) {
-      result = result.filter((e) => e.paymentMethod === activePaymentMethod);
-    }
-
-    if (debouncedSearch.trim()) {
-      const q = debouncedSearch.toLowerCase().trim();
-      result = result.filter(
-        (e) =>
-          e.description.toLowerCase().includes(q) ||
-          (categories.find((c) => c.id === e.category)?.name.toLowerCase().includes(q) ?? false)
-      );
-    }
-
-    return result.sort((a, b) => {
-      const aTime = new Date(a.createdAt).getTime();
-      const bTime = new Date(b.createdAt).getTime();
-      return activeView === 'scheduled' ? aTime - bTime : bTime - aTime;
-    });
-  }, [allExpenses, activeCategory, activePaymentMethod, debouncedSearch, activeView]);
-
-  const groups = activeView === 'scheduled'
-    ? [...groupExpensesByDate(filtered)].reverse()
-    : groupExpensesByDate(filtered);
+  const loadedView = useMemo(() => feedViewFromQueryKey(loadedQueryKey), [loadedQueryKey]);
+  const groups = loadedView === 'scheduled'
+    ? [...groupExpensesByDate(allExpenses)].reverse()
+    : groupExpensesByDate(allExpenses);
   const categoryLabel = activeCategory
     ? categories.find((category) => category.id === activeCategory)?.name ?? 'Categoria'
     : 'Todas';
@@ -472,10 +988,45 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
       active: activePaymentMethod !== null,
     },
   ];
+  const updateFilterScrollEdges = useCallback(() => {
+    const target = filtersAnchorRef.current;
+    if (!target) return;
+    const maxScrollLeft = target.scrollWidth - target.clientWidth;
+    const nextEdges = {
+      left: target.scrollLeft > 1,
+      right: maxScrollLeft > 1 && target.scrollLeft < maxScrollLeft - 1,
+    };
+    setFilterScrollEdges((current) => (
+      current.left === nextEdges.left && current.right === nextEdges.right ? current : nextEdges
+    ));
+  }, []);
+
+  useLayoutEffect(() => {
+    const target = filtersAnchorRef.current;
+    if (!target) return;
+
+    updateFilterScrollEdges();
+    const frame = window.requestAnimationFrame(updateFilterScrollEdges);
+    const resizeObserver = new ResizeObserver(updateFilterScrollEdges);
+    resizeObserver.observe(target);
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      resizeObserver.disconnect();
+    };
+  }, [activeCategory, activePaymentMethod, categoryLabel, dateRange, updateFilterScrollEdges]);
+
+  const filterScrollMaskImage = filterScrollEdges.left && filterScrollEdges.right
+    ? 'linear-gradient(to right, transparent, black 8%, black 92%, transparent)'
+    : filterScrollEdges.left
+      ? 'linear-gradient(to right, transparent, black 8%, black 100%)'
+      : filterScrollEdges.right
+        ? 'linear-gradient(to right, black 0%, black 92%, transparent)'
+        : 'none';
 
   const topCategories = useMemo(() => {
     const map = new Map<string, number>();
-    for (const exp of filtered) {
+    for (const exp of allExpenses) {
       map.set(exp.category, (map.get(exp.category) ?? 0) + exp.amount);
     }
     return Array.from(map.entries())
@@ -485,7 +1036,7 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
         const cat = categories.find((c) => c.id === id);
         return { id, name: cat?.name ?? id, icon: cat?.icon ?? 'Package', total };
       });
-  }, [filtered, categories]);
+  }, [allExpenses, categories]);
 
   const clearFilters = useCallback(() => {
     startUiTransition(() => {
@@ -546,12 +1097,10 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
       window.dispatchEvent(new CustomEvent('expense-mutated', { detail: { expense: deletingExpense } }));
       setDeletingExpense(null);
       showToast('success', 'Gasto excluído com sucesso');
-      fetchExpenses();
-      router.refresh();
     } catch {
       setDeletingExpense(null);
     }
-  }, [deletingExpense, fetchExpenses, router, showToast]);
+  }, [deletingExpense, showToast]);
 
   const handleEditSave = useCallback(async (input: ExpenseInput) => {
     if (!editingExpense) return;
@@ -567,63 +1116,98 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
       window.dispatchEvent(new CustomEvent('expense-mutated', { detail: { expense: data?.data } }));
       setEditingExpense(null);
       showToast('success', 'Gasto atualizado com sucesso');
-      fetchExpenses();
-      router.refresh();
       return data?.data;
     } catch {
       // ignore
     }
-  }, [editingExpense, fetchExpenses, showToast]);
+  }, [editingExpense, showToast]);
 
-  const showInitialSkeleton = loading && !hasLoadedExpenses;
+  const showStaleView = hasLoadedExpenses && currentQueryKey !== loadedQueryKey;
+  const showInitialSkeleton = (loading && !hasLoadedExpenses) || (loading && showStaleView);
   const showRefreshing = loading && hasLoadedExpenses;
-  const showFeedProgress = loading;
+  const showFeedProgress = loading || loadingMore;
+  const animateGroups = !showRefreshing && !showStaleView;
+  const reduceMotion = useReducedMotion();
+  const clearFiltersButtonMotion = reduceMotion
+    ? {
+        initial: { opacity: 0 },
+        animate: { opacity: 1 },
+        exit: { opacity: 0 },
+      }
+    : {
+        initial: { opacity: 0, y: -3 },
+        animate: { opacity: 1, y: 0 },
+        exit: { opacity: 0, y: -3 },
+      };
+  const clearFiltersSlotMotion = reduceMotion
+    ? {
+        initial: { height: 0 },
+        animate: { height: 44 },
+        exit: { height: 0 },
+      }
+    : {
+        initial: { height: 0 },
+        animate: { height: 44 },
+        exit: { height: 0 },
+      };
+  const overspendNoticeMotion = reduceMotion
+    ? {
+        initial: { opacity: 0 },
+        animate: { opacity: 1 },
+        exit: { opacity: 0 },
+      }
+    : {
+        initial: { opacity: 0, scale: 0.95 },
+        animate: { opacity: 1, scale: 1 },
+        exit: { opacity: 0, scale: 0.95 },
+      };
 
   return (
     <>
-      <div className="max-w-lg mx-auto px-4 pb-24 [scrollbar-gutter:stable]">
+      <div className="max-w-lg mx-auto px-4 pb-4 [scrollbar-gutter:stable]">
         <PageHeader
           title="Feed de Gastos"
           subtitle="Histórico e agendados em um só lugar."
         />
 
-        {focusParam === 'overspend' && showOverspendNotice && topCategories.length > 0 && (
-          <div
-            className={`relative mb-4 rounded-xl bg-[var(--color-warning-bg)] px-3 pb-3 pt-2.5 ring-1 ring-inset ring-[color-mix(in_srgb,var(--color-warning)_18%,transparent)] ${
-              noticeExiting ? 'animate-fade-down' : 'animate-fade-up delay-1'
-            }`}
-            onAnimationEnd={() => {
-              if (noticeExiting) {
-                setShowOverspendNotice(false);
-                setNoticeExiting(false);
-              }
-            }}
-          >
-            <button
-              type="button"
-              onClick={() => setNoticeExiting(true)}
-              className="absolute right-2 top-2 grid size-5 place-items-center rounded-full text-[var(--color-warning)] opacity-60 transition-opacity hover:opacity-100"
-              aria-label="Fechar aviso"
+        <AnimatePresence initial={false} mode="popLayout">
+          {focusParam === 'overspend' && showOverspendNotice && topCategories.length > 0 && (
+            <motion.div
+              key="overspend-notice"
+              layout
+              className="relative mb-4 rounded-xl bg-[var(--color-warning-bg)] px-3 pb-3 pt-2.5 ring-1 ring-inset ring-[color-mix(in_srgb,var(--color-warning)_18%,transparent)]"
+              initial={overspendNoticeMotion.initial}
+              animate={overspendNoticeMotion.animate}
+              exit={overspendNoticeMotion.exit}
+              transition={noticeTransition}
+              style={{ transformOrigin: 'top center' }}
             >
-              <X size={14} weight="bold" />
-            </button>
-            <div className="mb-2 flex items-center gap-1.5 pr-6">
-              <span className="size-1.5 rounded-full bg-[var(--color-warning)]" aria-hidden />
-              <p className="text-xs font-semibold text-[var(--color-warning)]">Acima do orçamento</p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {topCategories.map((cat) => (
-                <span
-                  key={cat.id}
-                  className="inline-flex items-center gap-1 rounded-full bg-white/70 px-2.5 py-1 text-xs font-semibold text-[var(--color-text-primary)] dark:bg-white/8"
-                >
-                  <span>{cat.name}</span>
-                  <span className="tabular-nums text-[var(--color-text-secondary)]">{formatCurrency(cat.total)}</span>
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
+              <button
+                type="button"
+                onClick={() => setShowOverspendNotice(false)}
+                className="absolute right-2 top-2 grid size-5 place-items-center rounded-full text-[var(--color-warning)] opacity-60 transition-opacity hover:opacity-100"
+                aria-label="Fechar aviso"
+              >
+                <X size={14} weight="bold" />
+              </button>
+              <div className="mb-2 flex items-center gap-1.5 pr-6">
+                <span className="size-1.5 rounded-full bg-[var(--color-warning)]" aria-hidden />
+                <p className="text-xs font-semibold text-[var(--color-warning)]">Acima do orçamento</p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {topCategories.map((cat) => (
+                  <span
+                    key={cat.id}
+                    className="inline-flex items-center gap-1 rounded-full bg-white/70 px-2.5 py-1 text-xs font-semibold text-[var(--color-text-primary)] dark:bg-white/8"
+                  >
+                    <span>{cat.name}</span>
+                    <span className="tabular-nums text-[var(--color-text-secondary)]">{formatCurrency(cat.total)}</span>
+                  </span>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <div className="themed-card bg-white rounded-[14px] p-2.5 space-y-2.5 mb-5 animate-fade-up delay-2">
           <div className="relative grid grid-cols-2 overflow-hidden rounded-[12px] bg-[#F4F6FA] p-0.5 dark:bg-white/6" role="tablist" aria-label="Visão do feed">
@@ -658,25 +1242,18 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
             </div>
 
             {/* Search bar */}
-            <div className="relative">
-                <MagnifyingGlass
-                  size={16}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7C8898] dark:text-[#94A3B8]"
-                  aria-hidden
-                />
-                <input
-                  type="search"
-                  value={searchInput}
-                  onChange={(e) => setSearchInput(e.target.value)}
-                  placeholder="Buscar gasto..."
-                  className="themed-field h-9 w-full rounded-[9px] border border-[#E5E7EB] bg-[#F8F9FB] pl-9 pr-3 text-sm text-[#1A1D23] placeholder:text-[#7C8898] outline-none transition-colors focus:border-[#A8C5E0] dark:border-white/10 dark:bg-white/6 dark:text-[#F5F7FA] dark:placeholder:text-[#94A3B8]"
-                  aria-label="Buscar gastos"
-                />
+            <div>
+              <ClearableFeedSearchInput value={searchInput} onChange={setSearchInput} />
             </div>
 
           <div
             ref={filtersAnchorRef}
+            onScroll={updateFilterScrollEdges}
             className="-mx-0.5 flex gap-1.5 overflow-x-auto px-0.5 pb-0.5 text-[11px] font-semibold text-[#1A1D23] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            style={{
+              WebkitMaskImage: filterScrollMaskImage,
+              maskImage: filterScrollMaskImage,
+            }}
           >
             {filterTabs.map((tab) => {
               const TabIcon = tab.icon;
@@ -718,17 +1295,33 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
                 </button>
               );
             })}
-            {activeFilterCount > 0 && (
-              <button
-                type="button"
-                onClick={clearFilters}
-                className="h-8 shrink-0 rounded-full px-3 text-[11px] font-bold text-[#5BBF8E] outline-none transition-colors hover:bg-[#EEF9F4] focus-visible:ring-2 focus-visible:ring-[#A8C5E0] focus-visible:ring-offset-1 dark:hover:bg-white/8"
-              >
-                Limpar
-              </button>
-            )}
           </div>
         </div>
+
+        <AnimatePresence initial={false}>
+          {activeFilterCount > 0 && (
+            <motion.div
+              key="clear-feed-filters"
+              className="overflow-hidden"
+              initial={clearFiltersSlotMotion.initial}
+              animate={clearFiltersSlotMotion.animate}
+              exit={clearFiltersSlotMotion.exit}
+              transition={noticeTransition}
+            >
+              <motion.button
+                type="button"
+                onClick={clearFilters}
+                className="mx-auto mt-3 flex h-8 items-center text-[11px] font-bold text-[#5BBF8E] transition-all active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A8C5E0] focus-visible:ring-offset-2"
+                initial={clearFiltersButtonMotion.initial}
+                animate={clearFiltersButtonMotion.animate}
+                exit={clearFiltersButtonMotion.exit}
+                transition={noticeTransition}
+              >
+                Limpar
+              </motion.button>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {mounted && filtersOpen && filtersPosition && createPortal(
           <>
@@ -994,14 +1587,14 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
           {/* Content layer */}
           <div
             className="transition-opacity duration-150"
-            style={{ opacity: showInitialSkeleton ? 0 : showRefreshing ? 0.72 : 1 }}
+            style={{ opacity: showInitialSkeleton ? 0 : 1 }}
           >
             {error ? (
                 <div className="flex flex-col items-center py-16 text-center">
                   <Icon name="Warning" size={48} className="mb-4 opacity-30" />
                   <p className="text-base font-semibold text-[#B14C4C]">{error}</p>
                   <button
-                    onClick={fetchExpenses}
+                    onClick={() => loadFeedPage({ bypassCache: true })}
                     className="mt-2 px-4 py-2 bg-[#5BBF8E] hover:bg-[#4AA77C] active:bg-[#3FA876] text-white rounded-[10px] text-sm font-semibold transition-colors duration-150 active:scale-[0.98]"
                   >
                     Tentar novamente
@@ -1041,7 +1634,7 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
                   return (
                     <section
                       key={group.dateKey}
-                      className={`mb-7 animate-fade-up delay-${Math.min(gi + 2, 8)}`}
+                      className={`mb-7 ${animateGroups ? `animate-fade-up delay-${Math.min(gi + 2, 8)}` : ''}`}
                       aria-labelledby={`feed-date-${group.dateKey}`}
                     >
                       {/* Date section header */}
@@ -1062,7 +1655,7 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
 
                       {/* Expense cards */}
                       <div className="space-y-2.5 border-l-2 border-[color-mix(in_srgb,var(--color-border)_72%,transparent)] pl-3">
-                        {group.items.map((expense, ei) => (
+                        {group.items.map((expense) => (
                           <div key={expense.id}>
                             <ExpenseCard
                               expense={expense}
@@ -1070,7 +1663,7 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
                               onClick={hasUpcomingInstallments(expense) ? () => handleInstallmentClick(expense) : undefined}
                               onEdit={() => setEditingExpense(expense)}
                               onDelete={() => handleDelete(expense)}
-                              onReceiptChanged={fetchExpenses}
+                              onReceiptChanged={() => loadFeedPage({ bypassCache: true, background: true })}
                               onViewInstallments={hasUpcomingInstallments(expense) ? () => handleInstallmentClick(expense) : undefined}
                             />
                           </div>
@@ -1079,6 +1672,22 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
                     </section>
                   );
                 })
+            )}
+            {!error && groups.length > 0 && (
+              <div ref={loadMoreRef} className="flex min-h-16 items-center justify-center pb-4">
+                {hasMore ? (
+                  <button
+                    type="button"
+                    onClick={() => loadFeedPage({ append: true })}
+                    disabled={loadingMore}
+                    className="rounded-full border border-[#D1D9E6] bg-white px-4 py-2 text-xs font-bold text-[#5BBF8E] transition-colors hover:bg-[#EEF9F4] disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {loadingMore ? 'Carregando...' : 'Carregar mais'}
+                  </button>
+                ) : (
+                  <span className="text-xs font-semibold text-[#9CA3AF]">Fim da lista</span>
+                )}
+              </div>
             )}
           </div>
         </div>
@@ -1113,10 +1722,14 @@ function FeedPageInner({ billingClosingDay }: FeedViewProps) {
   );
 }
 
-export default function FeedView({ billingClosingDay }: FeedViewProps) {
+export default function FeedView({ billingClosingDay, initialCategories, initialFeedPage }: FeedViewProps) {
   return (
     <Suspense fallback={null}>
-      <FeedPageInner billingClosingDay={billingClosingDay} />
+      <FeedPageInner
+        billingClosingDay={billingClosingDay}
+        initialCategories={initialCategories}
+        initialFeedPage={initialFeedPage}
+      />
     </Suspense>
   );
 }

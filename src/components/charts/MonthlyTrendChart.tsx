@@ -3,6 +3,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import ChartCard from './ChartCard';
 import ChartTooltip from './ChartTooltip';
+import PrivateValue from '@/components/PrivateValue';
+import { usePrivacy } from '@/context/PrivacyContext';
+import { maskValue } from '@/components/PrivateValue';
 import { formatCurrency } from '@/lib/utils';
 
 export interface MonthlyTrendPoint {
@@ -35,6 +38,7 @@ function compactCurrency(centavos: number): string {
 export default function MonthlyTrendChart({ data, currentPeriod }: MonthlyTrendChartProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [width, setWidth] = useState(360);
+  const { isPrivate } = usePrivacy();
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
   useEffect(() => {
@@ -92,7 +96,7 @@ export default function MonthlyTrendChart({ data, currentPeriod }: MonthlyTrendC
           <span className="text-xs text-[#6B7280]">
             Média:{' '}
             <span className="font-semibold text-[#1A1D23] tabular-nums">
-              {formatCurrency(avg)}
+              <PrivateValue value={formatCurrency(avg)} />
             </span>
           </span>
         }
@@ -107,7 +111,7 @@ export default function MonthlyTrendChart({ data, currentPeriod }: MonthlyTrendC
             >
               <p className="font-semibold capitalize">{shortMonth(hovered.period)}</p>
               <p className="text-[#A8C5E0] tabular-nums mt-0.5">
-                {formatCurrency(hovered.total)}
+                <PrivateValue value={formatCurrency(hovered.total)} />
               </p>
             </ChartTooltip>
           )}
@@ -208,7 +212,7 @@ export default function MonthlyTrendChart({ data, currentPeriod }: MonthlyTrendC
                       setTimeout(() => setHoveredIndex(null), 1500);
                     }}
                   >
-                    <title>{`${shortMonth(p.period)}: ${formatCurrency(p.total)}`}</title>
+                    <title>{`${shortMonth(p.period)}: ${isPrivate ? maskValue(formatCurrency(p.total)) : formatCurrency(p.total)}`}</title>
                   </rect>
                 </g>
               );

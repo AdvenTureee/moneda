@@ -164,7 +164,17 @@ export interface ExpenseFilters {
   includeFuture?: boolean;
   onlyFuture?: boolean;
   limit?: number;
+  cursor?: string;
+  order?: 'history' | 'scheduled';
   search?: string;
+}
+
+export interface FeedExpensesPage {
+  data: Expense[];
+  count: number;
+  nextCursor: string | null;
+  hasMore: boolean;
+  queryKey: string;
 }
 
 export type IncomeSource = 'salary' | 'freelance' | 'investment' | 'rent' | 'gift' | 'other';

@@ -8,6 +8,7 @@ import Icon from '@/components/Icon';
 import Confetti from '@/components/Confetti';
 import MonthPicker from '@/components/MonthPicker';
 import DashboardBalanceHero from '@/components/DashboardBalanceHero';
+import DashboardCompactMetrics from '@/components/DashboardCompactMetrics';
 import PageHeader from '@/components/PageHeader';
 import RefreshOnExpenseMutation from '@/components/RefreshOnExpenseMutation';
 import { getDashboardMetrics, getSpendingTimeline } from '@/lib/expenses';
@@ -79,6 +80,12 @@ export default async function DashboardPage({
   const budgetTotal = BUDGET_CENTS;
   const expensesTotal = metrics.totalSpent;
   const incomeTotal = monthlyIncomeTotalCents;
+  const spendingProgressPercent = BUDGET_CENTS > 0
+    ? Math.min((metrics.totalSpent / BUDGET_CENTS) * 100, 100)
+    : null;
+  const spendingProgressColor = metrics.totalSpent > BUDGET_CENTS
+    ? 'color-mix(in srgb, var(--color-warning) 68%, var(--color-surface) 32%)'
+    : 'color-mix(in srgb, var(--color-success) 64%, var(--color-surface) 36%)';
   const compactMetrics = [
     { label: 'Orçamento', value: formatCurrency(BUDGET_CENTS) },
     { label: 'Gasto', value: formatCurrency(metrics.totalSpent) },
@@ -138,7 +145,7 @@ export default async function DashboardPage({
   return (
     <>
       <RefreshOnExpenseMutation />
-      <div className="max-w-lg mx-auto px-4">
+      <div className="mx-auto w-full max-w-lg px-4 pb-4">
         <PageHeader
           title="Moneda"
           subtitle="Seu dinheiro, finalmente claro."
@@ -162,100 +169,87 @@ export default async function DashboardPage({
               </span>
             </Link>
           }
-          className="relative z-40 min-h-[88px] pb-2"
+          className="relative z-40 min-h-[88px] pb-2 lg:min-h-[76px] lg:pb-3"
         />
 
-        <DashboardBalanceHero budgetTotal={budgetTotal} expensesTotal={expensesTotal} incomeTotal={incomeTotal} period={period} displayName={fullName} />
+        <div>
+          <div>
+            <DashboardBalanceHero budgetTotal={budgetTotal} expensesTotal={expensesTotal} incomeTotal={incomeTotal} period={period} displayName={fullName} />
 
-        <section className="mb-3 animate-fade-up delay-2" aria-label="Ciclo financeiro">
-          <MonthPicker value={period} closingDay={billingClosingDay} fullWidth />
-        </section>
+            <section className="mb-3 animate-fade-up delay-2" aria-label="Ciclo financeiro">
+              <MonthPicker value={period} closingDay={billingClosingDay} fullWidth />
+            </section>
 
-        <section
-          className="themed-card mb-4 grid grid-cols-2 gap-4 rounded-[14px] bg-white p-2 animate-fade-up delay-3 md:grid-cols-[1.1fr_1.1fr_0.9fr]"
-          aria-label="Resumo financeiro do ciclo"
-        >
-          {compactMetrics.map((item, index) => (
-            <div
-              key={item.label}
-              className={`min-w-0 rounded-[10px] px-2 py-2 text-left ${index === 2 ? 'col-span-2 md:col-span-1' : ''}`}
-            >
-              <div className="mb-1 flex items-center justify-start gap-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--color-text-tertiary)]">
-                {index === 0 && <Icon name="Wallet" size={14} />}
-                {index === 1 && <Icon name="TrendDown" size={14} />}
-                {index === 2 && <Icon name="TrendUp" size={14} />}
-                <p>{item.label}</p>
-              </div>
-              <p className="whitespace-nowrap text-base font-bold leading-none tabular-nums text-[var(--color-text-primary)]">
-                {item.value}
-              </p>
-            </div>
-          ))}
-        </section>
-
-        {/* Category breakdown */}
-        {metrics.topCategories.length > 0 && (
-          <section
-            className="themed-card mb-4 bg-white rounded-[16px] p-5 animate-fade-up delay-4"
-            aria-label="Gastos por categoria"
-          >
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="text-base font-heading text-[#1A1D23]">Por categoria</h2>
-              <Link href="/feed" className="text-base font-medium text-[#A8C5E0]">
-                Ver tudo
-              </Link>
-            </div>
-
-            <CategoryBreakdown
-              categories={metrics.topCategories}
-              total={metrics.totalSpent}
-              expensesByCategory={metrics.expensesByCategory}
+            <DashboardCompactMetrics
+              items={compactMetrics}
+              spendingProgressPercent={spendingProgressPercent}
+              spendingProgressColor={spendingProgressColor}
             />
-
-            <div className="mt-4 grid grid-cols-2 gap-2 border-t border-[color-mix(in_srgb,var(--color-border)_72%,transparent)] pt-3" aria-label="Atalhos financeiros">
-              {financialShortcuts}
-            </div>
-          </section>
-        )}
-
-        {metrics.topCategories.length === 0 && (
-          <section
-            className="mb-4 grid grid-cols-2 gap-2 animate-fade-up delay-4"
-            aria-label="Atalhos financeiros"
-          >
-            {financialShortcuts}
-          </section>
-        )}
-
-        {/* Spending timeline */}
-        <section className="mb-6 animate-fade-up delay-5">
-          <SpendingTimelineChart data={spendingTimeline} />
-        </section>
-
-        {/* Recent expenses */}
-        <section aria-label="Últimos gastos" className="animate-fade-up delay-6">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-base font-heading text-[#1A1D23]">Últimos gastos</h2>
-            <Link href="/feed" className="text-xs font-medium text-[#A8C5E0]">
-              Ver feed
-            </Link>
           </div>
 
-          {metrics.recentExpenses.length === 0 ? (
-            <div className="flex flex-col items-center py-12 text-center">
-              <Mo variant="sad" size={128} className="mb-4 animate-bounce-in" />
-              <p className="text-base font-heading text-[#1A1D23]">Nenhum gasto ainda</p>
-              <p className="text-sm text-[#6B7280] mt-1 max-w-[260px]">
-                Comece adicionando sua primeira despesa.
-              </p>
-            </div>
-          ) : (
-            <RecentInstallmentExpenses
-              expenses={metrics.recentExpenses}
-              billingClosingDay={billingClosingDay}
-            />
-          )}
-        </section>
+          <div className="min-w-0">
+            {/* Category breakdown */}
+            {metrics.topCategories.length > 0 && (
+              <section
+                className="themed-card mb-4 bg-white rounded-[16px] p-5 animate-fade-up delay-4"
+                aria-label="Gastos por categoria"
+              >
+                <div className="mb-2">
+                  <h2 className="text-base font-heading text-[#1A1D23]">Por categoria</h2>
+                </div>
+
+                <CategoryBreakdown
+                  categories={metrics.topCategories}
+                  total={metrics.totalSpent}
+                  expensesByCategory={metrics.expensesByCategory}
+                />
+
+                <div className="mt-4 grid grid-cols-2 gap-2 border-t border-[color-mix(in_srgb,var(--color-border)_72%,transparent)] pt-3" aria-label="Atalhos financeiros">
+                  {financialShortcuts}
+                </div>
+              </section>
+            )}
+
+            {metrics.topCategories.length === 0 && (
+              <section
+                className="mb-4 grid grid-cols-2 gap-2 animate-fade-up delay-4"
+                aria-label="Atalhos financeiros"
+              >
+                {financialShortcuts}
+              </section>
+            )}
+
+            {/* Spending timeline */}
+            <section className="mb-6 animate-fade-up delay-5">
+              <SpendingTimelineChart data={spendingTimeline} />
+            </section>
+
+            {/* Recent expenses */}
+            <section aria-label="Últimos gastos" className="animate-fade-up delay-6">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-base font-heading text-[#1A1D23]">Últimos gastos</h2>
+                <Link href="/feed" className="text-xs font-medium text-[#A8C5E0]">
+                  Ver feed
+                </Link>
+              </div>
+
+              {metrics.recentExpenses.length === 0 ? (
+                <div className="flex flex-col items-center py-12 text-center">
+                  <Mo variant="sad" size={128} className="mb-4 animate-bounce-in" />
+                  <p className="text-base font-heading text-[#1A1D23]">Nenhum gasto ainda</p>
+                  <p className="text-sm text-[#6B7280] mt-1 max-w-[260px]">
+                    Comece adicionando sua primeira despesa.
+                  </p>
+                </div>
+              ) : (
+                <RecentInstallmentExpenses
+                  expenses={metrics.recentExpenses}
+                  billingClosingDay={billingClosingDay}
+                />
+              )}
+            </section>
+          </div>
+        </div>
 
         <div className="h-6" />
       </div>

@@ -62,7 +62,7 @@ export function formatDateSection(date: Date): string {
   }
   const d = new Date(date);
   const weekday = d.toLocaleDateString('pt-BR', { weekday: 'long' });
-  return `${label} — ${weekday}`;
+  return `${label} · ${weekday}`;
 }
 
 export function groupExpensesByDate<T extends { createdAt: Date }>(

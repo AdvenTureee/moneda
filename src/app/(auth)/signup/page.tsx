@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowRight, Eye, EyeSlash } from '@phosphor-icons/react';
+import AuthErrorNotice from '@/components/AuthErrorNotice';
 import TermsModal from '@/components/TermsModal';
 import { TERMS_VERSION } from '@/lib/legal';
 import { PASSWORD_REQUIREMENTS_LABEL, isStrongPassword } from '@/lib/password';
@@ -29,6 +30,7 @@ export default function SignupPage() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [errorReplayKey, setErrorReplayKey] = useState(0);
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -38,6 +40,14 @@ export default function SignupPage() {
   const { setEyesClosed } = useAuthMascot();
   const passwordIsStrong = isStrongPassword(password);
   const isPasswordInputFocused = passwordFocusCount > 0;
+  const showPasswordGuidance =
+    error !== PASSWORD_REQUIREMENTS_LABEL &&
+    (isPasswordInputFocused || (password.length > 0 && !passwordIsStrong));
+
+  function showError(message: string) {
+    setError(message);
+    setErrorReplayKey((key) => key + 1);
+  }
 
   function handlePasswordFocus() {
     setPasswordFocusCount((count) => count + 1);
@@ -56,18 +66,23 @@ export default function SignupPage() {
     e.preventDefault();
     setError('');
 
+    if (!name.trim()) {
+      showError('Informe seu nome.');
+      return;
+    }
+
     if (!isValidEmail(email)) {
-      setError('Informe um email válido.');
+      showError('Informe um email válido.');
       return;
     }
 
     if (!passwordIsStrong) {
-      setError(PASSWORD_REQUIREMENTS_LABEL);
+      showError(PASSWORD_REQUIREMENTS_LABEL);
       return;
     }
 
     if (!termsAccepted) {
-      setError('Para criar sua conta, aceite os Termos de Uso e a Política de Proteção de Dados.');
+      showError('Para criar sua conta, aceite os Termos de Uso e a Política de Proteção de Dados.');
       return;
     }
 
@@ -92,7 +107,15 @@ export default function SignupPage() {
 
     if (authError) {
       console.error('[signup]', authError);
-      setError('Não foi possível criar sua conta. Tente novamente.');
+      showError('Não foi possível criar sua conta. Tente novamente.');
+      setLoading(false);
+      return;
+    }
+
+    const returnedEmail = data?.user?.email?.toLowerCase();
+    if (returnedEmail && returnedEmail !== email.toLowerCase()) {
+      console.error('[signup] email mismatch', { requested: email, returned: returnedEmail });
+      showError('Este email já está em uso em outra conta. Use a opção "Entrar" ou tente recuperar a senha.');
       setLoading(false);
       return;
     }
@@ -104,7 +127,7 @@ export default function SignupPage() {
     }
 
     await fetch('/api/pii/sync-profile', { method: 'POST' }).catch(() => null);
-    router.push('/feed');
+    router.push('/app');
     router.refresh();
   }
 
@@ -118,7 +141,7 @@ export default function SignupPage() {
     });
     if (authError) {
       console.error('[signup:google]', authError);
-      setError('Erro ao entrar com Google. Tente novamente.');
+      showError('Erro ao entrar com Google. Tente novamente.');
       setGoogleLoading(false);
     }
   }
@@ -135,9 +158,15 @@ export default function SignupPage() {
               <polyline points="20 6 9 17 4 12" />
             </svg>
           </div>
-          <h1 className="text-xl font-heading text-[#1A1D23] mb-2">Verifique seu email</h1>
+          <h1 className="text-xl font-heading text-[#1A1D23] mb-2">Confirme seu email</h1>
           <p className="text-sm text-[#6B7280] leading-relaxed">
-            Se o email não estiver cadastrado, você receberá um link de confirmação.
+            Enviamos um link de confirmação para{' '}
+            <span className="font-semibold text-[#1A1D23]">{email}</span>.
+            <br />
+            Clique nele para ativar sua conta e começar a usar o Moneda.
+          </p>
+          <p className="text-xs text-[#9CA3AF] mt-3">
+            Não recebeu? Verifique a caixa de spam.
           </p>
           <Link
             href="/login"
@@ -167,7 +196,7 @@ export default function SignupPage() {
             <div className="flex-1 border-t border-[#E5E7EB]" />
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-3.5">
+          <form onSubmit={handleSubmit} className="space-y-3.5" noValidate>
             <div className="grid gap-3.5 sm:grid-cols-2">
               <div>
               <label htmlFor="name" className="block text-xs font-medium text-[#6B7280] mb-1.5">
@@ -178,7 +207,10 @@ export default function SignupPage() {
                 type="text"
                 required
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(e) => {
+                  setName(e.target.value);
+                  setError('');
+                }}
                 placeholder="Seu nome"
                 className="w-full px-3.5 py-2.5 rounded-[10px] bg-[#F8F9FB] border border-[#E5E7EB] text-sm text-[#1A1D23] outline-none focus:border-[#A8C5E0] transition-colors"
               />
@@ -193,7 +225,10 @@ export default function SignupPage() {
                 type="email"
                 required
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  setError('');
+                }}
                 placeholder="seu@email.com"
                 className="w-full px-3.5 py-2.5 rounded-[10px] bg-[#F8F9FB] border border-[#E5E7EB] text-sm text-[#1A1D23] outline-none focus:border-[#A8C5E0] transition-colors"
               />
@@ -210,7 +245,10 @@ export default function SignupPage() {
                   type={showPassword ? 'text' : 'password'}
                   required
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    setError('');
+                  }}
                   onFocus={handlePasswordFocus}
                   onBlur={handlePasswordBlur}
                   placeholder="Mín. 8 caracteres"
@@ -226,25 +264,23 @@ export default function SignupPage() {
               </div>
             </div>
 
-            {(isPasswordInputFocused || (password.length > 0 && !passwordIsStrong)) && (
+            {showPasswordGuidance && (
               <p className={`text-[11px] leading-relaxed transition-colors duration-150 ${password.length > 0 && !passwordIsStrong ? 'text-[#E07070] font-medium' : 'text-[#9CA3AF]'}`}>
                 A senha precisa ter pelo menos 8 caracteres, uma letra maiúscula, um número e um caractere especial.
               </p>
             )}
 
-            {error && (
-              <p className="text-xs font-medium text-[#E07070] pt-1" role="alert">
-                {error}
-              </p>
-            )}
+            <AuthErrorNotice message={error} replayKey={errorReplayKey} className="mt-1" />
 
-            {/* BLOCO DE TERMOS CORRIGIDO — CENTRALIZADO E ENCAIXADO PERFEITAMENTE */}
             <div className="flex items-center justify-center gap-3 bg-[#F8F9FB] rounded-[10px] px-3.5 py-2.5 border border-[#E5E7EB] select-none">
               <input
                 id="terms-checkbox"
                 type="checkbox"
                 checked={termsAccepted}
-                onChange={(e) => setTermsAccepted(e.target.checked)}
+                onChange={(e) => {
+                  setTermsAccepted(e.target.checked);
+                  setError('');
+                }}
                 className="h-5 w-5 shrink-0 rounded-md border-[#CBD5E1] accent-[#5BBF8E] cursor-pointer"
               />
               <label 
@@ -265,17 +301,15 @@ export default function SignupPage() {
               </label>
             </div>
 
-            {/* BOTÃO PRINCIPAL DE CADASTRO */}
             <button
               type="submit"
-              disabled={loading || googleLoading || !passwordIsStrong}
+              disabled={loading || googleLoading}
               className="w-full py-3 rounded-[12px] text-sm font-semibold text-white bg-[#5BBF8E] hover:bg-[#4AA77C] transition-colors"
             >
               {loading ? 'Criando conta…' : 'Criar conta com email'}
             </button>
           </form>
 
-          {/* NOVO LINK DE RETORNO AO LOGIN — LIMPO, CENTRALIZADO E ELEGANTE */}
           <div className="mt-6 pt-4 border-t border-[#E5E7EB] text-center">
             <p className="text-sm text-[#6B7280]">
               Já tem uma conta?{' '}

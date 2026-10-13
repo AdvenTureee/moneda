@@ -2,7 +2,6 @@
 
 import { redirect } from 'next/navigation';
 import { revalidatePath, revalidateTag } from 'next/cache';
-import { headers } from 'next/headers';
 import { createAnonClient, createSessionClient, createServiceClient, isSupabaseEnabled } from '@/lib/supabase/server';
 import { allUserTags, cacheTags } from '@/lib/cache';
 import { PASSWORD_REQUIREMENTS_LABEL, isStrongPassword } from '@/lib/password';
@@ -27,6 +26,13 @@ const DELETE_REASON_CODES = [
 ] as const;
 
 const DELETE_REASON_CODE_SET = new Set<string>(DELETE_REASON_CODES);
+
+function getAppUrl(): string | null {
+  const configured = process.env.APP_URL?.trim().replace(/\/+$/, '');
+  if (configured) return configured;
+  if (process.env.NODE_ENV !== 'production') return 'http://localhost:3000';
+  return null;
+}
 
 export async function updateDisplayName(formData: FormData): Promise<ActionResult> {
   const raw = formData.get('name');
@@ -493,13 +499,14 @@ export async function sendPasswordReset(): Promise<ActionResult> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user?.email) return { ok: false, error: 'Sessão expirada. Entre novamente.' };
 
-  const h = await headers();
-  const host = h.get('x-forwarded-host') ?? h.get('host');
-  const proto = h.get('x-forwarded-proto') ?? 'https';
-  const origin = host ? `${proto}://${host}` : '';
+  const appUrl = getAppUrl();
+  if (!appUrl) {
+    console.error('[resetPassword] APP_URL is required in production');
+    return { ok: false, error: 'Configuração de redefinição indisponível.' };
+  }
 
   const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
-    redirectTo: origin ? `${origin}/redefinir-senha` : undefined,
+    redirectTo: `${appUrl}/redefinir-senha`,
   });
   if (error) {
     console.error('[resetPassword]', error);

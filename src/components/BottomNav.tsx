@@ -1,9 +1,9 @@
 'use client';
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import Link, { useLinkStatus } from 'next/link';
+import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { House, List, PlusCircle, Sparkle, User } from '@phosphor-icons/react';
+import { House, List, Plus, Sparkle, User } from '@phosphor-icons/react';
 import {
   DASHBOARD_PERIOD_CHANGED_EVENT,
   dashboardHrefWithStoredPeriod,
@@ -11,7 +11,7 @@ import {
 
 interface NavItem {
   label: string;
-  icon: React.ComponentType<{ size?: number; className?: string }>;
+  icon: React.ComponentType<{ size?: number; weight?: 'regular' | 'fill' | 'bold' | 'light' | 'thin' | 'duotone'; className?: string }>;
   href: string;
   isAction?: boolean;
 }
@@ -19,18 +19,15 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { label: 'Dashboard', icon: House, href: '/app' },
   { label: 'Feed', icon: List, href: '/feed' },
-  { label: 'Adicionar', icon: PlusCircle, href: '#add', isAction: true },
+  { label: 'Adicionar', icon: Plus, href: '#add', isAction: true },
   { label: 'Insights', icon: Sparkle, href: '/insights' },
   { label: 'Perfil', icon: User, href: '/perfil' },
 ];
 
-function scrollPageToTop() {
-  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  window.scrollTo({
-    top: 0,
-    left: 0,
-    behavior: reduceMotion ? 'auto' : 'smooth',
-  });
+const NAV_TRANSITION_TIMEOUT_MS = 5000;
+
+function getAppShellElement() {
+  return document.querySelector<HTMLElement>('.app-shell');
 }
 
 function isModifiedClick(event: React.MouseEvent<HTMLAnchorElement>) {
@@ -43,19 +40,9 @@ function isModifiedClick(event: React.MouseEvent<HTMLAnchorElement>) {
   );
 }
 
-function resetTabScroll() {
+function resetTabScroll(behavior: ScrollBehavior = 'auto') {
   window.dispatchEvent(new CustomEvent('moneda:tab-scroll-reset'));
-  window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
-}
-
-function NavPendingHint() {
-  const { pending } = useLinkStatus();
-  return (
-    <span
-      className={`bottom-nav-pending-hint ${pending ? 'bottom-nav-pending-hint--visible' : ''}`}
-      aria-hidden
-    />
-  );
+  getAppShellElement()?.scrollTo({ top: 0, left: 0, behavior });
 }
 
 interface BottomNavProps {
@@ -66,9 +53,11 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [dashboardHref, setDashboardHref] = useState('/app');
-  const shouldResetScrollRef = useRef(false);
   const previousPathnameRef = useRef(pathname);
-  const resetScrollTimeoutRef = useRef<number | null>(null);
+  const navTransitionTimeoutRef = useRef<number | null>(null);
+  const navRef = useRef<HTMLElement>(null);
+  const tabsPillRef = useRef<HTMLSpanElement>(null);
+  const [transitioningHref, setTransitioningHref] = useState<string | null>(null);
 
   const prefetchRoute = useCallback(
     (href: string) => {
@@ -77,37 +66,41 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
     [router],
   );
 
-  const clearPendingScrollReset = useCallback(() => {
-    shouldResetScrollRef.current = false;
-    if (resetScrollTimeoutRef.current) {
-      window.clearTimeout(resetScrollTimeoutRef.current);
-      resetScrollTimeoutRef.current = null;
-    }
-  }, []);
-
-  const scheduleScrollReset = useCallback(() => {
-    shouldResetScrollRef.current = true;
-    if (resetScrollTimeoutRef.current) {
-      window.clearTimeout(resetScrollTimeoutRef.current);
-    }
-
-    resetScrollTimeoutRef.current = window.setTimeout(() => {
-      shouldResetScrollRef.current = false;
-      resetScrollTimeoutRef.current = null;
-    }, 3000);
-  }, []);
-
-  useLayoutEffect(() => {
+  useEffect(() => {
     if (previousPathnameRef.current === pathname) return;
 
     previousPathnameRef.current = pathname;
-    if (!shouldResetScrollRef.current) return;
+    resetTabScroll('auto');
+  }, [pathname]);
 
-    clearPendingScrollReset();
-    resetTabScroll();
-  }, [clearPendingScrollReset, pathname]);
+  const clearNavTransitionTimer = useCallback(() => {
+    if (navTransitionTimeoutRef.current) {
+      window.clearTimeout(navTransitionTimeoutRef.current);
+      navTransitionTimeoutRef.current = null;
+    }
+  }, []);
 
-  useEffect(() => clearPendingScrollReset, [clearPendingScrollReset]);
+  const clearNavTransition = useCallback(() => {
+    setTransitioningHref(null);
+    clearNavTransitionTimer();
+  }, [clearNavTransitionTimer]);
+
+  const showNavTransition = useCallback((href: string) => {
+    setTransitioningHref(href);
+    if (navTransitionTimeoutRef.current) {
+      window.clearTimeout(navTransitionTimeoutRef.current);
+    }
+    navTransitionTimeoutRef.current = window.setTimeout(() => {
+      setTransitioningHref(null);
+      navTransitionTimeoutRef.current = null;
+    }, NAV_TRANSITION_TIMEOUT_MS);
+  }, []);
+
+  useEffect(() => {
+    clearNavTransition();
+  }, [clearNavTransition, pathname]);
+
+  useEffect(() => clearNavTransitionTimer, [clearNavTransitionTimer]);
 
   useEffect(() => {
     const updateDashboardHref = () => setDashboardHref(dashboardHrefWithStoredPeriod());
@@ -120,12 +113,107 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
     };
   }, []);
 
+  useEffect(() => {
+    const flushBackdrop = () => {
+      const el = navRef.current;
+      if (!el) return;
+      const s = el.style as any;
+      s.webkitBackdropFilter = 'none';
+      s.backdropFilter = 'none';
+      void el.offsetHeight;
+      s.webkitBackdropFilter = '';
+      s.backdropFilter = '';
+    };
+
+    const observer = new MutationObserver(() => {
+      flushBackdrop();
+    });
+
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class', 'data-theme'],
+    });
+
+    return () => observer.disconnect();
+  }, []);
+
+  const moveTabsPill = useCallback((animate: boolean) => {
+    const nav = navRef.current;
+    const pill = tabsPillRef.current;
+    if (!nav || !pill) return;
+
+    const activeTab = nav.querySelector<HTMLElement>('.t-tab[aria-selected="true"]');
+    if (!activeTab) {
+      pill.style.width = '0px';
+      return;
+    }
+
+    if (!animate) {
+      const previousTransition = pill.style.transition;
+      pill.style.transition = 'none';
+      pill.style.transform = `translateX(${activeTab.offsetLeft}px)`;
+      pill.style.width = `${activeTab.offsetWidth}px`;
+      void pill.offsetWidth;
+      pill.style.transition = previousTransition;
+      return;
+    }
+
+    pill.style.transform = `translateX(${activeTab.offsetLeft}px)`;
+    pill.style.width = `${activeTab.offsetWidth}px`;
+  }, []);
+
+  const schedulePillResync = useCallback(() => {
+    const frame = window.requestAnimationFrame(() => moveTabsPill(false));
+    const tail = window.setTimeout(() => moveTabsPill(false), 360);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.clearTimeout(tail);
+    };
+  }, [moveTabsPill]);
+
+  useLayoutEffect(() => {
+    const nav = navRef.current;
+    if (!nav) return;
+
+    let cancelTail: (() => void) | null = null;
+    const handleStructuralChange = () => {
+      cancelTail?.();
+      cancelTail = schedulePillResync();
+    };
+
+    const frame = window.requestAnimationFrame(() => moveTabsPill(false));
+
+    const resizeObserver =
+      typeof ResizeObserver !== 'undefined' ? new ResizeObserver(() => handleStructuralChange()) : null;
+    resizeObserver?.observe(nav);
+
+    const handleViewportResize = () => handleStructuralChange();
+    window.visualViewport?.addEventListener('resize', handleViewportResize);
+
+    const handleOrientationChange = () => handleStructuralChange();
+    window.addEventListener('orientationchange', handleOrientationChange);
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      resizeObserver?.disconnect();
+      window.visualViewport?.removeEventListener('resize', handleViewportResize);
+      window.removeEventListener('orientationchange', handleOrientationChange);
+      cancelTail?.();
+    };
+  }, [moveTabsPill, schedulePillResync]);
+
+  useLayoutEffect(() => {
+    moveTabsPill(true);
+  }, [dashboardHref, moveTabsPill, pathname, transitioningHref]);
+
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-40 bg-[var(--color-surface)] pb-[env(safe-area-inset-bottom,0px)]"
+      ref={navRef}
+      className="bottom-nav"
       aria-label="Navegação principal"
     >
-      <div className="grid h-[68px] grid-cols-5 items-center max-w-lg mx-auto px-2">
+      <div className="bottom-nav__inner t-tabs">
+        <span ref={tabsPillRef} className="t-tabs-pill bottom-nav-tabs-pill" aria-hidden="true" />
         {NAV_ITEMS.map((item) => {
           if (item.isAction) {
             return (
@@ -134,10 +222,9 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
                 type="button"
                 onClick={() => onAddExpense?.()}
                 aria-label="Adicionar gasto"
-                className="gesture-icon-button bottom-nav-action justify-self-center flex flex-col items-center justify-center h-[68px] w-[68px] rounded-full bg-[#5BBF8E] text-white -mt-6 touch-manipulation active:scale-90 transition-transform duration-75"
-                style={{ boxShadow: 'var(--shadow-nav-action)' }}
+                className="bottom-nav-action-btn"
               >
-                <item.icon size={32} />
+                <Plus size={26} weight="bold" />
               </button>
             );
           }
@@ -147,6 +234,8 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
             ? pathname === '/app'
             : pathname.startsWith(item.href);
           const isSamePath = pathname === item.href;
+          const isTransitioning = transitioningHref === href;
+          const isSelected = transitioningHref ? isTransitioning : isActive;
 
           return (
             <Link
@@ -156,30 +245,38 @@ export default function BottomNav({ onAddExpense }: BottomNavProps) {
               scroll={false}
               onMouseEnter={() => prefetchRoute(href)}
               onClick={(event) => {
-                if (!isSamePath || isModifiedClick(event)) return;
+                if (isModifiedClick(event)) return;
+
+                if (!isSamePath) {
+                  showNavTransition(href);
+                  return;
+                }
 
                 event.preventDefault();
-                clearPendingScrollReset();
-                scrollPageToTop();
+                resetTabScroll('smooth');
               }}
               onNavigate={() => {
-                resetTabScroll();
-                scheduleScrollReset();
+                showNavTransition(href);
               }}
               onFocus={() => prefetchRoute(href)}
-              className={`bottom-nav-link relative justify-self-center flex flex-col items-center justify-center gap-1 w-full min-w-[50px] min-h-[56px] rounded-xl touch-manipulation transition-[color,transform] duration-150 active:scale-[0.98] ${
-                isActive
-                  ? 'text-[#A8C5E0]'
-                  : 'text-[#9CA3AF] hover:text-[#6B7280]'
-              }`}
+              className={`t-tab bottom-nav-link ${isSelected ? 'bottom-nav-link--active' : ''} ${isTransitioning ? 'bottom-nav-link--transitioning' : ''}`}
               aria-current={isActive ? 'page' : undefined}
+              aria-selected={isSelected ? 'true' : 'false'}
+              aria-busy={isTransitioning || undefined}
             >
-              <item.icon size={23} />
-              <span className="text-[11px] font-semibold leading-none">{item.label}</span>
-              <NavPendingHint />
-              {isActive && (
-                <span className="bottom-nav-indicator absolute -bottom-0.5 h-0.5 rounded-full" />
-              )}
+              <span
+                className="t-icon-swap bottom-nav-link__icon"
+                data-state={isSelected ? 'b' : 'a'}
+                aria-hidden="true"
+              >
+                <span className="t-icon" data-icon="a">
+                  <item.icon size={24} weight="regular" />
+                </span>
+                <span className="t-icon" data-icon="b">
+                  <item.icon size={24} weight="fill" />
+                </span>
+              </span>
+              <span className="bottom-nav-link__label">{item.label}</span>
             </Link>
           );
         })}

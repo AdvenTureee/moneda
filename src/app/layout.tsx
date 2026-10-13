@@ -1,14 +1,21 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter } from 'next/font/google';
-import NextTopLoader from 'nextjs-toploader';
+import { Inter, Sora } from 'next/font/google';
 import ModalScrollLock from '@/components/ModalScrollLock';
 import PWARegistrar from '@/components/PWARegistrar';
+import SpeedInsightsClient from '@/components/SpeedInsightsClient';
 import { ThemeProvider } from '@/components/ThemeProvider';
+import TopLoaderClient from '@/components/TopLoaderClient';
 import './globals.css';
 
 const inter = Inter({
   subsets: ['latin'],
   variable: '--font-inter',
+  display: 'swap',
+});
+
+const sora = Sora({
+  subsets: ['latin'],
+  variable: '--font-sora',
   display: 'swap',
 });
 
@@ -42,6 +49,7 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
+  userScalable: false,
   viewportFit: 'cover',
 };
 
@@ -64,7 +72,7 @@ export default function RootLayout({
   return (
     <html
       lang="pt-BR"
-      className={inter.variable}
+      className={`${inter.variable} ${sora.variable}`}
       data-theme="light"
       suppressHydrationWarning
     >
@@ -72,12 +80,13 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className="min-h-full bg-[var(--color-bg)] antialiased font-body">
-        <NextTopLoader color="#A8C5E0" height={3} showSpinner={false} />
+        <TopLoaderClient />
         <ModalScrollLock />
         <ThemeProvider>
           <PWARegistrar />
           {children}
         </ThemeProvider>
+        <SpeedInsightsClient />
       </body>
     </html>
   );

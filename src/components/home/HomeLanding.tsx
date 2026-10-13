@@ -15,6 +15,7 @@ import {
   Devices,
   Eye,
   Fire,
+  Gear,
   HandPointing,
   ListBullets,
   LockKey,
@@ -34,6 +35,7 @@ import { useTheme } from '@/components/ThemeProvider';
 import TrackedMascot from '@/components/TrackedMascot';
 import MoFooter from '@/components/MoFooter';
 import MoSkate from './MoSkate';
+import HeroAura from './HeroAura';
 
 interface HomeLandingProps {
   whatsappUrl: string;
@@ -56,7 +58,7 @@ const fadeUp = {
 const staggerGroup = {
   hidden: {},
   show: {
-    transition: { staggerChildren: 0.06 },
+    transition: { staggerChildren: 0.12 },
   },
 };
 
@@ -99,9 +101,9 @@ const featureRows = [
 const cycleHighlight = {
   icon: CreditCard,
   tag: 'Métrica',
-  title: 'Seu mês começa no fechamento da fatura.',
+  title: 'Suas finanças não param no dia 30.',
   mantra: 'Moneda mede o ciclo, não o calendário.',
-  text: 'O gasto entra no período que realmente pesa: a próxima fatura.',
+  text: 'O Moneda acompanha seu ciclo real de fatura, do fechamento ao vencimento. Assim, você enxerga o quadro completo do seu mês financeiro sem distorções ou sustos.',
   cycleStart: 'Fecha dia 10',
   cycleEnd: 'Ciclo 10 a 09',
 };
@@ -109,7 +111,7 @@ const cycleHighlight = {
 const ideas = [
   {
     title: 'Registre sem planilha',
-    text: 'Lance gastos e ganhos direto no web app.',
+    text: 'Lance gastos e ganhos direto no app.',
   },
   {
     title: 'Veja o mês organizado',
@@ -124,18 +126,18 @@ const ideas = [
 const flowSteps = [
   {
     icon: Devices,
-    title: 'Crie sua conta',
-    text: 'Entre pelo navegador e defina seu mês.',
+    title: 'Configure seu ciclo',
+    text: 'Cadastre suas contas, defina seu ciclo de fatura e o app entende como o seu mês financeiro funciona.',
   },
   {
     icon: Receipt,
-    title: 'Registre o mês',
-    text: 'Adicione gastos, ganhos e comprovantes.',
+    title: 'Acompanhe pelo WhatsApp',
+    text: 'Receba alertas importantes e resumos automáticos para você saber se está gastando mais do que devia.',
   },
   {
     icon: Brain,
-    title: 'Leia com a Mo',
-    text: 'Pergunte o que mudou e onde ajustar.',
+    title: 'Tenha paz de mente',
+    text: 'Chegue ao fim do ciclo com dinheiro sobrando. Pare de adivinhar e comece a controlar.',
   },
 ];
 
@@ -143,12 +145,15 @@ const trustItems = [
   { icon: LockKey, text: 'Dados sensíveis protegidos desde o primeiro registro.' },
   { icon: ShieldCheck, text: 'Preferências ficam sob seu controle no perfil.' },
   { icon: Trash, text: 'Exclusão de conta disponível quando quiser sair.' },
+  { icon: LockKey, text: 'Você no controle: Não exigimos acesso obrigatório à sua conta bancária. Você cadastra o que quer controlar.' },
+  { icon: ShieldCheck, text: 'Dados Criptografados: Suas informações financeiras são protegidas com os mesmos padrões de segurança dos grandes bancos.' },
+  { icon: ShieldCheck, text: 'Sem compartilhamento: Seus dados de gastos nunca serão vendidos para terceiros ou empresas de marketing.' },
 ];
 
 const faqs = [
   {
     q: 'Preciso instalar outro app?',
-    a: 'Não. O web app funciona no navegador do celular ou computador. A experiência pelo WhatsApp está em desenvolvimento.',
+    a: 'Não. O app funciona direto no navegador do celular ou computador. A experiência pelo WhatsApp está em desenvolvimento.',
   },
   {
     q: 'A Mo julga meus gastos?',
@@ -156,11 +161,27 @@ const faqs = [
   },
   {
     q: 'O que a demonstração mostra?',
-    a: 'Ela mostra o web app disponível hoje e a direção da experiência por mensagem que vem depois.',
+    a: 'Ela mostra o app disponível hoje e a direção da experiência por mensagem que vem depois.',
   },
   {
     q: 'Posso apagar meus dados?',
     a: 'Sim. O perfil do app inclui opções de privacidade e exclusão de conta.',
+  },
+  {
+    q: 'O Moneda acessa minha conta bancária?',
+    a: 'Não. O Moneda foi desenhado para dar a você o controle total. Você insere seus dados manualmente ou de forma facilitada, sem precisarmos acessar seu internet banking.',
+  },
+  {
+    q: 'Como funciona o acompanhamento pelo WhatsApp?',
+    a: 'Basta conectar seu número na configuração do app. Nós te enviaremos lembretes inteligentes antes do vencimento das suas contas e um resumo do seu ciclo financeiro.',
+  },
+  {
+    q: 'O que significa "Ciclo de Fatura"?',
+    a: 'É o período exato entre o fechamento do seu cartão/cartões e o dia do pagamento. Ao organizar por ciclo, você para de misturar gastos de meses diferentes e tem uma visão real do que pode gastar.',
+  },
+  {
+    q: 'Preciso pagar para usar?',
+    a: 'Você pode começar a usar o Moneda gratuitamente. Para recursos avançados, como alertas ilimitados no WhatsApp, oferecemos um plano premium acessível.',
   },
 ];
 
@@ -301,7 +322,7 @@ function ProductMock({ compact = false }: { compact?: boolean }) {
       <div className="flex items-center gap-4 border-b border-[var(--color-border)] pb-4">
         <TrackedMascot variant="idle" size={96} />
         <div>
-          <p className="text-lg font-bold text-[var(--color-text-primary)]">Moneda Web App</p>
+          <p className="text-lg font-bold text-[var(--color-text-primary)]">Moneda App</p>
           <p className="text-sm text-[var(--color-text-secondary)]">Controle financeiro inteligente</p>
         </div>
       </div>
@@ -323,7 +344,7 @@ function ProductMock({ compact = false }: { compact?: boolean }) {
               <p className="text-sm font-semibold text-[var(--color-text-primary)]">Categorias</p>
               <span className="text-sm font-bold tabular-nums text-[var(--color-success)]">38%</span>
             </div>
-            <div className="grid grid-cols-10 gap-1" aria-label="Distribuição de gastos por categoria">
+            <div className="grid grid-cols-10 gap-1" aria-hidden="true">
               {Array.from({ length: 60 }, (_, index) => (
                 <span
                   key={index}
@@ -367,19 +388,136 @@ function ProductMock({ compact = false }: { compact?: boolean }) {
   );
 }
 
-function Header() {
+function HeroProductScene({ reduceMotion }: { reduceMotion: boolean | null }) {
+
+  const mainMotion = reduceMotion
+    ? {}
+    : {
+        initial: { opacity: 0, y: 18, scale: 0.98 },
+        animate: { opacity: 1, y: 0, scale: 1 },
+        transition: { duration: 0.42, delay: 0.12, ease: easeOut },
+      };
+
+  const orbitalMotion = (delay: number) =>
+    reduceMotion
+      ? {}
+      : {
+          initial: { opacity: 0, y: 18, scale: 0.98 },
+          animate: { opacity: 1, y: 0, scale: 1 },
+          transition: { duration: 0.4, delay, ease: easeOut },
+        };
+
   return (
-    <header className="sticky top-0 z-50 border-b border-[var(--color-border)] bg-[var(--color-bg)]">
+    <div className="relative mx-auto w-full max-w-[704px] lg:min-h-[520px] xl:min-h-[548px]">
+      <motion.div className="relative z-20 mx-auto max-w-[520px] xl:max-w-[540px]" {...mainMotion}>
+        <ProductMock />
+      </motion.div>
+
+      <motion.div
+        aria-hidden="true"
+        className="hero-orbital hero-orbital--spend hidden lg:block"
+        {...orbitalMotion(0.28)}
+      >
+        <p className="text-xs font-semibold text-[var(--color-text-secondary)]">Gastos da semana</p>
+        <p className="mt-1 text-xl font-bold tabular-nums text-[var(--color-text-primary)]">R$ 286,40</p>
+        <div className="mt-4 flex h-12 items-end gap-1.5">
+          {[34, 46, 28, 52, 38, 44].map((height, index) => (
+            <span
+              key={height + index}
+              className={`w-5 rounded-[5px] ${
+                index === 1 || index === 4
+                  ? 'bg-[var(--color-brand-blue)]'
+                  : index === 3
+                    ? 'bg-[var(--color-warning)]'
+                    : 'bg-[var(--color-brand-green)]'
+              }`}
+              style={{ height }}
+            />
+          ))}
+        </div>
+      </motion.div>
+
+      <motion.div
+        aria-hidden="true"
+        className="hero-orbital hero-orbital--goal hidden lg:block"
+        {...orbitalMotion(0.36)}
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-xs font-semibold text-[var(--color-text-secondary)]">Meta do mês</p>
+            <p className="mt-1 text-base font-bold tabular-nums text-[var(--color-text-primary)]">38% organizado</p>
+          </div>
+          <span className="shrink-0 rounded-full bg-[var(--color-success-bg)] px-2.5 py-1 text-xs font-bold text-[var(--color-success)]">
+            no eixo
+          </span>
+        </div>
+        <div className="mt-4 grid grid-cols-8 gap-1" aria-hidden>
+          {Array.from({ length: 24 }, (_, index) => (
+            <span
+              key={index}
+              className={`aspect-square rounded-[4px] ${
+                index < 9
+                  ? 'bg-[var(--color-success)]'
+                  : index < 16
+                    ? 'bg-[var(--color-brand-blue)]'
+                    : index < 20
+                      ? 'bg-[var(--color-warning)]'
+                      : 'bg-[var(--color-border)]'
+              }`}
+            />
+          ))}
+        </div>
+      </motion.div>
+
+    </div>
+  );
+}
+
+function Header() {
+  const [showSubtitle, setShowSubtitle] = useState(false);
+  const reduceMotion = useReducedMotion();
+
+  return (
+    <header className="home-header-glass sticky top-0 z-50 border-b border-[var(--color-border)] bg-[var(--nav-glass-bg)] backdrop-blur-[18px] backdrop-saturate-[132%]">
       <div className="mx-auto grid min-h-16 w-full max-w-6xl grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 py-3 sm:px-6 lg:px-8">
         <div className="flex items-center justify-self-start">
           <ThemeToggleButton />
         </div>
-        <Link
-          href="/"
-          className="justify-self-center font-heading text-2xl font-bold leading-none text-[var(--color-text-primary)]"
+        <motion.button
+          type="button"
+          onClick={() => setShowSubtitle((current) => !current)}
+          aria-expanded={showSubtitle}
+          animate={
+            reduceMotion
+              ? undefined
+              : {
+                  scale: [1, 1.04, 0.995, 1],
+                  rotate: [0, -1.2, 1, 0],
+                }
+          }
+          transition={{ delay: 0.75, duration: 0.56, ease: easeOut }}
+          className="cursor-pointer justify-self-center font-heading text-2xl font-bold leading-none text-[var(--color-text-primary)] outline-none transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)] focus-visible:ring-offset-2"
         >
-          Moneda
-        </Link>
+          <div className="flex flex-col items-center">
+            <span>Moneda</span>
+            <AnimatePresence initial={false}>
+              {showSubtitle && (
+                <motion.div
+                  key="header-subtitle"
+                  initial={reduceMotion ? { opacity: 0 } : { height: 0, opacity: 0 }}
+                  animate={reduceMotion ? { opacity: 1 } : { height: 'auto', opacity: 1 }}
+                  exit={reduceMotion ? { opacity: 0 } : { height: 0, opacity: 0 }}
+                  transition={{ duration: 0.22, ease: easeOut }}
+                  className="overflow-hidden"
+                >
+                  <span className="block text-[10px] font-medium leading-none mt-1 opacity-80">
+                    Seu dinheiro finalmente claro.
+                  </span>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </motion.button>
         <nav className="justify-self-end">
           <div className="flex items-center gap-2">
             <Link
@@ -405,58 +543,82 @@ function Header() {
 
 function HeroSection() {
   const reduceMotion = useReducedMotion();
+  const { isDark } = useTheme();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => { setMounted(true); }, []);
 
   return (
-    <section className="flex min-h-[calc(100vh-80px)] items-center px-4 pb-10 pt-12 sm:px-6 sm:pb-12 sm:pt-16 lg:px-8">
-      <div className={`w-full transition-opacity duration-500 ${mounted ? 'opacity-100' : 'opacity-0'}`}>
+    <section
+      className="relative isolate flex min-h-[calc(100vh-80px)] items-center overflow-hidden px-4 pb-10 pt-12 sm:px-6 sm:pb-12 sm:pt-16 lg:px-8"
+    >
+      <HeroAura isDark={isDark} reduceMotion={reduceMotion} />
+      <div className={`relative z-10 w-full transition-opacity duration-500 ${mounted ? 'opacity-100' : 'opacity-0'}`}>
         <div className="mx-auto grid w-full max-w-7xl items-center gap-12 lg:grid-cols-[1fr_1.2fr]">
-        <motion.div
-          variants={staggerGroup}
-          initial={reduceMotion ? false : 'hidden'}
-          animate="show"
-          className="max-w-2xl"
-        >
-          <motion.p
-            variants={fadeUp}
-            transition={{ duration: 0.25, ease: easeOut }}
-            className="text-sm font-semibold text-[var(--color-brand-blue-dark)]"
-          >
-            Web app disponível agora. WhatsApp em desenvolvimento.
-          </motion.p>
-          <motion.h1
-            variants={fadeUp}
-            transition={{ duration: 0.3, ease: easeOut }}
-            className="mt-4 font-heading text-[clamp(2.75rem,6vw,5rem)] font-bold leading-[1.05] text-[var(--color-text-primary)]"
-          >
-            Seu dinheiro claro, sem planilha.
-          </motion.h1>
-          <motion.p
-            variants={fadeUp}
-            transition={{ duration: 0.3, ease: easeOut }}
-            className="mt-5 max-w-xl text-lg leading-relaxed text-[var(--color-text-secondary)]"
-          >
-             Registre o mês no web app e pergunte para a Mo o que mudou, onde pesou e onde ajustar.
-          </motion.p>
           <motion.div
-            variants={fadeUp}
-            transition={{ duration: 0.3, ease: easeOut }}
-            className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center"
+            variants={staggerGroup}
+            initial={reduceMotion ? false : 'hidden'}
+            animate="show"
+            className="max-w-2xl"
           >
-            <CtaButton large />
-            <a
-              href="#produto"
-              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full px-5 text-sm font-semibold text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-alt)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)] focus-visible:ring-offset-2"
+            {/* TÍTULO PRINCIPAL */}
+            <motion.h1
+              variants={fadeUp}
+              transition={{ duration: 0.3, ease: easeOut }}
+              className="font-heading text-[clamp(2.25rem,4vw,3.75rem)] font-bold leading-[1.1] tracking-tight text-[var(--color-text-primary)] [text-wrap:balance]"
             >
-              <Eye size={18} weight="bold" aria-hidden />
-              Ver produto
-            </a>
-          </motion.div>
-        </motion.div>
+              O seu dinheiro também costuma sumir no fim do mês?
+            </motion.h1>
+            
+            {/* SUBTÍTULO OTIMIZADO */}
+            <motion.p
+              variants={fadeUp}
+              transition={{ duration: 0.3, ease: easeOut }}
+              className="mt-5 max-w-xl text-base leading-relaxed text-[var(--color-text-secondary)]"
+            >
+              Com o Moneda, você assume o controle do seu ciclo financeiro e recebe alertas direto no seu WhatsApp. Em poucos segundos, você registra tudo sem esforço e conversa com a nossa IA para entender seus hábitos de um jeito leve e sem julgamentos.
+            </motion.p>
 
-        <ProductMock />
+            {/* AVISO DE DESENVOLVIMENTO */}
+            <motion.div
+              variants={fadeUp}
+              transition={{ duration: 0.3, ease: easeOut }}
+              className="mt-5 flex items-center gap-2 text-sm font-medium text-[var(--color-text-tertiary)]"
+            >
+              <motion.div
+                animate={reduceMotion ? {} : { rotate: 360 }}
+                transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
+                className="text-[var(--color-brand-blue)]"
+              >
+                <Gear size={18} weight="fill" aria-hidden />
+              </motion.div>
+              <span>Futuramente você poderá lançar gastos pelo WhatsApp. Fique ligado!</span>
+            </motion.div>
+            
+            {/* BOTÕES: Lado a Lado */}
+            <motion.div
+              variants={fadeUp}
+              transition={{ duration: 0.3, ease: easeOut }}
+              className="mt-8 flex flex-row flex-wrap items-center justify-center gap-3 sm:justify-start"
+            >
+              <CtaButton large>Começar gratuitamente</CtaButton>
+            </motion.div>
+
+            {/* TOQUE BRASILEIRO (Design de Badge Premium) */}
+            <motion.div
+              variants={fadeUp}
+              transition={{ duration: 0.3, ease: easeOut }}
+              className="mt-8 flex items-center justify-center gap-2.5 text-sm font-medium text-[var(--color-text-tertiary)] sm:justify-start"
+            >
+              <span className="hero-br-badge flex h-6 items-center justify-center gap-[1px] rounded-[5px] border border-[var(--color-border)] bg-[var(--color-surface-alt)] px-2 text-[12px] font-black select-none shadow-sm">
+                <span className="hero-br-badge__letter hero-br-badge__letter--green">B</span>
+                <span className="hero-br-badge__letter hero-br-badge__letter--gold">R</span>
+              </span>
+              <span>Pensado e criado para o Brasil.</span>
+            </motion.div>
+          </motion.div>
+
+          <HeroProductScene reduceMotion={reduceMotion} />
         </div>
       </div>
     </section>
@@ -580,7 +742,7 @@ function ProductSection() {
   return (
     <Section id="produto">
       <div className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
-        <SectionTitle eyebrow="Produto" title="Controle o mês no web app.">
+        <SectionTitle eyebrow="Produto" title="Controle o mês no app.">
           Uma rotina simples para registrar entradas, saídas e comprovantes sem abrir planilha.
         </SectionTitle>
 
@@ -674,6 +836,8 @@ function PreviewCarousel() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [hasInteracted, setHasInteracted] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const wheelDeltaRef = useRef(0);
+  const wheelLockRef = useRef(0);
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -681,12 +845,12 @@ function PreviewCarousel() {
     () =>
       isDark
         ? [
-            { src: '/dash-dark.PNG', alt: 'Dashboard' },
-            { src: '/feed-dark.PNG', alt: 'Feed' },
+            { src: '/dark-app.png', alt: 'Dashboard' },
+            { src: '/dark-feed.png', alt: 'Feed' },
           ]
         : [
-            { src: '/dash-light.PNG', alt: 'Dashboard' },
-            { src: '/feed-light.PNG', alt: 'Feed' },
+            { src: '/light-app.png', alt: 'Dashboard' },
+            { src: '/light-feed.png', alt: 'Feed' },
           ],
     [isDark],
   );
@@ -696,13 +860,50 @@ function PreviewCarousel() {
     setActiveIndex(boundedIndex);
   }, [screenshots.length]);
 
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const normalizeWheelDelta = (event: WheelEvent) => {
+      const unit = event.deltaMode === WheelEvent.DOM_DELTA_LINE ? 16 : 1;
+      return event.deltaX * unit;
+    };
+
+    const handleWheel = (event: WheelEvent) => {
+      const absX = Math.abs(event.deltaX);
+      const absY = Math.abs(event.deltaY);
+      const isHorizontalIntent = absX > 8 && absX > absY * 0.75;
+
+      if (!isHorizontalIntent) return;
+
+      event.preventDefault();
+      if (!hasInteracted) setHasInteracted(true);
+
+      const now = window.performance.now();
+      if (now < wheelLockRef.current) return;
+
+      wheelDeltaRef.current += normalizeWheelDelta(event);
+
+      const wheelThreshold = 70;
+      if (Math.abs(wheelDeltaRef.current) < wheelThreshold) return;
+
+      const direction = wheelDeltaRef.current > 0 ? 1 : -1;
+      wheelDeltaRef.current = 0;
+      wheelLockRef.current = now + 450;
+      goTo(activeIndex + direction);
+    };
+
+    container.addEventListener('wheel', handleWheel, { passive: false });
+    return () => { container.removeEventListener('wheel', handleWheel); };
+  }, [activeIndex, goTo, hasInteracted]);
+
   const handleDragStart = () => {
     if (!hasInteracted) setHasInteracted(true);
   };
 
   const handleDragEnd = (event: any, info: any) => {
-    const swipeThreshold = 40;
-    const velocityThreshold = 200;
+    const swipeThreshold = 28;
+    const velocityThreshold = 180;
 
     const offset = info.offset.x;
     const velocity = info.velocity.x;
@@ -734,7 +935,7 @@ function PreviewCarousel() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="absolute top-0 left-0 right-0 h-[calc(100%-3rem)] z-20 flex flex-col items-center justify-center bg-[var(--color-bg)]/20 backdrop-blur-[1px] pointer-events-none"
+          className="absolute top-0 left-1 right-1 h-[calc(100%-3rem)] z-20 flex flex-col items-center justify-center overflow-hidden rounded-2xl bg-[var(--color-bg)]/20 backdrop-blur-[1px] pointer-events-none"
         >
           <div className="flex flex-col items-center gap-2 rounded-xl bg-[var(--color-surface)]/90 px-4 py-3 shadow-[var(--shadow-card-soft)] border border-[var(--color-border)]">
             <motion.div
@@ -759,7 +960,7 @@ function PreviewCarousel() {
       )}
 
       <motion.div
-        className="flex cursor-grab active:cursor-grabbing select-none"
+        className="flex cursor-grab active:cursor-grabbing select-none [touch-action:pan-y]"
         drag="x"
         dragDirectionLock
         dragConstraints={{ left: 0, right: 0 }}
@@ -770,7 +971,7 @@ function PreviewCarousel() {
         animate={{ x: `-${activeIndex * 100}%` }}
         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
       >
-        {screenshots.map((img) => (
+        {screenshots.map((img, index) => (
           <div
             key={img.src}
             className="min-w-0 shrink-0 grow-0 basis-full px-1 select-none"
@@ -780,10 +981,13 @@ function PreviewCarousel() {
               <Image
                 src={img.src}
                 alt={img.alt}
-                width={1200}
-                height={800}
+                width={1170}
+                height={2532}
+                sizes="(max-width: 640px) 340px, (max-width: 1024px) 340px, 340px"
+                quality={70}
                 className="pointer-events-none h-auto w-full object-cover select-none"
-                priority
+                priority={index === 0}
+                loading={index === 0 ? undefined : 'lazy'}
                 draggable="false"
               />
             </Surface>
@@ -791,7 +995,7 @@ function PreviewCarousel() {
         ))}
       </motion.div>
 
-      <div className="mt-5 flex items-center justify-center gap-2.5 relative z-10 pointer-events-none">
+      <div className="mt-5 flex items-center justify-center gap-2.5 relative z-10">
         {screenshots.map((_, index) => {
           const isActive = index === activeIndex;
           return (
@@ -822,16 +1026,16 @@ function PreviewCarousel() {
 
 function PreviewSection() {
   return (
-    <Section id="visualizacao">
-      <div className="grid gap-10 lg:grid-cols-[1fr_1fr] lg:items-center">
-        <SectionTitle eyebrow="Visualização" title="O produto em uso.">
-          Orçamento, categorias e últimos registros aparecem juntos para virar leitura, não relatório.
-        </SectionTitle>
+    <Section id="visualizacao" className="pt-16 sm:pt-20 lg:pt-24">
+      <div className="relative z-10 grid gap-10 lg:grid-cols-[1fr_1fr] lg:items-center">
+          <SectionTitle eyebrow="Visualização" title="Entenda seu dinheiro. Sem esforço, sem julgamentos.">
+            Chega de tentar decifrar para onde seu dinheiro foi. O Moneda organiza seus gastos automaticamente e nossa IA analisa seus padrões, mostrando exatamente onde você pode economizar de um jeito simples e direto.
+          </SectionTitle>
 
-        <div className="mx-auto w-full max-w-[340px]">
-          <PreviewCarousel />
+          <div className="mx-auto w-full max-w-[340px]">
+            <PreviewCarousel />
+          </div>
         </div>
-      </div>
     </Section>
   );
 }
@@ -841,49 +1045,51 @@ function CycleSection() {
 
   return (
     <Section id="ciclo">
-      <SectionTitle align="center" eyebrow="Ciclo" title="A métrica principal do Moneda.">
-        O app organiza o mês financeiro pelo fechamento da fatura, porque é ali que o gasto realmente aparece.
-      </SectionTitle>
+      <div className="relative z-10">
+          <SectionTitle align="center" eyebrow="Ciclo" title="A métrica principal do Moneda.">
+            O app organiza o mês financeiro pelo fechamento da fatura, porque é ali que o gasto realmente aparece.
+          </SectionTitle>
 
-      <Surface className="relative mx-auto mt-8 max-w-4xl border-[color-mix(in_srgb,var(--color-warning)_38%,var(--color-border))] bg-[color-mix(in_srgb,var(--color-surface-alt)_34%,var(--color-surface))] p-5 sm:p-6">
-        <Fire
-          size={44}
-          weight="fill"
-          className="pointer-events-none absolute -top-7 -right-1 rotate-12 text-[var(--color-warning)] sm:right-3"
-          aria-hidden
-        />
-        <div className="flex items-start justify-between gap-4">
-          <IconBadge icon={item.icon} />
-          <span className="rounded-full bg-[var(--color-surface-alt)] px-3 py-1 text-xs font-bold text-[var(--color-brand-blue-dark)]">
-            {item.tag}
-          </span>
-        </div>
-        <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_0.85fr] lg:items-end">
-          <div>
-            <h3 className="text-xl font-bold leading-snug text-[var(--color-text-primary)] sm:text-2xl">
-              {item.title}
-            </h3>
-            <p className="mt-4 font-heading text-[clamp(1.75rem,4vw,2.75rem)] font-bold leading-tight text-[var(--color-text-primary)]">
-              {item.mantra}
-            </p>
-            <p className="mt-4 max-w-2xl text-base leading-relaxed text-[var(--color-text-secondary)]">
-              {item.text}
-            </p>
-          </div>
+          <Surface className="relative mx-auto mt-8 max-w-4xl border-[color-mix(in_srgb,var(--color-warning)_38%,var(--color-border))] bg-[color-mix(in_srgb,var(--color-surface-alt)_34%,var(--color-surface))] p-5 sm:p-6">
+            <Fire
+              size={44}
+              weight="fill"
+              className="pointer-events-none absolute -top-7 -right-1 rotate-12 text-[var(--color-warning)] sm:right-3"
+              aria-hidden
+            />
+            <div className="flex items-start justify-between gap-4">
+              <IconBadge icon={item.icon} />
+              <span className="rounded-full bg-[var(--color-surface-alt)] px-3 py-1 text-xs font-bold text-[var(--color-brand-blue-dark)]">
+                {item.tag}
+              </span>
+            </div>
+            <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_0.85fr] lg:items-end">
+              <div>
+                <h3 className="text-xl font-bold leading-snug text-[var(--color-text-primary)] sm:text-2xl">
+                  {item.title}
+                </h3>
+                <p className="mt-4 font-heading text-[clamp(1.75rem,4vw,2.75rem)] font-bold leading-tight text-[var(--color-text-primary)]">
+                  {item.mantra}
+                </p>
+                <p className="mt-4 max-w-2xl text-base leading-relaxed text-[var(--color-text-secondary)]">
+                  {item.text}
+                </p>
+              </div>
 
-          <div className="rounded-xl bg-[var(--color-surface)] p-4">
-            <div className="flex items-center justify-between gap-3 text-sm font-bold text-[var(--color-text-secondary)]">
-              <span>{item.cycleStart}</span>
-              <span>{item.cycleEnd}</span>
+              <div className="rounded-xl bg-[var(--color-surface)] p-4">
+                <div className="flex items-center justify-between gap-3 text-sm font-bold text-[var(--color-text-secondary)]">
+                  <span>{item.cycleStart}</span>
+                  <span>{item.cycleEnd}</span>
+                </div>
+                <div className="mt-4 flex items-center gap-3" aria-hidden>
+                  <span className="cycle-pulse-dot cycle-pulse-dot--warning h-3 w-3 rounded-full bg-[var(--color-warning)]" />
+                  <span className="h-px flex-1 bg-[color-mix(in_srgb,var(--color-warning)_45%,var(--color-border))]" />
+                  <span className="cycle-pulse-dot cycle-pulse-dot--blue h-3 w-3 rounded-full bg-[var(--color-brand-blue)]" />
+                </div>
+              </div>
             </div>
-            <div className="mt-4 flex items-center gap-3" aria-hidden>
-              <span className="h-3 w-3 rounded-full bg-[var(--color-warning)]" />
-              <span className="h-px flex-1 bg-[color-mix(in_srgb,var(--color-warning)_45%,var(--color-border))]" />
-              <span className="h-3 w-3 rounded-full bg-[var(--color-brand-blue)]" />
-            </div>
-          </div>
+          </Surface>
         </div>
-      </Surface>
     </Section>
   );
 }
@@ -961,11 +1167,19 @@ function TrustAndFaqSection() {
 }
 
 function FinalCta() {
+  const reduceMotion = useReducedMotion();
+
   return (
     <section className="px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
-      <div className="mx-auto max-w-3xl text-center">
+      <motion.div
+        initial={reduceMotion ? false : { opacity: 0, y: 14, scale: 0.99 }}
+        whileInView={reduceMotion ? undefined : { opacity: 1, y: 0, scale: 1 }}
+        viewport={{ once: true, amount: 0.5 }}
+        transition={{ duration: 0.45, ease: easeOut }}
+        className="relative z-10 mx-auto max-w-3xl text-center"
+      >
         <h2 className="font-heading text-[clamp(2rem,4vw,3.5rem)] font-bold leading-tight text-[var(--color-text-primary)]">
-          Comece pelo web app.
+          Comece pelo app.
         </h2>
         <p className="mx-auto mt-4 max-w-xl text-base leading-relaxed text-[var(--color-text-secondary)]">
           Registre o mês, veja onde pesou e pergunte para a Mo sem abrir planilha.
@@ -973,7 +1187,7 @@ function FinalCta() {
         <div className="mt-8">
           <CtaButton large />
         </div>
-      </div>
+      </motion.div>
     </section>
   );
 }
@@ -995,13 +1209,13 @@ function LandingFooter() {
         </div>
         <div className="grid gap-3 sm:text-right">
           <a
-            href="https://api.whatsapp.com/send/?phone=5511991333769&text&type=phone_number&app_absent=0"
+            href="https://api.whatsapp.com/send/?phone=5511939170488&text&type=phone_number&app_absent=0"
             target="_blank"
             rel="noreferrer"
             className="inline-flex items-center gap-2 text-left font-semibold underline-offset-2 transition-colors hover:opacity-70 hover:underline sm:justify-end"
           >
             <WhatsappLogo size={16} weight="bold" aria-hidden />
-            <span>(+55) 1199133-3769</span>
+            <span>(+55) 1193917-0488</span>
           </a>
           <div className="flex items-center gap-2 sm:justify-end">
             <Buildings size={16} weight="bold" aria-hidden />
@@ -1040,7 +1254,8 @@ function ScrollHint() {
   return (
     <AnimatePresence>
       {showHint && (
-        <motion.div
+        <motion.button
+          type="button"
           className="fixed bottom-6 left-1/2 z-40 -translate-x-1/2 flex cursor-pointer flex-col items-center gap-1.5"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -1062,7 +1277,7 @@ function ScrollHint() {
           >
             <CaretDown size={20} weight="bold" />
           </motion.div>
-        </motion.div>
+        </motion.button>
       )}
     </AnimatePresence>
   );
@@ -1072,7 +1287,7 @@ export default function HomeLanding({ whatsappUrl }: HomeLandingProps) {
   void whatsappUrl;
 
   return (
-    <main className="min-h-dvh overflow-x-clip bg-[var(--color-bg)] text-[var(--color-text-primary)]">
+    <main className="home-landing min-h-dvh overflow-x-clip bg-[var(--color-bg)] text-[var(--color-text-primary)]">
       <Header />
       <HeroSection />
       <FloatingSummary />

@@ -7,30 +7,70 @@ import {
   PROFILE_AVATAR_BUCKET,
   PROFILE_AVATAR_SIGNED_URL_TTL_SECONDS,
 } from '@/lib/profileAvatar';
+import { consumeRateLimit } from '@/lib/rateLimit';
+import { detectFileType, isDetectedMimeAllowed } from '@/lib/security/fileSignature';
 
 const MAX_FILE_SIZE = 7 * 1024 * 1024;
+const AVATAR_UPLOAD_LIMIT_PER_10_MINUTES = 10;
 
-const ALLOWED_MIME_TYPES = [
+const ALLOWED_MIME_TYPES = new Set([
   'image/jpeg',
   'image/png',
   'image/webp',
-  'image/gif',
   'image/heic',
   'image/heif',
-];
+]);
 
-const MIME_TO_EXT: Record<string, string> = {
-  'image/jpeg': 'jpg',
-  'image/png': 'png',
-  'image/webp': 'webp',
-  'image/gif': 'gif',
-  'image/heic': 'heic',
-  'image/heif': 'heif',
+type RequestedCrop = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 };
 
-const SHARP_SUPPORTED = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif']);
+type SharpCrop = {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+};
 
-const HEIC_LIKE = new Set(['image/heic', 'image/heif']);
+function getFiniteFormNumber(formData: FormData, key: string) {
+  const raw = formData.get(key);
+  if (typeof raw !== 'string') return null;
+  const value = Number(raw);
+  return Number.isFinite(value) ? value : null;
+}
+
+function parseRequestedCrop(formData: FormData): RequestedCrop | null {
+  const x = getFiniteFormNumber(formData, 'cropX');
+  const y = getFiniteFormNumber(formData, 'cropY');
+  const width = getFiniteFormNumber(formData, 'cropWidth');
+  const height = getFiniteFormNumber(formData, 'cropHeight');
+
+  if (x === null || y === null || width === null || height === null) return null;
+  if (x < 0 || y < 0 || width <= 0 || height <= 0) return null;
+
+  return { x, y, width, height };
+}
+
+function normalizeCropForImage(
+  crop: RequestedCrop,
+  imageWidth: number | undefined,
+  imageHeight: number | undefined,
+): SharpCrop | null {
+  if (!imageWidth || !imageHeight) return null;
+
+  const left = Math.round(crop.x);
+  const top = Math.round(crop.y);
+  const width = Math.round(crop.width);
+  const height = Math.round(crop.height);
+
+  if (left < 0 || top < 0 || width <= 0 || height <= 0) return null;
+  if (left + width > imageWidth || top + height > imageHeight) return null;
+
+  return { left, top, width, height };
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -38,6 +78,18 @@ export async function POST(req: NextRequest) {
     const { data: { user } } = await session.auth.getUser();
     if (!user) {
       return noStoreJson({ error: 'Não autenticado.' }, { status: 401 });
+    }
+
+    const rate = await consumeRateLimit({
+      key: `api:upload-avatar:${user.id}`,
+      limit: AVATAR_UPLOAD_LIMIT_PER_10_MINUTES,
+      windowMs: 10 * 60 * 1000,
+    });
+    if (!rate.ok) {
+      return noStoreJson(
+        { error: `Muitos uploads em pouco tempo. Aguarde ${rate.retryAfterSec}s e tente de novo.` },
+        { status: 429, headers: { 'Retry-After': String(rate.retryAfterSec) } },
+      );
     }
 
     const formData = await req.formData();
@@ -51,28 +103,42 @@ export async function POST(req: NextRequest) {
       return noStoreJson({ error: 'Arquivo maior que 7MB.' }, { status: 413 });
     }
 
-    if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+    if (file.type && !ALLOWED_MIME_TYPES.has(file.type)) {
       return noStoreJson({ error: 'Formato de imagem não permitido.' }, { status: 415 });
     }
 
     const arrayBuffer = await file.arrayBuffer();
-    let imageData: Buffer | Uint8Array = new Uint8Array(arrayBuffer);
-    let outputType = file.type;
-
-    if (SHARP_SUPPORTED.has(file.type)) {
-      try {
-        const pipeline = sharp(imageData).rotate();
-        imageData = HEIC_LIKE.has(file.type)
-          ? await pipeline.jpeg().toBuffer()
-          : await pipeline.toBuffer();
-        if (HEIC_LIKE.has(file.type)) outputType = 'image/jpeg';
-      } catch {
-        // keep original buffer
-      }
+    const inputBytes = new Uint8Array(arrayBuffer);
+    const detected = detectFileType(inputBytes);
+    if (!isDetectedMimeAllowed(detected, ALLOWED_MIME_TYPES)) {
+      return noStoreJson({ error: 'Conteúdo da imagem não é permitido.' }, { status: 415 });
     }
 
-    const ext = MIME_TO_EXT[outputType] ?? 'bin';
-    const fileName = `${uuidv4()}.${ext}`;
+    const requestedCrop = parseRequestedCrop(formData);
+    if (!requestedCrop) {
+      return noStoreJson({ error: 'Recorte inválido.' }, { status: 400 });
+    }
+
+    let imageData: Buffer;
+    try {
+      const metadata = await sharp(inputBytes).rotate().metadata();
+      const crop = normalizeCropForImage(requestedCrop, metadata.width, metadata.height);
+      if (!crop) {
+        return noStoreJson({ error: 'Recorte fora dos limites da imagem.' }, { status: 400 });
+      }
+
+      imageData = await sharp(inputBytes)
+        .rotate()
+        .extract(crop)
+        .resize(256, 256, { fit: 'cover' })
+        .webp({ quality: 82 })
+        .toBuffer();
+    } catch {
+      return noStoreJson({ error: 'Imagem inválida ou corrompida.' }, { status: 415 });
+    }
+
+    const outputType = 'image/webp';
+    const fileName = `${uuidv4()}.webp`;
     const filePath = `avatars/${user.id}/${fileName}`;
 
     const admin = createServiceClient();

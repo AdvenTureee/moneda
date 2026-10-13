@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Icon from '@/components/Icon';
+import PrivateValue from '@/components/PrivateValue';
 import { formatCurrency } from '@/lib/utils';
 
 interface CategoryBarItem {
@@ -110,7 +111,7 @@ export default function CategoryBarList({
                   </span>
 
                   <span className="shrink-0 text-sm font-bold tabular-nums text-[#1A1D23]">
-                    {formatCurrency(item.amount)}
+                    <PrivateValue value={formatCurrency(item.amount)} />
                   </span>
                 </span>
 
