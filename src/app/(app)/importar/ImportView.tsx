@@ -7,14 +7,12 @@ import {
   UploadSimple,
   WarningCircle,
   Check,
-  X,
   CaretDown,
   PencilSimple,
   Sparkle,
 } from '@phosphor-icons/react';
 import Link from 'next/link';
 import Icon from '@/components/Icon';
-import PageHeader from '@/components/PageHeader';
 import { formatCurrency } from '@/lib/utils';
 import type { Category } from '@/types';
 import type { ParsedTransaction, ConfirmTransaction } from '@/lib/import/types';
@@ -30,6 +28,15 @@ type TransactionPatch = Partial<Pick<ParsedTransaction, 'date' | 'amountCents' |
 const MAX_AMOUNT_CENTS = 1_000_000_000_00; // R$ 1 bilhão
 const MAX_DESCRIPTION_LENGTH = 200;
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+// Cor de receita usada em Ganhos (perfil/ganhos) para manter a mesma leitura.
+const INCOME_COLOR = '#10B981';
+const INCOME_ICON = 'TrendUp';
+const NEUTRAL_EXPENSE_ICON = 'Package';
+const NEUTRAL_EXPENSE_COLOR = '#6B7280';
+
+// Altura da bottom nav flutuante (84px) + safe-area: a barra de ação precisa ficar acima dela.
+const BOTTOM_NAV_CLEARANCE = 'calc(84px + env(safe-area-inset-bottom, 0px))';
 
 function isValidIsoDate(value: string): boolean {
   if (!ISO_DATE_RE.test(value)) return false;
@@ -55,10 +62,20 @@ function formatDate(iso: string): string {
   return `${d}/${m}/${y}`;
 }
 
+function Spinner({ className = '' }: { className?: string }) {
+  return (
+    <span
+      className={`w-8 h-8 border-2 border-[#5BBF8E]/30 border-t-[#5BBF8E] rounded-full animate-spin ${className}`}
+      aria-hidden
+    />
+  );
+}
+
 export default function ImportView({ categories }: ImportViewProps) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [phase, setPhase] = useState<Phase>('upload');
+  const [parsing, setParsing] = useState(false);
   const [transactions, setTransactions] = useState<ParsedTransaction[]>([]);
   const [source, setSource] = useState<'ofx' | 'csv' | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -85,6 +102,7 @@ export default function ImportView({ categories }: ImportViewProps) {
   async function handleFileSelect(file: File) {
     setError(null);
     setParseWarning(null);
+    setParsing(true);
 
     const formData = new FormData();
     formData.append('file', file);
@@ -119,6 +137,8 @@ export default function ImportView({ categories }: ImportViewProps) {
       }
     } catch {
       setError('Erro de conexão ao enviar arquivo.');
+    } finally {
+      setParsing(false);
     }
   }
 
@@ -222,31 +242,52 @@ export default function ImportView({ categories }: ImportViewProps) {
     if (fileInputRef.current) fileInputRef.current.value = '';
   }
 
+  // Cabeçalho de sub-página (mesmo padrão de Perfil > Ganhos, Categorias, Notificações).
+  const header = (
+    <div className="flex items-center gap-3 py-5 mb-2 animate-fade-up delay-0">
+      <Link
+        href="/perfil"
+        className="p-2 hover:bg-[#F1F3F7] rounded-full transition-colors"
+        aria-label="Voltar para Perfil"
+      >
+        <ArrowLeft size={20} className="text-[#1A1D23]" />
+      </Link>
+      <div>
+        <h1 className="text-xl font-bold text-[#1A1D23]">Importar extrato</h1>
+        <p className="text-xs text-[#6B7280]">
+          {phase === 'done'
+            ? 'Importação concluída.'
+            : 'Importe gastos e ganhos do seu banco.'}
+        </p>
+      </div>
+    </div>
+  );
+
   if (phase === 'done' && confirmResult) {
     return (
-      <div className="mx-auto w-full max-w-lg px-4 pb-4">
-        <PageHeader title="Importação" subtitle="" />
-        <div className="flex flex-col items-center py-12 text-center">
+      <div className="max-w-lg mx-auto px-4 pb-4 [scrollbar-gutter:stable]">
+        {header}
+        <div className="flex flex-col items-center py-12 text-center animate-fade-up delay-1">
           <div className="w-16 h-16 rounded-full bg-[#EEF9F4] flex items-center justify-center mb-4">
-            <Check size={32} weight="bold" className="text-[#2E8F67]" />
+            <Check size={32} weight="bold" className="text-[#2E8F67] dark:text-[#7EE0AE]" />
           </div>
-          <h2 className="text-xl font-heading text-[#1A1D23]">
+          <h2 className="text-xl font-bold text-[#1A1D23]">
             {confirmResult.imported} transações importadas
           </h2>
           {confirmResult.skipped > 0 && (
             <p className="text-sm text-[#6B7280] mt-1">
-              {confirmResult.skipped} transção(ões) pulada(s)
+              {confirmResult.skipped} transação(ões) pulada(s)
             </p>
           )}
           {confirmResult.errors.length > 0 && (
-            <div className="mt-4 w-full rounded-[12px] bg-[#FDF0F0] border border-[#F4D7D7] p-3 text-left">
-              <p className="text-xs font-bold text-[#B14C4C] mb-1">Erros:</p>
+            <div className="mt-4 w-full rounded-[12px] bg-[#FDF0F0] border border-[#F4D7D7] p-3 text-left text-[#B14C4C] dark:text-[var(--color-error)]">
+              <p className="text-xs font-bold mb-1">Erros:</p>
               <ul className="space-y-1">
                 {confirmResult.errors.slice(0, 5).map((e, i) => (
-                  <li key={i} className="text-xs text-[#B14C4C]">{e}</li>
+                  <li key={i} className="text-xs">{e}</li>
                 ))}
                 {confirmResult.errors.length > 5 && (
-                  <li className="text-xs text-[#B14C4C]">
+                  <li className="text-xs">
                     +{confirmResult.errors.length - 5} erro(s) adicional(is)
                   </li>
                 )}
@@ -257,13 +298,13 @@ export default function ImportView({ categories }: ImportViewProps) {
             <button
               type="button"
               onClick={handleReset}
-              className="flex-1 rounded-full bg-[#F1F3F7] py-3 text-sm font-bold text-[#6B7280] transition-colors hover:bg-[#E5E7EB] active:scale-[0.98]"
+              className="gesture-button flex-1 rounded-full bg-[#F1F3F7] py-3.5 text-[15px] font-semibold text-[#6B7280] hover:bg-[#E5E7EB]"
             >
               Importar outro
             </button>
             <Link
               href="/app"
-              className="flex-1 rounded-full bg-[#5BBF8E] py-3 text-sm font-bold text-white transition-colors hover:bg-[#4AA77C] active:scale-[0.98] flex items-center justify-center"
+              className="gesture-button-primary flex-1 flex items-center justify-center rounded-full bg-[#5BBF8E] py-3.5 text-[15px] font-semibold text-white hover:bg-[#4AA77C] shadow-[0_6px_20px_rgba(91,191,142,0.35)]"
             >
               Ver dashboard
             </Link>
@@ -274,40 +315,28 @@ export default function ImportView({ categories }: ImportViewProps) {
   }
 
   return (
-    <div className="mx-auto w-full max-w-lg px-4 pb-4">
-      <PageHeader
-        title="Importar extrato"
-        subtitle="Importe gastos e ganhos do seu banco."
-        action={
-          <Link
-            href="/perfil"
-            className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-[#F1F3F7] transition-colors"
-            aria-label="Voltar"
-          >
-            <ArrowLeft size={18} weight="bold" className="text-[#1A1D23]" />
-          </Link>
-        }
-      />
+    <div className="max-w-lg mx-auto px-4 pb-4 [scrollbar-gutter:stable]">
+      {header}
 
       {error && (
         <div
           role="alert"
-          className="mt-4 flex items-center gap-2 px-4 py-3 rounded-[12px] bg-[#FDF0F0] text-[#B14C4C] border border-[#F4D7D7]"
+          className="mt-2 flex items-start gap-2 px-4 py-3 rounded-[12px] bg-[#FDF0F0] text-[#B14C4C] border border-[#F4D7D7] dark:text-[var(--color-error)]"
         >
-          <WarningCircle size={18} className="shrink-0" />
+          <WarningCircle size={18} className="shrink-0 mt-px" />
           <p className="text-sm font-medium">{error}</p>
         </div>
       )}
 
       {parseWarning && (
-        <div className="mt-4 flex items-center gap-2 px-4 py-3 rounded-[12px] bg-[#FFF7E8] text-[#8A5A12] border border-[#FDE9C8]">
-          <WarningCircle size={18} className="shrink-0" />
+        <div className="mt-2 flex items-start gap-2 px-4 py-3 rounded-[12px] bg-[#FFF7E8] text-[#8A5A12] border border-[#FDE9C8] dark:text-[var(--color-warning)] dark:border-[color-mix(in_srgb,var(--color-warning)_28%,transparent)]">
+          <WarningCircle size={18} className="shrink-0 mt-px" />
           <p className="text-sm font-medium">{parseWarning}</p>
         </div>
       )}
 
-      {phase === 'upload' && !pending && (
-        <section className="mt-6">
+      {phase === 'upload' && !parsing && (
+        <section className="mt-4 animate-fade-up delay-1">
           <input
             ref={fileInputRef}
             type="file"
@@ -321,7 +350,7 @@ export default function ImportView({ categories }: ImportViewProps) {
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="w-full flex flex-col items-center gap-3 py-12 rounded-[20px] border-2 border-dashed border-[#E5E7EB] hover:border-[#5BBF8E] hover:bg-[#EEF9F4] transition-all active:scale-[0.99]"
+            className="gesture-button w-full flex flex-col items-center gap-3 py-12 rounded-[16px] border-2 border-dashed border-[#D1D9E6] hover:border-[#5BBF8E] hover:bg-[#EEF9F4] transition-colors"
           >
             <div className="w-14 h-14 rounded-full bg-[#F8F9FB] flex items-center justify-center">
               <UploadSimple size={28} weight="bold" className="text-[#5BBF8E]" />
@@ -335,51 +364,51 @@ export default function ImportView({ categories }: ImportViewProps) {
               </p>
             </div>
           </button>
-          <div className="mt-5 space-y-2">
-            <p className="text-xs font-bold uppercase tracking-wider text-[#9CA3AF]">
+          <div className="mt-6 space-y-2 px-1">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-[#9CA3AF]">
               Como importar
-            </p>
-            <div className="text-sm text-[#6B7280] space-y-2">
-              <p>1. Acesse o app ou site do seu banco</p>
-              <p>2. Exporte o extrato em formato OFX ou CSV</p>
-              <p>3. Selecione o arquivo aqui acima</p>
-              <p>4. Revise as transações e confirme a importação</p>
-            </div>
+            </h2>
+            <ol className="text-sm text-[#6B7280] space-y-2 list-none">
+              <li>1. Acesse o app ou site do seu banco</li>
+              <li>2. Exporte o extrato em formato OFX ou CSV</li>
+              <li>3. Selecione o arquivo aqui acima</li>
+              <li>4. Revise as transações e confirme a importação</li>
+            </ol>
           </div>
         </section>
       )}
 
-      {pending && phase !== 'review' && (
-        <div className="mt-6 flex flex-col items-center py-12">
-          <span className="w-8 h-8 border-2 border-[#5BBF8E]/30 border-t-[#5BBF8E] rounded-full animate-spin" />
+      {parsing && (
+        <div className="mt-6 flex flex-col items-center py-12" role="status">
+          <Spinner />
           <p className="text-sm text-[#6B7280] mt-3">Processando arquivo...</p>
         </div>
       )}
 
       {phase === 'importing' && (
-        <div className="mt-6 flex flex-col items-center py-12">
-          <span className="w-8 h-8 border-2 border-[#5BBF8E]/30 border-t-[#5BBF8E] rounded-full animate-spin" />
+        <div className="mt-6 flex flex-col items-center py-12" role="status">
+          <Spinner />
           <p className="text-sm text-[#6B7280] mt-3">Importando transações...</p>
         </div>
       )}
 
       {phase === 'review' && (
-        <section className="mt-4">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-xs font-bold uppercase tracking-wider text-[#9CA3AF]">
+        <section className="mt-4 animate-fade-up delay-1">
+          <div className="flex items-center gap-3 mb-3 px-1">
+            <span className="text-xs font-medium text-[#6B7280]">
               {source?.toUpperCase()} · {transactions.length} transações
             </span>
             <button
               type="button"
               onClick={invertAllTypes}
-              className="text-xs font-medium text-[#6B7280] hover:text-[#1A1D23] transition-colors"
+              className="text-xs font-semibold text-[#6B7280] hover:text-[#1A1D23] transition-colors"
             >
               Inverter tipos
             </button>
             <button
               type="button"
               onClick={handleReset}
-              className="ml-auto text-xs font-medium text-[#6B7280] hover:text-[#1A1D23] transition-colors"
+              className="ml-auto text-xs font-semibold text-[#6B7280] hover:text-[#1A1D23] transition-colors"
             >
               Cancelar
             </button>
@@ -388,7 +417,6 @@ export default function ImportView({ categories }: ImportViewProps) {
           {expenses.length > 0 && (
             <TransactionSection
               title="Despesas"
-              icon="outros"
               transactions={expenses}
               categories={categories}
               onToggle={toggleTransaction}
@@ -400,10 +428,9 @@ export default function ImportView({ categories }: ImportViewProps) {
           )}
 
           {incomes.length > 0 && (
-            <div className="mt-4">
+            <div className="mt-6">
               <TransactionSection
                 title="Receitas"
-                icon="ganhos"
                 transactions={incomes}
                 categories={categories}
                 onToggle={toggleTransaction}
@@ -416,23 +443,26 @@ export default function ImportView({ categories }: ImportViewProps) {
             </div>
           )}
 
-          <div className="sticky bottom-0 mt-6 -mx-4 px-4 py-3 bg-white border-t border-[#E5E7EB]">
-            <div className="flex items-center justify-between mb-2">
-              <div className="text-sm">
-                <span className="font-bold text-[#1A1D23]">
-                  {totalSelected} selecionada(s)
-                </span>
-                <span className="text-[#6B7280] ml-2">
-                  {formatCurrency(totalExpenses)} em despesas
-                  {totalIncomes > 0 && ` + ${formatCurrency(totalIncomes)} em receitas`}
-                </span>
-              </div>
-            </div>
+          {/* Sticky acima da bottom nav: sem isso o CTA fica escondido atrás dela. */}
+          <div
+            className="themed-card sticky z-10 mt-6 rounded-[16px] p-3"
+            style={{ bottom: BOTTOM_NAV_CLEARANCE }}
+          >
+            <p className="text-sm px-1 mb-2.5 tabular-nums">
+              <span className="font-bold text-[#1A1D23]">
+                {totalSelected} selecionada(s)
+              </span>
+              <span className="text-[#6B7280]">
+                {' · '}
+                {formatCurrency(totalExpenses)} em despesas
+                {totalIncomes > 0 && ` + ${formatCurrency(totalIncomes)} em receitas`}
+              </span>
+            </p>
             <button
               type="button"
               onClick={handleConfirm}
               disabled={totalSelected === 0 || pending}
-              className="w-full bg-[#5BBF8E] hover:bg-[#4AA77C] active:bg-[#3FA876] text-white font-bold py-3.5 rounded-full transition-colors duration-150 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="gesture-button-primary w-full bg-[#5BBF8E] hover:bg-[#4AA77C] text-white font-semibold text-[15px] py-3.5 rounded-full shadow-[0_6px_20px_rgba(91,191,142,0.35)] disabled:opacity-40 disabled:shadow-none disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {pending ? (
                 <>
@@ -462,7 +492,6 @@ function TransactionSection({
   isIncome,
 }: {
   title: string;
-  icon: string;
   transactions: ParsedTransaction[];
   categories: Category[];
   onToggle: (id: string) => void;
@@ -476,7 +505,7 @@ function TransactionSection({
 
   return (
     <div>
-      <div className="flex items-center gap-2 mb-2">
+      <div className="flex items-center gap-2.5 mb-2.5 px-1">
         <button
           type="button"
           onClick={() => onToggleAll(!allSelected)}
@@ -489,11 +518,11 @@ function TransactionSection({
         >
           {allSelected && <Check size={12} weight="bold" />}
         </button>
-        <h3 className="text-sm font-bold text-[#1A1D23]">
+        <h2 className="text-sm font-bold text-[#1A1D23]">
           {title} ({transactions.length})
-        </h3>
+        </h2>
       </div>
-      <div className="space-y-1.5">
+      <div className="space-y-2">
         {transactions.map((tx) => (
           <TransactionRow
             key={tx.id}
@@ -547,6 +576,12 @@ function TransactionRow({
     draftErrors.push('Valor deve ser maior que zero.');
   const draftValid = draftErrors.length === 0;
 
+  const category = isIncome
+    ? undefined
+    : categories.find((c) => c.id === tx.suggestedCategoryId);
+  const tileIcon = isIncome ? INCOME_ICON : category?.icon ?? NEUTRAL_EXPENSE_ICON;
+  const tileColor = isIncome ? INCOME_COLOR : category?.color ?? NEUTRAL_EXPENSE_COLOR;
+
   function startEditing() {
     setDraftDescription(tx.description);
     setDraftDate(tx.date);
@@ -566,31 +601,32 @@ function TransactionRow({
 
   if (editing) {
     const inputClass =
-      'w-full rounded-[8px] border border-[#E5E7EB] bg-white px-2.5 py-2 text-sm text-[#1A1D23] outline-none focus:border-[#A8C5E0]';
+      'w-full border border-[#E5E7EB] rounded-[10px] px-3 py-2.5 text-sm text-[#1A1D23] bg-[#F8F9FB] outline-none focus:border-[#A8C5E0] focus:bg-white transition-colors';
+    const labelClass = 'block text-xs font-bold text-[#6B7280] uppercase mb-1.5';
     return (
-      <div className="rounded-[12px] border border-[#A8C5E0] bg-white p-3 space-y-2.5">
+      <div className="rounded-[12px] border border-[#A8C5E0] bg-white dark:bg-[var(--color-surface)] p-3 space-y-3">
         <label className="block">
-          <span className="text-xs font-medium text-[#6B7280]">Descrição</span>
+          <span className={labelClass}>Descrição</span>
           <input
             type="text"
             value={draftDescription}
             maxLength={MAX_DESCRIPTION_LENGTH}
             onChange={(e) => setDraftDescription(e.target.value)}
-            className={`${inputClass} mt-1`}
+            className={inputClass}
           />
         </label>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-2.5">
           <label className="block">
-            <span className="text-xs font-medium text-[#6B7280]">Data</span>
+            <span className={labelClass}>Data</span>
             <input
               type="date"
               value={draftDate}
               onChange={(e) => setDraftDate(e.target.value)}
-              className={`${inputClass} mt-1`}
+              className={inputClass}
             />
           </label>
           <label className="block">
-            <span className="text-xs font-medium text-[#6B7280]">Valor (R$)</span>
+            <span className={labelClass}>Valor (R$)</span>
             <input
               type="number"
               inputMode="decimal"
@@ -598,18 +634,18 @@ function TransactionRow({
               min="0.01"
               value={draftAmount}
               onChange={(e) => setDraftAmount(e.target.value)}
-              className={`${inputClass} mt-1 tabular-nums`}
+              className={`${inputClass} tabular-nums`}
             />
           </label>
         </div>
         {!draftValid && (
-          <p className="text-xs text-[#B14C4C]">{draftErrors[0]}</p>
+          <p className="text-xs text-[#B14C4C] dark:text-[var(--color-error)]">{draftErrors[0]}</p>
         )}
         <div className="flex justify-end gap-2 pt-1">
           <button
             type="button"
             onClick={() => setEditing(false)}
-            className="rounded-full bg-[#F1F3F7] px-4 py-1.5 text-xs font-bold text-[#6B7280] hover:bg-[#E5E7EB] transition-colors"
+            className="gesture-button rounded-full bg-[#F1F3F7] px-4 py-2 text-xs font-bold text-[#6B7280] hover:bg-[#E5E7EB] transition-colors"
           >
             Cancelar
           </button>
@@ -617,7 +653,7 @@ function TransactionRow({
             type="button"
             onClick={saveEditing}
             disabled={!draftValid}
-            className="rounded-full bg-[#5BBF8E] px-4 py-1.5 text-xs font-bold text-white hover:bg-[#4AA77C] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="gesture-button-primary rounded-full bg-[#5BBF8E] px-4 py-2 text-xs font-bold text-white hover:bg-[#4AA77C] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             Salvar
           </button>
@@ -626,18 +662,19 @@ function TransactionRow({
     );
   }
 
+  const chipClass =
+    'inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-colors';
+
   return (
     <div
-      className={`flex items-start gap-2.5 rounded-[12px] border p-3 transition-colors ${
-        tx.selected
-          ? 'bg-white border-[#E5E7EB]'
-          : 'bg-[#F8F9FB] border-transparent opacity-60'
+      className={`themed-card flex items-start gap-3 rounded-[12px] p-3 transition-opacity duration-150 ${
+        tx.selected ? '' : 'opacity-60'
       }`}
     >
       <button
         type="button"
         onClick={onToggle}
-        className={`mt-0.5 w-5 h-5 shrink-0 rounded-[6px] border flex items-center justify-center transition-colors ${
+        className={`mt-2.5 w-5 h-5 shrink-0 rounded-[6px] border flex items-center justify-center transition-colors ${
           tx.selected
             ? 'bg-[#5BBF8E] border-[#5BBF8E] text-white'
             : 'border-[#D1D5DB] bg-white text-transparent'
@@ -647,37 +684,45 @@ function TransactionRow({
         {tx.selected && <Check size={12} weight="bold" />}
       </button>
 
+      <div
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
+        style={{ backgroundColor: `${tileColor}22`, color: tileColor }}
+        aria-hidden
+      >
+        <Icon name={tileIcon} size={20} />
+      </div>
+
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
-          <p className="text-sm font-semibold text-[#1A1D23] truncate">
+          <p className="text-[15px] font-medium leading-tight text-[#1A1D23] truncate">
             {tx.description}
           </p>
           <span
-            className={`text-sm font-bold tabular-nums shrink-0 ${
-              isIncome ? 'text-[#2E8F67]' : 'text-[#1A1D23]'
+            className={`text-[15px] font-semibold tabular-nums shrink-0 ${
+              isIncome ? 'text-[#10B981]' : 'text-[#1A1D23]'
             }`}
           >
             {isIncome ? '+' : '-'}
             {formatCurrency(tx.amountCents)}
           </span>
         </div>
-        <div className="flex items-center gap-2 mt-1">
-          <span className="text-xs text-[#9CA3AF]">{formatDate(tx.date)}</span>
+        <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+          <span className="text-xs text-[#6B7280] mr-0.5">{formatDate(tx.date)}</span>
           <button
             type="button"
             onClick={startEditing}
-            className="flex items-center gap-0.5 text-[10px] font-bold uppercase tracking-wide rounded-[6px] border border-[#E5E7EB] bg-[#F8F9FB] text-[#6B7280] px-1.5 py-0.5 hover:bg-[#F1F3F7] transition-colors"
+            className={`${chipClass} border-[#E5E7EB] bg-[#F8F9FB] text-[#6B7280] hover:bg-[#F1F3F7]`}
             aria-label="Editar transação"
             title="Editar descrição, data e valor"
           >
-            <PencilSimple size={10} weight="bold" /> Editar
+            <PencilSimple size={11} weight="bold" /> Editar
           </button>
           <button
             type="button"
             onClick={onToggleType}
-            className={`text-[10px] font-bold uppercase tracking-wide rounded-[6px] border px-1.5 py-0.5 transition-colors ${
+            className={`${chipClass} ${
               isIncome
-                ? 'border-[#BFE5D2] bg-[#EEF9F4] text-[#2E8F67] hover:bg-[#DDF2E8]'
+                ? 'border-[#BFE5D2] bg-[#EEF9F4] text-[#2E8F67] hover:bg-[#DDF2E8] dark:text-[#7EE0AE]'
                 : 'border-[#E5E7EB] bg-[#F8F9FB] text-[#6B7280] hover:bg-[#F1F3F7]'
             }`}
             aria-label={`Alterar para ${isIncome ? 'despesa' : 'receita'}`}
@@ -690,7 +735,8 @@ function TransactionRow({
               <select
                 value={tx.suggestedCategoryId ?? ''}
                 onChange={(e) => onUpdateCategory(e.target.value)}
-                className="appearance-none text-xs font-medium text-[#6B7280] bg-[#F8F9FB] border border-[#E5E7EB] rounded-[6px] pl-2 pr-6 py-1 outline-none focus:border-[#A8C5E0] cursor-pointer transition-colors"
+                className="appearance-none text-[11px] font-semibold text-[#6B7280] bg-[#F8F9FB] border border-[#E5E7EB] rounded-full pl-2.5 pr-6 py-1 outline-none focus:border-[#A8C5E0] cursor-pointer transition-colors"
+                aria-label="Categoria da transação"
               >
                 <option value="">Sem categoria</option>
                 {categories.map((c) => (
@@ -699,13 +745,13 @@ function TransactionRow({
               </select>
               <CaretDown
                 size={10}
-                className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[#9CA3AF] pointer-events-none"
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-[#9CA3AF] pointer-events-none"
               />
             </div>
           )}
           {tx.confidence === 'low' && (
-            <span className="flex items-center gap-0.5 text-[10px] text-[#A8C5E0]">
-              <Sparkle size={9} weight="fill" /> IA
+            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-[#386F95] dark:text-[#A8C5E0]">
+              <Sparkle size={11} weight="fill" /> Sugerido por IA
             </span>
           )}
         </div>
