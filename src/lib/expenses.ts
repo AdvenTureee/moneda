@@ -1067,9 +1067,17 @@ async function updateExpenseSeriesFromOccurrence(
       seriesUpdates.total_occurrences = input.creditDetails.installmentTotal ?? series.total_occurrences;
     }
   }
+  // Parcelas (installment) datam pelo ciclo da fatura a partir da 2ª, então
+  // deslocar o início da série pela data editada moveria as outras parcelas
+  // para o dia de fechamento. Só a 1ª parcela define o início da série.
+  // Recorrências seguem a data editada para as ocorrências futuras.
   if (input.occurredAt !== undefined) {
-    seriesUpdates.start_at = addMonthsClamped(occurrenceDateForEdit, -(occurrenceIndex - 1)).toISOString();
-    seriesUpdates.day_of_month = occurrenceDateForEdit.getDate();
+    if (series.kind === 'recurring') {
+      seriesUpdates.start_at = addMonthsClamped(occurrenceDateForEdit, -(occurrenceIndex - 1)).toISOString();
+      seriesUpdates.day_of_month = occurrenceDateForEdit.getDate();
+    } else if (occurrenceIndex === 1) {
+      seriesUpdates.start_at = occurrenceDateForEdit.toISOString();
+    }
   }
 
   let nextSeries: ExpenseSeriesRow = { ...series, ...seriesUpdates } as ExpenseSeriesRow;
@@ -1101,6 +1109,16 @@ async function updateExpenseSeriesFromOccurrence(
       .update(buildExpenseUpdateFromSeries(nextSeries, index, closingDay))
       .eq('id', row.id);
   }));
+
+  // A linha editada fica com a data escolhida pelo usuário. Sem isso, ela
+  // recebe a data calculada pela série (início do ciclo, para parcelas).
+  if (input.occurredAt !== undefined) {
+    const { error: dateError } = await db
+      .from('expenses')
+      .update({ occurred_at: occurrenceDateForEdit.toISOString() })
+      .eq('id', existing.id);
+    if (dateError) throw new Error(`updateExpenseDate: ${dateError.message}`);
+  }
 
   const { data, error } = await db
     .from('expenses')
