@@ -471,6 +471,12 @@ export default function ProfileView({
   function handleWipeFinancialData() {
     startWipeData(async () => {
       const result = await deleteAllExpensesAndIncomesAction();
+      if (result.ok) {
+        // Invalida o cache de sessão do feed, senão a próxima visita mostra os dados antigos.
+        try {
+          window.sessionStorage.removeItem('moneda:feed-cache:v1');
+        } catch {}
+      }
       applyResult(result);
       setConfirmWipeOpen(false);
     });

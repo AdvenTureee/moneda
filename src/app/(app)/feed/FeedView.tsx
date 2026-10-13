@@ -138,6 +138,9 @@ function feedPageMatchesCurrent(
   currentNextCursor: string | null,
 ): boolean {
   if (page.data.length > currentExpenses.length) return false;
+  // Se o servidor não tem mais páginas, itens extras no estado atual foram
+  // removidos (ex.: gastos apagados) e não podem ser mantidos.
+  if (currentExpenses.length > page.data.length && !page.hasMore) return false;
   const pageMatchesCurrentPrefix = page.data.every((expense, index) =>
     expenseRenderSignature(expense) === expenseRenderSignature(currentExpenses[index])
   );

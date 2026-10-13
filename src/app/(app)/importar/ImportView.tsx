@@ -116,6 +116,25 @@ export default function ImportView({ categories }: ImportViewProps) {
     );
   }
 
+  function toggleTransactionType(id: string) {
+    setTransactions((prev) =>
+      prev.map((t) =>
+        t.id === id
+          ? { ...t, type: t.type === 'expense' ? 'income' : 'expense' }
+          : t,
+      ),
+    );
+  }
+
+  function invertAllTypes() {
+    setTransactions((prev) =>
+      prev.map((t) => ({
+        ...t,
+        type: t.type === 'expense' ? ('income' as const) : ('expense' as const),
+      })),
+    );
+  }
+
   function toggleAllByType(type: 'expense' | 'income', selected: boolean) {
     setTransactions((prev) =>
       prev.map((t) => (t.type === type ? { ...t, selected } : t)),
@@ -334,6 +353,13 @@ export default function ImportView({ categories }: ImportViewProps) {
             </span>
             <button
               type="button"
+              onClick={invertAllTypes}
+              className="text-xs font-medium text-[#6B7280] hover:text-[#1A1D23] transition-colors"
+            >
+              Inverter tipos
+            </button>
+            <button
+              type="button"
               onClick={handleReset}
               className="ml-auto text-xs font-medium text-[#6B7280] hover:text-[#1A1D23] transition-colors"
             >
@@ -350,6 +376,7 @@ export default function ImportView({ categories }: ImportViewProps) {
               onToggle={toggleTransaction}
               onToggleAll={(sel) => toggleAllByType('expense', sel)}
               onUpdateCategory={updateCategory}
+              onToggleType={toggleTransactionType}
             />
           )}
 
@@ -363,6 +390,7 @@ export default function ImportView({ categories }: ImportViewProps) {
                 onToggle={toggleTransaction}
                 onToggleAll={(sel) => toggleAllByType('income', sel)}
                 onUpdateCategory={updateCategory}
+                onToggleType={toggleTransactionType}
                 isIncome
               />
             </div>
@@ -409,6 +437,7 @@ function TransactionSection({
   onToggle,
   onToggleAll,
   onUpdateCategory,
+  onToggleType,
   isIncome,
 }: {
   title: string;
@@ -418,6 +447,7 @@ function TransactionSection({
   onToggle: (id: string) => void;
   onToggleAll: (selected: boolean) => void;
   onUpdateCategory: (id: string, categoryId: string) => void;
+  onToggleType: (id: string) => void;
   isIncome?: boolean;
 }) {
   const allSelected = transactions.every((t) => t.selected);
@@ -449,6 +479,7 @@ function TransactionSection({
             categories={categories}
             onToggle={() => onToggle(tx.id)}
             onUpdateCategory={(catId) => onUpdateCategory(tx.id, catId)}
+            onToggleType={() => onToggleType(tx.id)}
             isIncome={isIncome}
           />
         ))}
@@ -462,12 +493,14 @@ function TransactionRow({
   categories,
   onToggle,
   onUpdateCategory,
+  onToggleType,
   isIncome,
 }: {
   tx: ParsedTransaction;
   categories: Category[];
   onToggle: () => void;
   onUpdateCategory: (categoryId: string) => void;
+  onToggleType: () => void;
   isIncome?: boolean;
 }) {
   const matchedCategory = categories.find(
@@ -511,6 +544,19 @@ function TransactionRow({
         </div>
         <div className="flex items-center gap-2 mt-1">
           <span className="text-xs text-[#9CA3AF]">{formatDate(tx.date)}</span>
+          <button
+            type="button"
+            onClick={onToggleType}
+            className={`text-[10px] font-bold uppercase tracking-wide rounded-[6px] border px-1.5 py-0.5 transition-colors ${
+              isIncome
+                ? 'border-[#BFE5D2] bg-[#EEF9F4] text-[#2E8F67] hover:bg-[#DDF2E8]'
+                : 'border-[#E5E7EB] bg-[#F8F9FB] text-[#6B7280] hover:bg-[#F1F3F7]'
+            }`}
+            aria-label={`Alterar para ${isIncome ? 'despesa' : 'receita'}`}
+            title="Alternar entre despesa e receita"
+          >
+            {isIncome ? 'Receita' : 'Despesa'}
+          </button>
           {!isIncome && (
             <div className="relative">
               <select
