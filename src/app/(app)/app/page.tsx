@@ -10,6 +10,7 @@ import MonthPicker from '@/components/MonthPicker';
 import DashboardBalanceHero from '@/components/DashboardBalanceHero';
 import DashboardCompactMetrics from '@/components/DashboardCompactMetrics';
 import PageHeader from '@/components/PageHeader';
+import ProfilePhotoPreview from '@/components/ProfilePhotoPreview';
 import RefreshOnExpenseMutation from '@/components/RefreshOnExpenseMutation';
 import { getDashboardMetrics, getSpendingTimeline } from '@/lib/expenses';
 import { getBudgets } from '@/lib/budgets';
@@ -150,24 +151,34 @@ export default async function DashboardPage({
           title="Moneda"
           subtitle="Seu dinheiro, finalmente claro."
           action={
-            <Link
-              href="/perfil"
-              className="dashboard-avatar-frame text-lg font-bold text-white"
-              aria-label={user.email ?? 'Usuário'}
-            >
-              <span className="flex h-full w-full items-center justify-center overflow-hidden rounded-full bg-[#A8C5E0]">
-                {avatarUrl ? (
+            avatarUrl ? (
+              <ProfilePhotoPreview
+                src={avatarUrl}
+                alt="Foto de perfil ampliada"
+                triggerLabel="Ampliar foto do perfil"
+                className="dashboard-avatar-frame text-lg font-bold text-white"
+                profileHref="/perfil"
+              >
+                <span className="flex h-full w-full items-center justify-center overflow-hidden rounded-full bg-[#A8C5E0]">
                   <img
                     src={avatarUrl}
                     alt=""
                     className="h-full w-full object-cover object-center"
                     referrerPolicy="no-referrer"
                   />
-                ) : (
-                  fullName?.[0]?.toUpperCase() ?? user.email?.[0]?.toUpperCase() ?? '?'
-                )}
-              </span>
-            </Link>
+                </span>
+              </ProfilePhotoPreview>
+            ) : (
+              <Link
+                href="/perfil"
+                className="dashboard-avatar-frame text-lg font-bold text-white"
+                aria-label="Abrir perfil"
+              >
+                <span className="flex h-full w-full items-center justify-center overflow-hidden rounded-full bg-[#A8C5E0]">
+                  {fullName?.[0]?.toUpperCase() ?? user.email?.[0]?.toUpperCase() ?? '?'}
+                </span>
+              </Link>
+            )
           }
           className="relative z-40 min-h-[88px] pb-2 lg:min-h-[76px] lg:pb-3"
         />

@@ -27,6 +27,7 @@ import {
 } from '@phosphor-icons/react';
 import { useToast } from '@/components/ToastProvider';
 import PageHeader from '@/components/PageHeader';
+import ProfilePhotoPreview from '@/components/ProfilePhotoPreview';
 import {
   updateDisplayName,
   sendEmailChangeOtp,
@@ -478,16 +479,23 @@ export default function ProfileView({
           <div className="relative shrink-0">
             <div className="profile-avatar-frame">
               {currentAvatarUrl ? (
-                <Image
+                <ProfilePhotoPreview
                   src={currentAvatarUrl}
-                  alt=""
-                  width={64}
-                  height={64}
-                  sizes="64px"
-                  priority
-                  className="h-full w-full rounded-full object-cover"
-                  referrerPolicy="no-referrer"
-                />
+                  alt={`Foto de ${name || email}`}
+                  triggerLabel={`Ampliar foto de ${name || 'perfil'}`}
+                  className="profile-avatar-frame__trigger"
+                >
+                  <Image
+                    src={currentAvatarUrl}
+                    alt=""
+                    width={64}
+                    height={64}
+                    sizes="64px"
+                    priority
+                    className="h-full w-full rounded-full object-cover"
+                    referrerPolicy="no-referrer"
+                  />
+                </ProfilePhotoPreview>
               ) : (
                 <div className="flex h-full w-full items-center justify-center rounded-full text-2xl font-bold text-white">
                   {initial}
