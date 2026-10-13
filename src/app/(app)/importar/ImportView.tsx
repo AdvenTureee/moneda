@@ -35,8 +35,8 @@ const INCOME_ICON = 'TrendUp';
 const NEUTRAL_EXPENSE_ICON = 'Package';
 const NEUTRAL_EXPENSE_COLOR = '#6B7280';
 
-// Altura da bottom nav flutuante (84px) + safe-area: a barra de ação precisa ficar acima dela.
-const BOTTOM_NAV_CLEARANCE = 'calc(84px + env(safe-area-inset-bottom, 0px))';
+// BottomNav: bottom 16px + ~66px de altura. O card de ação fica 12px acima dela.
+const FOOTER_BOTTOM = 'calc(94px + env(safe-area-inset-bottom, 0px))';
 
 function isValidIsoDate(value: string): boolean {
   if (!ISO_DATE_RE.test(value)) return false;
@@ -456,44 +456,47 @@ export default function ImportView({ categories }: ImportViewProps) {
             </div>
           )}
 
-          {/* Espaço reservado com a mesma altura do rodapé fixo, para o fim da lista não ficar coberto. */}
-          <div aria-hidden style={{ height: footerHeight }} />
-
-          {/* Rodapé fixo de largura total: vai até a borda inferior da tela e fica abaixo da bottom nav. */}
-          <div
-            ref={footerRef}
-            className="fixed inset-x-0 bottom-0 z-[38] border-t border-[#E5E7EB] bg-[var(--color-surface)] px-4 pt-3 shadow-[0_-6px_20px_rgba(0,0,0,0.04)]"
-            style={{ paddingBottom: BOTTOM_NAV_CLEARANCE }}
-          >
-            <div className="mx-auto w-full max-w-lg">
-              <p className="text-sm px-1 mb-2.5 tabular-nums">
-                <span className="font-bold text-[#1A1D23]">
-                  {totalSelected} selecionada(s)
-                </span>
-                <span className="text-[#6B7280]">
-                  {' · '}
-                  {formatCurrency(totalExpenses)} em despesas
-                  {totalIncomes > 0 && ` + ${formatCurrency(totalIncomes)} em receitas`}
-                </span>
-              </p>
-              <button
-                type="button"
-                onClick={handleConfirm}
-                disabled={totalSelected === 0 || pending}
-                className="gesture-button-primary w-full bg-[#5BBF8E] hover:bg-[#4AA77C] text-white font-semibold text-[15px] py-3.5 rounded-full shadow-[0_6px_20px_rgba(91,191,142,0.35)] disabled:opacity-40 disabled:shadow-none disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                {pending ? (
-                  <>
-                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Importando...
-                  </>
-                ) : (
-                  `Importar ${totalSelected} transação(ões)`
-                )}
-              </button>
-            </div>
-          </div>
+          {/* Espaço reservado para que o fim da lista não fique coberto pelo card flutuante. */}
+          <div aria-hidden style={{ height: footerHeight + 24 }} />
         </section>
+      )}
+
+      {/* Fora da <section> animada: animate-fade-up usa transform, o que quebraria o position: fixed. */}
+      {phase === 'review' && (
+        <div
+          ref={footerRef}
+          className="themed-card fixed left-1/2 z-[38] -translate-x-1/2 rounded-[22px] p-3 shadow-md"
+          style={{
+            width: 'min(calc(100vw - 1.5rem), 36rem)',
+            bottom: FOOTER_BOTTOM,
+          }}
+        >
+          <p className="text-sm px-1 mb-2.5 tabular-nums">
+            <span className="font-bold text-[#1A1D23]">
+              {totalSelected} selecionada(s)
+            </span>
+            <span className="text-[#6B7280]">
+              {' · '}
+              {formatCurrency(totalExpenses)} em despesas
+              {totalIncomes > 0 && ` + ${formatCurrency(totalIncomes)} em receitas`}
+            </span>
+          </p>
+          <button
+            type="button"
+            onClick={handleConfirm}
+            disabled={totalSelected === 0 || pending}
+            className="gesture-button-primary w-full bg-[#5BBF8E] hover:bg-[#4AA77C] text-white font-semibold text-[15px] h-12 rounded-full shadow-[0_6px_20px_rgba(91,191,142,0.35)] disabled:opacity-40 disabled:shadow-none disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          >
+            {pending ? (
+              <>
+                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                Importando...
+              </>
+            ) : (
+              `Importar ${totalSelected} transação(ões)`
+            )}
+          </button>
+        </div>
       )}
     </div>
   );
