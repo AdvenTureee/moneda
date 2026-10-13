@@ -1227,6 +1227,57 @@ function deleteExpenseFromMock(id: string): void {
   removeSessionExpense(id);
 }
 
+/**
+ * Remove (soft delete) todos os gastos do usuário, incluindo séries recorrentes
+ * e parcelamentos, e apaga os comprovantes associados no storage.
+ */
+export async function deleteAllExpenses(userId: string): Promise<void> {
+  if (!userId) {
+    throw new Error('userId é obrigatório para excluir gastos');
+  }
+
+  if (isSupabaseEnabled()) {
+    const db = createServiceClient();
+    const nowIso = new Date().toISOString();
+
+    const { data: receiptRows, error: receiptError } = await db
+      .from('expenses')
+      .select('receipt_path')
+      .eq('user_id', userId)
+      .is('deleted_at', null)
+      .not('receipt_path', 'is', null);
+    if (receiptError) throw new Error(`deleteAllExpenses: ${receiptError.message}`);
+
+    // Encerra séries para que a materialização não recrie gastos apagados.
+    const { error: seriesError } = await db
+      .from('expense_series')
+      .update({ status: 'ended', deleted_at: nowIso })
+      .eq('user_id', userId)
+      .is('deleted_at', null);
+    if (seriesError) throw new Error(`deleteAllExpenses: ${seriesError.message}`);
+
+    const { error } = await db
+      .from('expenses')
+      .update({ deleted_at: nowIso })
+      .eq('user_id', userId)
+      .is('deleted_at', null);
+    if (error) throw new Error(`deleteAllExpenses: ${error.message}`);
+
+    const receiptPaths = (receiptRows ?? [])
+      .map((row) => row.receipt_path)
+      .filter((path): path is string => Boolean(path));
+    if (receiptPaths.length > 0) {
+      await db.storage.from('expense_receipts').remove(receiptPaths);
+    }
+    return;
+  }
+
+  // Fallback (mock)
+  for (const expense of mockGetAll(userId)) {
+    removeSessionExpense(expense.id);
+  }
+}
+
 export async function updateExpense(id: string, userId: string, input: Partial<ExpenseInput>): Promise<Expense> {
   if (isSupabaseEnabled()) return updateExpenseInDB(id, userId, input);
   const result = updateExpenseFromMock(id, input);

@@ -202,3 +202,27 @@ export async function deleteIncome(id: string, userId: string): Promise<void> {
   // Fallback
   sessionIncomes = sessionIncomes.filter((i) => !(i.id === id && i.userId === userId));
 }
+
+/**
+ * Remove (soft delete) todos os ganhos do usuário.
+ */
+export async function deleteAllIncomes(userId: string): Promise<void> {
+  if (!userId) {
+    throw new Error('userId é obrigatório para excluir ganhos');
+  }
+
+  if (isSupabaseEnabled()) {
+    const db = createServiceClient();
+    const { error } = await db
+      .from('incomes')
+      .update({ deleted_at: new Date().toISOString() })
+      .eq('user_id', userId)
+      .is('deleted_at', null);
+
+    if (error) throw new Error(`deleteAllIncomes: ${error.message}`);
+    return;
+  }
+
+  // Fallback
+  sessionIncomes = sessionIncomes.filter((i) => i.userId !== userId);
+}

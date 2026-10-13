@@ -28,6 +28,7 @@ import {
 import { useToast } from '@/components/ToastProvider';
 import PageHeader from '@/components/PageHeader';
 import ProfilePhotoPreview from '@/components/ProfilePhotoPreview';
+import ConfirmDialog from '@/components/ConfirmDialog';
 import {
   updateDisplayName,
   sendEmailChangeOtp,
@@ -35,6 +36,7 @@ import {
   signOut,
   type ActionResult,
 } from './actions';
+import { deleteAllExpensesAndIncomesAction } from './actions-finance';
 import { isValidEmail } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
 import { useTheme } from '@/components/ThemeProvider';
@@ -203,6 +205,8 @@ export default function ProfileView({
   const [savingEmail, startSaveEmail] = useTransition();
   const [savingOtp, startSaveOtp] = useTransition();
   const [signingOut, startSignOut] = useTransition();
+  const [wipingData, startWipeData] = useTransition();
+  const [confirmWipeOpen, setConfirmWipeOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [linkingGoogle, setLinkingGoogle] = useState(false);
   const [currentAvatarUrl, setCurrentAvatarUrl] = useState<string | null>(avatarUrl);
@@ -464,7 +468,15 @@ export default function ProfileView({
     });
   }
 
-  const anyBusy = savingName || savingEmail || savingOtp || signingOut || uploading;
+  function handleWipeFinancialData() {
+    startWipeData(async () => {
+      const result = await deleteAllExpensesAndIncomesAction();
+      applyResult(result);
+      setConfirmWipeOpen(false);
+    });
+  }
+
+  const anyBusy = savingName || savingEmail || savingOtp || signingOut || uploading || wipingData;
   const cropMetrics = cropDraft ? getCropMetrics(cropDraft) : null;
 
   return (
@@ -981,7 +993,24 @@ export default function ProfileView({
           <h2 className="text-xs font-heading uppercase tracking-wider text-[#D85C5C] mb-2 px-1 dark:text-[#FF8A8A]">
             Zona de perigo
           </h2>
-          <div className="themed-card bg-white rounded-[16px] overflow-hidden border border-[#F2CACA] dark:border-[#7A3A3A]/55">
+          <div className="themed-card bg-white rounded-[16px] overflow-hidden border border-[#F2CACA] dark:border-[#7A3A3A]/55 divide-y divide-[#F2CACA] dark:divide-[#7A3A3A]/55">
+            <div className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center">
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-[#1A1D23]">Apagar gastos e ganhos</p>
+                <p className="text-xs text-[#6B7280]">
+                  Remove todos os seus gastos e ganhos. Categorias e orçamentos são mantidos.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setConfirmWipeOpen(true)}
+                disabled={anyBusy}
+                className="gesture-button-danger inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-[12px] bg-[#C94F4F] px-4 text-sm font-bold text-white transition-colors hover:bg-[#B94545] disabled:cursor-not-allowed disabled:opacity-60 dark:bg-[#A84E4E] dark:hover:bg-[#B95B5B]"
+              >
+                <Trash size={16} weight="bold" />
+                Apagar tudo
+              </button>
+            </div>
             <div className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center">
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold text-[#1A1D23]">Excluir conta</p>
@@ -1001,6 +1030,17 @@ export default function ProfileView({
           </div>
         </section>
       )}
+
+      <ConfirmDialog
+        isOpen={confirmWipeOpen}
+        title="Apagar todos os gastos e ganhos?"
+        message="Todos os seus gastos e ganhos serão removidos. Categorias e orçamentos não serão afetados. Esta ação não pode ser desfeita."
+        confirmLabel={wipingData ? 'Apagando…' : 'Apagar tudo'}
+        cancelLabel="Cancelar"
+        variant="danger"
+        onConfirm={handleWipeFinancialData}
+        onCancel={() => setConfirmWipeOpen(false)}
+      />
 
       {cropDraft && cropMetrics && (
         <div

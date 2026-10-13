@@ -3,9 +3,10 @@
 import { refresh, updateTag } from 'next/cache';
 import { createSessionClient, isSupabaseEnabled, tryResolveUserId } from '@/lib/supabase/server';
 import { upsertBudget } from '@/lib/budgets';
-import { createIncome, deleteIncome, updateIncome } from '@/lib/incomes';
+import { createIncome, deleteAllIncomes, deleteIncome, updateIncome } from '@/lib/incomes';
+import { deleteAllExpenses } from '@/lib/expenses';
 import type { IncomeSource } from '@/types';
-import { cacheTags } from '@/lib/cache';
+import { allUserTags, cacheTags } from '@/lib/cache';
 
 export type ActionResult = { ok: true; message?: string } | { ok: false; error: string };
 
@@ -193,6 +194,26 @@ export async function updateIncomeAction(
     return { ok: true, message: 'Ganho atualizado com sucesso!' };
   } catch (err: any) {
     return { ok: false, error: err.message || 'Falha ao atualizar ganho.' };
+  }
+}
+
+/**
+ * Remove (soft delete) todos os gastos e ganhos do usuário logado.
+ * Categorias e orçamentos são mantidos.
+ */
+export async function deleteAllExpensesAndIncomesAction(): Promise<ActionResult> {
+  try {
+    const auth = await tryResolveUserId();
+    if (!auth.ok) return { ok: false, error: auth.error };
+    const { userId } = auth;
+
+    await deleteAllExpenses(userId);
+    await deleteAllIncomes(userId);
+
+    for (const tag of allUserTags(userId)) updateTag(tag);
+    return { ok: true, message: 'Todos os gastos e ganhos foram apagados.' };
+  } catch (err: any) {
+    return { ok: false, error: err.message || 'Falha ao apagar gastos e ganhos.' };
   }
 }
 
