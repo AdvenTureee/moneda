@@ -1,0 +1,43 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "strict": true,
+    "jsx": "react-jsx",
+    "moduleResolution": "bundler",
+    "allowJs": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "noEmit": true,
+    "paths": {
+      "@/*": [
+        "./*"
+      ],
+      "@moneda/shared": [
+        "../../packages/shared/src/index.ts"
+      ],
+      "@moneda/shared/*": [
+        "../../packages/shared/src/*"
+      ],
+      "@moneda/ui-tokens": [
+        "../../packages/ui-tokens/src/index.ts"
+      ],
+      "@moneda/ui-tokens/*": [
+        "../../packages/ui-tokens/src/*"
+      ]
+    }
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    "../../packages/shared/src/**/*.ts",
+    "../../packages/ui-tokens/src/**/*.ts",
+    ".expo/types/**/*.ts",
+    "expo-env.d.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "android",
+    "ios",
+    ".expo"
+  ]
+}

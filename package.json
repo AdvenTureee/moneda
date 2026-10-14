@@ -2,6 +2,10 @@
   "name": "moneda",
   "version": "0.1.0",
   "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "engines": {
     "node": ">=24.0.0"
   },
@@ -15,7 +19,13 @@
     "test": "node --test --import jiti/register --import ./tests/test-setup.ts tests/*.test.ts",
     "start": "next start",
     "backfill:pii": "node --env-file=.env scripts/backfill-pii.mjs",
-    "nullify:legacy-pii": "node --env-file=.env scripts/nullify-legacy-pii.mjs"
+    "nullify:legacy-pii": "node --env-file=.env scripts/nullify-legacy-pii.mjs",
+    "mobile:dev": "npm run start --workspace=apps/mobile",
+    "mobile:android": "npm run android --workspace=apps/mobile",
+    "mobile:ios": "npm run ios --workspace=apps/mobile",
+    "mobile:typecheck": "npm run typecheck --workspace=apps/mobile",
+    "mobile:test": "npm run test --workspace=apps/mobile",
+    "build:packages": "npm run build --workspaces --if-present"
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.10",
@@ -34,6 +44,7 @@
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-markdown": "^10.1.0",
+    "react-native-web": "^0.20.0",
     "remark-gfm": "^4.0.1",
     "sharp": "^0.35.3",
     "three": "^0.185.1",

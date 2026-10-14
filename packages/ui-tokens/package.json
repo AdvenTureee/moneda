@@ -1,0 +1,21 @@
+{
+  "name": "@moneda/ui-tokens",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Design tokens compartilhados entre web e mobile (cores, spacing, radii, typography).",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./colors": "./src/colors.ts",
+    "./spacing": "./src/spacing.ts",
+    "./radii": "./src/radii.ts",
+    "./typography": "./src/typography.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5"
+  }
+}

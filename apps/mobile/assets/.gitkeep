@@ -1,0 +1,3 @@
+# Os ícones/splash reais chegam no PR-F (polimento).
+# Por enquanto o Expo usa placeholders default se faltarem arquivos apontados
+# em app.json — basta rodar `npm run mobile:start`.

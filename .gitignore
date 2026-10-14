@@ -43,3 +43,20 @@ supabase/.temp/
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# monorepo — apps/mobile (Expo / React Native)
+apps/mobile/.expo/
+apps/mobile/dist/
+apps/mobile/web-build/
+apps/mobile/.metro-cache/
+apps/mobile/android/
+apps/mobile/ios/
+apps/mobile/node_modules/
+# Mantém .env.example versionado, ignora .env real (com chaves públicas/privadas).
+apps/mobile/.env
+
+# monorepo — packages (shared libraries)
+packages/*/dist/
+packages/*/build/
+packages/*/node_modules/
+packages/*/*.tsbuildinfo
